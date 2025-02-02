@@ -3565,3 +3565,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-02-01 22:47:25 +0300 - chore: update helper utilities
 2025-02-01 13:54:10 +0300 - feat: update ticket scanning logic
 2025-02-02 18:08:00 +0300 - fix: handle edge case in event registration
+2025-02-02 21:06:14 +0300 - perf: reduce memory footprint on bulk operations

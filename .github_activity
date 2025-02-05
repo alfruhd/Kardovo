@@ -3583,3 +3583,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-02-05 12:33:58 +0300 - refactor: optimize query execution and caching
 2025-02-05 12:40:18 +0300 - feat: enhance dashboard statistics rendering
 2025-02-05 16:09:03 +0300 - fix: handle edge case in event registration
+2025-02-05 12:36:48 +0300 - feat: update ticket scanning logic

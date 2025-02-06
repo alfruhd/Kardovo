@@ -3594,3 +3594,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-02-06 20:14:25 +0300 - docs: update inline documentation
 2025-02-06 16:30:44 +0300 - fix: handle edge case in event registration
 2025-02-06 15:30:48 +0300 - style: clean up UI components and spacing
+2025-02-06 18:59:58 +0300 - style: clean up UI components and spacing

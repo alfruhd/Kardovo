@@ -3607,3 +3607,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-02-08 19:10:41 +0300 - test: add feature test coverage
 2025-02-08 10:37:33 +0300 - docs: update inline documentation
 2025-02-09 20:57:38 +0300 - chore: update helper utilities
+2025-02-09 12:30:49 +0300 - fix: handle edge case in event registration

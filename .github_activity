@@ -3639,3 +3639,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-02-13 10:35:31 +0300 - perf: reduce memory footprint on bulk operations
 2025-02-13 12:51:03 +0300 - fix: handle edge case in event registration
 2025-02-14 12:19:49 +0300 - feat: update ticket scanning logic
+2025-02-14 21:49:39 +0300 - fix: improve responsive layout and alignment

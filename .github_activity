@@ -3672,3 +3672,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-02-19 14:21:18 +0300 - test: add feature test coverage
 2025-02-19 11:45:47 +0300 - style: clean up UI components and spacing
 2025-02-19 12:06:53 +0300 - fix: handle edge case in event registration
+2025-02-19 16:42:22 +0300 - feat: enhance dashboard statistics rendering

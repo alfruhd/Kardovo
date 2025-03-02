@@ -3740,3 +3740,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-03-01 15:13:44 +0300 - feat: update ticket scanning logic
 2025-03-01 15:58:19 +0300 - fix: handle edge case in event registration
 2025-03-01 16:16:19 +0300 - fix: handle edge case in event registration
+2025-03-02 20:58:06 +0300 - feat: update ticket scanning logic

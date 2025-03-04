@@ -3755,3 +3755,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-03-04 15:19:07 +0300 - docs: update inline documentation
 2025-03-04 21:43:55 +0300 - fix: handle edge case in event registration
 2025-03-04 17:58:22 +0300 - feat: update ticket scanning logic
+2025-03-04 21:49:55 +0300 - chore: update helper utilities

@@ -3764,3 +3764,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-03-05 22:18:41 +0300 - style: clean up UI components and spacing
 2025-03-05 15:18:44 +0300 - test: add feature test coverage
 2025-03-06 17:15:22 +0300 - style: clean up UI components and spacing
+2025-03-06 14:16:04 +0300 - fix: handle edge case in event registration

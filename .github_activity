@@ -3908,3 +3908,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-04-01 09:47:19 +0300 - feat: update ticket scanning logic
 2025-04-01 13:58:28 +0300 - fix: improve responsive layout and alignment
 2025-04-01 16:30:02 +0300 - fix: improve responsive layout and alignment
+2025-04-01 09:14:31 +0300 - refactor: optimize query execution and caching

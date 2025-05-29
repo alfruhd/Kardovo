@@ -4247,3 +4247,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-05-28 09:46:05 +0300 - style: clean up UI components and spacing
 2025-05-28 11:31:44 +0300 - feat: update ticket scanning logic
 2025-05-28 09:15:12 +0300 - feat: enhance dashboard statistics rendering
+2025-05-29 12:21:13 +0300 - fix: improve responsive layout and alignment

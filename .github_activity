@@ -4261,3 +4261,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-05-30 13:00:54 +0300 - feat: update ticket scanning logic
 2025-05-31 10:54:56 +0300 - chore: update helper utilities
 2025-05-31 15:58:19 +0300 - test: add feature test coverage
+2025-05-31 16:41:44 +0300 - fix: handle edge case in event registration

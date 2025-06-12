@@ -4317,3 +4317,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-06-11 13:57:39 +0300 - docs: update inline documentation
 2025-06-11 10:36:04 +0300 - feat: enhance dashboard statistics rendering
 2025-06-11 14:23:54 +0300 - feat: update ticket scanning logic
+2025-06-12 14:41:19 +0300 - fix: handle edge case in event registration

@@ -4395,3 +4395,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-06-24 13:59:28 +0300 - fix: improve responsive layout and alignment
 2025-06-25 16:57:16 +0300 - fix: improve responsive layout and alignment
 2025-06-25 11:09:10 +0300 - feat: update ticket scanning logic
+2025-06-25 14:16:55 +0300 - chore: update helper utilities

@@ -4557,3 +4557,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-07-24 15:15:49 +0300 - refactor: optimize query execution and caching
 2025-07-25 22:48:15 +0300 - style: clean up UI components and spacing
 2025-07-25 13:40:08 +0300 - refactor: optimize query execution and caching
+2025-07-25 09:18:49 +0300 - fix: handle edge case in event registration

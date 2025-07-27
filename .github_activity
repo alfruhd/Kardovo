@@ -4566,3 +4566,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-07-25 12:34:00 +0300 - feat: enhance dashboard statistics rendering
 2025-07-26 14:58:40 +0300 - feat: enhance dashboard statistics rendering
 2025-07-26 09:19:30 +0300 - fix: handle edge case in event registration
+2025-07-27 22:14:51 +0300 - fix: improve responsive layout and alignment

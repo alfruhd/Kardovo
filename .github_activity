@@ -4601,3 +4601,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-08-01 16:32:57 +0300 - feat: update ticket scanning logic
 2025-08-01 13:23:48 +0300 - chore: update helper utilities
 2025-08-02 10:44:50 +0300 - chore: update helper utilities
+2025-08-02 13:07:22 +0300 - perf: reduce memory footprint on bulk operations

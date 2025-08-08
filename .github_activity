@@ -4629,3 +4629,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-08-07 22:00:59 +0300 - feat: enhance dashboard statistics rendering
 2025-08-07 12:56:50 +0300 - fix: handle edge case in event registration
 2025-08-08 22:59:38 +0300 - test: add feature test coverage
+2025-08-08 09:43:51 +0300 - chore: update helper utilities

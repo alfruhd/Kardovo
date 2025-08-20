@@ -4685,3 +4685,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-08-19 10:53:22 +0300 - fix: handle edge case in event registration
 2025-08-20 12:46:33 +0300 - perf: reduce memory footprint on bulk operations
 2025-08-20 12:30:29 +0300 - docs: update inline documentation
+2025-08-20 14:00:59 +0300 - fix: improve responsive layout and alignment

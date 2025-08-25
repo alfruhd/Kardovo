@@ -4717,3 +4717,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-08-25 16:57:26 +0300 - feat: update ticket scanning logic
 2025-08-25 19:06:29 +0300 - fix: handle edge case in event registration
 2025-08-25 18:59:53 +0300 - fix: handle edge case in event registration
+2025-08-25 20:19:23 +0300 - feat: enhance dashboard statistics rendering

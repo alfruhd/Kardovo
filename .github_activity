@@ -4742,3 +4742,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-08-29 15:05:25 +0300 - feat: enhance dashboard statistics rendering
 2025-08-29 11:25:34 +0300 - perf: reduce memory footprint on bulk operations
 2025-08-29 22:43:36 +0300 - feat: enhance dashboard statistics rendering
+2025-08-30 11:45:23 +0300 - fix: handle edge case in event registration

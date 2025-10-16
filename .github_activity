@@ -5001,3 +5001,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-10-15 12:30:09 +0300 - docs: update inline documentation
 2025-10-15 11:18:39 +0300 - fix: improve responsive layout and alignment
 2025-10-16 19:24:04 +0300 - refactor: optimize query execution and caching
+2025-10-16 14:11:31 +0300 - chore: update helper utilities

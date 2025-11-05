@@ -5120,3 +5120,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-11-05 18:00:29 +0300 - refactor: optimize query execution and caching
 2025-11-05 16:06:33 +0300 - feat: update ticket scanning logic
 2025-11-05 20:11:19 +0300 - fix: improve responsive layout and alignment
+2025-11-05 19:57:59 +0300 - chore: update helper utilities

@@ -5405,3 +5405,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-12-29 20:30:53 +0300 - test: add feature test coverage
 2025-12-29 09:16:29 +0300 - fix: improve responsive layout and alignment
 2025-12-29 15:39:36 +0300 - fix: handle edge case in event registration
+2025-12-29 22:40:34 +0300 - chore: update helper utilities

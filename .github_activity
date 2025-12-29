@@ -5407,3 +5407,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-12-29 15:39:36 +0300 - fix: handle edge case in event registration
 2025-12-29 22:40:34 +0300 - chore: update helper utilities
 2025-12-29 16:28:01 +0300 - refactor: optimize query execution and caching
+2025-12-29 19:27:37 +0300 - style: clean up UI components and spacing

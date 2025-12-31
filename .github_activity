@@ -5418,3 +5418,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2025-12-31 19:51:25 +0300 - feat: enhance dashboard statistics rendering
 2025-12-31 09:26:48 +0300 - fix: handle edge case in event registration
 2025-12-31 10:35:21 +0300 - feat: update ticket scanning logic
+2025-12-31 18:46:29 +0300 - perf: reduce memory footprint on bulk operations

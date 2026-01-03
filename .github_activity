@@ -5432,3 +5432,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-01-02 22:47:37 +0300 - refactor: optimize query execution and caching
 2026-01-02 20:55:13 +0300 - feat: update ticket scanning logic
 2026-01-03 18:07:41 +0300 - feat: update ticket scanning logic
+2026-01-03 13:47:25 +0300 - perf: reduce memory footprint on bulk operations

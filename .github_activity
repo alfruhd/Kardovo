@@ -5460,3 +5460,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-01-07 14:16:49 +0300 - chore: update helper utilities
 2026-01-07 20:10:58 +0300 - chore: update helper utilities
 2026-01-07 22:59:58 +0300 - fix: handle edge case in event registration
+2026-01-07 18:41:40 +0300 - feat: update ticket scanning logic

@@ -5721,3 +5721,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-02-23 13:13:26 +0300 - chore: update helper utilities
 2026-02-23 20:22:16 +0300 - fix: handle edge case in event registration
 2026-02-23 09:08:55 +0300 - test: add feature test coverage
+2026-02-23 13:20:59 +0300 - perf: reduce memory footprint on bulk operations

@@ -5825,3 +5825,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-03-14 09:56:56 +0300 - test: add feature test coverage
 2026-03-14 17:14:06 +0300 - test: add feature test coverage
 2026-03-14 15:22:52 +0300 - fix: improve responsive layout and alignment
+2026-03-15 14:01:01 +0300 - fix: handle edge case in event registration

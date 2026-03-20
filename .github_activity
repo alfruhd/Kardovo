@@ -5854,3 +5854,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-03-19 19:05:28 +0300 - fix: handle edge case in event registration
 2026-03-20 13:14:34 +0300 - fix: handle edge case in event registration
 2026-03-20 19:21:50 +0300 - docs: update inline documentation
+2026-03-20 13:52:53 +0300 - fix: improve responsive layout and alignment

@@ -5918,3 +5918,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-03-30 12:58:57 +0300 - test: add feature test coverage
 2026-03-31 15:41:59 +0300 - fix: improve responsive layout and alignment
 2026-03-31 18:39:00 +0300 - fix: handle edge case in event registration
+2026-03-31 14:23:27 +0300 - feat: update ticket scanning logic

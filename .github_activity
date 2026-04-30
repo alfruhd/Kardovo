@@ -6088,3 +6088,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-04-29 12:16:34 +0300 - fix: improve responsive layout and alignment
 2026-04-29 18:33:48 +0300 - fix: improve responsive layout and alignment
 2026-04-30 15:11:38 +0300 - feat: update ticket scanning logic
+2026-04-30 22:53:02 +0300 - fix: handle edge case in event registration

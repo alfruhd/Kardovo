@@ -6175,3 +6175,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-05-14 11:21:22 +0300 - fix: improve responsive layout and alignment
 2026-05-15 16:23:38 +0300 - fix: handle edge case in event registration
 2026-05-15 17:48:25 +0300 - feat: enhance dashboard statistics rendering
+2026-05-15 16:27:52 +0300 - style: clean up UI components and spacing

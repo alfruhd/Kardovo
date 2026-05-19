@@ -6203,3 +6203,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-05-19 09:38:23 +0300 - perf: reduce memory footprint on bulk operations
 2026-05-19 10:41:57 +0300 - fix: improve responsive layout and alignment
 2026-05-19 19:40:18 +0300 - fix: improve responsive layout and alignment
+2026-05-19 21:11:29 +0300 - chore: update helper utilities

@@ -6240,3 +6240,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-05-24 16:18:09 +0300 - style: clean up UI components and spacing
 2026-05-24 15:10:10 +0300 - docs: update inline documentation
 2026-05-25 19:17:07 +0300 - fix: handle edge case in event registration
+2026-05-25 18:27:21 +0300 - feat: enhance dashboard statistics rendering

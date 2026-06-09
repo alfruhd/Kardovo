@@ -6320,3 +6320,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-06-09 11:15:53 +0300 - fix: handle edge case in event registration
 2026-06-09 20:06:34 +0300 - fix: handle edge case in event registration
 2026-06-09 11:20:51 +0300 - feat: update ticket scanning logic
+2026-06-09 12:06:00 +0300 - chore: update helper utilities

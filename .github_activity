@@ -6411,3 +6411,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-06-26 11:10:26 +0300 - feat: update ticket scanning logic
 2026-06-26 22:47:44 +0300 - docs: update inline documentation
 2026-06-26 16:55:53 +0300 - style: clean up UI components and spacing
+2026-06-26 21:40:37 +0300 - chore: update helper utilities

@@ -6422,3 +6422,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-06-28 13:49:14 +0300 - chore: update helper utilities
 2026-06-28 11:18:58 +0300 - chore: update helper utilities
 2026-06-29 20:21:07 +0300 - chore: update helper utilities
+2026-06-29 13:10:13 +0300 - perf: reduce memory footprint on bulk operations

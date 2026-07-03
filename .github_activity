@@ -6446,3 +6446,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-07-02 09:53:16 +0300 - fix: handle edge case in event registration
 2026-07-02 09:35:17 +0300 - chore: update helper utilities
 2026-07-03 15:03:21 +0300 - style: clean up UI components and spacing
+2026-07-03 15:20:49 +0300 - test: add feature test coverage

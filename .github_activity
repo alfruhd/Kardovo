@@ -6546,3 +6546,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-07-21 19:58:30 +0300 - fix: handle edge case in event registration
 2026-07-21 20:49:50 +0300 - refactor: optimize query execution and caching
 2026-07-21 15:21:10 +0300 - refactor: optimize query execution and caching
+2026-07-21 17:26:21 +0300 - chore: update helper utilities

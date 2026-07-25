@@ -6569,3 +6569,4 @@ activity_2025: 2025-09-17 19:19:25 +0300
 2026-07-24 09:28:08 +0300 - perf: reduce memory footprint on bulk operations
 2026-07-24 14:08:14 +0300 - perf: reduce memory footprint on bulk operations
 2026-07-24 14:46:00 +0300 - perf: reduce memory footprint on bulk operations
+2026-07-25 14:10:27 +0300 - test: add feature test coverage

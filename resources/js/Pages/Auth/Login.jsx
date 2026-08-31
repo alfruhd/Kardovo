@@ -178,29 +178,20 @@ export default function Login({ status, canResetPassword }) {
             {/* Main Auth Container */}
             <div className="w-full max-w-xl rounded-[28px] overflow-hidden backdrop-blur-2xl bg-white dark:bg-[#0B1524]/95 border border-slate-200/80 dark:border-white/[0.08] shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-6 sm:p-9 relative z-10 transition-colors duration-300">
                 <div className="space-y-4 sm:space-y-5">
-                    {/* Header Branding */}
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.08]">
-                        <KardovoLogo light={isDark} showText={true} />
-                        <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-300 text-[10px] font-mono font-extrabold uppercase">
-                            Portal Sign In
-                        </span>
-                    </div>
-
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                    Sign In to Kardovo
-                                </h2>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 hidden sm:block">
-                                    Enter your credentials or choose a quick development profile.
-                                </p>
-                            </div>
-
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-300 text-[10px] sm:text-[10.5px] font-mono font-bold">
-                                <KeyRound className="w-3 h-3" />
-                                <span className="hidden xs:inline">Autosave Active</span>
-                            </span>
+                    {/* Header Branding & Title (Centered) */}
+                    <div className="flex flex-col items-center text-center space-y-2 pb-1">
+                        <div className="flex justify-center">
+                            <KardovoLogo light={isDark} showText={true} />
                         </div>
+                        <div>
+                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white font-display tracking-tight mt-1">
+                                Sign In to Kardovo
+                            </h2>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                Enter your credentials or choose a quick development profile.
+                            </p>
+                        </div>
+                    </div>
 
                         {/* ⚡ 1-Click Developer Role Switcher */}
                         <div className="p-3.5 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.08] space-y-2">

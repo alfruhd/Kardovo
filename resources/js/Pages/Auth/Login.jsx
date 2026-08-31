@@ -179,12 +179,12 @@ export default function Login({ status, canResetPassword }) {
             <div className="w-full max-w-xl rounded-[28px] overflow-hidden backdrop-blur-2xl bg-white dark:bg-[#0B1524]/95 border border-slate-200/80 dark:border-white/[0.08] shadow-[0_20px_60px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_60px_rgba(0,0,0,0.5)] p-6 sm:p-9 relative z-10 transition-colors duration-300">
                 <div className="space-y-4 sm:space-y-5">
                     {/* Header Branding & Title (Centered) */}
-                    <div className="flex flex-col items-center text-center space-y-2 pb-1">
+                    <div className="flex flex-col items-center text-center space-y-3 pb-1">
                         <div className="flex justify-center">
-                            <KardovoLogo light={isDark} showText={true} />
+                            <KardovoLogo light={isDark} showText={true} stacked={true} imgClassName="h-11 w-11" size="lg" />
                         </div>
                         <div>
-                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white font-display tracking-tight mt-1">
+                            <h2 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-white font-display tracking-tight">
                                 Sign In to Kardovo
                             </h2>
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">

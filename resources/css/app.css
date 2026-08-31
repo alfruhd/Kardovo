@@ -1,0 +1,52 @@
+@layer base {
+    html {
+        font-size: 13.5px;
+        -webkit-text-size-adjust: 100%;
+        text-rendering: optimizeLegibility;
+    }
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+    .bg-kardovo-gradient {
+        background: linear-gradient(135deg, #1144A0 0%, #008EE8 50%, #117534 100%);
+    }
+    .bg-kardovo-gradient-subtle {
+        background: linear-gradient(135deg, rgba(17, 68, 160, 0.08) 0%, rgba(0, 142, 232, 0.05) 50%, rgba(17, 117, 52, 0.08) 100%);
+    }
+    .text-kardovo-gradient {
+        background: linear-gradient(135deg, #008EE8 0%, #117534 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+
+    /* Smooth Interactive Outline for Buttons & Inputs */
+    .smooth-interactive-outline {
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        outline: none;
+    }
+    .smooth-interactive-outline:hover {
+        border-color: rgba(6, 182, 212, 0.7);
+        box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.3), 0 4px 15px rgba(6, 182, 212, 0.1);
+    }
+    .smooth-interactive-outline:focus,
+    .smooth-interactive-outline:focus-within {
+        border-color: #06b6d4;
+        box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.25), 0 4px 20px rgba(6, 182, 212, 0.15);
+    }
+}
+
+
+
+/* Dedicated Card Printing Isolation */
+@media print {
+    body * {
+        visibility: hidden !important;
+    }
+    #kardovo-card-print-frame, #kardovo-card-print-frame * {
+        visibility: visible !important;
+    }
+}

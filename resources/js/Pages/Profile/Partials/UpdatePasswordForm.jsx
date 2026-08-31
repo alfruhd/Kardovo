@@ -1,0 +1,146 @@
+import React, { useRef } from 'react';
+import InputError from '@/Components/InputError';
+import InputLabel from '@/Components/InputLabel';
+import PrimaryButton from '@/Components/PrimaryButton';
+import TextInput from '@/Components/TextInput';
+import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
+import { useForm } from '@inertiajs/react';
+import { Lock, Key, ShieldCheck, CheckCircle2 } from 'lucide-react';
+
+export default function UpdatePasswordForm({ className = '' }) {
+    const passwordInput = useRef();
+    const currentPasswordInput = useRef();
+
+    const {
+        data,
+        setData,
+        errors,
+        put,
+        reset,
+        processing,
+        recentlySuccessful,
+    } = useForm({
+        current_password: '',
+        password: '',
+        password_confirmation: '',
+    });
+
+    const updatePassword = (e) => {
+        e.preventDefault();
+
+        put(route('password.update'), {
+            preserveScroll: true,
+            onSuccess: () => reset(),
+            onError: (errors) => {
+                if (errors.password) {
+                    reset('password', 'password_confirmation');
+                    passwordInput.current.focus();
+                }
+
+                if (errors.current_password) {
+                    reset('current_password');
+                    currentPasswordInput.current.focus();
+                }
+            },
+        });
+    };
+
+    return (
+        <section className={`space-y-5 ${className}`}>
+            <header className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
+                <div>
+                    <h2 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        <span>Security &amp; Password Management</span>
+                    </h2>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        Ensure your account uses a secure password to protect your event guest data and gate scanning telemetry.
+                    </p>
+                </div>
+            </header>
+
+            <form onSubmit={updatePassword} className="space-y-4">
+                {/* Current Password */}
+                <div>
+                    <InputLabel
+                        htmlFor="current_password"
+                        value="Current Password *"
+                    />
+                    <TextInput
+                        id="current_password"
+                        ref={currentPasswordInput}
+                        value={data.current_password}
+                        onChange={(e) => setData('current_password', e.target.value)}
+                        type="password"
+                        className="mt-1 block w-full sm:w-2/3 text-xs"
+                        autoComplete="current-password"
+                        placeholder="••••••••••••"
+                    />
+                    <InputError
+                        message={errors.current_password}
+                        className="mt-1.5"
+                    />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* New Password */}
+                    <div>
+                        <InputLabel htmlFor="password" value="New Secure Password *" />
+                        <TextInput
+                            id="password"
+                            ref={passwordInput}
+                            value={data.password}
+                            onChange={(e) => setData('password', e.target.value)}
+                            type="password"
+                            className="mt-1 block w-full text-xs"
+                            autoComplete="new-password"
+                            placeholder="Minimum 8 characters"
+                        />
+                        <InputError message={errors.password} className="mt-1.5" />
+                    </div>
+
+                    {/* Confirm Password */}
+                    <div>
+                        <InputLabel
+                            htmlFor="password_confirmation"
+                            value="Confirm New Password *"
+                        />
+                        <TextInput
+                            id="password_confirmation"
+                            value={data.password_confirmation}
+                            onChange={(e) =>
+                                setData('password_confirmation', e.target.value)
+                            }
+                            type="password"
+                            className="mt-1 block w-full text-xs"
+                            autoComplete="new-password"
+                            placeholder="Repeat new password"
+                        />
+                        <InputError
+                            message={errors.password_confirmation}
+                            className="mt-1.5"
+                        />
+                    </div>
+                </div>
+
+                <PasswordStrengthMeter password={data.password} />
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/[0.08]">
+                    {recentlySuccessful ? (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/40 animate-fadeIn">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Password updated successfully!</span>
+                        </span>
+                    ) : <div />}
+
+                    <div className="ml-auto">
+                        <PrimaryButton disabled={processing} className="bg-kardovo-navy dark:bg-emerald-600 hover:bg-slate-900 dark:hover:bg-emerald-500 py-2.5 px-5 rounded-xl shadow-md text-xs font-bold gap-1.5">
+                            <Key className="w-3.5 h-3.5 text-emerald-400 dark:text-white" />
+                            <span>Update Password</span>
+                        </PrimaryButton>
+                    </div>
+                </div>
+            </form>
+        </section>
+    );
+}

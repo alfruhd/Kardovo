@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Services\PhoneNormalizer;
-use App\Services\SmsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,7 +28,7 @@ class TwoFactorController extends Controller
 
         $user = User::find($userId);
         if (!$user) {
-            $request->session()->forget(['auth.2fa_user_id', 'auth.2fa_remember', 'auth.2fa_dev_code', 'auth.2fa_sms_info']);
+            $request->session()->forget(['auth.2fa_user_id', 'auth.2fa_remember', 'auth.2fa_dev_code']);
             return redirect()->route('login');
         }
 
@@ -38,35 +36,16 @@ class TwoFactorController extends Controller
         $emailParts = explode('@', $user->email);
         $maskedEmail = substr($emailParts[0], 0, 2) . '••••@' . ($emailParts[1] ?? 'kardovo.com');
 
-        // Phone resolution: user profile phone or session test phone
-        $smsInfo = $request->session()->get('auth.2fa_sms_info');
-        $rawPhone = $user->phone ?: ($smsInfo['phone'] ?? '+255 712 345 678');
-        
+        // Mask phone: e.g. +255 7•••• 1234
         $maskedPhone = null;
-        if ($rawPhone) {
-            $display = PhoneNormalizer::formatDisplay($rawPhone);
-            $maskedPhone = substr($display, 0, 7) . '•••• ' . substr($display, -4);
-        }
-
-        if (!$smsInfo && $rawPhone) {
-            $smsInfo = [
-                'phone' => $rawPhone,
-                'clean_phone' => PhoneNormalizer::cleanForApi($rawPhone),
-                'display_phone' => PhoneNormalizer::formatDisplay($rawPhone),
-                'sender_id' => 'KARDOVO',
-                'provider' => 'NextSMS Tanzania',
-                'status' => 'Delivered via SMS Gateway',
-                'message' => "[KARDOVO] Your login verification code is: {$request->session()->get('auth.2fa_dev_code')}. Valid for 10 minutes. Do not share.",
-                'sent_at' => now()->format('H:i:s'),
-                'channel' => 'sms',
-            ];
+        if ($user->phone) {
+            $maskedPhone = substr($user->phone, 0, 4) . '••••' . substr($user->phone, -3);
         }
 
         return Inertia::render('Auth/VerifyOtp', [
             'maskedEmail' => $maskedEmail,
             'maskedPhone' => $maskedPhone,
             'devCode' => $request->session()->get('auth.2fa_dev_code'),
-            'smsInfo' => $smsInfo,
             'status' => session('status'),
         ]);
     }
@@ -115,7 +94,7 @@ class TwoFactorController extends Controller
         $remember = $request->session()->get('auth.2fa_remember', false);
         Auth::login($user, $remember);
 
-        $request->session()->forget(['auth.2fa_user_id', 'auth.2fa_remember', 'auth.2fa_dev_code', 'auth.2fa_sms_info', 'url.intended']);
+        $request->session()->forget(['auth.2fa_user_id', 'auth.2fa_remember', 'auth.2fa_dev_code', 'url.intended']);
         $request->session()->regenerate();
 
         if ($user->isAdmin()) {
@@ -130,7 +109,7 @@ class TwoFactorController extends Controller
     }
 
     /**
-     * Resend a fresh OTP verification code via SMS.
+     * Resend a fresh OTP verification code.
      */
     public function resend(Request $request): RedirectResponse
     {
@@ -154,12 +133,6 @@ class TwoFactorController extends Controller
 
         $code = $user->generateTwoFactorCode();
 
-        // 1. Dispatch SMS
-        $savedSmsInfo = $request->session()->get('auth.2fa_sms_info');
-        $targetPhone = $user->phone ?: ($savedSmsInfo['phone'] ?? '+255 712 345 678');
-        $smsResult = SmsService::sendOtp($targetPhone, $code, $user->name);
-
-        // 2. Dispatch backup Email
         try {
             $user->notify(new \App\Notifications\TwoFactorCodeNotification($code));
         } catch (\Throwable $e) {
@@ -167,8 +140,7 @@ class TwoFactorController extends Controller
         }
 
         $request->session()->put('auth.2fa_dev_code', $code);
-        $request->session()->put('auth.2fa_sms_info', $smsResult);
 
-        return back()->with('status', "✓ Fresh 6-digit verification code dispatched to {$smsResult['display_phone']} via SMS.");
+        return back()->with('status', 'A fresh 6-digit security code has been sent to your verified channels.');
     }
 }

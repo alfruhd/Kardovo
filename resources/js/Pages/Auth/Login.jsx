@@ -43,7 +43,15 @@ export default function Login({ status, canResetPassword }) {
         email: savedEmail,
         password: savedPassword,
         remember: true,
+        verify_via_sms: true,
     });
+
+    const handleTestSmsVerification = (e) => {
+        if (e) e.preventDefault();
+        router.post(route('login.test-sms'), {
+            email: data.email,
+        });
+    };
 
     // Autosave credentials whenever changed
     const handleEmailChange = (val) => {
@@ -300,7 +308,7 @@ export default function Login({ status, canResetPassword }) {
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between pt-1">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1.5 border-t border-slate-100 dark:border-white/[0.05]">
                                 <label className="flex items-center cursor-pointer select-none">
                                     <Checkbox
                                         name="remember"
@@ -309,12 +317,25 @@ export default function Login({ status, canResetPassword }) {
                                         className="rounded-lg text-cyan-600 focus:ring-cyan-500"
                                     />
                                     <span className="ms-2 text-xs text-slate-600 dark:text-slate-300 font-semibold">
-                                        Remember this device
+                                        Remember device
+                                    </span>
+                                </label>
+
+                                <label className="flex items-center cursor-pointer select-none">
+                                    <Checkbox
+                                        name="verify_via_sms"
+                                        checked={data.verify_via_sms}
+                                        onChange={(e) => setData('verify_via_sms', e.target.checked)}
+                                        className="rounded-lg text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    <span className="ms-2 text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                                        <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Verify via normal SMS</span>
                                     </span>
                                 </label>
                             </div>
 
-                            <div className="pt-2">
+                            <div className="pt-2 space-y-2">
                                 <PrimaryButton 
                                     className="w-full justify-center py-3.5 bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-xs font-black rounded-2xl shadow-lg transition active:scale-[0.98] gap-2 tracking-wide uppercase cursor-pointer" 
                                     disabled={processing}
@@ -322,6 +343,15 @@ export default function Login({ status, canResetPassword }) {
                                     <span>{processing ? "Authorizing..." : "Authorize & Sign In"}</span>
                                     <ArrowRight className="w-4 h-4 text-cyan-400 dark:text-white" />
                                 </PrimaryButton>
+
+                                <button
+                                    type="button"
+                                    onClick={handleTestSmsVerification}
+                                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer shadow-2xs"
+                                >
+                                    <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Test SMS Verification (Dispatch to Phone)</span>
+                                </button>
                             </div>
 
                             {/* Terms of Service & Privacy Policy Notice */}

@@ -5,7 +5,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { ShieldCheck, Lock, Smartphone, Mail, ArrowLeft, RefreshCw, Sparkles, CheckCircle2, Clipboard, AlertTriangle } from 'lucide-react';
 
-export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status }) {
+export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, smsInfo, status }) {
     const [digits, setDigits] = useState(['', '', '', '', '', '']);
     const [timer, setTimer] = useState(600); // 10 minutes
     const [canResend, setCanResend] = useState(false);
@@ -154,45 +154,53 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
             <div className="space-y-6" onPaste={handlePaste}>
                 {/* Header Badge & Title */}
                 <div className="text-center space-y-2">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 shadow-inner mb-1">
-                        <ShieldCheck className="w-6 h-6 stroke-[2.5]" />
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-inner mb-1">
+                        <Smartphone className="w-6 h-6 stroke-[2.5]" />
                     </div>
                     <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                        Two-Factor Authentication
+                        SMS Security Verification
                     </h1>
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
-                        Enter the 6-digit security verification code sent to your registered channels.
+                        Enter the 6-digit security verification code sent via standard SMS to your mobile phone.
                     </p>
                 </div>
 
-                {/* Delivery Target Channels */}
-                <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] text-xs">
-                    {maskedEmail && (
-                        <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
-                            <span className="flex items-center gap-2 font-medium">
-                                <Mail className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                                <span>Email Verification:</span>
-                            </span>
-                            <span className="font-mono font-bold text-slate-900 dark:text-white">{maskedEmail}</span>
-                        </div>
-                    )}
-                    {maskedPhone && (
-                        <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 pt-1 border-t border-slate-200/50 dark:border-white/[0.05]">
-                            <span className="flex items-center gap-2 font-medium">
+                {/* Live Normal SMS Carrier Dispatch Card */}
+                {smsInfo && (
+                    <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs space-y-2.5">
+                        <div className="flex items-center justify-between">
+                            <span className="inline-flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
                                 <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                <span>WhatsApp / SMS:</span>
+                                <span>Normal SMS Delivery</span>
                             </span>
-                            <span className="font-mono font-bold text-slate-900 dark:text-white">{maskedPhone}</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-[10px] font-black text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                                <CheckCircle2 className="w-2.5 h-2.5" />
+                                <span>{smsInfo.sender_id || 'KARDOVO'}</span>
+                            </span>
                         </div>
-                    )}
-                </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 font-medium pt-1 border-t border-emerald-200/60 dark:border-emerald-800/40">
+                            <span>Recipient Mobile:</span>
+                            <strong className="font-mono text-slate-900 dark:text-white">{smsInfo.display_phone || maskedPhone}</strong>
+                        </div>
+
+                        {smsInfo.message && (
+                            <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#07111D]/80 border border-emerald-200/60 dark:border-white/[0.08] font-mono text-[11px] text-slate-800 dark:text-slate-200 leading-relaxed shadow-2xs">
+                                <div className="text-[9.5px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">
+                                    Simulated SMS Text Received:
+                                </div>
+                                <div>"{smsInfo.message}"</div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Dev Mode Code Banner */}
                 {devCode && (
                     <div className="p-3 rounded-2xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/60 flex items-center justify-between text-xs animate-fadeIn">
                         <div className="flex items-center gap-2">
                             <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                            <span className="text-cyan-900 dark:text-cyan-200 font-bold">Dev/Test Code:</span>
+                            <span className="text-cyan-900 dark:text-cyan-200 font-bold">SMS Verification Code:</span>
                         </div>
                         <button
                             type="button"
@@ -277,10 +285,10 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
                             type="button"
                             onClick={handleResend}
                             disabled={isResending}
-                            className="inline-flex items-center gap-1.5 font-bold text-cyan-600 dark:text-cyan-400 hover:underline disabled:opacity-50 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400 hover:underline disabled:opacity-50 cursor-pointer"
                         >
                             <RefreshCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
-                            <span>Resend Code</span>
+                            <span>Resend via SMS</span>
                         </button>
                     </div>
 

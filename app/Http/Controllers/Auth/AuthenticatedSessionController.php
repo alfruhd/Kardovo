@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
+use App\Services\SmsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -32,10 +34,14 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $user = $request->user();
+        $verifyViaSms = $request->boolean('verify_via_sms');
 
-        // If Two-Factor Authentication is enabled, generate code and redirect to 2FA screen
-        if ($user->two_factor_enabled) {
+        // If Two-Factor Authentication is enabled OR user requested SMS verification testing
+        if ($user->two_factor_enabled || $verifyViaSms) {
             $code = $user->generateTwoFactorCode();
+
+            $targetPhone = $user->phone ?: ($request->input('phone') ?: '+255 712 345 678');
+            $smsResult = SmsService::sendOtp($targetPhone, $code, $user->name);
 
             try {
                 $user->notify(new \App\Notifications\TwoFactorCodeNotification($code));
@@ -48,8 +54,10 @@ class AuthenticatedSessionController extends Controller
             $request->session()->put('auth.2fa_user_id', $user->id);
             $request->session()->put('auth.2fa_remember', $request->boolean('remember'));
             $request->session()->put('auth.2fa_dev_code', $code);
+            $request->session()->put('auth.2fa_sms_info', $smsResult);
 
-            return redirect()->route('two-factor.index');
+            return redirect()->route('two-factor.index')
+                ->with('status', "✓ Verification code dispatched to {$smsResult['display_phone']} via normal SMS.");
         }
 
         $request->session()->regenerate();
@@ -108,6 +116,44 @@ class AuthenticatedSessionController extends Controller
         }
 
         return redirect()->route("login");
+    }
+
+    /**
+     * Instant Test Trigger for SMS Verification Login.
+     */
+    public function testSmsVerification(Request $request): RedirectResponse
+    {
+        $email = $request->input('email');
+        $phone = $request->input('phone');
+
+        $user = null;
+        if ($email) {
+            $user = User::where('email', $email)->first();
+        }
+
+        if (!$user) {
+            $user = User::where('role', 'customer')->first()
+                ?: User::where('role', 'admin')->first()
+                ?: User::first();
+        }
+
+        if (!$user) {
+            return back()->with('error', 'No user account found to test SMS verification.');
+        }
+
+        $targetPhone = $phone ?: ($user->phone ?: '+255 712 345 678');
+        $code = $user->generateTwoFactorCode();
+
+        // Dispatch OTP via SMS service
+        $smsResult = SmsService::sendOtp($targetPhone, $code, $user->name);
+
+        $request->session()->put('auth.2fa_user_id', $user->id);
+        $request->session()->put('auth.2fa_remember', false);
+        $request->session()->put('auth.2fa_dev_code', $code);
+        $request->session()->put('auth.2fa_sms_info', $smsResult);
+
+        return redirect()->route('two-factor.index')
+            ->with('status', "✓ SMS verification dispatched to {$smsResult['display_phone']} via {$smsResult['provider']} ({$smsResult['sender_id']})!");
     }
 
     public function destroy(Request $request): \Symfony\Component\HttpFoundation\Response

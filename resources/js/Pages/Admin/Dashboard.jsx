@@ -736,7 +736,7 @@ export default function AdminDashboard({
                                             <tr key={admin.id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition">
                                                 <td className="py-3.5 px-5 align-middle">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700/50 flex items-center justify-center font-black font-mono text-xs flex-shrink-0 shadow-2xs">
+                                                        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 font-bold font-mono flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
                                                             {admin.name.charAt(0).toUpperCase()}
                                                         </div>
                                                         <div className="min-w-0">
@@ -754,8 +754,8 @@ export default function AdminDashboard({
                                                     {admin.assigned_organizers && admin.assigned_organizers.length > 0 ? (
                                                         <div className="flex flex-wrap items-center gap-1 max-w-xs">
                                                             {admin.assigned_organizers.map(org => (
-                                                                <span key={org.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 text-[10.5px] font-bold border border-blue-200/80 dark:border-blue-800/40">
-                                                                    <Users className="w-2.5 h-2.5" />
+                                                                <span key={org.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 text-[10.5px] font-medium border border-slate-200/70 dark:border-white/[0.08]">
+                                                                    <Users className="w-2.5 h-2.5 text-slate-400" />
                                                                     <span>{org.name}</span>
                                                                 </span>
                                                             ))}
@@ -768,8 +768,8 @@ export default function AdminDashboard({
                                                     {admin.assigned_events && admin.assigned_events.length > 0 ? (
                                                         <div className="flex flex-wrap items-center gap-1 max-w-xs">
                                                             {admin.assigned_events.map(ev => (
-                                                                <span key={ev.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 text-[10.5px] font-bold border border-purple-200/80 dark:border-purple-800/40">
-                                                                    <Calendar className="w-2.5 h-2.5" />
+                                                                <span key={ev.id} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 text-[10.5px] font-medium border border-slate-200/70 dark:border-white/[0.08]">
+                                                                    <Calendar className="w-2.5 h-2.5 text-slate-400" />
                                                                     <span className="truncate max-w-[120px]">{ev.title}</span>
                                                                 </span>
                                                             ))}
@@ -779,8 +779,8 @@ export default function AdminDashboard({
                                                     )}
                                                 </td>
                                                 <td className="py-3.5 px-4 align-middle whitespace-nowrap">
-                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700/50 text-[10.5px] font-extrabold uppercase tracking-wider font-mono shadow-2xs">
-                                                        <ShieldCheck className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-slate-200 border border-slate-200/70 dark:border-white/[0.08] text-[10.5px] font-bold uppercase tracking-wider font-mono shadow-2xs">
+                                                        <ShieldCheck className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                                                         <span>Sub-Admin</span>
                                                     </span>
                                                 </td>
@@ -879,7 +879,7 @@ export default function AdminDashboard({
                                                 <tr key={st.id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition">
                                                     <td className="py-3.5 px-5 align-middle">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 font-black flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
+                                                            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 font-bold font-mono flex items-center justify-center text-xs flex-shrink-0 shadow-2xs">
                                                                 {st.name.charAt(0).toUpperCase()}
                                                             </div>
                                                             <div className="min-w-0">
@@ -890,8 +890,8 @@ export default function AdminDashboard({
                                                         </div>
                                                     </td>
                                                     <td className="py-3.5 px-4 align-middle whitespace-nowrap">
-                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 font-bold text-xs">
-                                                            <MapPin className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 font-medium text-xs">
+                                                            <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500" />
                                                             <span>{st.gate_label || 'Main Entrance'}</span>
                                                         </span>
                                                     </td>
@@ -1147,13 +1147,7 @@ export default function AdminDashboard({
                                                                         <img src={c.avatar} alt={c.name} className="w-full h-full object-cover" />
                                                                     </div>
                                                                 ) : (
-                                                                    <div className={`w-9 h-9 rounded-xl font-black flex items-center justify-center text-xs border shadow-2xs ${
-                                                                        role === 'admin' 
-                                                                            ? 'bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-700/60 text-amber-700 dark:text-amber-300'
-                                                                            : role === 'sub_admin'
-                                                                            ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-300 dark:border-purple-700/60 text-purple-700 dark:text-purple-300'
-                                                                            : 'bg-blue-50 dark:bg-blue-950/60 border-blue-200 dark:border-blue-800/40 text-blue-800 dark:text-cyan-300'
-                                                                    }`}>
+                                                                    <div className="w-9 h-9 rounded-xl font-bold font-mono flex items-center justify-center text-xs border border-slate-200/80 dark:border-white/[0.08] bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-slate-100 shadow-2xs">
                                                                         {c.name.charAt(0).toUpperCase()}
                                                                     </div>
                                                                 )}
@@ -1177,39 +1171,41 @@ export default function AdminDashboard({
 
                                                     {/* Role */}
                                                     <td className="py-3.5 px-4 align-middle whitespace-nowrap">
-                                                        {role === 'admin' ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700/50 text-[10.5px] font-extrabold uppercase tracking-wider font-mono shadow-2xs">
-                                                                <Crown className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                                                                <span>Super Admin</span>
-                                                            </span>
-                                                        ) : role === 'sub_admin' ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-800 dark:text-purple-300 border border-purple-300 dark:border-purple-700/50 text-[10.5px] font-extrabold uppercase tracking-wider font-mono shadow-2xs">
-                                                                <ShieldCheck className="w-3 h-3 text-purple-600 dark:text-purple-400" />
-                                                                <span>Sub-Admin</span>
-                                                            </span>
-                                                        ) : role === 'scanner' ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700/50 text-[10.5px] font-extrabold uppercase tracking-wider font-mono shadow-2xs">
-                                                                <Smartphone className="w-3 h-3 text-emerald-600" />
-                                                                <span>Gate Staff</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/50 text-[10.5px] font-extrabold uppercase tracking-wider font-mono shadow-2xs">
-                                                                <Building2 className="w-3 h-3 text-cyan-600" />
-                                                                <span>Organiser</span>
-                                                            </span>
-                                                        )}
+                                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-slate-200 border border-slate-200/70 dark:border-white/[0.08] text-[10.5px] font-bold uppercase tracking-wider font-mono">
+                                                            {role === 'admin' ? (
+                                                                <>
+                                                                    <Crown className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                                                    <span>Super Admin</span>
+                                                                </>
+                                                            ) : role === 'sub_admin' ? (
+                                                                <>
+                                                                    <ShieldCheck className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                                                    <span>Sub-Admin</span>
+                                                                </>
+                                                            ) : role === 'scanner' ? (
+                                                                <>
+                                                                    <Smartphone className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                                                    <span>Gate Staff</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Building2 className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                                                    <span>Organiser</span>
+                                                                </>
+                                                            )}
+                                                        </span>
                                                     </td>
 
                                                     {/* Status */}
                                                     <td className="py-3.5 px-4 align-middle whitespace-nowrap">
                                                         {isSuspended ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 text-[10.5px] font-bold">
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08] text-[10.5px] font-medium">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
                                                                 <span>Suspended</span>
                                                             </span>
                                                         ) : (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-[10.5px] font-bold">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08] text-[10.5px] font-medium">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                                 <span>Active</span>
                                                             </span>
                                                         )}
@@ -1218,21 +1214,18 @@ export default function AdminDashboard({
                                                     {/* Message Quotas (WhatsApp & SMS) */}
                                                     <td className="py-3.5 px-4 align-middle whitespace-nowrap">
                                                         {(role === 'admin' || role === 'sub_admin') && (c.max_whatsapp_limit === null || c.max_whatsapp_limit === undefined) && (c.max_sms_limit === null || c.max_sms_limit === undefined) ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 text-[10.5px] font-bold font-mono border border-slate-200 dark:border-white/[0.08]">
-                                                                <Sparkles className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 text-[10.5px] font-mono font-medium border border-slate-200/70 dark:border-white/[0.08]">
                                                                 <span>Unrestricted (∞)</span>
                                                             </span>
                                                         ) : (
-                                                            <div className="flex flex-col gap-1 w-[140px]">
+                                                            <div className="flex flex-col gap-1 w-[135px]">
                                                                 {/* WhatsApp Quota Pill */}
-                                                                <div className="flex items-center justify-between px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/90 dark:border-emerald-800/40 text-[10.5px] font-mono shadow-2xs">
-                                                                    <span className="text-emerald-700 dark:text-emerald-300 font-extrabold flex items-center gap-1">
-                                                                        <span>💬 WA</span>
-                                                                    </span>
-                                                                    <span className="text-slate-700 dark:text-slate-200 font-bold">
-                                                                        <strong className="text-slate-900 dark:text-white font-black">{c.message_quotas?.whatsapp_used ?? 0}</strong>
+                                                                <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/[0.08] text-[10.5px] font-mono">
+                                                                    <span className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[9.5px]">WA</span>
+                                                                    <span className="text-slate-700 dark:text-slate-200 font-medium">
+                                                                        <strong className="text-slate-900 dark:text-white font-bold">{c.message_quotas?.whatsapp_used ?? 0}</strong>
                                                                         <span className="text-slate-400 dark:text-slate-500 mx-0.5">/</span>
-                                                                        <span className="text-slate-600 dark:text-slate-400 font-bold">
+                                                                        <span className="text-slate-600 dark:text-slate-400">
                                                                             {c.max_whatsapp_limit !== null && c.max_whatsapp_limit !== undefined && c.max_whatsapp_limit !== '' 
                                                                                 ? c.max_whatsapp_limit 
                                                                                 : (c.message_quotas?.whatsapp_limit !== null && c.message_quotas?.whatsapp_limit !== undefined ? c.message_quotas.whatsapp_limit : '∞')}
@@ -1241,14 +1234,12 @@ export default function AdminDashboard({
                                                                 </div>
 
                                                                 {/* SMS Quota Pill */}
-                                                                <div className="flex items-center justify-between px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200/90 dark:border-amber-800/40 text-[10.5px] font-mono shadow-2xs">
-                                                                    <span className="text-amber-700 dark:text-amber-300 font-extrabold flex items-center gap-1">
-                                                                        <span>📱 SMS</span>
-                                                                    </span>
-                                                                    <span className="text-slate-700 dark:text-slate-200 font-bold">
-                                                                        <strong className="text-slate-900 dark:text-white font-black">{c.message_quotas?.sms_used ?? 0}</strong>
+                                                                <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/[0.08] text-[10.5px] font-mono">
+                                                                    <span className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[9.5px]">SMS</span>
+                                                                    <span className="text-slate-700 dark:text-slate-200 font-medium">
+                                                                        <strong className="text-slate-900 dark:text-white font-bold">{c.message_quotas?.sms_used ?? 0}</strong>
                                                                         <span className="text-slate-400 dark:text-slate-500 mx-0.5">/</span>
-                                                                        <span className="text-slate-600 dark:text-slate-400 font-bold">
+                                                                        <span className="text-slate-600 dark:text-slate-400">
                                                                             {c.max_sms_limit !== null && c.max_sms_limit !== undefined && c.max_sms_limit !== '' 
                                                                                 ? c.max_sms_limit 
                                                                                 : (c.message_quotas?.sms_limit !== null && c.message_quotas?.sms_limit !== undefined ? c.message_quotas.sms_limit : '∞')}
@@ -1262,17 +1253,17 @@ export default function AdminDashboard({
                                                     {/* Permissions Activities */}
                                                     <td className="py-3.5 px-4 align-middle whitespace-nowrap">
                                                         {role === 'admin' || role === 'sub_admin' ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 text-[11px] font-bold font-mono border border-slate-200 dark:border-white/[0.08]">
-                                                                <Shield className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 text-[11px] font-medium font-mono border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <Shield className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                                                                 <span>Full Administrative Scope</span>
                                                             </span>
                                                         ) : isSuspended ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 text-[11px] font-bold font-mono border border-rose-200 dark:border-rose-800/40">
+                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-rose-600 dark:text-rose-400 text-[11px] font-medium font-mono border border-slate-200/70 dark:border-white/[0.08]">
                                                                 <XCircle className="w-3 h-3 text-rose-500" />
                                                                 <span>Portal Access Suspended</span>
                                                             </span>
                                                         ) : (
-                                                            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100/80 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08]">
+                                                            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/[0.08]">
                                                                 {[
                                                                     { key: 'can_create_events', label: 'Event Creation & Hosting', icon: Calendar },
                                                                     { key: 'can_import_guests', label: 'Guest Import & Registration', icon: FileSpreadsheet },
@@ -1288,7 +1279,7 @@ export default function AdminDashboard({
                                                                             key={p.key}
                                                                             className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
                                                                                 allowed
-                                                                                    ? 'bg-white dark:bg-white/[0.1] text-cyan-600 dark:text-cyan-400 shadow-2xs border border-slate-200/90 dark:border-white/10'
+                                                                                    ? 'bg-white dark:bg-white/[0.1] text-slate-900 dark:text-white shadow-2xs border border-slate-200/80 dark:border-white/10'
                                                                                     : 'bg-transparent text-slate-300 dark:text-slate-700'
                                                                             }`}
                                                                             title={`${p.label}: ${allowed ? 'Enabled' : 'Disabled'}`}
@@ -1303,14 +1294,14 @@ export default function AdminDashboard({
 
                                                     {/* Events */}
                                                     <td className="py-3.5 px-4 align-middle text-center whitespace-nowrap">
-                                                        <span className="inline-flex items-center justify-center min-w-[32px] px-2 py-0.5 rounded-lg bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-800/40 font-mono font-black text-xs text-blue-700 dark:text-cyan-300">
+                                                        <span className="inline-flex items-center justify-center min-w-[30px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
                                                             {c.events_count || 0}
                                                         </span>
                                                     </td>
 
                                                     {/* Scanners */}
                                                     <td className="py-3.5 px-4 align-middle text-center whitespace-nowrap">
-                                                        <span className="inline-flex items-center justify-center min-w-[32px] px-2 py-0.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/40 font-mono font-black text-xs text-emerald-700 dark:text-emerald-300">
+                                                        <span className="inline-flex items-center justify-center min-w-[30px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
                                                             {c.scanners_count || 0}
                                                         </span>
                                                     </td>
@@ -1321,16 +1312,16 @@ export default function AdminDashboard({
                                                             <button
                                                                 type="button"
                                                                 onClick={() => openEditCustomerModal(c)}
-                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-cyan-50 dark:hover:bg-cyan-950/60 text-slate-700 dark:text-slate-200 hover:text-cyan-700 dark:hover:text-cyan-300 border border-slate-200 dark:border-white/[0.08] text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
+                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-white/[0.08] text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
                                                                 title="Manage Role & Activity Access"
                                                             >
-                                                                <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                                                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                                                                 <span>Governance</span>
                                                             </button>
                                                             <button
                                                                 type="button"
                                                                 onClick={() => handleDeleteCustomer(c)}
-                                                                className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/60 transition cursor-pointer"
+                                                                className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
                                                                 title="Delete Customer Account"
                                                             >
                                                                 <Trash2 className="w-3.5 h-3.5" />

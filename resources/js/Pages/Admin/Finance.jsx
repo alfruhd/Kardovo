@@ -485,34 +485,37 @@ export default function Finance({
                         <div className="bg-white dark:bg-[#0B172A] p-6 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center justify-center shadow-2xs">
-                                        <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-2xs">
+                                        <TrendingUp className="w-4 h-4" />
                                     </div>
                                     <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
                                         Revenue Streams
                                     </h3>
                                 </div>
-                                <span className="text-[11px] font-mono font-bold text-slate-900 dark:text-white">
+                                <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400">
                                     {formatTzs(metrics.gross_revenue)}
                                 </span>
                             </div>
 
                             <div className="space-y-3">
                                 {[
-                                    { label: 'Pass Quota Packages', amount: income_by_category.pass_sales },
-                                    { label: 'Bulk SMS Top-up Credits', amount: income_by_category.sms_credits },
-                                    { label: 'Custom 4K Artwork & Branding', amount: income_by_category.design_service },
-                                    { label: 'Enterprise Subscriptions', amount: income_by_category.subscription },
+                                    { label: 'Pass Quota Packages', amount: income_by_category.pass_sales, barColor: 'bg-cyan-500', dotColor: 'bg-cyan-500' },
+                                    { label: 'Bulk SMS Top-up Credits', amount: income_by_category.sms_credits, barColor: 'bg-blue-500', dotColor: 'bg-blue-500' },
+                                    { label: 'Custom 4K Artwork & Branding', amount: income_by_category.design_service, barColor: 'bg-amber-500', dotColor: 'bg-amber-500' },
+                                    { label: 'Enterprise Subscriptions', amount: income_by_category.subscription, barColor: 'bg-purple-500', dotColor: 'bg-purple-500' },
                                 ].map((item, idx) => {
                                     const pct = metrics.gross_revenue > 0 ? Math.round((item.amount / metrics.gross_revenue) * 100) : 0;
                                     return (
                                         <div key={idx} className="space-y-1">
                                             <div className="flex items-center justify-between text-xs">
-                                                <span className="font-semibold text-slate-700 dark:text-slate-300">{item.label}</span>
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                                    <span className={`w-2 h-2 rounded-full ${item.dotColor} flex-shrink-0`} />
+                                                    <span>{item.label}</span>
+                                                </span>
                                                 <span className="font-mono font-bold text-slate-900 dark:text-white">{formatTzs(item.amount)} ({pct}%)</span>
                                             </div>
                                             <div className="w-full bg-slate-100 dark:bg-white/[0.06] h-2 rounded-full overflow-hidden">
-                                                <div className="h-full bg-slate-900 dark:bg-cyan-500 rounded-full" style={{ width: `${pct}%` }} />
+                                                <div className={`h-full ${item.barColor} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
                                             </div>
                                         </div>
                                     );
@@ -524,35 +527,38 @@ export default function Finance({
                         <div className="bg-white dark:bg-[#0B172A] p-6 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center justify-center shadow-2xs">
-                                        <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                                    <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/60 dark:border-rose-800/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shadow-2xs">
+                                        <TrendingDown className="w-4 h-4" />
                                     </div>
                                     <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
                                         Expense Cost Centers
                                     </h3>
                                 </div>
-                                <span className="text-[11px] font-mono font-bold text-slate-900 dark:text-white">
+                                <span className="text-[11px] font-mono font-bold text-rose-600 dark:text-rose-400">
                                     {formatTzs(metrics.total_expenses)}
                                 </span>
                             </div>
 
                             <div className="space-y-3">
                                 {[
-                                    { label: 'Direct SMS Carrier Delivery (NextSMS / Beem)', amount: expense_by_category.carrier_sms },
-                                    { label: 'Meta WhatsApp Cloud API Costs', amount: expense_by_category.whatsapp_api },
-                                    { label: 'Redis & Cloud Production Hosting', amount: expense_by_category.server_infrastructure },
-                                    { label: 'Payment Gateway & Merchant MDR', amount: expense_by_category.payment_fees },
-                                    { label: 'Hardware Maintenance & Operations', amount: expense_by_category.operations },
+                                    { label: 'Direct SMS Carrier Delivery (NextSMS / Beem)', amount: expense_by_category.carrier_sms, barColor: 'bg-rose-500', dotColor: 'bg-rose-500' },
+                                    { label: 'Meta WhatsApp Cloud API Costs', amount: expense_by_category.whatsapp_api, barColor: 'bg-orange-500', dotColor: 'bg-orange-500' },
+                                    { label: 'Redis & Cloud Production Hosting', amount: expense_by_category.server_infrastructure, barColor: 'bg-indigo-500', dotColor: 'bg-indigo-500' },
+                                    { label: 'Payment Gateway & Merchant MDR', amount: expense_by_category.payment_fees, barColor: 'bg-teal-500', dotColor: 'bg-teal-500' },
+                                    { label: 'Hardware Maintenance & Operations', amount: expense_by_category.operations, barColor: 'bg-amber-600', dotColor: 'bg-amber-600' },
                                 ].map((item, idx) => {
                                     const pct = metrics.total_expenses > 0 ? Math.round((item.amount / metrics.total_expenses) * 100) : 0;
                                     return (
                                         <div key={idx} className="space-y-1">
                                             <div className="flex items-center justify-between text-xs">
-                                                <span className="font-semibold text-slate-700 dark:text-slate-300 truncate">{item.label}</span>
-                                                <span className="font-mono font-bold text-slate-900 dark:text-white">{formatTzs(item.amount)} ({pct}%)</span>
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300 truncate flex items-center gap-1.5">
+                                                    <span className={`w-2 h-2 rounded-full ${item.dotColor} flex-shrink-0`} />
+                                                    <span className="truncate">{item.label}</span>
+                                                </span>
+                                                <span className="font-mono font-bold text-slate-900 dark:text-white flex-shrink-0 ml-2">{formatTzs(item.amount)} ({pct}%)</span>
                                             </div>
                                             <div className="w-full bg-slate-100 dark:bg-white/[0.06] h-2 rounded-full overflow-hidden">
-                                                <div className="h-full bg-slate-600 dark:bg-slate-400 rounded-full" style={{ width: `${pct}%` }} />
+                                                <div className={`h-full ${item.barColor} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
                                             </div>
                                         </div>
                                     );

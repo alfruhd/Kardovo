@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Head, useForm, router, usePage } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import StatusBadge from '@/Components/StatusBadge';
@@ -37,7 +37,10 @@ import {
     Share2,
     ListOrdered,
     ArrowUpDown,
-    Lock
+    Lock,
+    Palette,
+    Eye,
+    RefreshCw
 } from 'lucide-react';
 import GatewayConfigModal from '@/Components/GatewayConfigModal';
 
@@ -70,6 +73,7 @@ const TEXT_ONLY_PRESETS = [
 export default function Messaging({ 
     events = [], 
     selectedEvent, 
+    templates = [],
     recentMessages = [], 
     quotas = null,
     gateways = {},
@@ -86,6 +90,27 @@ export default function Messaging({
     const [targetFilter, setTargetFilter] = useState('draft');
     const [customCaption, setCustomCaption] = useState(WHATSAPP_DEFAULT_TEMPLATE);
     
+    // Card Template Selection for Event & Pass Sending
+    const initialTemplateId = selectedEvent?.card_template_id || selectedEvent?.card_template?.id || templates[0]?.id || '';
+    const [selectedTemplateId, setSelectedTemplateId] = useState(initialTemplateId);
+    const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+
+    useEffect(() => {
+        if (selectedEvent) {
+            const tId = selectedEvent.card_template_id || selectedEvent.card_template?.id || templates[0]?.id || '';
+            setSelectedTemplateId(tId);
+            broadcastForm.setData('card_template_id', tId);
+        }
+    }, [selectedEvent?.id]);
+
+    const activeTemplate = useMemo(() => {
+        return templates.find(t => String(t.id) === String(selectedTemplateId)) 
+            || selectedEvent?.card_template 
+            || selectedEvent?.cardTemplate 
+            || templates[0] 
+            || null;
+    }, [templates, selectedTemplateId, selectedEvent]);
+
     // Automated RSVP WhatsApp confirmation reply settings
     const eventAutoReplyConfig = selectedEvent?.rsvp_auto_reply_config || {};
     const [enableAutoReply, setEnableAutoReply] = useState(eventAutoReplyConfig.enabled !== false);
@@ -162,6 +187,7 @@ export default function Messaging({
 
     const broadcastForm = useForm({
         event_id: selectedEvent?.id || events[0]?.id || '',
+        card_template_id: initialTemplateId,
         channel: 'whatsapp',
         campaign_type: 'pass_invitation',
         target_filter: 'draft',
@@ -202,9 +228,28 @@ export default function Messaging({
         broadcastForm.setData('event_id', eventId);
     };
 
+    const handleSelectTemplate = (templateId) => {
+        setSelectedTemplateId(templateId);
+        broadcastForm.setData('card_template_id', templateId);
+    };
+
+    const handleSaveTemplateToEvent = () => {
+        if (!selectedEvent || !selectedTemplateId) return;
+        setIsSavingTemplate(true);
+        router.patch(route('messaging.updateEventTemplate', selectedEvent.id), {
+            card_template_id: selectedTemplateId,
+        }, {
+            preserveScroll: true,
+            onFinish: () => setIsSavingTemplate(false),
+        });
+    };
+
     const handleSendBroadcast = (e) => {
         e.preventDefault();
-        broadcastForm.post(route('messaging.broadcast'), {
+        broadcastForm.transform((data) => ({
+            ...data,
+            card_template_id: selectedTemplateId,
+        })).post(route('messaging.broadcast'), {
             preserveScroll: true,
         });
     };
@@ -225,7 +270,7 @@ export default function Messaging({
         qr_token: 'kdv_neema_mbwana_29841872',
     };
 
-    const template = selectedEvent?.card_template || selectedEvent?.cardTemplate || null;
+    const template = activeTemplate;
     const sampleGuestName = sampleGuest.name;
     const sampleEventTitle = selectedEvent?.title || 'Neema & Baraka — Wedding Reception';
     const sampleVenue = selectedEvent?.venue || 'Dar es Salaam Serena Hotel';
@@ -588,6 +633,99 @@ export default function Messaging({
                                                     />
                                                 </div>
                                             )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ═══════════════ INVITATION PASS TEMPLATE OF CHOICE ═══════════════ */}
+                                {campaignType !== 'text_only' && (
+                                    <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-2">
+                                                    <Palette className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                                    <label className="block text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
+                                                        Invitation Pass Template <span className="text-cyan-600 dark:text-cyan-400">*</span>
+                                                    </label>
+                                                </div>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                                    Select your custom template of choice to send to guests for this campaign.
+                                                </p>
+                                            </div>
+                                            {activeTemplate && (
+                                                <div className="flex items-center gap-2">
+                                                    <span className={`inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border ${
+                                                        activeTemplate.user_id 
+                                                            ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border-amber-300 dark:border-amber-700/50' 
+                                                            : 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-800 dark:text-cyan-300 border-cyan-300 dark:border-cyan-700/50'
+                                                    }`}>
+                                                        <Sparkles className="w-2.5 h-2.5" />
+                                                        <span>{activeTemplate.user_id ? 'Custom Template' : 'Global Template'}</span>
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassModal(true)}
+                                                        className="inline-flex items-center gap-1 text-[11px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 bg-cyan-500/10 hover:bg-cyan-500/20 px-2.5 py-1 rounded-xl transition cursor-pointer"
+                                                        title="Preview this card template with sample guest data"
+                                                    >
+                                                        <Eye className="w-3 h-3" />
+                                                        <span>Preview Pass</span>
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                                            <div className="sm:col-span-8 relative">
+                                                <select
+                                                    value={selectedTemplateId}
+                                                    onChange={(e) => handleSelectTemplate(e.target.value)}
+                                                    className="block w-full h-11 border border-slate-300/80 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 hover:border-cyan-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 shadow-2xs cursor-pointer appearance-none pr-10 transition"
+                                                >
+                                                    {templates.length === 0 ? (
+                                                        <option value="">Default Platform Template</option>
+                                                    ) : (
+                                                        <>
+                                                            {templates.some(t => t.user_id) && (
+                                                                <optgroup label="🌟 My Custom Templates">
+                                                                    {templates.filter(t => t.user_id).map(t => (
+                                                                        <option key={t.id} value={t.id}>
+                                                                            🎨 {t.name} (My Custom Template)
+                                                                        </option>
+                                                                    ))}
+                                                                </optgroup>
+                                                            )}
+                                                            <optgroup label="🏛️ Global Card Templates">
+                                                                {templates.filter(t => !t.user_id).map(t => (
+                                                                    <option key={t.id} value={t.id}>
+                                                                        {t.template_type === 'custom_art' ? '🖼️' : '💳'} {t.name}
+                                                                    </option>
+                                                                ))}
+                                                            </optgroup>
+                                                        </>
+                                                    )}
+                                                </select>
+                                                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                                                    <ChevronDown className="w-4 h-4" />
+                                                </div>
+                                            </div>
+
+                                            <div className="sm:col-span-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleSaveTemplateToEvent}
+                                                    disabled={isSavingTemplate || !selectedEvent || (selectedEvent?.card_template_id == selectedTemplateId)}
+                                                    className="w-full h-11 px-3 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white hover:bg-slate-100 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border border-slate-300/80 dark:border-white/[0.08] rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
+                                                    title="Save this template as the default template for the selected event"
+                                                >
+                                                    {isSavingTemplate ? (
+                                                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-600" />
+                                                    ) : (
+                                                        <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                    )}
+                                                    <span>{selectedEvent?.card_template_id == selectedTemplateId ? 'Assigned to Event ✓' : 'Save as Event Default'}</span>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
@@ -1441,9 +1579,16 @@ export default function Messaging({
                         <div className="w-full flex items-center justify-between pb-3 mb-4 border-b border-slate-200/80 dark:border-slate-800">
                             <div className="flex items-center gap-2">
                                 <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white font-display">
-                                    Recipient Invitation Pass Preview
-                                </h3>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white font-display">
+                                        Recipient Invitation Pass Preview
+                                    </h3>
+                                    {template?.name && (
+                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                                            Template: <span className="font-bold text-cyan-600 dark:text-cyan-400">{template.name}</span>
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                             <button
                                 type="button"

@@ -72,9 +72,22 @@ class MessagingController extends Controller
             'status' => 'Active',
         ]);
 
+        $templatesQuery = \App\Models\CardTemplate::query();
+        if ($user) {
+            $templatesQuery->where(function ($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            });
+        } else {
+            $templatesQuery->whereNull('user_id');
+        }
+        $templates = $templatesQuery
+            ->orderByRaw("CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id ASC")
+            ->get();
+
         return Inertia::render('Customer/Messaging', [
             'events' => $events,
             'selectedEvent' => $selectedEvent,
+            'templates' => $templates,
             'recentMessages' => $recentMessages,
             'quotas' => $user ? $user->getMessageQuotaStats() : null,
             'gateways' => [
@@ -83,6 +96,22 @@ class MessagingController extends Controller
             ],
             'isAdmin' => $user->isAdmin(),
         ]);
+    }
+
+    public function updateEventTemplate(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+            abort(403, 'Unauthorized to modify this event.');
+        }
+
+        $validated = $request->validate([
+            'card_template_id' => 'required|exists:card_templates,id',
+        ]);
+
+        $event->update(['card_template_id' => $validated['card_template_id']]);
+
+        return back()->with('success', 'Pass template updated for this event.');
     }
 
     public function sendBroadcast(Request $request)
@@ -95,6 +124,7 @@ class MessagingController extends Controller
 
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
+            'card_template_id' => 'nullable|exists:card_templates,id',
             'channel' => 'required|in:whatsapp,sms',
             'campaign_type' => 'nullable|in:pass_invitation,pass_only,text_only',
             'target_filter' => 'required|in:all,draft,failed,pending_rsvp',
@@ -107,6 +137,10 @@ class MessagingController extends Controller
         $event = Event::findOrFail($validated['event_id']);
         if ($event->user_id !== $user->id && !$user->isAdmin()) {
             abort(403);
+        }
+
+        if (!empty($validated['card_template_id']) && $event->card_template_id != $validated['card_template_id']) {
+            $event->update(['card_template_id' => $validated['card_template_id']]);
         }
 
         // Save customized RSVP confirmation reply settings onto the event

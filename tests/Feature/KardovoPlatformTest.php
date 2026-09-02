@@ -224,4 +224,35 @@ class KardovoPlatformTest extends TestCase
         $deleteResponse->assertStatus(302);
         $this->assertDatabaseMissing('events', ['id' => $event->id]);
     }
+
+    public function test_customer_can_select_and_assign_custom_template_in_messaging_hub(): void
+    {
+        $customer = User::where('role', 'customer')->first();
+        $event = Event::where('user_id', $customer->id)->first();
+
+        // Create a custom template for this customer
+        $customTemplate = \App\Models\CardTemplate::create([
+            'user_id' => $customer->id,
+            'name' => 'My VIP Custom Gold Pass',
+            'template_type' => 'custom_art',
+            'headline' => 'EXCLUSIVE VIP ACCESS',
+        ]);
+
+        // 1. Check messaging hub returns templates including this custom template
+        $response = $this->actingAs($customer)->get(route('messaging.index', ['event_id' => $event->id]));
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('Customer/Messaging')
+            ->has('templates')
+            ->where('templates', fn ($templates) => collect($templates)->pluck('id')->contains($customTemplate->id))
+        );
+
+        // 2. Customer updates the event template via the messaging hub endpoint
+        $patchResponse = $this->actingAs($customer)->patch(route('messaging.updateEventTemplate', $event->id), [
+            'card_template_id' => $customTemplate->id,
+        ]);
+        $patchResponse->assertStatus(302);
+        $this->assertEquals($customTemplate->id, $event->fresh()->card_template_id);
+    }
 }
+

@@ -30,6 +30,7 @@ import {
     TrendingUp
 } from 'lucide-react';
 import KardovoLogo from '@/Components/KardovoLogo';
+import KardovoLoadingLogo from '@/Components/KardovoLoadingLogo';
 import { useTheme } from '@/Hooks/useTheme';
 
 export default function KardovoAppLayout({ children, title, headerActions }) {
@@ -44,7 +45,18 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
     });
     const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const [toast, setToast] = useState(null);
+    const [pageNavigating, setPageNavigating] = useState(false);
     const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const removeStart = router.on('start', () => setPageNavigating(true));
+        const removeFinish = router.on('finish', () => setPageNavigating(false));
+
+        return () => {
+            removeStart();
+            removeFinish();
+        };
+    }, []);
 
     // Smart Dynamic Auto-Hiding Topbar Logic
     const [headerVisible, setHeaderVisible] = useState(true);
@@ -214,6 +226,23 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
     return (
         <div className="min-h-screen bg-[#F1F5F9] dark:bg-[#060C16] flex flex-col md:flex-row text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-white transition-colors duration-200">
             
+            {/* 🌟 Branded Kardovo Global Page Loading Indicator */}
+            {pageNavigating && (
+                <div className="fixed top-3.5 right-4 z-50 animate-fadeIn pointer-events-none">
+                    <div className="flex items-center gap-2.5 px-3.5 py-2 rounded-2xl bg-white/95 dark:bg-[#07111D]/95 border border-slate-200/90 dark:border-cyan-500/40 shadow-[0_10px_25px_rgba(0,0,0,0.15)] dark:shadow-[0_0_25px_rgba(0,163,255,0.25)] backdrop-blur-xl">
+                        <KardovoLoadingLogo variant="radar" size="sm" label="" />
+                        <div className="flex flex-col pr-1">
+                            <span className="text-[11px] font-black tracking-wider uppercase font-display text-slate-900 dark:text-white leading-tight">
+                                Kardovo
+                            </span>
+                            <span className="text-[9px] font-mono text-cyan-600 dark:text-cyan-400 font-bold uppercase tracking-wider leading-tight">
+                                Syncing...
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* 📱 MOBILE TWO-DECK SYSTEM */}
             <div className="md:hidden sticky top-0 z-40 bg-white/95 dark:bg-[#0B1524]/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.08] shadow-xs transition-colors duration-200">
                 {/* 1. TOP DECK: Global Navigation, Brand, Theme & Profile */}

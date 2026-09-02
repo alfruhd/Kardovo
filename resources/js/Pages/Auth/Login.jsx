@@ -5,6 +5,7 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import KardovoLogo from '@/Components/KardovoLogo';
+import KardovoLoadingLogo from '@/Components/KardovoLoadingLogo';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { useTheme } from '@/Hooks/useTheme';
 import { 
@@ -319,8 +320,14 @@ export default function Login({ status, canResetPassword }) {
                                     className="w-full justify-center py-3.5 bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-xs font-black rounded-2xl shadow-lg transition active:scale-[0.98] gap-2 tracking-wide uppercase cursor-pointer" 
                                     disabled={processing}
                                 >
-                                    <span>{processing ? "Authorizing..." : "Authorize & Sign In"}</span>
-                                    <ArrowRight className="w-4 h-4 text-cyan-400 dark:text-white" />
+                                    {processing ? (
+                                        <KardovoLoadingLogo variant="mini" label="Authorizing Session..." className="text-white" />
+                                    ) : (
+                                        <>
+                                            <span>Authorize &amp; Sign In</span>
+                                            <ArrowRight className="w-4 h-4 text-cyan-400 dark:text-white" />
+                                        </>
+                                    )}
                                 </PrimaryButton>
                             </div>
 

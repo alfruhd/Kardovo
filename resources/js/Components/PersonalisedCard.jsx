@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { toPng } from 'html-to-image';
 import KardovoLogo from '@/Components/KardovoLogo';
+import KardovoLoadingLogo from '@/Components/KardovoLoadingLogo';
 import { 
     Calendar, 
     MapPin, 
@@ -1101,7 +1102,7 @@ export default function PersonalisedCard({
                     <button type="button" onClick={handleDownloadCanvas} disabled={isExporting}
                         className="flex-1 py-2.5 px-4 rounded-xl bg-kardovo-navy hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95">
                         {isExporting ? (
-                            <><Loader2 className="w-4 h-4 animate-spin text-kardovo-blue-light" /><span>Generating Pass...</span></>
+                            <KardovoLoadingLogo variant="mini" label="Rendering 4K Pass..." className="text-white" />
                         ) : (
                             <><Download className="w-4 h-4 text-kardovo-blue-light" /><span>Download Pass (PNG)</span></>
                         )}

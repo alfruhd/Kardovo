@@ -5,7 +5,6 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import KardovoLogo from '@/Components/KardovoLogo';
-import KardovoLoadingLogo from '@/Components/KardovoLoadingLogo';
 import { Head, Link, useForm, router } from '@inertiajs/react';
 import { useTheme } from '@/Hooks/useTheme';
 import { 
@@ -34,7 +33,6 @@ import {
 export default function Login({ status, canResetPassword }) {
     const [showPassword, setShowPassword] = useState(false);
     const [selectedRole, setSelectedRole] = useState('customer');
-    const [isAuthorizing, setIsAuthorizing] = useState(false);
     const { theme, isDark, toggleTheme } = useTheme();
 
     // Retrieve saved dev credentials from localStorage fallback
@@ -123,7 +121,6 @@ export default function Login({ status, canResetPassword }) {
 
     const directLoginAs = (acc, e) => {
         if (e) e.stopPropagation();
-        setIsAuthorizing(true);
         if (typeof window !== 'undefined') {
             localStorage.setItem('kardovo_dev_email', acc.email);
             localStorage.setItem('kardovo_dev_password', acc.password);
@@ -132,14 +129,11 @@ export default function Login({ status, canResetPassword }) {
             email: acc.email,
             password: acc.password,
             remember: true,
-        }, {
-            onError: () => setIsAuthorizing(false),
         });
     };
 
     const submit = (e) => {
         e.preventDefault();
-        setIsAuthorizing(true);
         // Ensure latest values are saved in localStorage
         if (typeof window !== 'undefined') {
             localStorage.setItem('kardovo_dev_email', data.email);
@@ -147,30 +141,12 @@ export default function Login({ status, canResetPassword }) {
         }
         post(route('login'), {
             onFinish: () => reset('password'),
-            onError: () => setIsAuthorizing(false),
         });
     };
 
     return (
         <div className="min-h-screen bg-[#F4F6F9] dark:bg-[#070D18] flex items-center justify-center p-4 sm:p-6 lg:p-10 font-sans text-slate-800 dark:text-slate-100 relative overflow-hidden selection:bg-cyan-500 selection:text-white transition-colors duration-300">
             <Head title="Sign In - Kardovo Platform" />
-
-            {/* 🌟 Fullscreen Branded Authorization Overlay */}
-            {(isAuthorizing || processing) && (
-                <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-fadeIn">
-                    <div className="p-8 sm:p-10 rounded-3xl bg-white dark:bg-[#0A1628] border border-slate-200 dark:border-cyan-500/30 shadow-[0_20px_60px_rgba(0,0,0,0.4)] dark:shadow-[0_0_50px_rgba(0,163,255,0.2)] flex flex-col items-center text-center max-w-sm w-full space-y-5">
-                        <KardovoLoadingLogo variant="radar" size="lg" label="" />
-                        <div className="space-y-1">
-                            <h3 className="text-base font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                Authorizing Session
-                            </h3>
-                            <p className="text-xs font-mono text-cyan-600 dark:text-cyan-400 font-bold tracking-wider uppercase">
-                                Securing Tenancy Access...
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* 🌓 Floating Light / Dark Mode Toggle Button */}
             <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
@@ -343,14 +319,8 @@ export default function Login({ status, canResetPassword }) {
                                     className="w-full justify-center py-3.5 bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-xs font-black rounded-2xl shadow-lg transition active:scale-[0.98] gap-2 tracking-wide uppercase cursor-pointer" 
                                     disabled={processing}
                                 >
-                                    {processing ? (
-                                        <KardovoLoadingLogo variant="mini" label="Authorizing Session..." className="text-white" />
-                                    ) : (
-                                        <>
-                                            <span>Authorize &amp; Sign In</span>
-                                            <ArrowRight className="w-4 h-4 text-cyan-400 dark:text-white" />
-                                        </>
-                                    )}
+                                    <span>{processing ? "Authorizing..." : "Authorize & Sign In"}</span>
+                                    <ArrowRight className="w-4 h-4 text-cyan-400 dark:text-white" />
                                 </PrimaryButton>
                             </div>
 

@@ -23,11 +23,6 @@ Route::post('/card/{token}/rsvp', [PublicGuestController::class, 'submitRsvp'])-
 // Instant Dev Role Switcher
 Route::post('/dev/switch-user', [AuthenticatedSessionController::class, 'switchUser'])->name('dev.switchUser');
 
-// Branded Loading Animation Showcase
-Route::get('/loading-preview', function () {
-    return Inertia::render('Dev/LoadingPreview');
-})->name('dev.loadingPreview');
-
 // Public Root Redirect
 Route::get('/', function () {
     if (auth()->check()) {

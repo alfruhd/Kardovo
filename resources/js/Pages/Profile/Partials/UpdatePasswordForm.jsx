@@ -48,14 +48,18 @@ export default function UpdatePasswordForm({ className = '' }) {
     return (
         <section className={`space-y-5 ${className}`}>
             <header className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
-                <div>
-                    <h2 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                        <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        <span>Security &amp; Password Management</span>
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Ensure your account uses a secure password to protect your event guest data and gate scanning telemetry.
-                    </p>
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <Lock className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-base font-black text-slate-900 dark:text-white font-display">
+                            Security &amp; Password Management
+                        </h2>
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            Ensure your account uses a secure password to protect your event guest data and gate scanning telemetry.
+                        </p>
+                    </div>
                 </div>
             </header>
 
@@ -134,8 +138,8 @@ export default function UpdatePasswordForm({ className = '' }) {
                     ) : <div />}
 
                     <div className="ml-auto">
-                        <PrimaryButton disabled={processing} className="bg-kardovo-navy dark:bg-emerald-600 hover:bg-slate-900 dark:hover:bg-emerald-500 py-2.5 px-5 rounded-xl shadow-md text-xs font-bold gap-1.5">
-                            <Key className="w-3.5 h-3.5 text-emerald-400 dark:text-white" />
+                        <PrimaryButton disabled={processing} className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer">
+                            <Key className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
                             <span>Update Password</span>
                         </PrimaryButton>
                     </div>

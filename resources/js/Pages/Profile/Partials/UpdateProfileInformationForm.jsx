@@ -91,14 +91,18 @@ export default function UpdateProfileInformation({
     return (
         <section className={`space-y-6 ${className}`}>
             <header className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
-                <div>
-                    <h2 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
                         <User className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                        <span>Profile &amp; Organization Information</span>
-                    </h2>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                        Customize your profile photo, official identity, contact details, and dispatch quota limits.
-                    </p>
+                    </div>
+                    <div>
+                        <h2 className="text-base font-black text-slate-900 dark:text-white font-display">
+                            Profile &amp; Organization Information
+                        </h2>
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            Customize your profile photo, official identity, contact details, and dispatch quota limits.
+                        </p>
+                    </div>
                 </div>
             </header>
 
@@ -116,7 +120,7 @@ export default function UpdateProfileInformation({
                     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5">
                         {/* Avatar Preview Box */}
                         <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-lg border-2 border-white dark:border-slate-700 bg-slate-200 dark:bg-slate-800 flex items-center justify-center relative">
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden shadow-xs border-2 border-white dark:border-slate-700 bg-slate-200 dark:bg-slate-800 flex items-center justify-center relative">
                                 {previewUrl ? (
                                     <img 
                                         src={previewUrl} 
@@ -124,7 +128,7 @@ export default function UpdateProfileInformation({
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-3xl shadow-inner">
+                                    <div className="w-full h-full bg-slate-100 dark:bg-white/[0.06] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold font-mono text-3xl shadow-inner">
                                         {data.name?.charAt(0) || user?.name?.charAt(0) || 'U'}
                                     </div>
                                 )}
@@ -143,7 +147,7 @@ export default function UpdateProfileInformation({
                                     e.stopPropagation();
                                     fileInputRef.current?.click();
                                 }}
-                                className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white shadow-md flex items-center justify-center transition active:scale-95 border-2 border-white dark:border-[#0B1524]"
+                                className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white shadow-md flex items-center justify-center transition active:scale-95 border-2 border-white dark:border-[#0B1524]"
                                 title="Upload new photo"
                             >
                                 <Camera className="w-3.5 h-3.5" />
@@ -277,12 +281,9 @@ export default function UpdateProfileInformation({
                                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-display">
                                     Two-Factor Authentication (2FA)
                                 </h3>
-                                <span className={`text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                                    data.two_factor_enabled 
-                                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30' 
-                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-600 dark:text-slate-400'
-                                }`}>
-                                    {data.two_factor_enabled ? 'Active & Enforced' : 'Disabled'}
+                                <span className="text-[10px] font-mono font-medium uppercase px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08] inline-flex items-center gap-1.5">
+                                    <span className={`w-1.5 h-1.5 rounded-full ${data.two_factor_enabled ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                    <span>{data.two_factor_enabled ? 'Active & Enforced' : 'Disabled'}</span>
                                 </span>
                             </div>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -319,11 +320,11 @@ export default function UpdateProfileInformation({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                             {/* WhatsApp Quota Box */}
-                            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#07111D] border border-emerald-200/70 dark:border-emerald-800/40 shadow-xs space-y-2">
+                            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-2">
                                 <div className="flex items-center justify-between gap-2">
                                     <InputLabel htmlFor="max_whatsapp_limit" value="WhatsApp Quota" className="text-xs font-bold text-slate-800 dark:text-slate-200" />
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md font-bold border border-emerald-200 dark:border-emerald-800/40">
-                                        💬 WhatsApp
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-md font-medium border border-slate-200/70 dark:border-white/[0.08]">
+                                        WhatsApp
                                     </span>
                                 </div>
                                 <div className="relative">
@@ -344,11 +345,11 @@ export default function UpdateProfileInformation({
                             </div>
 
                             {/* SMS Quota Box */}
-                            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#07111D] border border-amber-200/70 dark:border-amber-800/40 shadow-xs space-y-2">
+                            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-2">
                                 <div className="flex items-center justify-between gap-2">
                                     <InputLabel htmlFor="max_sms_limit" value="Regular SMS Quota" className="text-xs font-bold text-slate-800 dark:text-slate-200" />
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-md font-bold border border-amber-200 dark:border-amber-800/40">
-                                        📱 SMS
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-md font-medium border border-slate-200/70 dark:border-white/[0.08]">
+                                        SMS
                                     </span>
                                 </div>
                                 <div className="relative">
@@ -372,14 +373,14 @@ export default function UpdateProfileInformation({
                 )}
 
                 {mustVerifyEmail && user?.email_verified_at === null && (
-                    <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 text-amber-800 dark:text-amber-200 text-xs">
+                    <div className="p-4 rounded-2xl bg-slate-100 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 text-xs">
                         <p className="font-semibold">
                             Your email address is unverified.
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="ml-2 underline font-bold hover:text-amber-900 dark:hover:text-amber-100 focus:outline-hidden"
+                                className="ml-2 underline font-bold hover:text-slate-900 dark:hover:text-white focus:outline-hidden"
                             >
                                 Click here to re-send the verification email.
                             </Link>
@@ -402,7 +403,7 @@ export default function UpdateProfileInformation({
                     ) : <div />}
 
                     <div className="ml-auto">
-                        <PrimaryButton disabled={processing} className="bg-kardovo-navy dark:bg-cyan-600 hover:bg-slate-900 dark:hover:bg-cyan-500 py-2.5 px-5 rounded-xl shadow-md text-xs font-bold gap-1.5 cursor-pointer">
+                        <PrimaryButton disabled={processing} className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer">
                             <Save className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
                             <span>{processing ? 'Saving...' : 'Save Profile Changes'}</span>
                         </PrimaryButton>

@@ -47,15 +47,19 @@ export default function DeleteUserForm({ className = '' }) {
 
     return (
         <section className={`space-y-4 ${className}`}>
-            <header className="flex items-center justify-between border-b border-rose-100 dark:border-rose-900/50 pb-4">
-                <div>
-                    <h2 className="text-base font-black text-rose-900 dark:text-rose-300 font-display flex items-center gap-2">
-                        <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                        <span>Danger Zone: Permanent Account Deletion</span>
-                    </h2>
-                    <p className="mt-1 text-xs text-rose-700/80 dark:text-rose-400/80 font-medium">
-                        Once your account is deleted, all hosted events, guest databases, custom card templates, and gate logs will be permanently erased.
-                    </p>
+            <header className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <Trash2 className="w-4 h-4" />
+                    </div>
+                    <div>
+                        <h2 className="text-base font-black text-slate-900 dark:text-white font-display">
+                            Danger Zone: Permanent Account Deletion
+                        </h2>
+                        <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
+                            Once your account is deleted, all hosted events, guest databases, custom card templates, and gate logs will be permanently erased.
+                        </p>
+                    </div>
                 </div>
             </header>
 

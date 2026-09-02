@@ -349,14 +349,14 @@ export default function Messaging({
                                         onClick={() => handleCampaignTypeChange('pass_invitation')}
                                         className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex items-center justify-between gap-3 ${
                                             campaignType === 'pass_invitation'
-                                                ? 'bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-500/80 ring-2 ring-cyan-500/20 text-slate-900 dark:text-white shadow-xs'
-                                                : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
+                                                ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
                                         }`}
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
                                                 campaignType === 'pass_invitation'
-                                                    ? 'bg-cyan-600 text-white shadow-xs'
+                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs'
                                                     : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'
                                             }`}>
                                                 <Ticket className="w-4 h-4" />
@@ -367,7 +367,7 @@ export default function Messaging({
                                         </div>
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
                                             campaignType === 'pass_invitation'
-                                                ? 'border-cyan-600 bg-cyan-600 text-white'
+                                                ? 'border-slate-900 bg-slate-900 dark:border-cyan-500 dark:bg-cyan-500 text-white'
                                                 : 'border-slate-300 dark:border-slate-600'
                                         }`}>
                                             {campaignType === 'pass_invitation' && <Check className="w-2.5 h-2.5 stroke-[3.5]" />}
@@ -379,14 +379,14 @@ export default function Messaging({
                                         onClick={() => handleCampaignTypeChange('pass_only')}
                                         className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex items-center justify-between gap-3 ${
                                             campaignType === 'pass_only'
-                                                ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-500/80 ring-2 ring-blue-500/20 text-slate-900 dark:text-white shadow-xs'
-                                                : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
+                                                ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
                                         }`}
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
                                                 campaignType === 'pass_only'
-                                                    ? 'bg-blue-600 text-white shadow-xs'
+                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs'
                                                     : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'
                                             }`}>
                                                 <Sparkles className="w-4 h-4" />
@@ -397,7 +397,7 @@ export default function Messaging({
                                         </div>
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
                                             campaignType === 'pass_only'
-                                                ? 'border-blue-600 bg-blue-600 text-white'
+                                                ? 'border-slate-900 bg-slate-900 dark:border-cyan-500 dark:bg-cyan-500 text-white'
                                                 : 'border-slate-300 dark:border-slate-600'
                                         }`}>
                                             {campaignType === 'pass_only' && <Check className="w-2.5 h-2.5 stroke-[3.5]" />}
@@ -409,14 +409,14 @@ export default function Messaging({
                                         onClick={() => handleCampaignTypeChange('text_only')}
                                         className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex items-center justify-between gap-3 ${
                                             campaignType === 'text_only'
-                                                ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-500/80 ring-2 ring-emerald-500/20 text-slate-900 dark:text-white shadow-xs'
-                                                : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
+                                                ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
                                         }`}
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
                                                 campaignType === 'text_only'
-                                                    ? 'bg-emerald-600 text-white shadow-xs'
+                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs'
                                                     : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'
                                             }`}>
                                                 <MessageSquare className="w-4 h-4" />
@@ -427,7 +427,7 @@ export default function Messaging({
                                         </div>
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
                                             campaignType === 'text_only'
-                                                ? 'border-emerald-600 bg-emerald-600 text-white'
+                                                ? 'border-slate-900 bg-slate-900 dark:border-cyan-500 dark:bg-cyan-500 text-white'
                                                 : 'border-slate-300 dark:border-slate-600'
                                         }`}>
                                             {campaignType === 'text_only' && <Check className="w-2.5 h-2.5 stroke-[3.5]" />}
@@ -437,11 +437,10 @@ export default function Messaging({
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
-                                {/* Event Selector */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <label className="block text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
-                                            Select Target Event <span className="text-cyan-600 dark:text-cyan-400">*</span>
+                                            Select Target Event <span className="text-slate-500">*</span>
                                         </label>
                                         <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-mono font-bold bg-slate-100 dark:bg-white/[0.08] px-2 py-0.5 rounded-full">
                                             {events.length} available
@@ -449,7 +448,7 @@ export default function Messaging({
                                     </div>
                                     <div className="relative">
                                         <select
-                                            className="block w-full h-12 border border-slate-300/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-bold px-4 hover:border-cyan-500/70 dark:hover:border-cyan-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 shadow-[0_2px_10px_rgba(0,0,0,0.03)] cursor-pointer appearance-none pr-10 transition duration-200"
+                                            className="block w-full h-12 border border-slate-300/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-bold px-4 hover:border-slate-400 dark:hover:border-white/20 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 shadow-[0_2px_10px_rgba(0,0,0,0.03)] cursor-pointer appearance-none pr-10 transition duration-200"
                                             value={selectedEvent?.id || ''}
                                             onChange={(e) => handleSelectEvent(e.target.value)}
                                         >
@@ -469,13 +468,12 @@ export default function Messaging({
                                     </div>
                                 </div>
 
-                                {/* Channel Switcher */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <label className="block text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
                                             Delivery Channel
                                         </label>
-                                        <span className="text-[10.5px] text-cyan-700 dark:text-cyan-300 font-mono font-bold">
+                                        <span className="text-[10.5px] text-slate-600 dark:text-slate-400 font-mono font-medium">
                                             {channel === 'whatsapp' ? 'Direct WhatsApp API' : 'Direct SMS Network'}
                                         </span>
                                     </div>
@@ -485,11 +483,11 @@ export default function Messaging({
                                             onClick={() => handleChannelChange('whatsapp')}
                                             className={`h-full text-xs font-black rounded-2xl border flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 cursor-pointer backdrop-blur-xl ${
                                                 channel === 'whatsapp' 
-                                                    ? 'bg-emerald-500/15 dark:bg-emerald-950/60 border-emerald-500/60 text-emerald-900 dark:text-emerald-300 shadow-[0_4px_15px_rgba(16,185,129,0.2)] ring-2 ring-emerald-500/40' 
-                                                    : 'bg-white/80 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] hover:border-emerald-500/60 hover:shadow-[0_2px_12px_rgba(16,185,129,0.15)] shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
+                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white border-slate-900 dark:border-cyan-500 shadow-xs ring-1 ring-slate-900/10 dark:ring-cyan-400/30' 
+                                                    : 'bg-white/80 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] hover:border-slate-400 shadow-2xs'
                                             }`}
                                         >
-                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
                                             <span>WhatsApp API</span>
                                         </button>
                                         <button
@@ -497,25 +495,20 @@ export default function Messaging({
                                             onClick={() => handleChannelChange('sms')}
                                             className={`h-full text-xs font-black rounded-2xl border flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 cursor-pointer backdrop-blur-xl ${
                                                 channel === 'sms' 
-                                                    ? 'bg-blue-500/15 dark:bg-blue-950/60 border-blue-500/60 text-blue-900 dark:text-blue-300 shadow-[0_4px_15px_rgba(59,130,246,0.2)] ring-2 ring-blue-500/40' 
-                                                    : 'bg-white/80 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] hover:border-blue-500/60 hover:shadow-[0_2px_12px_rgba(59,130,246,0.15)] shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
+                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white border-slate-900 dark:border-cyan-500 shadow-xs ring-1 ring-slate-900/10 dark:ring-cyan-400/30' 
+                                                    : 'bg-white/80 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] hover:border-slate-400 shadow-2xs'
                                             }`}
                                         >
-                                            <span className="w-2 h-2 rounded-full bg-blue-500" />
+                                            <span className="w-2 h-2 rounded-full bg-blue-400" />
                                             <span>SMS Gateway</span>
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Gateway Connection & Telemetry Bar */}
                             <div className="p-4 bg-white/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] backdrop-blur-xl shadow-[0_4px_15px_rgba(0,0,0,0.02)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center border shadow-xs flex-shrink-0 ${
-                                        channel === 'whatsapp' 
-                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-                                            : 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30'
-                                    }`}>
+                                    <div className="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
                                         <ShieldCheck className="w-4 h-4 stroke-[2.5]" />
                                     </div>
                                     <div className="space-y-0.5">
@@ -523,7 +516,7 @@ export default function Messaging({
                                             <span className="font-black text-xs text-slate-900 dark:text-white font-display">
                                                 {channel === 'whatsapp' ? (gateways.whatsapp?.provider || 'Meta WhatsApp Cloud API') : (gateways.sms?.provider || 'NextSMS Gateway')}
                                             </span>
-                                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] px-2.5 py-0.5 rounded-full shadow-2xs">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                 <span>{channel === 'whatsapp' ? (gateways.whatsapp?.status || 'Connected') : (gateways.sms?.status || 'Active')}</span>
                                             </span>
@@ -534,82 +527,74 @@ export default function Messaging({
                                     </div>
                                 </div>
 
-                                    <button
-                                        type="button"
-                                        onClick={() => setGatewayModalOpen(true)}
-                                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] border border-slate-300/80 dark:border-white/[0.08] hover:border-cyan-500/70 text-xs font-black text-slate-800 dark:text-slate-200 shadow-xs hover:shadow-[0_2px_10px_rgba(6,182,212,0.15)] transition-all duration-200 active:scale-95 cursor-pointer self-start sm:self-center"
-                                    >
-                                        <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                                        <span>Configure Gateway</span>
-                                    </button>
-                                </div>
-
-                                {/* Live Account Quota Telemetry Cards */}
-                                {activeQuotas && (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                        <div className={`p-3.5 rounded-2xl border transition-all ${
-                                            channel === 'whatsapp' 
-                                                ? 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500/40 shadow-xs' 
-                                                : 'bg-white/60 dark:bg-white/[0.02] border-slate-200/80 dark:border-white/[0.06]'
-                                        }`}>
-                                            <div className="flex items-center justify-between text-xs font-bold">
-                                                <span className="text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 font-display">
-                                                    <span>💬 WhatsApp Quota</span>
-                                                </span>
-                                                <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
-                                                    {activeQuotas.whatsapp_limit !== null ? `${activeQuotas.whatsapp_remaining} remaining` : 'Unlimited'}
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                                                <span>Dispatched: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.whatsapp_used}</strong></span>
-                                                <span>Limit: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.whatsapp_limit !== null ? activeQuotas.whatsapp_limit : '∞'}</strong></span>
-                                            </div>
-                                            {activeQuotas.whatsapp_limit !== null && (
-                                                <div className="mt-2 w-full bg-slate-200 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="bg-emerald-500 h-full rounded-full transition-all duration-300"
-                                                        style={{ width: `${Math.min(100, Math.round((activeQuotas.whatsapp_used / Math.max(1, activeQuotas.whatsapp_limit)) * 100))}%` }}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className={`p-3.5 rounded-2xl border transition-all ${
-                                            channel === 'sms' 
-                                                ? 'bg-blue-500/10 dark:bg-blue-950/40 border-blue-500/40 shadow-xs' 
-                                                : 'bg-white/60 dark:bg-white/[0.02] border-slate-200/80 dark:border-white/[0.06]'
-                                        }`}>
-                                            <div className="flex items-center justify-between text-xs font-bold">
-                                                <span className="text-blue-800 dark:text-blue-300 flex items-center gap-1.5 font-display">
-                                                    <span>📱 Regular SMS Quota</span>
-                                                </span>
-                                                <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
-                                                    {activeQuotas.sms_limit !== null ? `${activeQuotas.sms_remaining} remaining` : 'Unlimited'}
-                                                </span>
-                                            </div>
-                                            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                                                <span>Dispatched: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.sms_used}</strong></span>
-                                                <span>Limit: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.sms_limit !== null ? activeQuotas.sms_limit : '∞'}</strong></span>
-                                            </div>
-                                            {activeQuotas.sms_limit !== null && (
-                                                <div className="mt-2 w-full bg-slate-200 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="bg-blue-500 h-full rounded-full transition-all duration-300"
-                                                        style={{ width: `${Math.min(100, Math.round((activeQuotas.sms_used / Math.max(1, activeQuotas.sms_limit)) * 100))}%` }}
-                                                    />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => setGatewayModalOpen(true)}
+                                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] border border-slate-300/80 dark:border-white/[0.08] hover:border-slate-400 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer self-start sm:self-center"
+                                >
+                                    <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                    <span>Configure Gateway</span>
+                                </button>
                             </div>
+
+                            {/* Live Account Quota Telemetry Cards */}
+                            {activeQuotas && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                    <div className="p-3.5 rounded-2xl border bg-white dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.08] shadow-xs">
+                                        <div className="flex items-center justify-between text-xs font-bold">
+                                            <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-display">
+                                                <span>💬 WhatsApp Quota</span>
+                                            </span>
+                                            <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
+                                                {activeQuotas.whatsapp_limit !== null ? `${activeQuotas.whatsapp_remaining} remaining` : 'Unlimited'}
+                                            </span>
+                                        </div>
+                                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                                            <span>Dispatched: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.whatsapp_used}</strong></span>
+                                            <span>Limit: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.whatsapp_limit !== null ? activeQuotas.whatsapp_limit : '∞'}</strong></span>
+                                        </div>
+                                        {activeQuotas.whatsapp_limit !== null && (
+                                            <div className="mt-2 w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="bg-slate-900 dark:bg-cyan-500 h-full rounded-full transition-all duration-300"
+                                                    style={{ width: `${Math.min(100, Math.round((activeQuotas.whatsapp_used / Math.max(1, activeQuotas.whatsapp_limit)) * 100))}%` }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="p-3.5 rounded-2xl border bg-white dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.08] shadow-xs">
+                                        <div className="flex items-center justify-between text-xs font-bold">
+                                            <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-display">
+                                                <span>📱 Regular SMS Quota</span>
+                                            </span>
+                                            <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
+                                                {activeQuotas.sms_limit !== null ? `${activeQuotas.sms_remaining} remaining` : 'Unlimited'}
+                                            </span>
+                                        </div>
+                                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                                            <span>Dispatched: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.sms_used}</strong></span>
+                                            <span>Limit: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.sms_limit !== null ? activeQuotas.sms_limit : '∞'}</strong></span>
+                                        </div>
+                                        {activeQuotas.sms_limit !== null && (
+                                            <div className="mt-2 w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="bg-slate-900 dark:bg-cyan-500 h-full rounded-full transition-all duration-300"
+                                                    style={{ width: `${Math.min(100, Math.round((activeQuotas.sms_used / Math.max(1, activeQuotas.sms_limit)) * 100))}%` }}
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Broadcast Campaign Dispatcher Form */}
                         <div className="bg-white/80 dark:bg-[#0B1524]/90 backdrop-blur-3xl backdrop-saturate-180 p-6 sm:p-7 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.04)] dark:shadow-card space-y-6">
                             <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-4">
                                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
-                                    <div className="w-7 h-7 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30 shadow-xs">
-                                        <Send className="w-4 h-4 stroke-[2.5]" />
+                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 flex items-center justify-center border border-slate-200/60 dark:border-white/[0.08] shadow-xs">
+                                        <Send className="w-4 h-4" />
                                     </div>
                                     <span>Broadcast Campaign Dispatcher</span>
                                 </h3>
@@ -628,9 +613,9 @@ export default function Messaging({
                                                 Card Template for Deployment
                                             </span>
                                         </div>
-                                        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 px-2.5 py-0.5 rounded-full self-start sm:self-auto shadow-2xs">
+                                        <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] px-2.5 py-0.5 rounded-full shadow-2xs self-start sm:self-auto">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                            <span>Approved &amp; Ready for Broadcast</span>
+                                            <span>Approved for Broadcast</span>
                                         </span>
                                     </div>
 
@@ -728,13 +713,13 @@ export default function Messaging({
                                             }}
                                             className={`p-3.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-center active:scale-95 cursor-pointer backdrop-blur-xl ${
                                                 targetFilter === opt.id 
-                                                    ? 'bg-kardovo-navy dark:bg-cyan-600 text-white border-cyan-400 dark:border-cyan-400 font-black shadow-[0_6px_20px_rgba(5,13,26,0.25)] ring-2 ring-cyan-500/60 scale-[1.02]' 
-                                                    : 'bg-white/85 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 hover:bg-white dark:hover:bg-white/[0.08] hover:border-cyan-500/70 hover:shadow-[0_4px_15px_rgba(6,182,212,0.15)] shadow-[0_2px_10px_rgba(0,0,0,0.03)]'
+                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white border-slate-900 dark:border-cyan-400 font-bold shadow-xs ring-1 ring-slate-900/10 dark:ring-cyan-400/30' 
+                                                    : 'bg-white dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs'
                                             }`}
                                         >
                                             <span className="text-xs font-bold leading-tight">{opt.label}</span>
-                                            <span className={`text-[10.5px] px-2.5 py-0.5 rounded-full font-mono mt-2 font-black ${
-                                                targetFilter === opt.id ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-white/[0.1] text-slate-800 dark:text-slate-200'
+                                            <span className={`text-[10.5px] px-2.5 py-0.5 rounded-full font-mono mt-2 font-bold ${
+                                                targetFilter === opt.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.06]'
                                             }`}>
                                                 {opt.count} {opt.count === 1 ? 'guest' : 'guests'}
                                             </span>
@@ -747,7 +732,7 @@ export default function Messaging({
                             <div className="rounded-2xl border border-slate-300/80 dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.02] overflow-hidden backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
                                 <div className="p-4 bg-white/90 dark:bg-white/[0.04] border-b border-slate-200/80 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="flex items-center gap-2">
-                                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                        <Users className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                                         <span className="text-xs font-black text-slate-900 dark:text-white font-display">
                                             Matching Recipients ({filteredGuests.length})
                                         </span>
@@ -759,7 +744,7 @@ export default function Messaging({
                                             placeholder="Search recipients..."
                                             value={recipientSearch}
                                             onChange={(e) => setRecipientSearch(e.target.value)}
-                                            className="bg-white dark:bg-[#08121E] border border-slate-300 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-[11px] font-bold rounded-xl pl-8 pr-3 py-1.5 w-full sm:w-52 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 shadow-xs transition duration-200 outline-none"
+                                            className="bg-white dark:bg-[#08121E] border border-slate-300 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-[11px] font-bold rounded-xl pl-8 pr-3 py-1.5 w-full sm:w-52 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 shadow-xs transition duration-200 outline-none"
                                         />
                                     </div>
                                 </div>
@@ -775,7 +760,7 @@ export default function Messaging({
                                         searchedFilteredGuests.map((guest) => (
                                             <div key={guest.id} className="p-3.5 px-4 flex items-center justify-between text-xs hover:bg-white/90 dark:hover:bg-white/[0.06] transition">
                                                 <div className="min-w-0 flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-xl bg-cyan-500/15 dark:bg-cyan-950/40 border border-cyan-500/30 dark:border-cyan-800/40 text-cyan-900 dark:text-cyan-300 font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
+                                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
                                                         {guest.name.charAt(0)}
                                                     </div>
                                                     <div className="truncate">
@@ -791,22 +776,22 @@ export default function Messaging({
                                                 </div>
 
                                                 <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                                                    <span className={`text-[9.5px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                                                    <span className={`text-[9.5px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full ${
                                                         guest.delivery_status === 'delivered' || guest.delivery_status === 'sent'
-                                                            ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/40'
+                                                            ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40'
                                                             : guest.delivery_status === 'failed'
-                                                            ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800/40'
-                                                            : 'bg-slate-200/80 dark:bg-white/[0.08] text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-white/[0.08]'
+                                                            ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40'
+                                                            : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08]'
                                                     }`}>
                                                         {guest.delivery_status || 'draft'}
                                                     </span>
 
-                                                    <span className={`text-[9.5px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
+                                                    <span className={`text-[9.5px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full ${
                                                         guest.rsvp_status === 'attending'
-                                                            ? 'bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 font-black border border-emerald-500/30'
+                                                            ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40'
                                                             : guest.rsvp_status === 'declined'
-                                                            ? 'bg-rose-500/20 text-rose-900 dark:text-rose-200 font-black border border-rose-500/30'
-                                                            : 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/40'
+                                                            ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40'
+                                                            : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08]'
                                                     }`}>
                                                         {guest.rsvp_status === 'attending' ? 'Attending' : guest.rsvp_status === 'declined' ? 'Declined' : 'Pending RSVP'}
                                                     </span>
@@ -822,7 +807,7 @@ export default function Messaging({
                                 <div className="space-y-1.5 pt-1">
                                     <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-bold">
                                         <span className="flex items-center gap-1.5">
-                                            <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                            <Sparkles className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                                             <span>Quick Text Presets:</span>
                                         </span>
                                     </div>
@@ -835,7 +820,7 @@ export default function Messaging({
                                                     setCustomCaption(preset.text);
                                                     broadcastForm.setData('custom_caption', preset.text);
                                                 }}
-                                                className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 border border-slate-200 dark:border-white/[0.08] hover:border-emerald-300 dark:hover:border-emerald-700/50 text-[11px] font-bold text-slate-700 dark:text-slate-300 transition active:scale-95 cursor-pointer"
+                                                className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-[11px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/[0.08] transition active:scale-95 cursor-pointer"
                                             >
                                                 {preset.title}
                                             </button>
@@ -857,7 +842,7 @@ export default function Messaging({
                                             setCustomCaption(templ);
                                             broadcastForm.setData('custom_caption', templ);
                                         }}
-                                        className="text-[11px] text-cyan-700 dark:text-cyan-400 hover:underline font-extrabold cursor-pointer"
+                                        className="text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white font-bold cursor-pointer underline"
                                     >
                                         Reset to Default {channel === 'sms' ? 'SMS' : 'WhatsApp'} Template
                                     </button>
@@ -865,7 +850,7 @@ export default function Messaging({
 
                                 <textarea
                                     rows={3}
-                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/85 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-medium p-4 leading-relaxed shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition duration-200 outline-none"
+                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/85 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-medium p-4 leading-relaxed shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition duration-200 outline-none"
                                     value={customCaption}
                                     onChange={(e) => {
                                         setCustomCaption(e.target.value);
@@ -881,7 +866,7 @@ export default function Messaging({
                                             key={tag}
                                             type="button"
                                             onClick={() => insertPlaceholder(tag)}
-                                            className="px-3 py-1.5 rounded-xl bg-white/85 hover:bg-white dark:bg-white/[0.08] dark:hover:bg-white/[0.15] text-slate-900 dark:text-slate-200 font-mono text-[10.5px] font-black border border-slate-300/80 dark:border-white/[0.08] hover:border-cyan-500/80 hover:shadow-[0_2px_8px_rgba(6,182,212,0.2)] transition duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.03)] cursor-pointer active:scale-95"
+                                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-300 font-mono text-[10.5px] font-bold border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-400 transition shadow-2xs cursor-pointer active:scale-95"
                                         >
                                             + {'{' + tag + '}'}
                                         </button>
@@ -901,7 +886,7 @@ export default function Messaging({
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <div className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display flex items-center gap-2">
-                                                <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                                <Sparkles className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                                                 <span>Automated WhatsApp RSVP Confirmation Reply</span>
                                             </div>
                                             <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -920,7 +905,7 @@ export default function Messaging({
                                                 }}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600"></div>
                                         </label>
                                     </div>
 
@@ -929,7 +914,7 @@ export default function Messaging({
                                             {/* 1. Attending Response Text */}
                                             <div className="space-y-1.5">
                                                 <div className="flex items-center justify-between">
-                                                    <label className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                                                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                                                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
                                                         <span>"Will Attend" Confirmation Reply</span>
                                                     </label>
@@ -943,7 +928,7 @@ export default function Messaging({
                                                         broadcastForm.setData('rsvp_attending_text', e.target.value);
                                                     }}
                                                     placeholder="Thank you {{guest_name}}! Your RSVP has been confirmed for {{event_title}}..."
-                                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-3 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-3 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition outline-none"
                                                 />
                                             </div>
 
@@ -963,7 +948,7 @@ export default function Messaging({
                                                         broadcastForm.setData('rsvp_declined_text', e.target.value);
                                                     }}
                                                     placeholder="Thank you {{guest_name}} for letting us know..."
-                                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-3 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-3 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition outline-none"
                                                 />
                                             </div>
                                         </div>
@@ -980,9 +965,9 @@ export default function Messaging({
                                     <PrimaryButton 
                                         onClick={handleSendBroadcast}
                                         disabled={broadcastForm.processing || filteredGuests.length === 0} 
-                                        className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white dark:text-slate-950 gap-2 shadow-xl hover:shadow-2xl disabled:opacity-50 py-3.5 px-7 rounded-2xl text-xs font-black cursor-pointer active:scale-95"
+                                        className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white gap-2 shadow-xs disabled:opacity-50 py-3.5 px-7 rounded-2xl text-xs font-bold cursor-pointer active:scale-95 transition"
                                     >
-                                        <Send className="w-3.5 h-3.5 text-cyan-400 dark:text-slate-950 stroke-[2.5]" />
+                                        <Send className="w-3.5 h-3.5 text-white stroke-[2.5]" />
                                         <span>Dispatch Campaign Now</span>
                                     </PrimaryButton>
                                 ) : (
@@ -1005,7 +990,7 @@ export default function Messaging({
                         {/* Control Header Card */}
                         <div className="w-full bg-white/70 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 p-4 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card flex items-center justify-between">
                             <div className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2 font-display">
-                                <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                <Smartphone className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                                 <span>{channel === 'whatsapp' ? 'WhatsApp Live View' : 'SMS Live View'}</span>
                             </div>
                             <button
@@ -1014,7 +999,7 @@ export default function Messaging({
                                 className="text-[11px] font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] shadow-xs transition active:scale-95 cursor-pointer"
                                 title="Reset Simulation"
                             >
-                                <RotateCcw className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                                <RotateCcw className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                                 <span>Reset Simulation</span>
                             </button>
                         </div>
@@ -1306,16 +1291,16 @@ export default function Messaging({
                     {/* Header */}
                     <div className="p-5 sm:p-6 border-b border-slate-200/80 dark:border-white/[0.08] bg-white/85 dark:bg-white/[0.03] backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 flex items-center justify-center shadow-xs flex-shrink-0">
-                                <Clock className="w-5 h-5" />
+                            <div className="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.08] flex items-center justify-center shadow-xs flex-shrink-0">
+                                <Clock className="w-4 h-4" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display">
                                         Recent Message Delivery Logs
                                     </h3>
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 font-mono">
-                                        <ListOrdered className="w-3 h-3" />
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] px-2.5 py-0.5 rounded-full">
+                                        <ListOrdered className="w-3 h-3 text-slate-500" />
                                         <span>Numbered &amp; Filterable</span>
                                     </span>
                                 </div>
@@ -1341,7 +1326,7 @@ export default function Messaging({
                                 value={logSearch}
                                 onChange={(e) => setLogSearch(e.target.value)}
                                 placeholder="Search logs by guest, phone, event, status..."
-                                className="w-full pl-9 pr-9 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#08121E] border border-slate-300/80 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition shadow-2xs outline-none"
+                                className="w-full pl-9 pr-9 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#08121E] border border-slate-300/80 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition shadow-2xs outline-none"
                             />
                             {logSearch && (
                                 <button
@@ -1361,9 +1346,9 @@ export default function Messaging({
                                 <button
                                     type="button"
                                     onClick={() => setLogChannelFilter('all')}
-                                    className={`px-2.5 py-1 rounded-lg font-black transition-all cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
                                         logChannelFilter === 'all'
-                                            ? 'bg-white dark:bg-[#08121E] text-slate-900 dark:text-white shadow-2xs ring-1 ring-slate-300/60 dark:ring-white/20'
+                                            ? 'bg-white dark:bg-[#08121E] text-slate-900 dark:text-white shadow-2xs'
                                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                                 >
@@ -1372,10 +1357,10 @@ export default function Messaging({
                                 <button
                                     type="button"
                                     onClick={() => setLogChannelFilter('whatsapp')}
-                                    className={`px-2.5 py-1 rounded-lg font-black transition-all flex items-center gap-1 cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                                         logChannelFilter === 'whatsapp'
-                                            ? 'bg-white dark:bg-[#08121E] text-emerald-700 dark:text-emerald-300 shadow-2xs ring-1 ring-emerald-500/40'
-                                            : 'text-slate-600 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300'
+                                            ? 'bg-white dark:bg-[#08121E] text-slate-900 dark:text-white shadow-2xs'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                                 >
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -1384,10 +1369,10 @@ export default function Messaging({
                                 <button
                                     type="button"
                                     onClick={() => setLogChannelFilter('sms')}
-                                    className={`px-2.5 py-1 rounded-lg font-black transition-all flex items-center gap-1 cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                                         logChannelFilter === 'sms'
-                                            ? 'bg-white dark:bg-[#08121E] text-blue-700 dark:text-blue-300 shadow-2xs ring-1 ring-blue-500/40'
-                                            : 'text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300'
+                                            ? 'bg-white dark:bg-[#08121E] text-slate-900 dark:text-white shadow-2xs'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                                 >
                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
@@ -1399,7 +1384,7 @@ export default function Messaging({
                             <select
                                 value={logStatusFilter}
                                 onChange={(e) => setLogStatusFilter(e.target.value)}
-                                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300/80 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-800 dark:text-slate-200 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition cursor-pointer shadow-2xs"
+                                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300/80 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-800 dark:text-slate-200 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition cursor-pointer shadow-2xs"
                             >
                                 <option value="all" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">All Statuses</option>
                                 <option value="delivered" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Delivered</option>
@@ -1420,7 +1405,7 @@ export default function Messaging({
                                     className="px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-200/60 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl flex items-center gap-1 transition active:scale-95 cursor-pointer"
                                     title="Reset filters"
                                 >
-                                    <RotateCcw className="w-3 h-3" />
+                                    <RotateCcw className="w-3 h-3 text-slate-500" />
                                     <span>Reset</span>
                                 </button>
                             )}
@@ -1463,7 +1448,7 @@ export default function Messaging({
                                                             setLogChannelFilter('all');
                                                             setLogStatusFilter('all');
                                                         }}
-                                                        className="mt-1 px-3 py-1 text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/40 rounded-xl hover:underline transition"
+                                                        className="mt-1 px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] rounded-xl hover:bg-slate-200 transition"
                                                     >
                                                         Clear search &amp; filters
                                                     </button>
@@ -1476,7 +1461,7 @@ export default function Messaging({
                                         <tr key={msg.id} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition duration-150 group">
                                             {/* Number Index */}
                                             <td className="py-3.5 px-4 text-center">
-                                                <span className="inline-block font-mono text-[11px] font-black px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08] group-hover:border-cyan-500/50 group-hover:text-cyan-700 dark:group-hover:text-cyan-300 transition">
+                                                <span className="inline-block font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08] transition">
                                                     {String(index + 1).padStart(2, '0')}
                                                 </span>
                                             </td>
@@ -1484,7 +1469,7 @@ export default function Messaging({
                                             {/* Recipient */}
                                             <td className="py-3.5 px-5 font-black text-slate-900 dark:text-white">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-xl bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 font-black flex items-center justify-center text-xs shadow-2xs flex-shrink-0">
+                                                    <div className="w-8 h-8 rounded-xl bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 font-bold flex items-center justify-center text-xs shadow-2xs flex-shrink-0">
                                                         {(msg.guest?.name || 'G').charAt(0)}
                                                     </div>
                                                     <span className="text-[12.5px] truncate max-w-[180px]">{msg.guest?.name || 'Guest'}</span>
@@ -1498,11 +1483,7 @@ export default function Messaging({
 
                                             {/* Channel */}
                                             <td className="py-3.5 px-4">
-                                                <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${
-                                                    msg.channel === 'whatsapp'
-                                                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/40'
-                                                        : 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800/40'
-                                                }`}>
+                                                <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08]">
                                                     <span className={`w-1.5 h-1.5 rounded-full ${msg.channel === 'whatsapp' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
                                                     <span>{msg.channel}</span>
                                                 </span>
@@ -1535,7 +1516,7 @@ export default function Messaging({
                     <div className="p-6 bg-white/95 dark:bg-[#090E17] text-slate-900 dark:text-white flex flex-col items-center rounded-3xl backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xl">
                         <div className="w-full flex items-center justify-between pb-3 mb-4 border-b border-slate-200/80 dark:border-slate-800">
                             <div className="flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                <Sparkles className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white font-display">
                                     Recipient Invitation Pass Preview
                                 </h3>

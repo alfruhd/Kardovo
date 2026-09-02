@@ -46,22 +46,22 @@ import {
 
 const CATEGORY_MAP = {
     // Income Categories
-    pass_sales: { label: 'Pass Quota Sales', badgeClass: 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/60' },
-    sms_credits: { label: 'SMS Top-up Credits', badgeClass: 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/60' },
-    design_service: { label: 'Custom 4K Artwork', badgeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60' },
-    subscription: { label: 'Enterprise Subscription', badgeClass: 'bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/60' },
+    pass_sales: { label: 'Pass Quota Sales', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    sms_credits: { label: 'SMS Top-up Credits', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    design_service: { label: 'Custom 4K Artwork', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    subscription: { label: 'Enterprise Subscription', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
 
     // Expense Categories
-    carrier_sms_cogs: { label: 'Carrier SMS COGS', badgeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60' },
-    carrier_sms: { label: 'Carrier SMS COGS', badgeClass: 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800/60' },
-    whatsapp_api_cogs: { label: 'WhatsApp Cloud API', badgeClass: 'bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/60' },
-    whatsapp_api: { label: 'WhatsApp Cloud API', badgeClass: 'bg-orange-50 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-orange-200 dark:border-orange-800/60' },
-    server_infrastructure: { label: 'Server Infrastructure', badgeClass: 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800/60' },
-    payment_gateway_fee: { label: 'Payment Gateway Fee', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/[0.08]' },
-    payment_fees: { label: 'Payment Gateway Fee', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/[0.08]' },
-    operations: { label: 'Operations & Maintenance', badgeClass: 'bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/60' },
-    general_expense: { label: 'General Overhead', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/[0.08]' },
-    other: { label: 'General / Other', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/[0.08]' },
+    carrier_sms_cogs: { label: 'Carrier SMS COGS', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    carrier_sms: { label: 'Carrier SMS COGS', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    whatsapp_api_cogs: { label: 'WhatsApp Cloud API', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    whatsapp_api: { label: 'WhatsApp Cloud API', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    server_infrastructure: { label: 'Server Infrastructure', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    payment_gateway_fee: { label: 'Payment Gateway Fee', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    payment_fees: { label: 'Payment Gateway Fee', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    operations: { label: 'Operations & Maintenance', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    general_expense: { label: 'General Overhead', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
+    other: { label: 'General / Other', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
 };
 
 export default function Finance({ 
@@ -239,9 +239,9 @@ export default function Finance({
                         <button
                             type="button"
                             onClick={() => setActionDropdownOpen(!actionDropdownOpen)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-kardovo-navy hover:bg-slate-900 dark:bg-emerald-600 dark:hover:bg-emerald-500 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
-                            <Plus className="w-3.5 h-3.5" />
+                            <Plus className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
                             <span>New Entry</span>
                             <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${actionDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -254,9 +254,9 @@ export default function Finance({
                                         setActionDropdownOpen(false);
                                         openCreateModal('income');
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 rounded-xl transition text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
                                 >
-                                    <ArrowUpRight className="w-3.5 h-3.5" />
+                                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                     <span>Record Income</span>
                                 </button>
                                 <button
@@ -265,9 +265,9 @@ export default function Finance({
                                         setActionDropdownOpen(false);
                                         openCreateModal('expense');
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
                                 >
-                                    <ArrowDownRight className="w-3.5 h-3.5" />
+                                    <ArrowDownRight className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
                                     <span>Log Expense</span>
                                 </button>
                             </div>
@@ -305,8 +305,8 @@ export default function Finance({
                                 onClick={() => handlePeriodChange(p.id)}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer ${
                                     period === p.id
-                                        ? 'bg-kardovo-navy dark:bg-cyan-500 text-white dark:text-slate-950 shadow-xs font-black'
-                                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08]'
+                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-bold'
+                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]'
                                 }`}
                             >
                                 {p.label}
@@ -324,8 +324,8 @@ export default function Finance({
                                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
                                     Gross Revenue (Inflow)
                                 </span>
-                                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200/60 dark:border-emerald-800/30">
-                                    <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200/60 dark:border-white/[0.08] shadow-2xs">
+                                    <ArrowUpRight className="w-4 h-4 stroke-[2]" />
                                 </div>
                             </div>
                             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-3 tracking-tight">
@@ -335,7 +335,7 @@ export default function Finance({
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">USD Equiv.</span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 font-mono font-bold text-[11px]">
+                            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 font-mono font-bold text-[11px] border border-slate-200/60 dark:border-white/[0.08]">
                                 {formatUsd(metrics.gross_revenue)}
                             </span>
                         </div>
@@ -348,18 +348,18 @@ export default function Finance({
                                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
                                     Operating Expenses (Outflow)
                                 </span>
-                                <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-200/60 dark:border-rose-800/30">
-                                    <ArrowDownRight className="w-4 h-4 stroke-[2.5]" />
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200/60 dark:border-white/[0.08] shadow-2xs">
+                                    <ArrowDownRight className="w-4 h-4 stroke-[2]" />
                                 </div>
                             </div>
-                            <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono mt-3 tracking-tight">
+                            <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-3 tracking-tight">
                                 {formatTzs(metrics.total_expenses)}
                             </div>
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">Direct Carrier COGS</span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-mono font-bold text-[11px]">
+                            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 font-mono font-bold text-[11px] border border-slate-200/60 dark:border-white/[0.08]">
                                 {formatTzs(metrics.direct_cogs)}
                             </span>
                         </div>
@@ -372,18 +372,18 @@ export default function Finance({
                                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
                                     Gross Profit (Pre-OpEx)
                                 </span>
-                                <div className="w-8 h-8 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-200/60 dark:border-cyan-800/30">
-                                    <Layers className="w-4 h-4 stroke-[2.5]" />
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200/60 dark:border-white/[0.08] shadow-2xs">
+                                    <Layers className="w-4 h-4 stroke-[2]" />
                                 </div>
                             </div>
-                            <div className="text-2xl font-black text-cyan-600 dark:text-cyan-400 font-mono mt-3 tracking-tight">
+                            <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-3 tracking-tight">
                                 {formatTzs(metrics.gross_profit)}
                             </div>
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">Gross Margin</span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 font-mono font-bold text-[11px]">
+                            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 font-mono font-bold text-[11px] border border-slate-200/60 dark:border-white/[0.08]">
                                 {metrics.gross_margin_pct}% Margin
                             </span>
                         </div>
@@ -396,18 +396,20 @@ export default function Finance({
                                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
                                     Net Profit (Bottom Line)
                                 </span>
-                                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200/60 dark:border-emerald-800/30">
-                                    <TrendingUp className="w-4 h-4 stroke-[2.5]" />
+                                <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200/60 dark:border-white/[0.08] shadow-2xs">
+                                    <TrendingUp className="w-4 h-4 stroke-[2]" />
                                 </div>
                             </div>
-                            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono mt-3 tracking-tight">
+                            <div className={`text-2xl font-black font-mono mt-3 tracking-tight ${
+                                (metrics.net_profit || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                            }`}>
                                 {formatTzs(metrics.net_profit)}
                             </div>
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">Net Profit Margin</span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-[11px]">
+                            <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 font-mono font-bold text-[11px] border border-slate-200/60 dark:border-white/[0.08]">
                                 {metrics.net_margin_pct}% Net
                             </span>
                         </div>
@@ -419,22 +421,26 @@ export default function Finance({
                     {/* Left: Monthly Inflow vs Outflow Visualizer (7 cols) */}
                     <div className="lg:col-span-7 bg-white dark:bg-[#0B172A] p-6 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card space-y-6">
                         <div className="flex items-center justify-between">
-                            <div className="space-y-1">
-                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider font-display flex items-center gap-2">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
                                     <BarChart3 className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                    <span>Cashflow &amp; P&amp;L Trajectory (Past 6 Months)</span>
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    Comparative monthly revenue inflow vs operational expenditure.
-                                </p>
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
+                                        Cashflow &amp; P&amp;L Trajectory (Past 6 Months)
+                                    </h3>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                        Comparative monthly revenue inflow vs operational expenditure.
+                                    </p>
+                                </div>
                             </div>
                             <div className="flex items-center gap-3 text-[11px] font-bold">
                                 <div className="flex items-center gap-1.5">
-                                    <span className="w-3 h-3 rounded-md bg-emerald-500" />
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                                     <span className="text-slate-600 dark:text-slate-300">Income</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
-                                    <span className="w-3 h-3 rounded-md bg-rose-500" />
+                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
                                     <span className="text-slate-600 dark:text-slate-300">Expense</span>
                                 </div>
                             </div>
@@ -453,17 +459,17 @@ export default function Finance({
                                             <div className="flex items-center gap-3 font-mono text-[11px]">
                                                 <span className="text-emerald-600 dark:text-emerald-400">+{formatTzs(m.income)}</span>
                                                 <span className="text-rose-600 dark:text-rose-400">-{formatTzs(m.expense)}</span>
-                                                <span className={`font-black px-2 py-0.5 rounded-md ${
+                                                <span className={`font-bold px-2 py-0.5 rounded-md border text-[10.5px] ${
                                                     m.net >= 0 
-                                                        ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' 
-                                                        : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300'
+                                                        ? 'bg-slate-100 dark:bg-white/[0.06] text-emerald-700 dark:text-emerald-400 border-slate-200/70 dark:border-white/[0.08]' 
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-rose-700 dark:text-rose-400 border-slate-200/70 dark:border-white/[0.08]'
                                                 }`}>
                                                     Net: {m.net >= 0 ? '+' : ''}{formatTzs(m.net)}
                                                 </span>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-2 gap-2 h-3.5 bg-slate-100 dark:bg-white/[0.04] p-0.5 rounded-full overflow-hidden">
+                                        <div className="grid grid-cols-2 gap-2 h-3 bg-slate-100 dark:bg-white/[0.04] p-0.5 rounded-full overflow-hidden">
                                             <div className="h-full bg-emerald-500 rounded-full transition-all duration-500" style={{ width: `${incomeHeightPct}%` }} />
                                             <div className="h-full bg-rose-500 rounded-full transition-all duration-500" style={{ width: `${expenseHeightPct}%` }} />
                                         </div>
@@ -478,21 +484,25 @@ export default function Finance({
                         {/* Income Sources */}
                         <div className="bg-white dark:bg-[#0B172A] p-6 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card space-y-4">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display flex items-center gap-2">
-                                    <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                    <span>Revenue Streams</span>
-                                </h3>
-                                <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center justify-center shadow-2xs">
+                                        <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                    </div>
+                                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
+                                        Revenue Streams
+                                    </h3>
+                                </div>
+                                <span className="text-[11px] font-mono font-bold text-slate-900 dark:text-white">
                                     {formatTzs(metrics.gross_revenue)}
                                 </span>
                             </div>
 
                             <div className="space-y-3">
                                 {[
-                                    { label: 'Pass Quota Packages', amount: income_by_category.pass_sales, color: 'bg-cyan-500' },
-                                    { label: 'Bulk SMS Top-up Credits', amount: income_by_category.sms_credits, color: 'bg-blue-500' },
-                                    { label: 'Custom 4K Artwork & Branding', amount: income_by_category.design_service, color: 'bg-amber-500' },
-                                    { label: 'Enterprise Subscriptions', amount: income_by_category.subscription, color: 'bg-purple-500' },
+                                    { label: 'Pass Quota Packages', amount: income_by_category.pass_sales },
+                                    { label: 'Bulk SMS Top-up Credits', amount: income_by_category.sms_credits },
+                                    { label: 'Custom 4K Artwork & Branding', amount: income_by_category.design_service },
+                                    { label: 'Enterprise Subscriptions', amount: income_by_category.subscription },
                                 ].map((item, idx) => {
                                     const pct = metrics.gross_revenue > 0 ? Math.round((item.amount / metrics.gross_revenue) * 100) : 0;
                                     return (
@@ -502,7 +512,7 @@ export default function Finance({
                                                 <span className="font-mono font-bold text-slate-900 dark:text-white">{formatTzs(item.amount)} ({pct}%)</span>
                                             </div>
                                             <div className="w-full bg-slate-100 dark:bg-white/[0.06] h-2 rounded-full overflow-hidden">
-                                                <div className={`h-full ${item.color} rounded-full`} style={{ width: `${pct}%` }} />
+                                                <div className="h-full bg-slate-900 dark:bg-cyan-500 rounded-full" style={{ width: `${pct}%` }} />
                                             </div>
                                         </div>
                                     );
@@ -513,22 +523,26 @@ export default function Finance({
                         {/* Expense Centers */}
                         <div className="bg-white dark:bg-[#0B172A] p-6 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card space-y-4">
                             <div className="flex items-center justify-between">
-                                <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display flex items-center gap-2">
-                                    <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-                                    <span>Expense Cost Centers</span>
-                                </h3>
-                                <span className="text-[11px] font-mono font-bold text-rose-600 dark:text-rose-400">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center justify-center shadow-2xs">
+                                        <TrendingDown className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                                    </div>
+                                    <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
+                                        Expense Cost Centers
+                                    </h3>
+                                </div>
+                                <span className="text-[11px] font-mono font-bold text-slate-900 dark:text-white">
                                     {formatTzs(metrics.total_expenses)}
                                 </span>
                             </div>
 
                             <div className="space-y-3">
                                 {[
-                                    { label: 'Direct SMS Carrier Delivery (NextSMS / Beem)', amount: expense_by_category.carrier_sms, color: 'bg-rose-500' },
-                                    { label: 'Meta WhatsApp Cloud API Costs', amount: expense_by_category.whatsapp_api, color: 'bg-orange-500' },
-                                    { label: 'Redis & Cloud Production Hosting', amount: expense_by_category.server_infrastructure, color: 'bg-indigo-500' },
-                                    { label: 'Payment Gateway & Merchant MDR', amount: expense_by_category.payment_fees, color: 'bg-slate-500' },
-                                    { label: 'Hardware Maintenance & Operations', amount: expense_by_category.operations, color: 'bg-amber-600' },
+                                    { label: 'Direct SMS Carrier Delivery (NextSMS / Beem)', amount: expense_by_category.carrier_sms },
+                                    { label: 'Meta WhatsApp Cloud API Costs', amount: expense_by_category.whatsapp_api },
+                                    { label: 'Redis & Cloud Production Hosting', amount: expense_by_category.server_infrastructure },
+                                    { label: 'Payment Gateway & Merchant MDR', amount: expense_by_category.payment_fees },
+                                    { label: 'Hardware Maintenance & Operations', amount: expense_by_category.operations },
                                 ].map((item, idx) => {
                                     const pct = metrics.total_expenses > 0 ? Math.round((item.amount / metrics.total_expenses) * 100) : 0;
                                     return (
@@ -538,7 +552,7 @@ export default function Finance({
                                                 <span className="font-mono font-bold text-slate-900 dark:text-white">{formatTzs(item.amount)} ({pct}%)</span>
                                             </div>
                                             <div className="w-full bg-slate-100 dark:bg-white/[0.06] h-2 rounded-full overflow-hidden">
-                                                <div className={`h-full ${item.color} rounded-full`} style={{ width: `${pct}%` }} />
+                                                <div className="h-full bg-slate-600 dark:bg-slate-400 rounded-full" style={{ width: `${pct}%` }} />
                                             </div>
                                         </div>
                                     );
@@ -564,7 +578,7 @@ export default function Finance({
                                     onClick={() => handleTypeChange(tab.id)}
                                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer ${
                                         typeTab === tab.id
-                                            ? 'bg-kardovo-navy dark:bg-cyan-600 text-white shadow-sm'
+                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs'
                                             : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06]'
                                     }`}
                                 >
@@ -582,14 +596,14 @@ export default function Finance({
                                     placeholder="Search by code, title, client..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="bg-white dark:bg-[#08121E] border border-slate-300 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-xs font-bold rounded-xl pl-8 pr-3 py-2 w-full sm:w-64 hover:border-cyan-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
+                                    className="bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-xs font-medium rounded-xl pl-8 pr-3 py-2 w-full sm:w-64 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-500 transition outline-none"
                                 />
                             </div>
 
                             <select
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="bg-white dark:bg-[#08121E] border border-slate-300 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-xs font-bold rounded-xl px-3 py-2 hover:border-cyan-500 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none cursor-pointer"
+                                className="bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-xs font-medium rounded-xl px-3 py-2 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-500 transition outline-none cursor-pointer"
                             >
                                 <option value="all">All Categories</option>
                                 <option value="pass_sales">Pass Quota Sales</option>
@@ -611,10 +625,10 @@ export default function Finance({
                                     category: categoryFilter,
                                     search: searchTerm,
                                 })}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100/90 dark:bg-white/[0.06] hover:bg-slate-200/80 dark:hover:bg-white/[0.1] border border-slate-300 dark:border-white/[0.08] rounded-xl transition cursor-pointer shadow-2xs active:scale-95"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] border border-slate-200/80 dark:border-white/[0.08] rounded-xl transition cursor-pointer shadow-2xs active:scale-95"
                                 title={`Download ${typeTab === 'income' ? 'Income' : typeTab === 'expense' ? 'Expense' : 'Ledger'} report`}
                             >
-                                <Download className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                                 <span>Export {typeTab === 'income' ? 'Income' : typeTab === 'expense' ? 'Expenses' : 'CSV'}</span>
                             </a>
                         </div>
@@ -710,14 +724,15 @@ export default function Finance({
 
                                                 {/* Status */}
                                                 <td className="py-3.5 px-4 align-middle text-center whitespace-nowrap">
-                                                    <span className={`inline-flex items-center gap-1 text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ${
-                                                        tx.status === 'completed'
-                                                            ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/40'
-                                                            : tx.status === 'pending'
-                                                            ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800/40'
-                                                            : 'bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800/40'
-                                                    }`}>
-                                                        {tx.status}
+                                                    <span className="inline-flex items-center gap-1.5 text-[10.5px] font-medium px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08]">
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${
+                                                            tx.status === 'completed'
+                                                                ? 'bg-emerald-500'
+                                                                : tx.status === 'pending'
+                                                                ? 'bg-amber-500'
+                                                                : 'bg-rose-500'
+                                                        }`} />
+                                                        <span className="capitalize">{tx.status}</span>
                                                     </span>
                                                 </td>
 
@@ -783,7 +798,7 @@ export default function Finance({
                                                 onClick={() => setCurrentPage(pageNum)}
                                                 className={`min-w-[32px] h-8 px-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                                                     currentPage === pageNum
-                                                        ? 'bg-kardovo-navy dark:bg-cyan-600 text-white font-black shadow-xs'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white font-bold shadow-xs'
                                                         : 'border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B172A] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06]'
                                                 }`}
                                             >
@@ -813,12 +828,8 @@ export default function Finance({
                 <form onSubmit={handleSubmitTransaction} className="p-6 space-y-4">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/[0.08]">
                         <div className="flex items-center gap-2">
-                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                modalMode === 'income' 
-                                    ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' 
-                                    : 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
-                            }`}>
-                                {modalMode === 'income' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                            <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] flex items-center justify-center text-slate-700 dark:text-slate-200 shadow-2xs">
+                                {modalMode === 'income' ? <ArrowUpRight className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <ArrowDownRight className="w-4 h-4 text-rose-600 dark:text-rose-400" />}
                             </div>
                             <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
                                 {modalMode === 'income' ? 'Record Revenue Inflow' : 'Log Operating Expense'}
@@ -826,7 +837,7 @@ export default function Finance({
                         </div>
 
                         {/* Mode Switcher */}
-                        <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08]">
+                        <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08]">
                             <button
                                 type="button"
                                 onClick={() => {
@@ -835,7 +846,7 @@ export default function Finance({
                                     txForm.setData('category', 'pass_sales');
                                 }}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    modalMode === 'income' ? 'bg-emerald-500 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300'
+                                    modalMode === 'income' ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
                                 }`}
                             >
                                 Income
@@ -848,7 +859,7 @@ export default function Finance({
                                     txForm.setData('category', 'carrier_sms_cogs');
                                 }}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    modalMode === 'expense' ? 'bg-rose-500 text-white shadow-xs' : 'text-slate-600 dark:text-slate-300'
+                                    modalMode === 'expense' ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
                                 }`}
                             >
                                 Expense
@@ -1026,7 +1037,7 @@ export default function Finance({
                         <PrimaryButton
                             type="submit"
                             disabled={txForm.processing}
-                            className={modalMode === 'income' ? 'bg-kardovo-navy dark:bg-emerald-600' : 'bg-rose-600 hover:bg-rose-700'}
+                            className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold rounded-xl shadow-xs"
                         >
                             {modalMode === 'income' ? 'Save Income Record' : 'Save Expense Record'}
                         </PrimaryButton>

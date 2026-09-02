@@ -38,3 +38,35 @@ test('correct password must be provided to update password', function () {
         ->assertSessionHasErrors('current_password')
         ->assertRedirect('/profile');
 });
+
+test('weak passwords without numbers or symbols or mixed case are rejected', function () {
+    $user = User::factory()->create();
+
+    // Only lowercase letters
+    $response = $this
+        ->actingAs($user)
+        ->from('/profile')
+        ->put('/password', [
+            'current_password' => 'password',
+            'password' => 'simplepassword',
+            'password_confirmation' => 'simplepassword',
+        ]);
+
+    $response
+        ->assertSessionHasErrors('password')
+        ->assertRedirect('/profile');
+
+    // Only numbers and letters without symbols
+    $response2 = $this
+        ->actingAs($user)
+        ->from('/profile')
+        ->put('/password', [
+            'current_password' => 'password',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+        ]);
+
+    $response2
+        ->assertSessionHasErrors('password')
+        ->assertRedirect('/profile');
+});

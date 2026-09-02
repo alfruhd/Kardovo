@@ -12,6 +12,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\PhoneNormalizer;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
 class AdminController extends Controller
@@ -209,7 +210,7 @@ class AdminController extends Controller
             'email' => 'required|email|unique:users,email',
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'company' => 'nullable|string|max:255',
-            'password' => 'required|string|min:8',
+            'password' => ['required', 'string', Password::defaults()],
             'role' => 'nullable|string|in:customer,sub_admin,admin,scanner',
             'status' => 'nullable|string|in:active,suspended',
             'permissions' => 'nullable|array',
@@ -220,7 +221,6 @@ class AdminController extends Controller
         ], [
             'name.min' => 'Customer name must be at least 2 characters.',
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
-            'password.min' => 'Password must be at least 8 characters.',
         ]);
 
         if (!empty($validated['phone'])) {
@@ -252,7 +252,7 @@ class AdminController extends Controller
             'email' => 'required|email|unique:users,email,' . $customer->id,
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'company' => 'nullable|string|max:255',
-            'password' => 'nullable|string|min:8',
+            'password' => ['nullable', 'string', Password::defaults()],
             'role' => 'nullable|string|in:customer,sub_admin,admin,scanner',
             'status' => 'nullable|string|in:active,suspended',
             'permissions' => 'nullable|array',
@@ -263,7 +263,6 @@ class AdminController extends Controller
         ], [
             'name.min' => 'Customer name must be at least 2 characters.',
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
-            'password.min' => 'Password must be at least 8 characters.',
         ]);
 
         if (!empty($validated['phone'])) {
@@ -333,11 +332,10 @@ class AdminController extends Controller
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'gate_label' => 'required|string|max:255',
             'customer_id' => 'nullable|exists:users,id',
-            'password' => 'required|string|min:8',
+            'password' => ['required', 'string', Password::defaults()],
         ], [
             'name.min' => 'Staff name must be at least 2 characters.',
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
-            'password.min' => 'Password must be at least 8 characters.',
             'gate_label.required' => 'Gate label is required.',
         ]);
 
@@ -366,11 +364,10 @@ class AdminController extends Controller
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'gate_label' => 'required|string|max:255',
             'customer_id' => 'nullable|exists:users,id',
-            'password' => 'nullable|string|min:8',
+            'password' => ['nullable', 'string', Password::defaults()],
         ], [
             'name.min' => 'Staff name must be at least 2 characters.',
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
-            'password.min' => 'Password must be at least 8 characters.',
             'gate_label.required' => 'Gate label is required.',
         ]);
 
@@ -413,7 +410,7 @@ class AdminController extends Controller
             'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email',
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
-            'password' => 'required|string|min:8',
+            'password' => ['required', 'string', Password::defaults()],
             'organizer_ids' => 'nullable|array',
             'organizer_ids.*' => 'exists:users,id',
             'event_ids' => 'nullable|array',
@@ -421,7 +418,6 @@ class AdminController extends Controller
         ], [
             'name.min' => 'Sub Admin name must be at least 2 characters.',
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
-            'password.min' => 'Password must be at least 8 characters.',
         ]);
 
         if (!empty($validated['phone'])) {
@@ -457,7 +453,7 @@ class AdminController extends Controller
             'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email,' . $subAdmin->id,
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
-            'password' => 'nullable|string|min:8',
+            'password' => ['nullable', 'string', Password::defaults()],
             'organizer_ids' => 'nullable|array',
             'organizer_ids.*' => 'exists:users,id',
             'event_ids' => 'nullable|array',
@@ -465,7 +461,6 @@ class AdminController extends Controller
         ], [
             'name.min' => 'Sub Admin name must be at least 2 characters.',
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
-            'password.min' => 'Password must be at least 8 characters.',
         ]);
 
         if (!empty($validated['phone'])) {

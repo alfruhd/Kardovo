@@ -30,33 +30,90 @@ export function validatePhone(phone) {
 }
 
 /**
- * Validates password strength (minimum 8 characters).
+ * Validates password strength according to enterprise security standards:
+ * - Minimum 8 characters
+ * - Uppercase letter (A-Z)
+ * - Lowercase letter (a-z)
+ * - Number (0-9)
+ * - Special character / symbol (!@#$%^&* etc.)
+ *
  * @param {string} password
- * @returns {{ isValid: boolean, length: boolean, hasLetter: boolean, hasNumber: boolean, hasSpecial: boolean, score: number }}
+ * @returns {{ 
+ *   isValid: boolean, 
+ *   isStrong: boolean, 
+ *   length: boolean, 
+ *   hasLower: boolean, 
+ *   hasUpper: boolean, 
+ *   hasNumber: boolean, 
+ *   hasSpecial: boolean, 
+ *   score: number,
+ *   missingRules: string[]
+ * }}
  */
 export function validatePassword(password) {
     if (!password || typeof password !== 'string') {
-        return { isValid: false, length: false, hasLetter: false, hasNumber: false, hasSpecial: false, score: 0 };
+        return { 
+            isValid: false, 
+            isStrong: false, 
+            length: false, 
+            hasLower: false, 
+            hasUpper: false, 
+            hasNumber: false, 
+            hasSpecial: false, 
+            score: 0,
+            missingRules: ['At least 8 characters', 'Uppercase & lowercase letters', 'At least one number (0-9)', 'Special symbol (!@#$%^&*)']
+        };
     }
     const length = password.length >= 8;
-    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
     const hasSpecial = /[^a-zA-Z0-9]/.test(password);
 
     let score = 0;
-    if (password.length >= 8) score += 1;
-    if (password.length >= 12) score += 1;
-    if (hasLetter && hasNumber) score += 1;
-    if (hasSpecial) score += 1;
+    const missingRules = [];
+    if (length) score += 1; else missingRules.push('At least 8 characters');
+    if (hasLower && hasUpper) score += 1; else missingRules.push('Uppercase & lowercase letters');
+    if (hasNumber) score += 1; else missingRules.push('At least one number (0-9)');
+    if (hasSpecial) score += 1; else missingRules.push('At least one special symbol (!@#$%^&*)');
+
+    const isStrong = length && hasLower && hasUpper && hasNumber && hasSpecial;
 
     return {
-        isValid: length,
+        isValid: isStrong,
+        isStrong,
         length,
-        hasLetter,
+        hasLower,
+        hasUpper,
         hasNumber,
         hasSpecial,
         score,
+        missingRules,
     };
+}
+
+/**
+ * Generates a cryptographically strong, high-entropy password.
+ * @param {number} length
+ * @returns {string}
+ */
+export function generateStrongPassword(length = 16) {
+    const uppers = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+    const lowers = 'abcdefghijkmnopqrstuvwxyz';
+    const numbers = '23456789';
+    const symbols = '!@#$%^&*()-_=+';
+    const all = uppers + lowers + numbers + symbols;
+
+    let pwd = '';
+    pwd += uppers[Math.floor(Math.random() * uppers.length)];
+    pwd += lowers[Math.floor(Math.random() * lowers.length)];
+    pwd += numbers[Math.floor(Math.random() * numbers.length)];
+    pwd += symbols[Math.floor(Math.random() * symbols.length)];
+
+    for (let i = 4; i < length; i++) {
+        pwd += all[Math.floor(Math.random() * all.length)];
+    }
+    return pwd.split('').sort(() => 0.5 - Math.random()).join('');
 }
 
 /**

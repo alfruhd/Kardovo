@@ -11,6 +11,8 @@ import GatewayConfigModal from '@/Components/GatewayConfigModal';
 import { 
     validateEmail, 
     validatePhone, 
+    validatePassword,
+    generateStrongPassword,
     validateRequired 
 } from '@/Utils/validation';
 import { 
@@ -304,8 +306,9 @@ export default function AdminDashboard({
         if (customerForm.data.phone && !validatePhone(customerForm.data.phone)) {
             errs.phone = 'Please provide a valid phone number (e.g. +255 712 345 678).';
         }
-        if (!customerForm.data.password || customerForm.data.password.length < 8) {
-            errs.password = 'Initial password must be at least 8 characters.';
+        const pwdCheck = validatePassword(customerForm.data.password);
+        if (!customerForm.data.password || !pwdCheck.isStrong) {
+            errs.password = 'Initial password must be strong (min 8 chars, uppercase, lowercase, numbers & symbols).';
         }
 
         if (Object.keys(errs).length > 0) {
@@ -363,8 +366,11 @@ export default function AdminDashboard({
         if (editCustomerForm.data.phone && !validatePhone(editCustomerForm.data.phone)) {
             errs.phone = 'Please provide a valid phone number (e.g. +255 712 345 678).';
         }
-        if (editCustomerForm.data.password && editCustomerForm.data.password.length < 8) {
-            errs.password = 'Password must be at least 8 characters if changing.';
+        if (editCustomerForm.data.password) {
+            const pwdCheck = validatePassword(editCustomerForm.data.password);
+            if (!pwdCheck.isStrong) {
+                errs.password = 'New password must be strong (min 8 chars, uppercase, lowercase, numbers & symbols).';
+            }
         }
 
         if (Object.keys(errs).length > 0) {
@@ -440,8 +446,9 @@ export default function AdminDashboard({
         if (!validateRequired(createScannerForm.data.gate_label, 2)) {
             errs.gate_label = 'Gate assignment label is required.';
         }
-        if (!createScannerForm.data.password || createScannerForm.data.password.length < 8) {
-            errs.password = 'Initial password must be at least 8 characters.';
+        const pwdCheck = validatePassword(createScannerForm.data.password);
+        if (!createScannerForm.data.password || !pwdCheck.isStrong) {
+            errs.password = 'Staff password must be strong (min 8 chars, uppercase, lowercase, numbers & symbols).';
         }
 
         if (Object.keys(errs).length > 0) {
@@ -488,8 +495,11 @@ export default function AdminDashboard({
         if (!validateRequired(editScannerForm.data.gate_label, 2)) {
             errs.gate_label = 'Gate assignment label is required.';
         }
-        if (editScannerForm.data.password && editScannerForm.data.password.length < 8) {
-            errs.password = 'Password must be at least 8 characters if changing.';
+        if (editScannerForm.data.password) {
+            const pwdCheck = validatePassword(editScannerForm.data.password);
+            if (!pwdCheck.isStrong) {
+                errs.password = 'New password must be strong (min 8 chars, uppercase, lowercase, numbers & symbols).';
+            }
         }
 
         if (Object.keys(errs).length > 0) {
@@ -1919,11 +1929,26 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Initial Password *" />
+                                <div className="flex items-center justify-between">
+                                    <InputLabel value="Initial Password *" />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const pwd = generateStrongPassword(16);
+                                            customerForm.setData('password', pwd);
+                                            if (customerClientErrors.password) setCustomerClientErrors(prev => ({ ...prev, password: undefined }));
+                                        }}
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
+                                        title="Generate strong 16-character password"
+                                    >
+                                        <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                                        <span>Suggest Strong</span>
+                                    </button>
+                                </div>
                                 <TextInput
-                                    type="password"
+                                    type="text"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="Min 8 characters (default: password)"
+                                    placeholder="Min 8 chars, uppercase, lowercase, numbers & symbols"
                                     value={customerForm.data.password}
                                     onChange={(e) => {
                                         customerForm.setData('password', e.target.value);
@@ -2757,11 +2782,26 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Password *" />
+                            <div className="flex items-center justify-between">
+                                <InputLabel value="Staff Password *" />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const pwd = generateStrongPassword(16);
+                                        createScannerForm.setData('password', pwd);
+                                        if (scannerClientErrors.password) setScannerClientErrors(prev => ({ ...prev, password: undefined }));
+                                    }}
+                                    className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
+                                    title="Generate strong 16-character password"
+                                >
+                                    <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                                    <span>Suggest Strong</span>
+                                </button>
+                            </div>
                             <TextInput
-                                type="password"
+                                type="text"
                                 className="mt-1 block w-full text-xs font-mono font-bold"
-                                placeholder="Min 8 characters"
+                                placeholder="Min 8 chars, uppercase, lowercase, numbers & symbols"
                                 value={createScannerForm.data.password}
                                 onChange={(e) => {
                                     createScannerForm.setData('password', e.target.value);

@@ -5,8 +5,8 @@ import TextInput from '@/Components/TextInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { validateEmail, validateRequired } from '@/Utils/validation';
-import { Check, X } from 'lucide-react';
+import { validateEmail, validatePassword, generateStrongPassword, validateRequired } from '@/Utils/validation';
+import { Check, X, Sparkles } from 'lucide-react';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -27,14 +27,24 @@ export default function Register() {
         data.password !== data.password_confirmation
     );
 
-    const isLengthValid = data.password.length >= 8;
+    const pwdAnalysis = validatePassword(data.password);
+    const isStrong = pwdAnalysis.isStrong;
     const isEmailValid = validateEmail(data.email);
     const isNameValid = data.name.trim().length >= 2;
+
+    const handleGeneratePassword = () => {
+        const generated = generateStrongPassword(16);
+        setData({
+            ...data,
+            password: generated,
+            password_confirmation: generated,
+        });
+    };
 
     const submit = (e) => {
         e.preventDefault();
 
-        if (!isMatch || !isLengthValid || !isEmailValid || !isNameValid) {
+        if (!isMatch || !isStrong || !isEmailValid || !isNameValid) {
             return;
         }
 
@@ -105,14 +115,25 @@ export default function Register() {
                 <div className="mt-4">
                     <div className="flex items-center justify-between">
                         <InputLabel htmlFor="password" value="Password" />
-                        {data.password && (
-                            <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
-                                isLengthValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
-                            }`}>
-                                {isLengthValid ? <Check className="w-3 h-3" /> : null}
-                                <span>{isLengthValid ? 'Length met (8+)' : `${data.password.length}/8 chars`}</span>
-                            </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={handleGeneratePassword}
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
+                                title="Generate strong 16-character password"
+                            >
+                                <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                                <span>Suggest Strong</span>
+                            </button>
+                            {data.password && (
+                                <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
+                                    isStrong ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                                }`}>
+                                    {isStrong ? <Check className="w-3 h-3" /> : null}
+                                    <span>{isStrong ? 'Strong' : `${pwdAnalysis.score}/4 Requirements`}</span>
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <TextInput
@@ -123,8 +144,9 @@ export default function Register() {
                         className="mt-1 block w-full"
                         autoComplete="new-password"
                         onChange={(e) => setData('password', e.target.value)}
+                        placeholder="Min 8 chars, uppercase, lowercase, numbers & symbols"
                         hasError={Boolean(errors.password)}
-                        isValid={Boolean(isLengthValid)}
+                        isValid={Boolean(isStrong)}
                         required
                     />
 
@@ -192,7 +214,7 @@ export default function Register() {
                         Already registered?
                     </Link>
 
-                    <PrimaryButton className="ms-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={processing || !isMatch || !isLengthValid || !isEmailValid || !isNameValid}>
+                    <PrimaryButton className="ms-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={processing || !isMatch || !isStrong || !isEmailValid || !isNameValid}>
                         Register
                     </PrimaryButton>
                 </div>

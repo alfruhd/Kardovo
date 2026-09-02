@@ -447,9 +447,9 @@ export default function CardTemplates({
             headerActions={
                 <button
                     onClick={() => setUploadModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-bold text-slate-800 dark:text-white bg-white/80 hover:bg-white dark:bg-cyan-600 dark:hover:bg-cyan-500 border border-slate-200/80 dark:border-white/[0.08] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.03)] backdrop-blur-xl transition active:scale-95 cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                 >
-                    <Upload className="w-3.5 h-3.5 text-cyan-600 dark:text-white" />
+                    <Upload className="w-3.5 h-3.5 text-slate-200 dark:text-white" />
                     <span>+ Import Custom Artwork</span>
                 </button>
             }
@@ -466,12 +466,12 @@ export default function CardTemplates({
                         <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
                             Card Templates &amp; Artwork Studio
                         </h1>
-                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
                             Customize and fine-tune dynamic guest pass layouts, typography, and QR code placement.
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-cyan-700 dark:text-cyan-300 bg-white/80 dark:bg-[#0B1524] px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
+                        <span className="text-xs font-mono font-medium text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-[#0B1524] px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
                             {templates.length} Templates Configured
                         </span>
                     </div>
@@ -483,12 +483,12 @@ export default function CardTemplates({
                 <div className="bg-white/70 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                            <Layers className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                             <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                                 Available Template Presets (Click Any Preset to Edit)
                             </span>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-semibold font-mono">
+                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
                             {templates.length} templates configured
                         </span>
                     </div>
@@ -510,8 +510,8 @@ export default function CardTemplates({
                                     onClick={() => handleSelectTemplate(tpl)}
                                     className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all group relative overflow-hidden cursor-pointer active:scale-95 w-full backdrop-blur-xl ${
                                         isSelected 
-                                            ? 'border-cyan-500 dark:border-cyan-400 ring-2 ring-cyan-400/40 bg-cyan-50/70 dark:bg-cyan-950/40 shadow-lg scale-[1.02]' 
-                                            : 'border-slate-200/80 dark:border-white/[0.08] hover:border-cyan-400/50 dark:hover:border-white/[0.2] bg-white/60 dark:bg-white/[0.03] shadow-[0_4px_15px_rgba(0,0,0,0.02)] hover:shadow-card'
+                                            ? 'border-slate-900 dark:border-cyan-400 ring-2 ring-slate-900/10 dark:ring-cyan-400/30 bg-slate-50/80 dark:bg-white/[0.04] shadow-md scale-[1.01]' 
+                                            : 'border-slate-200/80 dark:border-white/[0.08] hover:border-slate-400 dark:hover:border-white/[0.2] bg-white/60 dark:bg-white/[0.02] shadow-xs hover:shadow-card'
                                     }`}
                                 >
                                     <div className="w-full">
@@ -527,12 +527,12 @@ export default function CardTemplates({
                                                     }}
                                                 />
                                                 {isRecommended && (
-                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-emerald-600/90 text-white text-[9px] font-extrabold tracking-wide uppercase shadow-sm">
+                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-slate-900/80 dark:bg-black/70 text-white text-[9px] font-bold tracking-wide uppercase shadow-sm backdrop-blur-xs border border-white/10">
                                                         ★ Recommended
                                                     </span>
                                                 )}
                                                 {isPersonal && (
-                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-extrabold tracking-wide uppercase shadow-sm">
+                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-slate-900/80 dark:bg-black/70 text-white text-[9px] font-bold tracking-wide uppercase shadow-sm backdrop-blur-xs border border-white/10">
                                                         👤 My Template
                                                     </span>
                                                 )}
@@ -561,7 +561,7 @@ export default function CardTemplates({
                                                 }}
                                             >
                                                 {isPersonal && (
-                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-blue-600 text-white text-[9px] font-extrabold tracking-wide uppercase shadow-sm">
+                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-slate-900/80 dark:bg-black/70 text-white text-[9px] font-bold tracking-wide uppercase shadow-sm backdrop-blur-xs border border-white/10">
                                                         👤 My Template
                                                     </span>
                                                 )}
@@ -591,15 +591,15 @@ export default function CardTemplates({
                                     </div>
 
                                     <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-white/[0.08] flex items-center justify-between w-full">
-                                        <span className={`text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full ${
+                                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full transition ${
                                             isSelected 
-                                                ? 'bg-cyan-600 dark:bg-cyan-500 text-white dark:text-slate-950 shadow-xs' 
-                                                : 'bg-white/80 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300 group-hover:bg-cyan-50 dark:group-hover:bg-cyan-950/50 group-hover:text-cyan-700 dark:group-hover:text-cyan-300'
+                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs' 
+                                                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 group-hover:bg-slate-200 dark:group-hover:bg-white/[0.1] group-hover:text-slate-900 dark:group-hover:text-white'
                                         }`}>
                                             {isSelected ? 'Editing Now' : 'Click to Edit'}
                                         </span>
                                         {isSelected && (
-                                            <div className="w-5 h-5 rounded-full bg-cyan-500 text-white flex items-center justify-center shadow-xs">
+                                            <div className="w-5 h-5 rounded-full bg-slate-900 dark:bg-cyan-600 text-white flex items-center justify-center shadow-xs">
                                                 <Check className="w-3 h-3 stroke-[3]" />
                                             </div>
                                         )}
@@ -621,37 +621,42 @@ export default function CardTemplates({
                         {/* Inspector Header & Segmented Tabs (Fixed at Top of Card) */}
                         <div className="p-5 sm:p-6 border-b border-slate-200/60 dark:border-white/[0.08] bg-white/50 dark:bg-white/[0.03] backdrop-blur-xl flex-shrink-0">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                                <div>
-                                    <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                                        <SlidersHorizontal className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                        <span>Element Placement &amp; Content Inspector</span>
-                                    </h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        Editing Template: <strong className="text-slate-900 dark:text-white">{currentTpl?.name}</strong>
-                                    </p>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                        <SlidersHorizontal className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
+                                            Element Placement &amp; Content Inspector
+                                        </h3>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                                            Editing Template: <strong className="text-slate-900 dark:text-white">{currentTpl?.name}</strong>
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] font-extrabold uppercase px-3 py-1.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-300 font-mono shadow-xs">
-                                        Live Vector Sync Active
+                                    <span className="inline-flex items-center gap-1.5 text-[10.5px] font-mono font-medium text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-[#0B1524] px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span>Live Vector Sync</span>
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Sub-Tabs Grid Bar (Aligned 4-Column Layout - Switched Positions) */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 rounded-2xl bg-white/70 dark:bg-white/[0.06] border border-slate-300/80 dark:border-white/[0.08] backdrop-blur-xl">
+                            {/* Sub-Tabs Grid Bar (Clean, Unified Monochromatic Segmented Bar) */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08]">
                                 {/* Row 1, Col 1: Layers & Elements */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("layers")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-95 border ${
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
                                         inspectorTab === "layers"
-                                            ? "bg-kardovo-navy dark:bg-[#0B1524] text-white dark:text-cyan-300 border-cyan-400 dark:border-cyan-500 shadow-md ring-2 ring-cyan-500/30"
-                                            : "border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.1] hover:border-slate-300 dark:hover:border-white/20"
+                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
                                     }`}
                                     title="Layers & Elements"
                                 >
-                                    <Layers className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 flex-shrink-0" />
+                                    <Layers className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "layers" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     <span className="truncate">Layers &amp; Elements</span>
                                 </button>
 
@@ -659,14 +664,14 @@ export default function CardTemplates({
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("content")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-95 border ${
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
                                         inspectorTab === "content"
-                                            ? "bg-kardovo-navy dark:bg-[#0B1524] text-white dark:text-cyan-300 border-cyan-400 dark:border-cyan-500 shadow-md ring-2 ring-cyan-500/30"
-                                            : "border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.1] hover:border-slate-300 dark:hover:border-white/20"
+                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
                                     }`}
                                     title="Content & Text"
                                 >
-                                    <Type className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+                                    <Type className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "content" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     <span className="truncate">Content &amp; Text</span>
                                 </button>
 
@@ -674,14 +679,18 @@ export default function CardTemplates({
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab(isCustomArt ? "artwork" : "palette")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-95 border ${
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
                                         (inspectorTab === "artwork" || inspectorTab === "palette")
-                                            ? "bg-kardovo-navy dark:bg-[#0B1524] text-white dark:text-cyan-300 border-cyan-400 dark:border-cyan-500 shadow-md ring-2 ring-cyan-500/30"
-                                            : "border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.1] hover:border-slate-300 dark:hover:border-white/20"
+                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
                                     }`}
                                     title={isCustomArt ? "Artwork Asset" : "Background & Palette"}
                                 >
-                                    {isCustomArt ? <ImageIcon className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" /> : <Palette className="w-3.5 h-3.5 text-purple-500 dark:text-purple-400 flex-shrink-0" />}
+                                    {isCustomArt ? (
+                                        <ImageIcon className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "artwork" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
+                                    ) : (
+                                        <Palette className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "palette" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
+                                    )}
                                     <span className="truncate">{isCustomArt ? "Artwork Asset" : "Palette & Style"}</span>
                                 </button>
 
@@ -689,14 +698,14 @@ export default function CardTemplates({
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("plaque")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-95 border ${
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
                                         inspectorTab === "plaque"
-                                            ? "bg-kardovo-navy dark:bg-[#0B1524] text-white dark:text-cyan-300 border-cyan-400 dark:border-cyan-500 shadow-md ring-2 ring-cyan-500/30"
-                                            : "border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.1] hover:border-slate-300 dark:hover:border-white/20"
+                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
                                     }`}
                                     title="Guest Plaque"
                                 >
-                                    <Move className="w-3.5 h-3.5 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
+                                    <Move className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "plaque" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     <span className="truncate">Guest Plaque</span>
                                 </button>
 
@@ -704,14 +713,14 @@ export default function CardTemplates({
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab(isUploadedCustomArt ? "category" : "badge")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-95 border ${
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
                                         (inspectorTab === "badge" || inspectorTab === "category")
-                                            ? "bg-kardovo-navy dark:bg-[#0B1524] text-white dark:text-cyan-300 border-cyan-400 dark:border-cyan-500 shadow-md ring-2 ring-cyan-500/30"
-                                            : "border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.1] hover:border-slate-300 dark:hover:border-white/20"
+                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
                                     }`}
                                     title="Verified Badge"
                                 >
-                                    <ShieldCheck className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 flex-shrink-0" />
+                                    <ShieldCheck className={`w-3.5 h-3.5 flex-shrink-0 ${(inspectorTab === "badge" || inspectorTab === "category") ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     <span className="truncate">Verified Badge</span>
                                 </button>
 
@@ -719,14 +728,14 @@ export default function CardTemplates({
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("qr")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-95 border ${
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
                                         inspectorTab === "qr"
-                                            ? "bg-kardovo-navy dark:bg-[#0B1524] text-white dark:text-cyan-300 border-cyan-400 dark:border-cyan-500 shadow-md ring-2 ring-cyan-500/30"
-                                            : "border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.1] hover:border-slate-300 dark:hover:border-white/20"
+                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
                                     }`}
                                     title="QR Code"
                                 >
-                                    <QrCode className="w-3.5 h-3.5 text-teal-500 dark:text-teal-400 flex-shrink-0" />
+                                    <QrCode className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "qr" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     <span className="truncate">QR Code</span>
                                 </button>
 
@@ -734,14 +743,14 @@ export default function CardTemplates({
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("security")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-200 flex items-center gap-2 cursor-pointer active:scale-95 border ${
+                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
                                         inspectorTab === "security"
-                                            ? "bg-kardovo-navy dark:bg-[#0B1524] text-white dark:text-cyan-300 border-cyan-400 dark:border-cyan-500 shadow-md ring-2 ring-cyan-500/30"
-                                            : "border-transparent text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.1] hover:border-slate-300 dark:hover:border-white/20"
+                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
                                     }`}
                                     title="Security Code"
                                 >
-                                    <Clock className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 flex-shrink-0" />
+                                    <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "security" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     <span className="truncate">Security Code</span>
                                 </button>
                             </div>
@@ -834,10 +843,10 @@ export default function CardTemplates({
                                 <div className="space-y-6 animate-fadeIn">
                                     <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.08]">
                                         <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                            <Layers className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
                                             <span>Field &amp; Layer Visibility Selector</span>
                                         </div>
-                                        <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
+                                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
                                             Live Canvas Sync
                                         </span>
                                     </div>
@@ -852,11 +861,11 @@ export default function CardTemplates({
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('minimal')}
-                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between"
+                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-slate-400 dark:hover:border-white/20 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between shadow-2xs"
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-slate-900 dark:text-white">Minimal Pass</span>
-                                                    <span className="text-[9.5px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/60 px-1.5 py-0.5 rounded-full font-mono">Popular</span>
+                                                    <span className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] px-1.5 py-0.5 rounded-full font-mono">Popular</span>
                                                 </div>
                                                 <span className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
                                                     Name + QR + Security Code only. For custom flyers with artwork text.
@@ -866,7 +875,7 @@ export default function CardTemplates({
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('full')}
-                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between"
+                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-slate-400 dark:hover:border-white/20 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between shadow-2xs"
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-slate-900 dark:text-white">Full Suite</span>
@@ -879,7 +888,7 @@ export default function CardTemplates({
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('pass_only')}
-                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between"
+                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-slate-400 dark:hover:border-white/20 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between shadow-2xs"
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-xs font-bold text-slate-900 dark:text-white">QR Pass Only</span>
@@ -900,14 +909,14 @@ export default function CardTemplates({
                                         {/* A. Guest Name (Standalone) */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             currentConfig.show_guest_name !== false
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     currentConfig.show_guest_name !== false
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <Move className="w-4 h-4" />
                                                 </div>
@@ -915,9 +924,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Guest Attendee Name</span>
                                                         {currentConfig.show_guest_name !== false ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -932,21 +946,21 @@ export default function CardTemplates({
                                                     onChange={(e) => updateDirectConfig('show_guest_name', e.target.checked)}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
 
                                         {/* A2. Invitation Category / Allowance Badge (Separate Standalone Field) */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             currentConfig.show_allowance_badge !== false
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     currentConfig.show_allowance_badge !== false
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <ShieldCheck className="w-4 h-4" />
                                                 </div>
@@ -954,9 +968,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Invitation Category / Allowance Badge</span>
                                                         {currentConfig.show_allowance_badge !== false ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -971,21 +990,21 @@ export default function CardTemplates({
                                                     onChange={(e) => updateDirectConfig('show_allowance_badge', e.target.checked)}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
 
                                         {/* B. QR Code Pass */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             (form.data.show_qr && currentConfig.show_qr !== false)
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     (form.data.show_qr && currentConfig.show_qr !== false)
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <QrCode className="w-4 h-4" />
                                                 </div>
@@ -993,9 +1012,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Scannable QR Code Pass</span>
                                                         {(form.data.show_qr && currentConfig.show_qr !== false) ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1013,21 +1037,21 @@ export default function CardTemplates({
                                                     }}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
 
                                         {/* C. Security Verification Code */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             (form.data.show_unique_code && currentConfig.show_unique_code !== false)
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     (form.data.show_unique_code && currentConfig.show_unique_code !== false)
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <Clock className="w-4 h-4" />
                                                 </div>
@@ -1035,9 +1059,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Gate Security Verification Code</span>
                                                         {(form.data.show_unique_code && currentConfig.show_unique_code !== false) ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1055,21 +1084,21 @@ export default function CardTemplates({
                                                     }}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
 
                                         {/* D. Couple / Host Names */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             currentConfig.show_couple_names !== false
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     currentConfig.show_couple_names !== false
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <Type className="w-4 h-4" />
                                                 </div>
@@ -1077,9 +1106,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Couple / Event Host Names</span>
                                                         {currentConfig.show_couple_names !== false ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1094,21 +1128,21 @@ export default function CardTemplates({
                                                     onChange={(e) => updateDirectConfig('show_couple_names', e.target.checked)}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
 
                                         {/* E. Date & Schedule Details */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             currentConfig.show_date !== false
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     currentConfig.show_date !== false
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <Calendar className="w-4 h-4" />
                                                 </div>
@@ -1116,9 +1150,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Date, Day &amp; Schedule Details</span>
                                                         {currentConfig.show_date !== false ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1133,21 +1172,21 @@ export default function CardTemplates({
                                                     onChange={(e) => updateDirectConfig('show_date', e.target.checked)}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
 
                                         {/* F. Headline Badge Pill */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             (form.data.show_category_badge && currentConfig.show_headline !== false)
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     (form.data.show_category_badge && currentConfig.show_headline !== false)
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <ShieldCheck className="w-4 h-4" />
                                                 </div>
@@ -1155,9 +1194,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Headline / Top Tag Pill</span>
                                                         {(form.data.show_category_badge && currentConfig.show_headline !== false) ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1175,21 +1219,21 @@ export default function CardTemplates({
                                                     }}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
 
                                         {/* G. Invitation Quote */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             currentConfig.show_quote !== false
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     currentConfig.show_quote !== false
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <Sparkles className="w-4 h-4" />
                                                 </div>
@@ -1197,9 +1241,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Invitation Quote / Tagline</span>
                                                         {currentConfig.show_quote !== false ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1214,21 +1263,21 @@ export default function CardTemplates({
                                                     onChange={(e) => updateDirectConfig('show_quote', e.target.checked)}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
 
                                         {/* H. Venue & Location */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                                             currentConfig.show_venue !== false
-                                                ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] opacity-75'
+                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
                                                     currentConfig.show_venue !== false
-                                                        ? 'bg-cyan-600 text-white'
-                                                        : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
                                                     <MapPin className="w-4 h-4" />
                                                 </div>
@@ -1236,9 +1285,14 @@ export default function CardTemplates({
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Venue Location Details</span>
                                                         {currentConfig.show_venue !== false ? (
-                                                            <span className="text-[9.5px] font-extrabold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full font-mono">VISIBLE</span>
+                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                <span>VISIBLE</span>
+                                                            </span>
                                                         ) : (
-                                                            <span className="text-[9.5px] font-extrabold text-slate-500 bg-slate-200 dark:bg-white/[0.08] px-2 py-0.5 rounded-full font-mono">HIDDEN</span>
+                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span>HIDDEN</span>
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1253,7 +1307,7 @@ export default function CardTemplates({
                                                     onChange={(e) => updateDirectConfig('show_venue', e.target.checked)}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
                                     </div>
@@ -2714,16 +2768,16 @@ export default function CardTemplates({
                                 {canCustomize ? (
                                     <PrimaryButton 
                                         disabled={form.processing} 
-                                        className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white dark:text-slate-950 py-3 px-6 rounded-2xl text-xs font-black gap-2 shadow-lg hover:shadow-xl transition active:scale-95 ml-auto cursor-pointer"
+                                        className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white py-2.5 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs transition active:scale-95 ml-auto cursor-pointer"
                                     >
-                                        <Save className="w-3.5 h-3.5 text-cyan-400 dark:text-slate-950 stroke-[2.5]" />
+                                        <Save className="w-3.5 h-3.5 text-slate-200 dark:text-white" />
                                         <span>Save Template Configurations</span>
                                     </PrimaryButton>
                                 ) : (
                                     <button
                                         type="button"
                                         onClick={() => alert('4K Card Studio design & artwork customization permissions are locked for your organizer account by platform governance.')}
-                                        className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-200 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 font-bold text-xs border border-slate-300 dark:border-white/[0.08] cursor-not-allowed opacity-80 shadow-xs ml-auto"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-200 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 font-bold text-xs border border-slate-300 dark:border-white/[0.08] cursor-not-allowed opacity-80 shadow-xs ml-auto"
                                         title="Template Customization Locked"
                                     >
                                         <Lock className="w-3.5 h-3.5 text-slate-500" />
@@ -2740,12 +2794,13 @@ export default function CardTemplates({
                         {/* ── Interactive Test Guest Controls & Live Preview Stage ── */}
                         <div className="w-full bg-white/75 dark:bg-[#0B1524] backdrop-blur-3xl backdrop-saturate-180 p-4 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card space-y-3">
                             <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                                <span className="flex items-center gap-1.5 font-display">
-                                    <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                <span className="flex items-center gap-2 font-display">
+                                    <Sparkles className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                                     <span>Live Pass Preview Stage</span>
                                 </span>
-                                <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-300 font-extrabold uppercase bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 px-2 py-0.5 rounded-full">
-                                    Vector Sync Active
+                                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-slate-700 dark:text-slate-300 font-medium uppercase bg-white dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] px-2.5 py-0.5 rounded-full shadow-2xs">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span>Vector Sync</span>
                                 </span>
                             </div>
 
@@ -2805,7 +2860,7 @@ export default function CardTemplates({
                     <form onSubmit={handleUploadSubmit} className="p-6 sm:p-7 space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
                             <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                <Upload className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                                 <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
                                     Import Custom 4K Artwork Asset
                                 </h3>
@@ -2836,17 +2891,17 @@ export default function CardTemplates({
                                 type="file"
                                 accept="image/*"
                                 onChange={(e) => uploadForm.setData('image_file', e.target.files[0])}
-                                className="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-kardovo-navy dark:file:bg-cyan-600 file:text-white hover:file:bg-slate-900 cursor-pointer border border-slate-300 dark:border-white/[0.08] rounded-xl p-1 bg-white dark:bg-[#08121E]"
+                                className="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 hover:file:bg-slate-800 dark:file:bg-cyan-600 dark:hover:file:bg-cyan-500 file:text-white cursor-pointer border border-slate-300 dark:border-white/[0.08] rounded-xl p-1 bg-white dark:bg-[#08121E]"
                                 required
                             />
                             {uploadForm.data.image_file && (
-                                <div className="mt-2 w-full h-28 rounded-xl overflow-hidden bg-slate-900 border border-cyan-500/50 relative flex items-center justify-center shadow-md">
+                                <div className="mt-2 w-full h-28 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 relative flex items-center justify-center shadow-md">
                                     <img
                                         src={URL.createObjectURL(uploadForm.data.image_file)}
                                         alt="Upload Preview"
                                         className="w-full h-full object-cover"
                                     />
-                                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-cyan-300 text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs">
+                                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs border border-white/10">
                                         Artwork Preview Ready
                                     </span>
                                 </div>
@@ -2874,13 +2929,13 @@ export default function CardTemplates({
                                     }}
                                     className={`p-3 rounded-2xl border text-left transition active:scale-95 flex flex-col justify-between cursor-pointer ${
                                         uploadForm.data.overlay_mode !== 'full'
-                                            ? 'border-cyan-500 bg-cyan-50/60 dark:bg-cyan-950/40 text-slate-900 dark:text-white shadow-xs ring-1 ring-cyan-500/40'
-                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400'
+                                            ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
+                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400'
                                     }`}
                                 >
                                     <div className="flex items-center justify-between">
                                         <span className="font-bold text-xs">Minimal Overlays</span>
-                                        <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/60 px-2 py-0.5 rounded-full font-mono">Recommended</span>
+                                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] px-2 py-0.5 rounded-full font-mono">Recommended</span>
                                     </div>
                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
                                         Only <strong>Guest Name + QR Code + Security Code</strong>. Ideal for designs with pre-printed event text.
@@ -2905,8 +2960,8 @@ export default function CardTemplates({
                                     }}
                                     className={`p-3 rounded-2xl border text-left transition active:scale-95 flex flex-col justify-between cursor-pointer ${
                                         uploadForm.data.overlay_mode === 'full'
-                                            ? 'border-cyan-500 bg-cyan-50/60 dark:bg-cyan-950/40 text-slate-900 dark:text-white shadow-xs ring-1 ring-cyan-500/40'
-                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400'
+                                            ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
+                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400'
                                     }`}
                                 >
                                     <div className="flex items-center justify-between">
@@ -2923,7 +2978,7 @@ export default function CardTemplates({
                             <SecondaryButton onClick={() => setUploadModalOpen(false)}>
                                 Cancel
                             </SecondaryButton>
-                            <PrimaryButton disabled={uploadForm.processing} className="bg-kardovo-navy dark:bg-cyan-600 hover:bg-slate-900 dark:hover:bg-cyan-500 py-2.5 px-4 text-xs font-bold">
+                            <PrimaryButton disabled={uploadForm.processing} className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs transition active:scale-95">
                                 Upload &amp; Create Template
                             </PrimaryButton>
                         </div>

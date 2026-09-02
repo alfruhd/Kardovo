@@ -70,6 +70,7 @@ const TEXT_ONLY_PRESETS = [
 export default function Messaging({ 
     events = [], 
     selectedEvent, 
+    templates = [],
     recentMessages = [], 
     quotas = null,
     gateways = {},
@@ -200,6 +201,16 @@ export default function Messaging({
     const handleSelectEvent = (eventId) => {
         router.get(route('messaging.index'), { event_id: eventId }, { preserveState: true });
         broadcastForm.setData('event_id', eventId);
+    };
+
+    const handleSwitchTemplate = (templateId) => {
+        if (!selectedEvent) return;
+        router.patch(route('messaging.updateEventTemplate', selectedEvent.id), {
+            card_template_id: templateId
+        }, {
+            preserveScroll: true,
+            preserveState: true,
+        });
     };
 
     const handleSendBroadcast = (e) => {
@@ -606,6 +617,90 @@ export default function Messaging({
                                     Step 03 / Delivery
                                 </span>
                             </div>
+
+                            {/* ═══════════════ DEPLOYMENT PASS TEMPLATE & APPROVAL ═══════════════ */}
+                            {campaignType !== 'text_only' ? (
+                                <div className="p-4 sm:p-5 bg-slate-50/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <Ticket className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                            <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-display">
+                                                Card Template for Deployment
+                                            </span>
+                                        </div>
+                                        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 px-2.5 py-0.5 rounded-full self-start sm:self-auto shadow-2xs">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span>Approved &amp; Ready for Broadcast</span>
+                                        </span>
+                                    </div>
+
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.06] shadow-2xs">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            {template?.image_path ? (
+                                                <img 
+                                                    src={template.image_path} 
+                                                    alt={template.name} 
+                                                    className="w-12 h-14 object-cover rounded-lg border border-slate-200 dark:border-white/10 flex-shrink-0 shadow-xs"
+                                                />
+                                            ) : (
+                                                <div 
+                                                    className="w-12 h-14 rounded-lg flex-shrink-0 flex items-center justify-center text-white text-[9px] font-bold p-1 text-center shadow-xs border border-white/10 font-mono"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${template?.brand_color_from || '#0D1B2A'} 0%, ${template?.brand_color_to || '#0B1E35'} 100%)`
+                                                    }}
+                                                >
+                                                    PASS
+                                                </div>
+                                            )}
+                                            <div className="min-w-0">
+                                                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                    {template?.name || 'Kardovo Signature Pass (Default)'}
+                                                </div>
+                                                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 truncate">
+                                                    {template?.image_path ? '4K Custom Artwork Pass' : 'Vector Gradient Pass'} • {template?.headline || 'OFFICIAL INVITATION'}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassModal(true)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs transition active:scale-95 cursor-pointer"
+                                                title="Preview Full 4K Invitation Pass"
+                                            >
+                                                <Sparkles className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                                <span>Preview Pass</span>
+                                            </button>
+
+                                            {templates && templates.length > 0 && selectedEvent && (
+                                                <div className="relative">
+                                                    <select
+                                                        value={template?.id || ''}
+                                                        onChange={(e) => handleSwitchTemplate(e.target.value)}
+                                                        className="text-xs font-bold py-1.5 pl-2.5 pr-7 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-800 dark:text-slate-200 cursor-pointer appearance-none hover:border-slate-400 dark:hover:border-white/20 shadow-xs focus:ring-1 focus:ring-cyan-500"
+                                                        title="Switch or approve another template for this event"
+                                                    >
+                                                        {templates.map(tpl => (
+                                                            <option key={tpl.id} value={tpl.id} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
+                                                                Switch: {tpl.name}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="p-3.5 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-slate-200/60 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                                    <span className="flex items-center gap-2">
+                                        <MessageSquare className="w-4 h-4 text-slate-400" />
+                                        <span>Plain Text Mode: No card artwork attachment will be sent with this broadcast.</span>
+                                    </span>
+                                </div>
+                            )}
 
                             {/* Recipient Audience Filter Capsules */}
                             <div className="space-y-2.5">

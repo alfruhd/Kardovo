@@ -72,9 +72,20 @@ class MessagingController extends Controller
             'status' => 'Active',
         ]);
 
+        $templatesQuery = \App\Models\CardTemplate::query();
+        if ($user) {
+            $templatesQuery->where(function ($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            });
+        }
+        $templates = $templatesQuery
+            ->orderByRaw("CASE WHEN template_type = 'gradient_card' THEN 0 ELSE 1 END, id ASC")
+            ->get();
+
         return Inertia::render('Customer/Messaging', [
             'events' => $events,
             'selectedEvent' => $selectedEvent,
+            'templates' => $templates,
             'recentMessages' => $recentMessages,
             'quotas' => $user ? $user->getMessageQuotaStats() : null,
             'gateways' => [
@@ -83,6 +94,22 @@ class MessagingController extends Controller
             ],
             'isAdmin' => $user->isAdmin(),
         ]);
+    }
+
+    public function updateEventTemplate(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+            abort(403, 'Unauthorized to edit this event.');
+        }
+
+        $validated = $request->validate([
+            'card_template_id' => 'required|exists:card_templates,id',
+        ]);
+
+        $event->update($validated);
+
+        return back()->with('success', 'Pass template approved and updated for this event.');
     }
 
     public function sendBroadcast(Request $request)

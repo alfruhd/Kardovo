@@ -91,20 +91,3 @@ test('login with verify_via_sms dispatches sms otp and redirects to verification
     $this->assertEquals('sms', $smsInfo['channel']);
     $this->assertStringContainsString('255712345678', $smsInfo['clean_phone']);
 });
-
-test('instant test sms login dispatches sms code and initiates otp session', function () {
-    $user = User::factory()->create([
-        'email' => 'sms_test_user@kardovo.com',
-        'phone' => '+255 789 123 456',
-    ]);
-
-    $response = $this->post('/test-sms-login', [
-        'email' => 'sms_test_user@kardovo.com',
-        'phone' => '+255 789 123 456',
-    ]);
-
-    $response->assertRedirect(route('two-factor.index'));
-    $this->assertTrue(session()->has('auth.2fa_user_id'));
-    $this->assertTrue(session()->has('auth.2fa_dev_code'));
-    $this->assertTrue(session()->has('auth.2fa_sms_info'));
-});

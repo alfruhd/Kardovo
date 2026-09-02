@@ -9,9 +9,9 @@ use Illuminate\Support\Facades\Log;
 class SmsService
 {
     /**
-     * Send a 6-digit OTP verification code via standard SMS.
+     * Send a 6-digit OTP verification code via standard telecom SMS.
      *
-     * @param string $phone Destination phone number
+     * @param string $phone Destination phone number (e.g. +255 767 218 357)
      * @param string $code 6-digit verification code
      * @param string|null $userName Optional recipient name
      * @return array Dispatch telemetry results
@@ -21,22 +21,15 @@ class SmsService
         $cleanPhone = PhoneNormalizer::cleanForApi($phone);
         $displayPhone = PhoneNormalizer::formatDisplay($phone);
 
-        $gateway = SystemSetting::get('sms_gateway', [
-            'provider' => 'NextSMS Tanzania',
-            'sender_id' => 'KARDOVO',
-            'api_key' => 'nextsms_live_api_key',
-            'api_secret' => 'sec_984187201948201',
-            'api_endpoint' => 'https://messaging-service.co.tz/api/sms/v1/text/single',
-            'balance' => '12,450 TZS',
-            'country_code' => '+255',
-            'status' => 'Active',
-        ]);
+        $gateway = SystemSetting::get('sms_gateway', []);
 
-        $senderId = !empty($gateway['sender_id']) ? strtoupper(trim($gateway['sender_id'])) : 'KARDOVO';
-        $provider = $gateway['provider'] ?? 'NextSMS Tanzania';
+        // Resolve active provider and credentials (env takes precedence, then SystemSetting)
+        $provider = env('SMS_PROVIDER', $gateway['provider'] ?? 'NextSMS');
+        $senderId = env('SMS_SENDER_ID', $gateway['sender_id'] ?? 'KARDOVO');
+        $senderId = strtoupper(trim($senderId ?: 'KARDOVO'));
 
         $greeting = $userName ? "Habari {$userName}! " : "";
-        $messageBody = "{$greeting}[{$senderId}] Your login verification code is: {$code}. Valid for 10 minutes. Do not disclose this code to anyone.";
+        $messageBody = "{$greeting}[{$senderId}] Your security verification code is: {$code}. Valid for 10 minutes. Do not disclose this code to anyone.";
 
         $dispatchResult = [
             'success' => true,
@@ -53,38 +46,121 @@ class SmsService
             'live_carrier_sent' => false,
         ];
 
-        // Attempt live carrier dispatch if credentials and endpoint are present
-        $apiKey = $gateway['api_key'] ?? '';
-        $apiSecret = $gateway['api_secret'] ?? '';
-        $endpoint = $gateway['api_endpoint'] ?? '';
+        // 1. Check for NextSMS credentials
+        $nextSmsUser = env('NEXTSMS_USERNAME', env('NEXTSMS_API_KEY', $gateway['api_key'] ?? ''));
+        $nextSmsPass = env('NEXTSMS_PASSWORD', env('NEXTSMS_API_SECRET', $gateway['api_secret'] ?? ''));
+        $isNextSmsLive = !empty($nextSmsUser) 
+            && !empty($nextSmsPass) 
+            && !str_starts_with($nextSmsUser, 'nextsms_live_api_key')
+            && !str_starts_with($nextSmsPass, 'sec_');
 
-        $isLiveConfigured = !empty($apiKey) 
-            && !str_starts_with($apiKey, 'nextsms_live_api_key') 
-            && !empty($endpoint);
+        // 2. Check for Beem Africa credentials
+        $beemApiKey = env('BEEM_API_KEY', $gateway['beem_api_key'] ?? '');
+        $beemSecret = env('BEEM_SECRET_KEY', $gateway['beem_secret_key'] ?? '');
+        $isBeemLive = !empty($beemApiKey) && !empty($beemSecret);
 
-        if ($isLiveConfigured && !empty($cleanPhone)) {
+        // 3. Check for Africa's Talking credentials
+        $atApiKey = env('AFRICASTALKING_APIKEY', env('AFRICASTALKING_API_KEY', $gateway['at_api_key'] ?? ''));
+        $atUsername = env('AFRICASTALKING_USERNAME', $gateway['at_username'] ?? 'sandbox');
+        $isAtLive = !empty($atApiKey);
+
+        // 4. Check for Twilio credentials
+        $twilioSid = env('TWILIO_SID', $gateway['twilio_sid'] ?? '');
+        $twilioToken = env('TWILIO_AUTH_TOKEN', $gateway['twilio_token'] ?? '');
+        $twilioFrom = env('TWILIO_FROM', $gateway['twilio_from'] ?? '');
+        $isTwilioLive = !empty($twilioSid) && !empty($twilioToken);
+
+        if (!empty($cleanPhone)) {
             try {
-                $response = Http::timeout(5)
-                    ->withBasicAuth($apiKey, $apiSecret)
-                    ->post($endpoint, [
-                        'from' => $senderId,
-                        'to' => $cleanPhone,
-                        'text' => $messageBody,
-                    ]);
+                if ($isNextSmsLive) {
+                    // NextSMS Tanzania API
+                    $endpoint = $gateway['api_endpoint'] ?? 'https://messaging-service.co.tz/api/sms/v1/text/single';
+                    $response = Http::timeout(8)
+                        ->withBasicAuth($nextSmsUser, $nextSmsPass)
+                        ->acceptJson()
+                        ->post($endpoint, [
+                            'from' => $senderId,
+                            'to' => $cleanPhone,
+                            'text' => $messageBody,
+                        ]);
 
-                if ($response->successful()) {
-                    $dispatchResult['live_carrier_sent'] = true;
-                    $dispatchResult['carrier_response'] = $response->json();
-                    Log::info("[SMS CARRIER DISPATCH SUCCESS] To: {$cleanPhone} | From: {$senderId} | Code: {$code}");
+                    if ($response->successful()) {
+                        $dispatchResult['live_carrier_sent'] = true;
+                        $dispatchResult['carrier_response'] = $response->json();
+                        Log::info("[NEXTSMS DISPATCH SUCCESS] To: {$cleanPhone} | Sender: {$senderId} | Code: {$code}");
+                    } else {
+                        Log::warning("[NEXTSMS DISPATCH FAILED] Status: {$response->status()} | Body: {$response->body()}");
+                    }
+                } elseif ($isBeemLive) {
+                    // Beem Africa SMS API
+                    $response = Http::timeout(8)
+                        ->withBasicAuth($beemApiKey, $beemSecret)
+                        ->acceptJson()
+                        ->post('https://api.beem.africa/v1/send', [
+                            'source_addr' => $senderId,
+                            'schedule_time' => '',
+                            'encoding' => 0,
+                            'message' => $messageBody,
+                            'recipients' => [
+                                ['recipient_id' => 1, 'dest_addr' => $cleanPhone]
+                            ],
+                        ]);
+
+                    if ($response->successful()) {
+                        $dispatchResult['live_carrier_sent'] = true;
+                        $dispatchResult['carrier_response'] = $response->json();
+                        Log::info("[BEEM SMS DISPATCH SUCCESS] To: {$cleanPhone} | Code: {$code}");
+                    } else {
+                        Log::warning("[BEEM SMS DISPATCH FAILED] Status: {$response->status()} | Body: {$response->body()}");
+                    }
+                } elseif ($isAtLive) {
+                    // Africa's Talking SMS API
+                    $endpoint = 'https://api.africastalking.com/version1/messaging';
+                    $response = Http::timeout(8)
+                        ->withHeaders([
+                            'apiKey' => $atApiKey,
+                            'Accept' => 'application/json',
+                        ])
+                        ->asForm()
+                        ->post($endpoint, [
+                            'username' => $atUsername,
+                            'to' => '+' . $cleanPhone,
+                            'message' => $messageBody,
+                            'from' => $senderId,
+                        ]);
+
+                    if ($response->successful()) {
+                        $dispatchResult['live_carrier_sent'] = true;
+                        $dispatchResult['carrier_response'] = $response->json();
+                        Log::info("[AFRICAS TALKING DISPATCH SUCCESS] To: {$cleanPhone} | Code: {$code}");
+                    } else {
+                        Log::warning("[AFRICAS TALKING DISPATCH FAILED] Status: {$response->status()} | Body: {$response->body()}");
+                    }
+                } elseif ($isTwilioLive) {
+                    // Twilio SMS API
+                    $endpoint = "https://api.twilio.com/2010-04-01/Accounts/{$twilioSid}/Messages.json";
+                    $response = Http::timeout(8)
+                        ->withBasicAuth($twilioSid, $twilioToken)
+                        ->asForm()
+                        ->post($endpoint, [
+                            'To' => '+' . $cleanPhone,
+                            'From' => $twilioFrom ?: $senderId,
+                            'Body' => $messageBody,
+                        ]);
+
+                    if ($response->successful()) {
+                        $dispatchResult['live_carrier_sent'] = true;
+                        $dispatchResult['carrier_response'] = $response->json();
+                        Log::info("[TWILIO SMS DISPATCH SUCCESS] To: {$cleanPhone} | Code: {$code}");
+                    } else {
+                        Log::warning("[TWILIO SMS DISPATCH FAILED] Status: {$response->status()} | Body: {$response->body()}");
+                    }
                 } else {
-                    Log::warning("[SMS CARRIER DISPATCH HTTP {$response->status()}] To: {$cleanPhone} | Response: {$response->body()}");
+                    Log::info("[SMS LOCAL/SANDBOX DISPATCH] No live carrier credentials detected in .env or SystemSetting. SMS simulated to: +{$cleanPhone} ({$displayPhone}) | Sender: {$senderId} | Code: {$code} | Body: \"{$messageBody}\"");
                 }
             } catch (\Throwable $e) {
-                Log::warning("[SMS CARRIER DISPATCH EXCEPTION] To: {$cleanPhone} - {$e->getMessage()}");
+                Log::error("[SMS CARRIER DISPATCH EXCEPTION] To: {$cleanPhone} - {$e->getMessage()}");
             }
-        } else {
-            // Local dev / simulation mode
-            Log::info("[SMS GATEWAY LOCAL DISPATCH] To: {$cleanPhone} ({$displayPhone}) | From: {$senderId} | Body: \"{$messageBody}\"");
         }
 
         return $dispatchResult;

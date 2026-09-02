@@ -49,12 +49,21 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
     const dropdownRef = useRef(null);
 
     useEffect(() => {
-        const removeStart = router.on('start', () => setPageNavigating(true));
-        const removeFinish = router.on('finish', () => setPageNavigating(false));
+        let timer = null;
+        const removeStart = router.on('start', () => {
+            if (timer) clearTimeout(timer);
+            setPageNavigating(true);
+        });
+        const removeFinish = router.on('finish', () => {
+            timer = setTimeout(() => {
+                setPageNavigating(false);
+            }, 650);
+        });
 
         return () => {
             removeStart();
             removeFinish();
+            if (timer) clearTimeout(timer);
         };
     }, []);
 
@@ -579,6 +588,15 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                                         >
                                             <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                             <span>Security &amp; Password</span>
+                                        </Link>
+
+                                        <Link
+                                            href={route("dev.loadingPreview")}
+                                            onClick={() => setUserDropdownOpen(false)}
+                                            className="flex items-center gap-2.5 px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06] font-medium transition"
+                                        >
+                                            <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                            <span>Loading Animations</span>
                                         </Link>
 
                                         <button

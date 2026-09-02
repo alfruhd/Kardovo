@@ -5,6 +5,13 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { 
+    validateEmail, 
+    validatePhone, 
+    validateFileSize, 
+    validateFileExtension, 
+    validateRequired 
+} from '@/Utils/validation';
+import { 
     User, 
     Mail, 
     Smartphone, 
@@ -17,7 +24,9 @@ import {
     Sparkles, 
     ShieldCheck,
     Lock,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Check,
+    AlertCircle
 } from 'lucide-react';
 
 export default function UpdateProfileInformation({
@@ -29,6 +38,8 @@ export default function UpdateProfileInformation({
     const isAdmin = user?.role === 'admin';
     const fileInputRef = useRef(null);
     const [previewUrl, setPreviewUrl] = useState(user?.avatar || null);
+    const [clientErrors, setClientErrors] = useState({});
+    const [touched, setTouched] = useState({});
 
     const { data, setData, post, patch, errors, processing, recentlySuccessful } =
         useForm({
@@ -45,9 +56,58 @@ export default function UpdateProfileInformation({
             _method: 'PATCH',
         });
 
+    const validateField = (field, value) => {
+        const errs = { ...clientErrors };
+        if (field === 'name') {
+            if (!validateRequired(value, 2, 255)) {
+                errs.name = 'Full name must be at least 2 characters.';
+            } else {
+                delete errs.name;
+            }
+        }
+        if (field === 'email') {
+            if (!value || !value.trim()) {
+                errs.email = 'Email address is required.';
+            } else if (!validateEmail(value)) {
+                errs.email = 'Please provide a valid email address (e.g. name@company.com).';
+            } else {
+                delete errs.email;
+            }
+        }
+        if (field === 'phone') {
+            if (value && value.trim() && !validatePhone(value)) {
+                errs.phone = 'Please provide a valid phone number with country code (e.g. +255 712 345 678).';
+            } else {
+                delete errs.phone;
+            }
+        }
+        setClientErrors(errs);
+        return errs;
+    };
+
     const handleFileSelect = (e) => {
         const file = e.target.files?.[0];
         if (file) {
+            const extCheck = validateFileExtension(file, ['jpg', 'jpeg', 'png', 'webp', 'svg']);
+            if (!extCheck.isValid) {
+                setClientErrors(prev => ({ ...prev, avatar_file: extCheck.message }));
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+
+            const sizeCheck = validateFileSize(file, 5);
+            if (!sizeCheck.isValid) {
+                setClientErrors(prev => ({ ...prev, avatar_file: sizeCheck.message }));
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+
+            setClientErrors(prev => {
+                const next = { ...prev };
+                delete next.avatar_file;
+                return next;
+            });
+
             setData((prev) => ({
                 ...prev,
                 avatar_file: file,
@@ -68,6 +128,11 @@ export default function UpdateProfileInformation({
             remove_avatar: true,
         }));
         setPreviewUrl(null);
+        setClientErrors(prev => {
+            const next = { ...prev };
+            delete next.avatar_file;
+            return next;
+        });
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -75,6 +140,24 @@ export default function UpdateProfileInformation({
 
     const submit = (e) => {
         e.preventDefault();
+
+        // Run full client-side validation
+        const errs = {};
+        if (!validateRequired(data.name, 2, 255)) {
+            errs.name = 'Full name must be at least 2 characters.';
+        }
+        if (!data.email || !validateEmail(data.email)) {
+            errs.email = 'Please provide a valid email address.';
+        }
+        if (data.phone && data.phone.trim() && !validatePhone(data.phone)) {
+            errs.phone = 'Please provide a valid phone number (e.g. +255 712 345 678).';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setClientErrors(errs);
+            setTouched({ name: true, email: true, phone: true });
+            return;
+        }
         
         if (data.avatar_file) {
             post(route('profile.update'), {
@@ -195,7 +278,7 @@ export default function UpdateProfileInformation({
                                 )}
                             </div>
 
-                            <InputError className="mt-1" message={errors.avatar_file} />
+                            <InputError className="mt-1" message={clientErrors.avatar_file || errors.avatar_file} />
                         </div>
                     </div>
                 </div>
@@ -204,55 +287,111 @@ export default function UpdateProfileInformation({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Full Name */}
                     <div>
-                        <InputLabel htmlFor="name" value="Full Name *" />
+                        <div className="flex items-center justify-between">
+                            <InputLabel htmlFor="name" value="Full Name *" />
+                            {touched.name && !clientErrors.name && data.name.trim().length >= 2 && (
+                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
+                                    <Check className="w-3 h-3" />
+                                    <span>Valid</span>
+                                </span>
+                            )}
+                        </div>
                         <div className="relative mt-1">
                             <TextInput
                                 id="name"
                                 className="block w-full text-xs font-bold pl-3"
                                 value={data.name}
-                                onChange={(e) => setData('name', e.target.value)}
+                                onChange={(e) => {
+                                    setData('name', e.target.value);
+                                    validateField('name', e.target.value);
+                                }}
+                                onBlur={() => {
+                                    setTouched(prev => ({ ...prev, name: true }));
+                                    validateField('name', data.name);
+                                }}
+                                hasError={Boolean((touched.name && clientErrors.name) || errors.name)}
+                                isValid={Boolean(touched.name && !clientErrors.name && data.name.trim().length >= 2)}
                                 required
                                 autoComplete="name"
                                 placeholder="e.g. Alfred Mashauri"
                             />
                         </div>
-                        <InputError className="mt-1.5" message={errors.name} />
+                        <InputError className="mt-1.5" message={(touched.name && clientErrors.name) || errors.name} />
                     </div>
 
                     {/* Email Address */}
                     <div>
-                        <InputLabel htmlFor="email" value="Email Address *" />
+                        <div className="flex items-center justify-between">
+                            <InputLabel htmlFor="email" value="Email Address *" />
+                            {touched.email && !clientErrors.email && validateEmail(data.email) && (
+                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
+                                    <Check className="w-3 h-3" />
+                                    <span>Verified format</span>
+                                </span>
+                            )}
+                        </div>
                         <div className="relative mt-1">
                             <TextInput
                                 id="email"
                                 type="email"
                                 className="block w-full text-xs font-mono font-bold pl-3"
                                 value={data.email}
-                                onChange={(e) => setData('email', e.target.value)}
+                                onChange={(e) => {
+                                    setData('email', e.target.value);
+                                    validateField('email', e.target.value);
+                                }}
+                                onBlur={() => {
+                                    setTouched(prev => ({ ...prev, email: true }));
+                                    validateField('email', data.email);
+                                }}
+                                hasError={Boolean((touched.email && clientErrors.email) || errors.email)}
+                                isValid={Boolean(touched.email && !clientErrors.email && validateEmail(data.email))}
                                 required
                                 autoComplete="username"
                                 placeholder="name@company.com"
                             />
                         </div>
-                        <InputError className="mt-1.5" message={errors.email} />
+                        <InputError className="mt-1.5" message={(touched.email && clientErrors.email) || errors.email} />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* Phone Number */}
                     <div>
-                        <InputLabel htmlFor="phone" value="Phone Number (WhatsApp / Contact)" />
+                        <div className="flex items-center justify-between">
+                            <InputLabel htmlFor="phone" value="Phone Number (WhatsApp / Contact)" />
+                            {data.phone && data.phone.trim() && validatePhone(data.phone) && (
+                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                                    <Check className="w-3 h-3" />
+                                    <span>Verified</span>
+                                </span>
+                            )}
+                        </div>
                         <div className="relative mt-1">
                             <TextInput
                                 id="phone"
                                 type="text"
                                 className="block w-full text-xs font-mono font-bold pl-3"
                                 value={data.phone}
-                                onChange={(e) => setData('phone', e.target.value)}
+                                onChange={(e) => {
+                                    setData('phone', e.target.value);
+                                    validateField('phone', e.target.value);
+                                }}
+                                onBlur={() => {
+                                    setTouched(prev => ({ ...prev, phone: true }));
+                                    validateField('phone', data.phone);
+                                }}
+                                hasError={Boolean((touched.phone && clientErrors.phone) || errors.phone)}
+                                isValid={Boolean(data.phone && data.phone.trim() && validatePhone(data.phone))}
                                 placeholder="+255 712 345 678"
                             />
                         </div>
-                        <InputError className="mt-1.5" message={errors.phone} />
+                        <InputError className="mt-1.5" message={(touched.phone && clientErrors.phone) || errors.phone} />
+                        {(!touched.phone || !clientErrors.phone) && !errors.phone && (
+                            <p className="text-[10px] text-slate-400 font-mono mt-1">
+                                International format supported: e.g. +255 712 345 678 or 0712345678
+                            </p>
+                        )}
                     </div>
 
                     {/* Company / Brand Name */}
@@ -402,8 +541,17 @@ export default function UpdateProfileInformation({
                         </span>
                     ) : <div />}
 
-                    <div className="ml-auto">
-                        <PrimaryButton disabled={processing} className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer">
+                    <div className="ml-auto flex items-center gap-3">
+                        {Object.keys(clientErrors).length > 0 && (
+                            <span className="text-[11px] font-semibold text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5" />
+                                <span>Please resolve form errors above</span>
+                            </span>
+                        )}
+                        <PrimaryButton 
+                            disabled={processing || Boolean(clientErrors.name || clientErrors.email || clientErrors.phone || clientErrors.avatar_file)} 
+                            className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             <Save className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
                             <span>{processing ? 'Saving...' : 'Save Profile Changes'}</span>
                         </PrimaryButton>

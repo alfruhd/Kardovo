@@ -1,10 +1,15 @@
+import { AlertCircle } from 'lucide-react';
+
 export default function InputError({ message, className = '', ...props }) {
-    return message ? (
+    if (!message) return null;
+
+    return (
         <p
             {...props}
-            className={'text-sm text-red-600 ' + className}
+            className={`inline-flex items-center gap-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 ${className}`}
         >
-            {message}
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{message}</span>
         </p>
-    ) : null;
+    );
 }

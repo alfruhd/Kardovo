@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
+import InputError from '@/Components/InputError';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
@@ -20,7 +21,8 @@ import {
     RefreshCw, 
     Globe,
     Radio,
-    X
+    X,
+    AlertCircle
 } from 'lucide-react';
 
 export default function GatewayConfigModal({ 
@@ -35,6 +37,7 @@ export default function GatewayConfigModal({
     const [copiedWebhook, setCopiedWebhook] = useState(false);
     const [testingConnection, setTestingConnection] = useState(false);
     const [testResult, setTestResult] = useState(null);
+    const [gwErrors, setGwErrors] = useState({});
 
     const webhookUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/whatsapp` : 'https://kardovo.com/api/webhooks/whatsapp';
 
@@ -96,6 +99,21 @@ export default function GatewayConfigModal({
 
     const handleSaveWhatsApp = (e) => {
         e.preventDefault();
+        const errs = {};
+        const pid = whatsappForm.data.config.phone_number_id;
+        if (!pid || !/^\d+$/.test(pid.trim())) {
+            errs.phone_number_id = 'Phone Number ID must contain numbers only.';
+        }
+        if (!whatsappForm.data.config.access_token || !whatsappForm.data.config.access_token.trim()) {
+            errs.access_token = 'Meta WhatsApp Access Token is required.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setGwErrors(errs);
+            return;
+        }
+
+        setGwErrors({});
         whatsappForm.post(route('admin.gateway'), {
             preserveScroll: true,
             onSuccess: () => onClose(),
@@ -104,6 +122,21 @@ export default function GatewayConfigModal({
 
     const handleSaveSms = (e) => {
         e.preventDefault();
+        const errs = {};
+        const sender = smsForm.data.config.sender_id;
+        if (!sender || sender.trim().length > 11) {
+            errs.sender_id = 'SMS Sender ID cannot exceed 11 characters (telecom standard).';
+        }
+        if (!smsForm.data.config.api_key || !smsForm.data.config.api_key.trim()) {
+            errs.api_key = 'SMS API Key is required.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setGwErrors(errs);
+            return;
+        }
+
+        setGwErrors({});
         smsForm.post(route('admin.gateway'), {
             preserveScroll: true,
             onSuccess: () => onClose(),
@@ -237,15 +270,20 @@ export default function GatewayConfigModal({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <InputLabel value="WhatsApp Phone Number ID" />
+                                <InputLabel value="WhatsApp Phone Number ID *" />
                                 <TextInput
                                     type="text"
                                     placeholder="e.g. 108492019482910"
                                     className="mt-1 block w-full text-xs font-mono"
                                     value={whatsappForm.data.config.phone_number_id}
-                                    onChange={(e) => whatsappForm.setData('config', { ...whatsappForm.data.config, phone_number_id: e.target.value })}
+                                    onChange={(e) => {
+                                        whatsappForm.setData('config', { ...whatsappForm.data.config, phone_number_id: e.target.value });
+                                        if (gwErrors.phone_number_id) setGwErrors(prev => ({ ...prev, phone_number_id: undefined }));
+                                    }}
+                                    hasError={Boolean(gwErrors.phone_number_id)}
                                     required
                                 />
+                                <InputError message={gwErrors.phone_number_id} className="mt-1" />
                             </div>
                             <div>
                                 <InputLabel value="WhatsApp Business Account (WABA) ID" />
@@ -261,14 +299,18 @@ export default function GatewayConfigModal({
                         </div>
 
                         <div>
-                            <InputLabel value="Permanent Access Token / Bearer Token" />
+                            <InputLabel value="Permanent Access Token / Bearer Token *" />
                             <div className="relative mt-1">
                                 <TextInput
                                     type={showWhatsAppToken ? "text" : "password"}
                                     placeholder="EAAG..."
                                     className="block w-full text-xs font-mono pr-10"
                                     value={whatsappForm.data.config.access_token}
-                                    onChange={(e) => whatsappForm.setData('config', { ...whatsappForm.data.config, access_token: e.target.value })}
+                                    onChange={(e) => {
+                                        whatsappForm.setData('config', { ...whatsappForm.data.config, access_token: e.target.value });
+                                        if (gwErrors.access_token) setGwErrors(prev => ({ ...prev, access_token: undefined }));
+                                    }}
+                                    hasError={Boolean(gwErrors.access_token)}
                                     required
                                 />
                                 <button
@@ -279,6 +321,7 @@ export default function GatewayConfigModal({
                                     {showWhatsAppToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                 </button>
                             </div>
+                            <InputError message={gwErrors.access_token} className="mt-1" />
                         </div>
 
                         {/* Webhook & Callback details */}
@@ -377,15 +420,20 @@ export default function GatewayConfigModal({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <InputLabel value="Sender ID / Alphanumeric Header" />
+                                <InputLabel value="Sender ID / Alphanumeric Header *" />
                                 <TextInput
                                     type="text"
                                     placeholder="KARDOVO"
                                     className="mt-1 block w-full text-xs font-mono font-bold uppercase tracking-wider"
                                     value={smsForm.data.config.sender_id}
-                                    onChange={(e) => smsForm.setData('config', { ...smsForm.data.config, sender_id: e.target.value.toUpperCase() })}
+                                    onChange={(e) => {
+                                        smsForm.setData('config', { ...smsForm.data.config, sender_id: e.target.value.toUpperCase() });
+                                        if (gwErrors.sender_id) setGwErrors(prev => ({ ...prev, sender_id: undefined }));
+                                    }}
+                                    hasError={Boolean(gwErrors.sender_id)}
                                     required
                                 />
+                                <InputError message={gwErrors.sender_id} className="mt-1" />
                                 <span className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 block font-medium">TCRA registered sender name (max 11 chars)</span>
                             </div>
                             <div>
@@ -403,15 +451,20 @@ export default function GatewayConfigModal({
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <InputLabel value="API Key / Username" />
+                                <InputLabel value="API Key / Username *" />
                                 <TextInput
                                     type="text"
                                     placeholder="e.g. nextsms_live_api_key"
                                     className="mt-1 block w-full text-xs font-mono"
                                     value={smsForm.data.config.api_key}
-                                    onChange={(e) => smsForm.setData('config', { ...smsForm.data.config, api_key: e.target.value })}
+                                    onChange={(e) => {
+                                        smsForm.setData('config', { ...smsForm.data.config, api_key: e.target.value });
+                                        if (gwErrors.api_key) setGwErrors(prev => ({ ...prev, api_key: undefined }));
+                                    }}
+                                    hasError={Boolean(gwErrors.api_key)}
                                     required
                                 />
+                                <InputError message={gwErrors.api_key} className="mt-1" />
                             </div>
                             <div>
                                 <InputLabel value="API Secret / Password / Auth Token" />

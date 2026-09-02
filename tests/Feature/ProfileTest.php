@@ -83,3 +83,37 @@ test('correct password must be provided to delete account', function () {
 
     $this->assertNotNull($user->fresh());
 });
+
+test('profile phone is normalized upon update', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch('/profile', [
+            'name' => 'Alfred Damas',
+            'email' => $user->email,
+            'phone' => '0712 345 678',
+        ]);
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect('/profile');
+
+    $user->refresh();
+    $this->assertSame('+255 712 345 678', $user->phone);
+});
+
+test('invalid profile phone or email is rejected', function () {
+    $user = User::factory()->create();
+
+    $response = $this
+        ->actingAs($user)
+        ->patch('/profile', [
+            'name' => 'A', // too short
+            'email' => 'not-an-email',
+            'phone' => 'invalid-abc-123',
+        ]);
+
+    $response
+        ->assertSessionHasErrors(['name', 'email', 'phone']);
+});

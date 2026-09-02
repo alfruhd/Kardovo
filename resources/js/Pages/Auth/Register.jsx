@@ -5,6 +5,8 @@ import TextInput from '@/Components/TextInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { validateEmail, validateRequired } from '@/Utils/validation';
+import { Check, X } from 'lucide-react';
 
 export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -14,8 +16,27 @@ export default function Register() {
         password_confirmation: '',
     });
 
+    const isMatch = Boolean(
+        data.password && 
+        data.password_confirmation && 
+        data.password === data.password_confirmation
+    );
+
+    const isMismatch = Boolean(
+        data.password_confirmation && 
+        data.password !== data.password_confirmation
+    );
+
+    const isLengthValid = data.password.length >= 8;
+    const isEmailValid = validateEmail(data.email);
+    const isNameValid = data.name.trim().length >= 2;
+
     const submit = (e) => {
         e.preventDefault();
+
+        if (!isMatch || !isLengthValid || !isEmailValid || !isNameValid) {
+            return;
+        }
 
         post(route('register'), {
             onFinish: () => reset('password', 'password_confirmation'),
@@ -28,7 +49,15 @@ export default function Register() {
 
             <form onSubmit={submit}>
                 <div>
-                    <InputLabel htmlFor="name" value="Name" />
+                    <div className="flex items-center justify-between">
+                        <InputLabel htmlFor="name" value="Name" />
+                        {data.name && isNameValid && (
+                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <Check className="w-3 h-3" />
+                                <span>Valid</span>
+                            </span>
+                        )}
+                    </div>
 
                     <TextInput
                         id="name"
@@ -38,6 +67,8 @@ export default function Register() {
                         autoComplete="name"
                         isFocused={true}
                         onChange={(e) => setData('name', e.target.value)}
+                        hasError={Boolean(errors.name)}
+                        isValid={Boolean(data.name && isNameValid)}
                         required
                     />
 
@@ -45,7 +76,15 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="email" value="Email" />
+                    <div className="flex items-center justify-between">
+                        <InputLabel htmlFor="email" value="Email" />
+                        {data.email && isEmailValid && (
+                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <Check className="w-3 h-3" />
+                                <span>Verified format</span>
+                            </span>
+                        )}
+                    </div>
 
                     <TextInput
                         id="email"
@@ -55,6 +94,8 @@ export default function Register() {
                         className="mt-1 block w-full"
                         autoComplete="username"
                         onChange={(e) => setData('email', e.target.value)}
+                        hasError={Boolean(errors.email)}
+                        isValid={Boolean(data.email && isEmailValid)}
                         required
                     />
 
@@ -62,7 +103,17 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
+                    <div className="flex items-center justify-between">
+                        <InputLabel htmlFor="password" value="Password" />
+                        {data.password && (
+                            <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
+                                isLengthValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+                            }`}>
+                                {isLengthValid ? <Check className="w-3 h-3" /> : null}
+                                <span>{isLengthValid ? 'Length met (8+)' : `${data.password.length}/8 chars`}</span>
+                            </span>
+                        )}
+                    </div>
 
                     <TextInput
                         id="password"
@@ -72,6 +123,8 @@ export default function Register() {
                         className="mt-1 block w-full"
                         autoComplete="new-password"
                         onChange={(e) => setData('password', e.target.value)}
+                        hasError={Boolean(errors.password)}
+                        isValid={Boolean(isLengthValid)}
                         required
                     />
 
@@ -81,10 +134,22 @@ export default function Register() {
                 </div>
 
                 <div className="mt-4">
-                    <InputLabel
-                        htmlFor="password_confirmation"
-                        value="Confirm Password"
-                    />
+                    <div className="flex items-center justify-between">
+                        <InputLabel
+                            htmlFor="password_confirmation"
+                            value="Confirm Password"
+                        />
+                        {data.password_confirmation && (
+                            <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
+                                isMatch 
+                                    ? 'text-emerald-600 dark:text-emerald-400' 
+                                    : 'text-rose-600 dark:text-rose-400'
+                            }`}>
+                                {isMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                                <span>{isMatch ? 'Passwords match' : 'Do not match'}</span>
+                            </span>
+                        )}
+                    </div>
 
                     <TextInput
                         id="password_confirmation"
@@ -96,6 +161,8 @@ export default function Register() {
                         onChange={(e) =>
                             setData('password_confirmation', e.target.value)
                         }
+                        hasError={Boolean(errors.password_confirmation || isMismatch)}
+                        isValid={Boolean(isMatch)}
                         required
                     />
 
@@ -125,7 +192,7 @@ export default function Register() {
                         Already registered?
                     </Link>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
+                    <PrimaryButton className="ms-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={processing || !isMatch || !isLengthValid || !isEmailValid || !isNameValid}>
                         Register
                     </PrimaryButton>
                 </div>

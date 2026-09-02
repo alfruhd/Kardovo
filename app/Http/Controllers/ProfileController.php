@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\PhoneNormalizer;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,6 +60,10 @@ class ProfileController extends Controller
             $validated['avatar'] = '/avatars/' . $fileName;
         } elseif ($request->boolean('remove_avatar')) {
             $validated['avatar'] = null;
+        }
+
+        if (!empty($validated['phone'])) {
+            $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
         }
 
         $request->user()->fill($validated);

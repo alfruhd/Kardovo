@@ -175,12 +175,12 @@ class EventController extends Controller
         }
 
         $rules = [
-            'title' => 'required|string|max:255',
+            'title' => 'required|string|min:3|max:255',
             'event_type' => 'required|string|max:100',
             'event_date' => 'required|date',
             'event_time' => 'nullable|string|max:100',
-            'venue' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
+            'venue' => 'required|string|min:2|max:255',
+            'city' => 'required|string|min:2|max:100',
             'description' => 'nullable|string',
             'card_template_id' => 'nullable|exists:card_templates,id',
         ];
@@ -189,7 +189,18 @@ class EventController extends Controller
             $rules['user_id'] = 'nullable|exists:users,id';
         }
 
-        $validated = $request->validate($rules);
+        $messages = [
+            'title.required' => 'Event title is required.',
+            'title.min' => 'Event title must be at least 3 characters.',
+            'event_date.required' => 'Event date is required.',
+            'event_date.date' => 'Please provide a valid event date.',
+            'venue.required' => 'Venue location is required.',
+            'venue.min' => 'Venue location must be at least 2 characters.',
+            'city.required' => 'City is required.',
+            'city.min' => 'City must be at least 2 characters.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         $validated['user_id'] = ($user->isAdmin() && !empty($validated['user_id'])) 
             ? $validated['user_id'] 
@@ -209,12 +220,12 @@ class EventController extends Controller
         }
 
         $rules = [
-            'title' => 'required|string|max:255',
+            'title' => 'required|string|min:3|max:255',
             'event_type' => 'required|string|max:100',
             'event_date' => 'required|date',
             'event_time' => 'nullable|string|max:100',
-            'venue' => 'required|string|max:255',
-            'city' => 'required|string|max:100',
+            'venue' => 'required|string|min:2|max:255',
+            'city' => 'required|string|min:2|max:100',
             'description' => 'nullable|string',
             'card_template_id' => 'nullable|exists:card_templates,id',
             'status' => ['nullable', Rule::in(['active', 'draft', 'completed', 'cancelled'])],
@@ -224,7 +235,18 @@ class EventController extends Controller
             $rules['user_id'] = 'nullable|exists:users,id';
         }
 
-        $validated = $request->validate($rules);
+        $messages = [
+            'title.required' => 'Event title is required.',
+            'title.min' => 'Event title must be at least 3 characters.',
+            'event_date.required' => 'Event date is required.',
+            'event_date.date' => 'Please provide a valid event date.',
+            'venue.required' => 'Venue location is required.',
+            'venue.min' => 'Venue location must be at least 2 characters.',
+            'city.required' => 'City is required.',
+            'city.min' => 'City must be at least 2 characters.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         if (empty($validated['status'])) {
             unset($validated['status']);

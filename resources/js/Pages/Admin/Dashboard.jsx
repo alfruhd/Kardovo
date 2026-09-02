@@ -4,9 +4,15 @@ import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import Modal from '@/Components/Modal';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
+import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import GatewayConfigModal from '@/Components/GatewayConfigModal';
+import { 
+    validateEmail, 
+    validatePhone, 
+    validateRequired 
+} from '@/Utils/validation';
 import { 
     Shield, 
     Users,
@@ -281,8 +287,33 @@ export default function AdminDashboard({
         return recentScanLogs.filter(l => l.status === logStatusFilter);
     }, [recentScanLogs, logStatusFilter]);
 
+    const [customerClientErrors, setCustomerClientErrors] = useState({});
+    const [editCustomerClientErrors, setEditCustomerClientErrors] = useState({});
+    const [scannerClientErrors, setScannerClientErrors] = useState({});
+    const [editScannerClientErrors, setEditScannerClientErrors] = useState({});
+
     const handleCreateCustomer = (e) => {
         e.preventDefault();
+        const errs = {};
+        if (!validateRequired(customerForm.data.name, 2)) {
+            errs.name = 'Organizer name must be at least 2 characters.';
+        }
+        if (!validateEmail(customerForm.data.email)) {
+            errs.email = 'Please provide a valid email address.';
+        }
+        if (customerForm.data.phone && !validatePhone(customerForm.data.phone)) {
+            errs.phone = 'Please provide a valid phone number (e.g. +255 712 345 678).';
+        }
+        if (!customerForm.data.password || customerForm.data.password.length < 8) {
+            errs.password = 'Initial password must be at least 8 characters.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setCustomerClientErrors(errs);
+            return;
+        }
+
+        setCustomerClientErrors({});
         customerForm.post(route('admin.storeCustomer'), {
             onSuccess: () => {
                 setCustomerModalOpen(false);
@@ -293,6 +324,7 @@ export default function AdminDashboard({
 
     const openEditCustomerModal = (customer) => {
         setEditingCustomer(customer);
+        setEditCustomerClientErrors({});
         const perms = customer.effective_permissions || customer.permissions || DEFAULT_ORGANIZER_PERMS;
         editCustomerForm.setData({
             name: customer.name,
@@ -320,6 +352,27 @@ export default function AdminDashboard({
     const handleUpdateCustomer = (e) => {
         e.preventDefault();
         if (!editingCustomer) return;
+
+        const errs = {};
+        if (!validateRequired(editCustomerForm.data.name, 2)) {
+            errs.name = 'Organizer name must be at least 2 characters.';
+        }
+        if (!validateEmail(editCustomerForm.data.email)) {
+            errs.email = 'Please provide a valid email address.';
+        }
+        if (editCustomerForm.data.phone && !validatePhone(editCustomerForm.data.phone)) {
+            errs.phone = 'Please provide a valid phone number (e.g. +255 712 345 678).';
+        }
+        if (editCustomerForm.data.password && editCustomerForm.data.password.length < 8) {
+            errs.password = 'Password must be at least 8 characters if changing.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setEditCustomerClientErrors(errs);
+            return;
+        }
+
+        setEditCustomerClientErrors({});
         editCustomerForm.put(route('admin.updateCustomer', editingCustomer.id), {
             onSuccess: () => {
                 setEditingCustomer(null);
@@ -374,6 +427,29 @@ export default function AdminDashboard({
 
     const handleCreateScanner = (e) => {
         e.preventDefault();
+        const errs = {};
+        if (!validateRequired(createScannerForm.data.name, 2)) {
+            errs.name = 'Gate staff name must be at least 2 characters.';
+        }
+        if (!validateEmail(createScannerForm.data.email)) {
+            errs.email = 'Please provide a valid email address.';
+        }
+        if (createScannerForm.data.phone && !validatePhone(createScannerForm.data.phone)) {
+            errs.phone = 'Please provide a valid phone number (e.g. +255 712 345 678).';
+        }
+        if (!validateRequired(createScannerForm.data.gate_label, 2)) {
+            errs.gate_label = 'Gate assignment label is required.';
+        }
+        if (!createScannerForm.data.password || createScannerForm.data.password.length < 8) {
+            errs.password = 'Initial password must be at least 8 characters.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setScannerClientErrors(errs);
+            return;
+        }
+
+        setScannerClientErrors({});
         createScannerForm.post(route('admin.storeScanner'), {
             onSuccess: () => {
                 setCreateScannerModalOpen(false);
@@ -384,6 +460,7 @@ export default function AdminDashboard({
 
     const openEditScannerModal = (scanner) => {
         setEditingScanner(scanner);
+        setEditScannerClientErrors({});
         editScannerForm.setData({
             name: scanner.name,
             email: scanner.email,
@@ -397,6 +474,30 @@ export default function AdminDashboard({
     const handleUpdateScanner = (e) => {
         e.preventDefault();
         if (!editingScanner) return;
+
+        const errs = {};
+        if (!validateRequired(editScannerForm.data.name, 2)) {
+            errs.name = 'Gate staff name must be at least 2 characters.';
+        }
+        if (!validateEmail(editScannerForm.data.email)) {
+            errs.email = 'Please provide a valid email address.';
+        }
+        if (editScannerForm.data.phone && !validatePhone(editScannerForm.data.phone)) {
+            errs.phone = 'Please provide a valid phone number (e.g. +255 712 345 678).';
+        }
+        if (!validateRequired(editScannerForm.data.gate_label, 2)) {
+            errs.gate_label = 'Gate assignment label is required.';
+        }
+        if (editScannerForm.data.password && editScannerForm.data.password.length < 8) {
+            errs.password = 'Password must be at least 8 characters if changing.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setEditScannerClientErrors(errs);
+            return;
+        }
+
+        setEditScannerClientErrors({});
         editScannerForm.put(route('admin.updateScanner', editingScanner.id), {
             onSuccess: () => {
                 setEditingScanner(null);
@@ -1762,9 +1863,14 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-bold"
                                     placeholder="e.g. Neema Mbwana / Alfred Mashauri"
                                     value={customerForm.data.name}
-                                    onChange={(e) => customerForm.setData('name', e.target.value)}
+                                    onChange={(e) => {
+                                        customerForm.setData('name', e.target.value);
+                                        if (customerClientErrors.name) setCustomerClientErrors(prev => ({ ...prev, name: undefined }));
+                                    }}
+                                    hasError={Boolean(customerClientErrors.name || customerForm.errors.name)}
                                     required
                                 />
+                                <InputError message={customerClientErrors.name || customerForm.errors.name} className="mt-1" />
                             </div>
 
                             <div>
@@ -1774,9 +1880,14 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-mono font-bold"
                                     placeholder="e.g. neema@events.co.tz"
                                     value={customerForm.data.email}
-                                    onChange={(e) => customerForm.setData('email', e.target.value)}
+                                    onChange={(e) => {
+                                        customerForm.setData('email', e.target.value);
+                                        if (customerClientErrors.email) setCustomerClientErrors(prev => ({ ...prev, email: undefined }));
+                                    }}
+                                    hasError={Boolean(customerClientErrors.email || customerForm.errors.email)}
                                     required
                                 />
+                                <InputError message={customerClientErrors.email || customerForm.errors.email} className="mt-1" />
                             </div>
 
                             <div>
@@ -1788,6 +1899,7 @@ export default function AdminDashboard({
                                     value={customerForm.data.company}
                                     onChange={(e) => customerForm.setData('company', e.target.value)}
                                 />
+                                <InputError message={customerForm.errors.company} className="mt-1" />
                             </div>
 
                             <div>
@@ -1797,8 +1909,13 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-mono font-bold"
                                     placeholder="e.g. +255 712 345 678"
                                     value={customerForm.data.phone}
-                                    onChange={(e) => customerForm.setData('phone', e.target.value)}
+                                    onChange={(e) => {
+                                        customerForm.setData('phone', e.target.value);
+                                        if (customerClientErrors.phone) setCustomerClientErrors(prev => ({ ...prev, phone: undefined }));
+                                    }}
+                                    hasError={Boolean(customerClientErrors.phone || customerForm.errors.phone)}
                                 />
+                                <InputError message={customerClientErrors.phone || customerForm.errors.phone} className="mt-1" />
                             </div>
 
                             <div>
@@ -1806,11 +1923,16 @@ export default function AdminDashboard({
                                 <TextInput
                                     type="password"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="Min 6 characters (default: password)"
+                                    placeholder="Min 8 characters (default: password)"
                                     value={customerForm.data.password}
-                                    onChange={(e) => customerForm.setData('password', e.target.value)}
+                                    onChange={(e) => {
+                                        customerForm.setData('password', e.target.value);
+                                        if (customerClientErrors.password) setCustomerClientErrors(prev => ({ ...prev, password: undefined }));
+                                    }}
+                                    hasError={Boolean(customerClientErrors.password || customerForm.errors.password)}
                                     required
                                 />
+                                <InputError message={customerClientErrors.password || customerForm.errors.password} className="mt-1" />
                             </div>
 
                             <div>
@@ -2558,9 +2680,14 @@ export default function AdminDashboard({
                                 className="mt-1 block w-full text-xs font-bold"
                                 placeholder="e.g. Baraka Gatekeeper"
                                 value={createScannerForm.data.name}
-                                onChange={(e) => createScannerForm.setData('name', e.target.value)}
+                                onChange={(e) => {
+                                    createScannerForm.setData('name', e.target.value);
+                                    if (scannerClientErrors.name) setScannerClientErrors(prev => ({ ...prev, name: undefined }));
+                                }}
+                                hasError={Boolean(scannerClientErrors.name || createScannerForm.errors.name)}
                                 required
                             />
+                            <InputError message={scannerClientErrors.name || createScannerForm.errors.name} className="mt-1" />
                         </div>
 
                         <div>
@@ -2570,9 +2697,14 @@ export default function AdminDashboard({
                                 className="mt-1 block w-full text-xs font-mono font-bold"
                                 placeholder="e.g. gate1@kardovo.com"
                                 value={createScannerForm.data.email}
-                                onChange={(e) => createScannerForm.setData('email', e.target.value)}
+                                onChange={(e) => {
+                                    createScannerForm.setData('email', e.target.value);
+                                    if (scannerClientErrors.email) setScannerClientErrors(prev => ({ ...prev, email: undefined }));
+                                }}
+                                hasError={Boolean(scannerClientErrors.email || createScannerForm.errors.email)}
                                 required
                             />
+                            <InputError message={scannerClientErrors.email || createScannerForm.errors.email} className="mt-1" />
                         </div>
 
                         <div>
@@ -2582,9 +2714,14 @@ export default function AdminDashboard({
                                 className="mt-1 block w-full text-xs font-bold"
                                 placeholder="e.g. Gate 1 — Main VIP Entrance"
                                 value={createScannerForm.data.gate_label}
-                                onChange={(e) => createScannerForm.setData('gate_label', e.target.value)}
+                                onChange={(e) => {
+                                    createScannerForm.setData('gate_label', e.target.value);
+                                    if (scannerClientErrors.gate_label) setScannerClientErrors(prev => ({ ...prev, gate_label: undefined }));
+                                }}
+                                hasError={Boolean(scannerClientErrors.gate_label || createScannerForm.errors.gate_label)}
                                 required
                             />
+                            <InputError message={scannerClientErrors.gate_label || createScannerForm.errors.gate_label} className="mt-1" />
                         </div>
 
                         <div>
@@ -2610,8 +2747,13 @@ export default function AdminDashboard({
                                 className="mt-1 block w-full text-xs font-mono font-bold"
                                 placeholder="+255 7XX XXX XXX"
                                 value={createScannerForm.data.phone}
-                                onChange={(e) => createScannerForm.setData('phone', e.target.value)}
+                                onChange={(e) => {
+                                    createScannerForm.setData('phone', e.target.value);
+                                    if (scannerClientErrors.phone) setScannerClientErrors(prev => ({ ...prev, phone: undefined }));
+                                }}
+                                hasError={Boolean(scannerClientErrors.phone || createScannerForm.errors.phone)}
                             />
+                            <InputError message={scannerClientErrors.phone || createScannerForm.errors.phone} className="mt-1" />
                         </div>
 
                         <div>
@@ -2619,10 +2761,16 @@ export default function AdminDashboard({
                             <TextInput
                                 type="password"
                                 className="mt-1 block w-full text-xs font-mono font-bold"
+                                placeholder="Min 8 characters"
                                 value={createScannerForm.data.password}
-                                onChange={(e) => createScannerForm.setData('password', e.target.value)}
+                                onChange={(e) => {
+                                    createScannerForm.setData('password', e.target.value);
+                                    if (scannerClientErrors.password) setScannerClientErrors(prev => ({ ...prev, password: undefined }));
+                                }}
+                                hasError={Boolean(scannerClientErrors.password || createScannerForm.errors.password)}
                                 required
                             />
+                            <InputError message={scannerClientErrors.password || createScannerForm.errors.password} className="mt-1" />
                         </div>
                     </div>
 

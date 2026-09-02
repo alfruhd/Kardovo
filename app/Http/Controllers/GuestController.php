@@ -30,12 +30,17 @@ class GuestController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:50',
+            'name' => 'required|string|min:2|max:255',
+            'phone' => ['required', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'email' => 'nullable|email|max:255',
             'category' => 'required|string|max:100',
             'max_entries' => 'required|integer|min:1|max:20',
             'notes' => 'nullable|string|max:500',
+        ], [
+            'name.min' => 'Guest name must be at least 2 characters.',
+            'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
+            'max_entries.min' => 'Maximum entries must be at least 1.',
+            'max_entries.max' => 'Maximum entries cannot exceed 20.',
         ]);
 
         $validated['phone'] = PhoneNormalizer::cleanForApi($validated['phone']);
@@ -170,8 +175,8 @@ class GuestController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:50',
+            'name' => 'required|string|min:2|max:255',
+            'phone' => ['required', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'email' => 'nullable|email|max:255',
             'category' => 'required|string|max:100',
             'max_entries' => 'required|integer|min:1|max:20',
@@ -179,7 +184,14 @@ class GuestController extends Controller
             'rsvp_status' => 'required|string|in:pending,attending,declined',
             'entries_used' => 'required|integer|min:0',
             'notes' => 'nullable|string|max:500',
+        ], [
+            'name.min' => 'Guest name must be at least 2 characters.',
+            'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
+            'max_entries.min' => 'Maximum entries must be at least 1.',
+            'max_entries.max' => 'Maximum entries cannot exceed 20.',
         ]);
+
+        $validated['phone'] = PhoneNormalizer::cleanForApi($validated['phone']);
 
         $guest->update($validated);
 

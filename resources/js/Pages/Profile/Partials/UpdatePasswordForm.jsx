@@ -5,7 +5,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import { useForm } from '@inertiajs/react';
-import { Lock, Key, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Lock, Key, ShieldCheck, CheckCircle2, Check, X, AlertCircle } from 'lucide-react';
 
 export default function UpdatePasswordForm({ className = '' }) {
     const passwordInput = useRef();
@@ -25,8 +25,25 @@ export default function UpdatePasswordForm({ className = '' }) {
         password_confirmation: '',
     });
 
+    const isMatch = Boolean(
+        data.password && 
+        data.password_confirmation && 
+        data.password === data.password_confirmation
+    );
+
+    const isMismatch = Boolean(
+        data.password_confirmation && 
+        data.password !== data.password_confirmation
+    );
+
+    const isLengthValid = data.password.length >= 8;
+
     const updatePassword = (e) => {
         e.preventDefault();
+
+        if (data.password !== data.password_confirmation) {
+            return;
+        }
 
         put(route('password.update'), {
             preserveScroll: true,
@@ -79,6 +96,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                         className="mt-1 block w-full sm:w-2/3 text-xs"
                         autoComplete="current-password"
                         placeholder="••••••••••••"
+                        hasError={Boolean(errors.current_password)}
                     />
                     <InputError
                         message={errors.current_password}
@@ -89,7 +107,17 @@ export default function UpdatePasswordForm({ className = '' }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* New Password */}
                     <div>
-                        <InputLabel htmlFor="password" value="New Secure Password *" />
+                        <div className="flex items-center justify-between">
+                            <InputLabel htmlFor="password" value="New Secure Password *" />
+                            {data.password && (
+                                <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
+                                    isLengthValid ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'
+                                }`}>
+                                    {isLengthValid ? <Check className="w-3 h-3" /> : null}
+                                    <span>{isLengthValid ? 'Length met (8+)' : `${data.password.length}/8 chars`}</span>
+                                </span>
+                            )}
+                        </div>
                         <TextInput
                             id="password"
                             ref={passwordInput}
@@ -99,16 +127,30 @@ export default function UpdatePasswordForm({ className = '' }) {
                             className="mt-1 block w-full text-xs"
                             autoComplete="new-password"
                             placeholder="Minimum 8 characters"
+                            hasError={Boolean(errors.password)}
+                            isValid={Boolean(isLengthValid)}
                         />
                         <InputError message={errors.password} className="mt-1.5" />
                     </div>
 
                     {/* Confirm Password */}
                     <div>
-                        <InputLabel
-                            htmlFor="password_confirmation"
-                            value="Confirm New Password *"
-                        />
+                        <div className="flex items-center justify-between">
+                            <InputLabel
+                                htmlFor="password_confirmation"
+                                value="Confirm New Password *"
+                            />
+                            {data.password_confirmation && (
+                                <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
+                                    isMatch 
+                                        ? 'text-emerald-600 dark:text-emerald-400' 
+                                        : 'text-rose-600 dark:text-rose-400'
+                                }`}>
+                                    {isMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                                    <span>{isMatch ? 'Passwords match' : 'Do not match'}</span>
+                                </span>
+                            )}
+                        </div>
                         <TextInput
                             id="password_confirmation"
                             value={data.password_confirmation}
@@ -119,6 +161,8 @@ export default function UpdatePasswordForm({ className = '' }) {
                             className="mt-1 block w-full text-xs"
                             autoComplete="new-password"
                             placeholder="Repeat new password"
+                            hasError={Boolean(errors.password_confirmation || isMismatch)}
+                            isValid={Boolean(isMatch)}
                         />
                         <InputError
                             message={errors.password_confirmation}
@@ -138,7 +182,10 @@ export default function UpdatePasswordForm({ className = '' }) {
                     ) : <div />}
 
                     <div className="ml-auto">
-                        <PrimaryButton disabled={processing} className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer">
+                        <PrimaryButton 
+                            disabled={processing || !data.current_password || !isLengthValid || !isMatch} 
+                            className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             <Key className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
                             <span>Update Password</span>
                         </PrimaryButton>

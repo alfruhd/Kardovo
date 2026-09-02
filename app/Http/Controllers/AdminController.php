@@ -10,6 +10,7 @@ use App\Models\Guest;
 use App\Models\ScanLog;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Services\PhoneNormalizer;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 
@@ -204,11 +205,11 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email',
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'company' => 'nullable|string|max:255',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:8',
             'role' => 'nullable|string|in:customer,sub_admin,admin,scanner',
             'status' => 'nullable|string|in:active,suspended',
             'permissions' => 'nullable|array',
@@ -216,7 +217,15 @@ class AdminController extends Controller
             'max_whatsapp_limit' => 'nullable|integer|min:0',
             'max_sms_limit' => 'nullable|integer|min:0',
             'suspension_reason' => 'nullable|string|max:255',
+        ], [
+            'name.min' => 'Customer name must be at least 2 characters.',
+            'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
+            'password.min' => 'Password must be at least 8 characters.',
         ]);
+
+        if (!empty($validated['phone'])) {
+            $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
+        }
 
         $validated['role'] = $validated['role'] ?? 'customer';
         $validated['status'] = $validated['status'] ?? 'active';
@@ -239,11 +248,11 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email,' . $customer->id,
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'company' => 'nullable|string|max:255',
-            'password' => 'nullable|string|min:6',
+            'password' => 'nullable|string|min:8',
             'role' => 'nullable|string|in:customer,sub_admin,admin,scanner',
             'status' => 'nullable|string|in:active,suspended',
             'permissions' => 'nullable|array',
@@ -251,7 +260,15 @@ class AdminController extends Controller
             'max_whatsapp_limit' => 'nullable|integer|min:0',
             'max_sms_limit' => 'nullable|integer|min:0',
             'suspension_reason' => 'nullable|string|max:255',
+        ], [
+            'name.min' => 'Customer name must be at least 2 characters.',
+            'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
+            'password.min' => 'Password must be at least 8 characters.',
         ]);
+
+        if (!empty($validated['phone'])) {
+            $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
+        }
 
         // Prevent self-demotion or self-suspension of current Super Admin
         if ($customer->id === $user->id) {
@@ -311,13 +328,22 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email',
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'gate_label' => 'required|string|max:255',
             'customer_id' => 'nullable|exists:users,id',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:8',
+        ], [
+            'name.min' => 'Staff name must be at least 2 characters.',
+            'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
+            'password.min' => 'Password must be at least 8 characters.',
+            'gate_label.required' => 'Gate label is required.',
         ]);
+
+        if (!empty($validated['phone'])) {
+            $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
+        }
 
         $validated['role'] = 'scanner';
         $validated['password'] = Hash::make($validated['password']);
@@ -335,13 +361,22 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email,' . $scanner->id,
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'gate_label' => 'required|string|max:255',
             'customer_id' => 'nullable|exists:users,id',
-            'password' => 'nullable|string|min:6',
+            'password' => 'nullable|string|min:8',
+        ], [
+            'name.min' => 'Staff name must be at least 2 characters.',
+            'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
+            'password.min' => 'Password must be at least 8 characters.',
+            'gate_label.required' => 'Gate label is required.',
         ]);
+
+        if (!empty($validated['phone'])) {
+            $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
+        }
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
@@ -375,15 +410,23 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email',
-            'phone' => 'nullable|string|max:50',
-            'password' => 'required|string|min:6',
+            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
+            'password' => 'required|string|min:8',
             'organizer_ids' => 'nullable|array',
             'organizer_ids.*' => 'exists:users,id',
             'event_ids' => 'nullable|array',
             'event_ids.*' => 'exists:events,id',
+        ], [
+            'name.min' => 'Sub Admin name must be at least 2 characters.',
+            'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
+            'password.min' => 'Password must be at least 8 characters.',
         ]);
+
+        if (!empty($validated['phone'])) {
+            $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
+        }
 
         $subAdmin = User::create([
             'name' => $validated['name'],
@@ -411,15 +454,23 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email,' . $subAdmin->id,
-            'phone' => 'nullable|string|max:50',
-            'password' => 'nullable|string|min:6',
+            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
+            'password' => 'nullable|string|min:8',
             'organizer_ids' => 'nullable|array',
             'organizer_ids.*' => 'exists:users,id',
             'event_ids' => 'nullable|array',
             'event_ids.*' => 'exists:events,id',
+        ], [
+            'name.min' => 'Sub Admin name must be at least 2 characters.',
+            'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
+            'password.min' => 'Password must be at least 8 characters.',
         ]);
+
+        if (!empty($validated['phone'])) {
+            $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
+        }
 
         $data = [
             'name' => $validated['name'],

@@ -11,6 +11,13 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { 
+    validateEmail, 
+    validatePhone, 
+    validateFileSize, 
+    validateFileExtension, 
+    validateRequired 
+} from '@/Utils/validation';
+import { 
     X,
     Globe,
     Copy,
@@ -132,6 +139,10 @@ export default function EventDashboard({
         notes: '',
     });
 
+    const [addClientErrors, setAddClientErrors] = useState({});
+    const [editClientErrors, setEditClientErrors] = useState({});
+    const [importClientErrors, setImportClientErrors] = useState({});
+
     const handleEditEventSubmit = (e) => {
         e.preventDefault();
         editEventForm.put(route('events.update', event?.id || 1), {
@@ -159,6 +170,23 @@ export default function EventDashboard({
 
     const handleAddGuestSubmit = (e) => {
         e.preventDefault();
+
+        const errs = {};
+        if (!validateRequired(addForm.data.name, 2)) {
+            errs.name = 'Attendee name must be at least 2 characters.';
+        }
+        if (!validatePhone(addForm.data.phone)) {
+            errs.phone = 'Please enter a valid telephone number (at least 9 digits, e.g. +255 712 345 678).';
+        }
+        if (addForm.data.email && !validateEmail(addForm.data.email)) {
+            errs.email = 'Please enter a valid email address.';
+        }
+        if (Object.keys(errs).length > 0) {
+            setAddClientErrors(errs);
+            return;
+        }
+
+        setAddClientErrors({});
         addForm.post(route('guests.store', event?.id || 1), {
             onSuccess: () => {
                 setAddGuestModalOpen(false);
@@ -169,6 +197,29 @@ export default function EventDashboard({
 
     const handleImportSubmit = (e) => {
         e.preventDefault();
+        const errs = {};
+
+        if (importMode === 'excel') {
+            if (!importForm.data.file) {
+                errs.file = 'Please select a spreadsheet file (.xlsx, .csv, .xls) to import.';
+            } else {
+                const extCheck = validateFileExtension(importForm.data.file, ['xlsx', 'xls', 'csv', 'tsv', 'txt']);
+                if (!extCheck.isValid) errs.file = extCheck.message;
+                const sizeCheck = validateFileSize(importForm.data.file, 10);
+                if (!sizeCheck.isValid) errs.file = sizeCheck.message;
+            }
+        } else {
+            if (!importForm.data.raw_text || !importForm.data.raw_text.trim()) {
+                errs.raw_text = 'Please paste at least one line with attendee names to import.';
+            }
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setImportClientErrors(errs);
+            return;
+        }
+
+        setImportClientErrors({});
         importForm.post(route('guests.import', event?.id || 1), {
             forceFormData: true,
             onSuccess: () => {
@@ -180,6 +231,7 @@ export default function EventDashboard({
 
     const openEditModal = (guest) => {
         setSelectedGuest(guest);
+        setEditClientErrors({});
         editForm.setData({
             name: guest.name,
             phone: guest.phone,
@@ -197,6 +249,23 @@ export default function EventDashboard({
     const handleEditSubmit = (e) => {
         e.preventDefault();
         if (!selectedGuest) return;
+
+        const errs = {};
+        if (!validateRequired(editForm.data.name, 2)) {
+            errs.name = 'Attendee name must be at least 2 characters.';
+        }
+        if (!validatePhone(editForm.data.phone)) {
+            errs.phone = 'Please enter a valid telephone number (at least 9 digits, e.g. +255 712 345 678).';
+        }
+        if (editForm.data.email && !validateEmail(editForm.data.email)) {
+            errs.email = 'Please enter a valid email address.';
+        }
+        if (Object.keys(errs).length > 0) {
+            setEditClientErrors(errs);
+            return;
+        }
+
+        setEditClientErrors({});
         editForm.put(route('guests.update', [event?.id, selectedGuest?.id]), {
             onSuccess: () => {
                 setEditGuestModalOpen(false);
@@ -881,22 +950,33 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     className="block w-full text-xs font-bold pl-10 py-2.5 rounded-2xl"
                                     placeholder="e.g. Neema Mbwana"
                                     value={addForm.data.name}
-                                    onChange={(e) => addForm.setData('name', e.target.value)}
+                                    onChange={(e) => {
+                                        addForm.setData('name', e.target.value);
+                                        if (addClientErrors.name) setAddClientErrors(prev => ({ ...prev, name: undefined }));
+                                    }}
+                                    hasError={Boolean(addClientErrors.name || addForm.errors.name)}
+                                    isValid={Boolean(addForm.data.name.trim().length >= 2)}
                                     required
                                     autoFocus
                                 />
                             </div>
-                            <InputError message={addForm.errors.name} className="mt-1" />
+                            <InputError message={addClientErrors.name || addForm.errors.name} className="mt-1" />
                         </div>
 
                         {/* 2. Phone Number with Auto-Sanitization Indicator */}
                         <div>
                             <div className="flex items-center justify-between">
                                 <InputLabel value="Phone Number (WhatsApp & SMS) *" />
-                                <span className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                    <Check className="w-3 h-3 stroke-[3]" />
-                                    <span>Auto-sanitizes (+ &amp; spaces removed)</span>
-                                </span>
+                                {addForm.data.phone && validatePhone(addForm.data.phone) ? (
+                                    <span className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                        <span>Verified phone format</span>
+                                    </span>
+                                ) : (
+                                    <span className="text-[10px] font-mono text-slate-400">
+                                        E.164 or local format
+                                    </span>
+                                )}
                             </div>
                             <div className="relative mt-1">
                                 <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -905,16 +985,21 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     className="block w-full text-xs font-mono font-bold pl-10 py-2.5 rounded-2xl"
                                     placeholder="0712 345 678 or +255 712 345 678"
                                     value={addForm.data.phone}
-                                    onChange={(e) => addForm.setData('phone', e.target.value)}
+                                    onChange={(e) => {
+                                        addForm.setData('phone', e.target.value);
+                                        if (addClientErrors.phone) setAddClientErrors(prev => ({ ...prev, phone: undefined }));
+                                    }}
+                                    hasError={Boolean(addClientErrors.phone || addForm.errors.phone)}
+                                    isValid={Boolean(addForm.data.phone.trim() && validatePhone(addForm.data.phone))}
                                     required
                                 />
                             </div>
                             {addForm.data.phone && (
                                 <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-mono mt-1">
-                                    API Dispatch Destination: <span className="font-bold text-cyan-600 dark:text-cyan-400">{addForm.data.phone.replace(/[^0-9]/g, '').replace(/^0/, '255') || '---'}</span>
+                                    Normalized Destination: <span className="font-bold text-cyan-600 dark:text-cyan-400">{addForm.data.phone.replace(/[^0-9]/g, '').replace(/^0/, '255') || '---'}</span>
                                 </p>
                             )}
-                            <InputError message={addForm.errors.phone} className="mt-1" />
+                            <InputError message={addClientErrors.phone || addForm.errors.phone} className="mt-1" />
                         </div>
 
                         {/* 3. Pass Category Quick Select Capsules */}
@@ -1058,27 +1143,45 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     type="text"
                                     className="block w-full text-xs font-bold pl-10 py-2.5 rounded-2xl"
                                     value={editForm.data.name}
-                                    onChange={(e) => editForm.setData('name', e.target.value)}
+                                    onChange={(e) => {
+                                        editForm.setData('name', e.target.value);
+                                        if (editClientErrors.name) setEditClientErrors(prev => ({ ...prev, name: undefined }));
+                                    }}
+                                    hasError={Boolean(editClientErrors.name || editForm.errors.name)}
+                                    isValid={Boolean(editForm.data.name.trim().length >= 2)}
                                     required
                                 />
                             </div>
-                            <InputError message={editForm.errors.name} className="mt-1" />
+                            <InputError message={editClientErrors.name || editForm.errors.name} className="mt-1" />
                         </div>
 
                         {/* 2. Phone */}
                         <div>
-                            <InputLabel value="Phone Number (WhatsApp & SMS) *" />
+                            <div className="flex items-center justify-between">
+                                <InputLabel value="Phone Number (WhatsApp & SMS) *" />
+                                {editForm.data.phone && validatePhone(editForm.data.phone) && (
+                                    <span className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                        <span>Verified</span>
+                                    </span>
+                                )}
+                            </div>
                             <div className="relative mt-1">
                                 <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                                 <TextInput
                                     type="text"
                                     className="block w-full text-xs font-mono font-bold pl-10 py-2.5 rounded-2xl"
                                     value={editForm.data.phone}
-                                    onChange={(e) => editForm.setData('phone', e.target.value)}
+                                    onChange={(e) => {
+                                        editForm.setData('phone', e.target.value);
+                                        if (editClientErrors.phone) setEditClientErrors(prev => ({ ...prev, phone: undefined }));
+                                    }}
+                                    hasError={Boolean(editClientErrors.phone || editForm.errors.phone)}
+                                    isValid={Boolean(editForm.data.phone.trim() && validatePhone(editForm.data.phone))}
                                     required
                                 />
                             </div>
-                            <InputError message={editForm.errors.phone} className="mt-1" />
+                            <InputError message={editClientErrors.phone || editForm.errors.phone} className="mt-1" />
                         </div>
 
                         {/* 3. Category & Max Entries */}

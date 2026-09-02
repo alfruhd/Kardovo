@@ -630,156 +630,48 @@ export default function AdminDashboard({
                     </div>
                 </div>
 
-                {/* 3. LUXURY SEGMENTED NAVIGATION DOCK (Swipeable on Mobile, Grid on Desktop) */}
+                {/* 3. LUXURY SEGMENTED NAVIGATION DOCK (Uniform Design System) */}
                 <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1.5 sm:grid sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 sm:gap-2 sm:p-2 rounded-2xl bg-white/90 dark:bg-[#0B1524]/90 backdrop-blur-xl border border-slate-200/90 dark:border-white/[0.08] shadow-xs">
-                    {/* Tab 1: Sub Administrators */}
-                    {isSuperAdmin && (
-                        <button
-                            type="button"
-                            onClick={() => setActiveTab("sub_admins")}
-                            className={`flex-shrink-0 min-w-[135px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer ${
-                                activeTab === "sub_admins"
-                                    ? "bg-kardovo-navy dark:bg-cyan-600 text-white shadow-sm"
-                                    : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
-                            }`}
-                        >
-                            <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                                <UserCheck className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
-                                <span className="truncate">Sub Admins</span>
-                            </div>
-                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex-shrink-0 ${
-                                activeTab === "sub_admins" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300"
-                            }`}>
-                                {subAdmins.length}
-                            </span>
-                        </button>
-                    )}
-
-                    {/* Tab 2: Gate Staff Fleet */}
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("scanners")}
-                        className={`flex-shrink-0 min-w-[130px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer ${
-                            activeTab === "scanners"
-                                ? "bg-kardovo-navy dark:bg-cyan-600 text-white shadow-sm"
-                                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
-                        }`}
-                    >
-                        <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                            <Smartphone className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                            <span className="truncate">Gate Staff</span>
-                        </div>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex-shrink-0 ${
-                            activeTab === "scanners" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300"
-                        }`}>
-                            {gateStaff.length}
-                        </span>
-                    </button>
-
-                    {/* Tab 3: Live Audit Stream */}
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("logs")}
-                        className={`flex-shrink-0 min-w-[135px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer ${
-                            activeTab === "logs"
-                                ? "bg-kardovo-navy dark:bg-cyan-600 text-white shadow-sm"
-                                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
-                        }`}
-                    >
-                        <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                            <Activity className="w-3.5 h-3.5 text-cyan-400 animate-pulse flex-shrink-0" />
-                            <span className="truncate">Audit Stream</span>
-                        </div>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex-shrink-0 ${
-                            activeTab === "logs" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300"
-                        }`}>
-                            {recentScanLogs.length}
-                        </span>
-                    </button>
-
-                    {/* Tab 4: Customer Accounts */}
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("customers")}
-                        className={`flex-shrink-0 min-w-[130px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer ${
-                            activeTab === "customers"
-                                ? "bg-kardovo-navy dark:bg-cyan-600 text-white shadow-sm"
-                                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
-                        }`}
-                    >
-                        <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                            <Users className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" />
-                            <span className="truncate">Organisers</span>
-                        </div>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex-shrink-0 ${
-                            activeTab === "customers" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300"
-                        }`}>
-                            {customers.length}
-                        </span>
-                    </button>
-
-                    {/* Tab 5: All Events */}
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("events")}
-                        className={`flex-shrink-0 min-w-[125px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer ${
-                            activeTab === "events"
-                                ? "bg-kardovo-navy dark:bg-cyan-600 text-white shadow-sm"
-                                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
-                        }`}
-                    >
-                        <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                            <Calendar className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
-                            <span className="truncate">Events</span>
-                        </div>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex-shrink-0 ${
-                            activeTab === "events" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300"
-                        }`}>
-                            {allEvents.length}
-                        </span>
-                    </button>
-
-                    {/* Tab 6: Card Templates */}
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("templates")}
-                        className={`flex-shrink-0 min-w-[125px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer ${
-                            activeTab === "templates"
-                                ? "bg-kardovo-navy dark:bg-cyan-600 text-white shadow-sm"
-                                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
-                        }`}
-                    >
-                        <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                            <Palette className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
-                            <span className="truncate">Templates</span>
-                        </div>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex-shrink-0 ${
-                            activeTab === "templates" ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300"
-                        }`}>
-                            {globalTemplates.length}
-                        </span>
-                    </button>
-
-                    {/* Tab 7: Delivery Gateways */}
-                    <button
-                        type="button"
-                        onClick={() => setActiveTab("gateways")}
-                        className={`flex-shrink-0 min-w-[125px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer ${
-                            activeTab === "gateways"
-                                ? "bg-kardovo-navy dark:bg-cyan-600 text-white shadow-sm"
-                                : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
-                        }`}
-                    >
-                        <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                            <Server className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                            <span className="truncate">Gateways</span>
-                        </div>
-                        <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-mono font-extrabold uppercase flex-shrink-0 ${
-                            activeTab === "gateways" ? "bg-white/20 text-white" : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300"
-                        }`}>
-                            API
-                        </span>
-                    </button>
+                    {[
+                        ...(isSuperAdmin ? [{ id: 'sub_admins', label: 'Sub Admins', count: subAdmins.length, icon: UserCheck }] : []),
+                        { id: 'scanners', label: 'Gate Staff', count: gateStaff.length, icon: Smartphone },
+                        { id: 'logs', label: 'Audit Stream', count: recentScanLogs.length, icon: Activity },
+                        { id: 'customers', label: 'Organisers', count: customers.length, icon: Users },
+                        { id: 'events', label: 'Events', count: allEvents.length, icon: Calendar },
+                        { id: 'templates', label: 'Templates', count: globalTemplates.length, icon: Palette },
+                        { id: 'gateways', label: 'Gateways', count: 'API', icon: Server },
+                    ].map((tab) => {
+                        const isActive = activeTab === tab.id;
+                        const IconComponent = tab.icon;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => setActiveTab(tab.id)}
+                                className={`flex-shrink-0 min-w-[125px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer group ${
+                                    isActive
+                                        ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                        : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
+                                }`}
+                            >
+                                <div className="flex items-center gap-1.5 sm:gap-2 truncate">
+                                    <IconComponent className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${
+                                        isActive 
+                                            ? "text-cyan-400 dark:text-white" 
+                                            : "text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200"
+                                    }`} />
+                                    <span className="truncate">{tab.label}</span>
+                                </div>
+                                <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex-shrink-0 transition-colors ${
+                                    isActive 
+                                        ? "bg-white/20 text-white" 
+                                        : "bg-slate-100 dark:bg-white/[0.08] text-slate-600 dark:text-slate-300"
+                                }`}>
+                                    {tab.count}
+                                </span>
+                            </button>
+                        );
+                    })}
                 </div>
 
                 {/* TAB 0: SUB ADMINISTRATORS FLEET & SCOPED ASSIGNMENTS */}
@@ -787,11 +679,13 @@ export default function AdminDashboard({
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
                         <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                                    <UserCheck className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                        <UserCheck className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                    </div>
                                     <span>Sub Administrators &amp; Delegated Scope</span>
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     Manage delegated administrators and assign them to oversee specific event organisers or distinct campaigns. Organisers have zero control over these accounts.
                                 </p>
                             </div>
@@ -810,7 +704,7 @@ export default function AdminDashboard({
                                 <button
                                     type="button"
                                     onClick={() => setSubAdminModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-cyan-600 hover:bg-cyan-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
                                     <span>New Sub Admin</span>
@@ -924,11 +818,13 @@ export default function AdminDashboard({
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
                         <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                                    <Smartphone className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                        <Smartphone className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                    </div>
                                     <span>Gate Staff Fleet &amp; Station Deployments</span>
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     Manage mobile gatekeeper credentials, assigned venue entrance gates, and verification throughput.
                                 </p>
                             </div>
@@ -947,7 +843,7 @@ export default function AdminDashboard({
                                 <button
                                     type="button"
                                     onClick={() => setCreateScannerModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
                                     <span>Deploy Scanner</span>
@@ -1057,8 +953,8 @@ export default function AdminDashboard({
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden space-y-0 transition-colors duration-300">
                         <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-10 h-10 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-400 flex items-center justify-center shadow-2xs">
-                                    <Activity className="w-5 h-5 animate-pulse" />
+                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                    <Activity className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-pulse" />
                                 </div>
                                 <div>
                                     <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
@@ -1075,8 +971,10 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => setLogStatusFilter('all')}
-                                        className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                                            logStatusFilter === 'all' ? 'bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white shadow-2xs' : 'hover:text-slate-900 dark:hover:text-white'
+                                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                                            logStatusFilter === 'all' 
+                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs' 
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                     >
                                         All ({recentScanLogs.length})
@@ -1084,8 +982,10 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => setLogStatusFilter('granted')}
-                                        className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                                            logStatusFilter === 'granted' ? 'bg-emerald-600 text-white shadow-2xs' : 'hover:text-slate-900 dark:hover:text-white'
+                                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                                            logStatusFilter === 'granted' 
+                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs' 
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                     >
                                         Admitted
@@ -1093,8 +993,10 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => setLogStatusFilter('rejected')}
-                                        className={`px-3 py-1 rounded-lg transition cursor-pointer ${
-                                            logStatusFilter === 'rejected' ? 'bg-rose-600 text-white shadow-2xs' : 'hover:text-slate-900 dark:hover:text-white'
+                                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                                            logStatusFilter === 'rejected' 
+                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs' 
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                     >
                                         Rejected
@@ -1174,11 +1076,13 @@ export default function AdminDashboard({
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
                         <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                                    <Users className="w-5 h-5 text-kardovo-navy dark:text-cyan-400" />
+                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                    </div>
                                     <span>Customer Organiser Accounts &amp; Tenancy</span>
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     Organisers managing events, personalized pass suites, and attendee dispatch campaigns.
                                 </p>
                             </div>
@@ -1197,7 +1101,7 @@ export default function AdminDashboard({
                                 <button
                                     type="button"
                                     onClick={() => setCustomerModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
                                     <span>New Customer</span>
@@ -1448,11 +1352,13 @@ export default function AdminDashboard({
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
                         <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                                    <Calendar className="w-5 h-5 text-kardovo-navy dark:text-cyan-400" />
+                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                        <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                    </div>
                                     <span>All Platform Events Directory</span>
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                                     Global catalog of events created across all customer organizer accounts.
                                 </p>
                             </div>
@@ -1562,8 +1468,8 @@ export default function AdminDashboard({
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
                         <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-purple-50 dark:bg-purple-950/60 border border-purple-200 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 flex items-center justify-center">
-                                    <Palette className="w-5 h-5" />
+                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                    <Palette className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                                 </div>
                                 <div>
                                     <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
@@ -1577,7 +1483,7 @@ export default function AdminDashboard({
 
                             <Link
                                 href={route('templates.index')}
-                                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
+                                className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer"
                             >
                                 <Palette className="w-3.5 h-3.5" />
                                 <span>Open Design Studio</span>
@@ -1687,8 +1593,8 @@ export default function AdminDashboard({
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-white/[0.08] pb-5">
                             <div>
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-10 h-10 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-400 flex items-center justify-center">
-                                        <Server className="w-5 h-5" />
+                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                        <Server className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                                     </div>
                                     <div>
                                         <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
@@ -1702,21 +1608,21 @@ export default function AdminDashboard({
                             </div>
                             <button
                                 onClick={() => setGatewayModalOpen(true)}
-                                className="py-2.5 px-5 rounded-xl bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white text-xs font-bold shadow-md flex items-center gap-2 transition active:scale-95 self-start sm:self-auto cursor-pointer"
+                                className="py-2 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition active:scale-95 self-start sm:self-auto cursor-pointer"
                             >
-                                <Settings className="w-4 h-4 text-cyan-400 dark:text-white" />
+                                <Settings className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
                                 <span>Configure Gateways</span>
                             </button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* WhatsApp Gateway Card */}
-                            <div className="p-6 rounded-3xl bg-gradient-to-b from-emerald-50/60 to-slate-50 dark:from-emerald-950/20 dark:to-[#07111D] border border-emerald-200/90 dark:border-emerald-800/40 shadow-xs flex flex-col justify-between space-y-5">
+                            <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-5">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                                                <Smartphone className="w-5 h-5" />
+                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-sm shadow-2xs">
+                                                <Smartphone className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                             </div>
                                             <div>
                                                 <h4 className="font-black text-base text-slate-900 dark:text-white">
@@ -1759,7 +1665,7 @@ export default function AdminDashboard({
                                 <button
                                     type="button"
                                     onClick={() => setGatewayModalOpen(true)}
-                                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-sm cursor-pointer"
+                                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
                                 >
                                     <Settings className="w-3.5 h-3.5" />
                                     <span>Customize WhatsApp Gateway</span>
@@ -1767,19 +1673,19 @@ export default function AdminDashboard({
                             </div>
 
                             {/* SMS Gateway Card */}
-                            <div className="p-6 rounded-3xl bg-gradient-to-b from-blue-50/60 to-slate-50 dark:from-blue-950/20 dark:to-[#07111D] border border-blue-200/90 dark:border-blue-800/40 shadow-xs flex flex-col justify-between space-y-5">
+                            <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-5">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
-                                                <MessageSquare className="w-5 h-5" />
+                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-sm shadow-2xs">
+                                                <MessageSquare className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                             </div>
                                             <div>
                                                 <h4 className="font-black text-base text-slate-900 dark:text-white">
                                                     {gateways.sms?.provider || 'NextSMS Tanzania'}
                                                 </h4>
                                                 <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                                                    Sender ID: <strong className="text-blue-700 dark:text-cyan-400 font-bold">{gateways.sms?.sender_id || 'KARDOVO'}</strong>
+                                                    Sender ID: <strong className="text-slate-900 dark:text-white font-bold">{gateways.sms?.sender_id || 'KARDOVO'}</strong>
                                                 </span>
                                             </div>
                                         </div>
@@ -1815,7 +1721,7 @@ export default function AdminDashboard({
                                 <button
                                     type="button"
                                     onClick={() => setGatewayModalOpen(true)}
-                                    className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-sm cursor-pointer"
+                                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
                                 >
                                     <Settings className="w-3.5 h-3.5" />
                                     <span>Customize SMS Gateway</span>

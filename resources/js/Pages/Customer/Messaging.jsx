@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Head, useForm, router, usePage } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import StatusBadge from '@/Components/StatusBadge';
@@ -22,6 +22,7 @@ import {
     ChevronRight, 
     ChevronDown,
     ArrowRight, 
+    ArrowLeft,
     RotateCcw,
     ExternalLink,
     Settings,
@@ -99,6 +100,7 @@ export default function Messaging({
     
     // Interactive chat preview simulation state
     const [previewRsvpTapped, setPreviewRsvpTapped] = useState('attending');
+    const [phoneViewMode, setPhoneViewMode] = useState('chat'); // 'chat' | 'card'
     const [recipientSearch, setRecipientSearch] = useState('');
     const [showPassModal, setShowPassModal] = useState(false);
     const [gatewayModalOpen, setGatewayModalOpen] = useState(false);
@@ -203,7 +205,25 @@ export default function Messaging({
         broadcastForm.setData('event_id', eventId);
     };
 
+    const [activeTemplateId, setActiveTemplateId] = useState(
+        selectedEvent?.card_template_id || selectedEvent?.card_template?.id || selectedEvent?.cardTemplate?.id || null
+    );
+
+    useEffect(() => {
+        const tId = selectedEvent?.card_template_id || selectedEvent?.card_template?.id || selectedEvent?.cardTemplate?.id || null;
+        setActiveTemplateId(tId);
+    }, [selectedEvent?.id, selectedEvent?.card_template_id]);
+
+    const activeTemplate = useMemo(() => {
+        if (activeTemplateId && templates && templates.length > 0) {
+            const found = templates.find(t => String(t.id) === String(activeTemplateId));
+            if (found) return found;
+        }
+        return selectedEvent?.card_template || selectedEvent?.cardTemplate || templates?.[0] || null;
+    }, [activeTemplateId, templates, selectedEvent]);
+
     const handleSwitchTemplate = (templateId) => {
+        setActiveTemplateId(templateId);
         if (!selectedEvent) return;
         router.patch(route('messaging.updateEventTemplate', selectedEvent.id), {
             card_template_id: templateId
@@ -236,7 +256,15 @@ export default function Messaging({
         qr_token: 'kdv_neema_mbwana_29841872',
     };
 
-    const template = selectedEvent?.card_template || selectedEvent?.cardTemplate || null;
+    const fallbackEvent = {
+        title: selectedEvent?.title || 'Neema & Baraka — Wedding Reception',
+        venue: selectedEvent?.venue || 'Dar es Salaam Serena Hotel',
+        event_date: selectedEvent?.event_date || '2026-09-14',
+        event_time: selectedEvent?.event_time || '4:00 PM — Reception & Dinner',
+        city: selectedEvent?.city || 'Dar es Salaam',
+    };
+
+    const template = activeTemplate;
     const sampleGuestName = sampleGuest.name;
     const sampleEventTitle = selectedEvent?.title || 'Neema & Baraka — Wedding Reception';
     const sampleVenue = selectedEvent?.venue || 'Dar es Salaam Serena Hotel';
@@ -621,17 +649,17 @@ export default function Messaging({
 
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.06] shadow-2xs">
                                         <div className="flex items-center gap-3 min-w-0">
-                                            {template?.image_path ? (
+                                            {activeTemplate?.image_path ? (
                                                 <img 
-                                                    src={template.image_path} 
-                                                    alt={template.name} 
+                                                    src={activeTemplate.image_path} 
+                                                    alt={activeTemplate.name} 
                                                     className="w-12 h-14 object-cover rounded-lg border border-slate-200 dark:border-white/10 flex-shrink-0 shadow-xs"
                                                 />
                                             ) : (
                                                 <div 
                                                     className="w-12 h-14 rounded-lg flex-shrink-0 flex items-center justify-center text-white text-[9px] font-bold p-1 text-center shadow-xs border border-white/10 font-mono"
                                                     style={{
-                                                        background: `linear-gradient(135deg, ${template?.brand_color_from || '#0D1B2A'} 0%, ${template?.brand_color_to || '#0B1E35'} 100%)`
+                                                        background: `linear-gradient(135deg, ${activeTemplate?.brand_color_from || '#0D1B2A'} 0%, ${activeTemplate?.brand_color_to || '#0B1E35'} 100%)`
                                                     }}
                                                 >
                                                     PASS
@@ -639,10 +667,10 @@ export default function Messaging({
                                             )}
                                             <div className="min-w-0">
                                                 <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                                    {template?.name || 'Kardovo Signature Pass (Default)'}
+                                                    {activeTemplate?.name || 'Kardovo Signature Pass (Default)'}
                                                 </div>
                                                 <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 truncate">
-                                                    {template?.image_path ? '4K Custom Artwork Pass' : 'Vector Gradient Pass'} • {template?.headline || 'OFFICIAL INVITATION'}
+                                                    {activeTemplate?.image_path ? '4K Custom Artwork Pass' : 'Vector Gradient Pass'} • {activeTemplate?.headline || 'OFFICIAL INVITATION'}
                                                 </div>
                                             </div>
                                         </div>
@@ -661,7 +689,7 @@ export default function Messaging({
                                             {templates && templates.length > 0 && selectedEvent && (
                                                 <div className="relative">
                                                     <select
-                                                        value={template?.id || ''}
+                                                        value={activeTemplate?.id || ''}
                                                         onChange={(e) => handleSwitchTemplate(e.target.value)}
                                                         className="text-xs font-bold py-1.5 pl-2.5 pr-7 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-800 dark:text-slate-200 cursor-pointer appearance-none hover:border-slate-400 dark:hover:border-white/20 shadow-xs focus:ring-1 focus:ring-cyan-500"
                                                         title="Switch or approve another template for this event"
@@ -988,20 +1016,53 @@ export default function Messaging({
                     {/* Right: Interactive Smartphone Preview (5 cols) */}
                     <div className="lg:col-span-5 flex flex-col items-center space-y-4 lg:sticky lg:top-6 lg:self-start">
                         {/* Control Header Card */}
-                        <div className="w-full bg-white/70 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 p-4 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card flex items-center justify-between">
+                        <div className="w-full bg-white/70 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 p-3.5 sm:p-4 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2 font-display">
                                 <Smartphone className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                                <span>{channel === 'whatsapp' ? 'WhatsApp Live View' : 'SMS Live View'}</span>
+                                <span>{channel === 'whatsapp' ? 'WhatsApp Live Simulation' : 'SMS Live Simulation'}</span>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setPreviewRsvpTapped(null)}
-                                className="text-[11px] font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] shadow-xs transition active:scale-95 cursor-pointer"
-                                title="Reset Simulation"
-                            >
-                                <RotateCcw className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                                <span>Reset Simulation</span>
-                            </button>
+
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
+                                {/* Phone View Toggle: Chat View vs Direct Pass View */}
+                                <div className="inline-flex p-0.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08]">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPhoneViewMode('chat')}
+                                        className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition ${
+                                            phoneViewMode === 'chat'
+                                                ? 'bg-white dark:bg-[#0E1726] text-slate-900 dark:text-white shadow-xs'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                        title="View messaging chat flow"
+                                    >
+                                        💬 Chat View
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPhoneViewMode('card')}
+                                        className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition ${
+                                            phoneViewMode === 'card'
+                                                ? 'bg-white dark:bg-[#0E1726] text-slate-900 dark:text-white shadow-xs'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                        }`}
+                                        title="View exact invitation pass on phone screen"
+                                    >
+                                        🪪 Pass Screen
+                                    </button>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPreviewRsvpTapped(null);
+                                        setPhoneViewMode('chat');
+                                    }}
+                                    className="p-1.5 rounded-xl bg-white/80 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition active:scale-95 cursor-pointer"
+                                    title="Reset Simulation"
+                                >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
                         </div>
 
                         {/* Virtual Phone Mockup Container */}
@@ -1013,7 +1074,41 @@ export default function Messaging({
                                     <div className="w-2 h-2 rounded-full bg-slate-800" />
                                 </div>
 
-                            {channel === 'sms' ? (
+                            {phoneViewMode === 'card' ? (
+                                /* ═══════════ DIRECT PHONE INVITATION PASS SCREEN ═══════════ */
+                                <div className="space-y-2">
+                                    <div className="bg-[#1F2430] p-2.5 px-3 rounded-t-2xl flex items-center justify-between border-b border-slate-700">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                                            <span className="text-[11px] font-black text-white tracking-wider truncate">
+                                                {activeTemplate?.name || 'Kardovo Invitation Pass'}
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setPhoneViewMode('chat')}
+                                            className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-800/40 flex-shrink-0"
+                                        >
+                                            <ArrowLeft className="w-2.5 h-2.5" />
+                                            <span>Chat</span>
+                                        </button>
+                                    </div>
+
+                                    <div className="bg-[#0B0F19] p-2 rounded-b-2xl overflow-y-auto max-h-[580px] scrollbar-thin flex flex-col items-center">
+                                        <div className="w-full flex justify-center py-1">
+                                            <div style={{ zoom: 0.67 }} className="pointer-events-none">
+                                                <PersonalisedCard
+                                                    guest={sampleGuest}
+                                                    event={selectedEvent || fallbackEvent}
+                                                    template={activeTemplate}
+                                                    interactive={false}
+                                                    className="drop-shadow-2xl"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : channel === 'sms' ? (
                                 <>
                                     {/* SMS App Header */}
                                     <div className="bg-[#1F2430] p-2.5 px-3 rounded-t-2xl flex items-center gap-2.5 border-b border-slate-700">
@@ -1049,22 +1144,38 @@ export default function Messaging({
 
                                             {campaignType !== 'text_only' && (
                                                 <div 
-                                                    onClick={() => setShowPassModal(true)}
-                                                    className="p-2.5 rounded-2xl bg-[#141B26] border border-slate-700/80 hover:border-blue-500/60 cursor-pointer transition shadow-lg group"
-                                                    title="Click to preview invitation pass"
+                                                    onClick={() => setPhoneViewMode('card')}
+                                                    className="p-2.5 rounded-2xl bg-[#141B26] border border-slate-700/80 hover:border-blue-500/60 cursor-pointer transition shadow-lg group space-y-2"
+                                                    title="Click to view full pass on phone screen"
                                                 >
-                                                    <div className="flex items-center justify-between text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                                                    <div className="flex items-center justify-between text-[8.5px] font-bold text-slate-400 uppercase tracking-wider">
                                                         <span>kdv.app/p/{samplePassCode}</span>
                                                         <span className="text-blue-400 flex items-center gap-0.5 group-hover:underline">
-                                                            <span>View Invitation Pass</span>
+                                                            <span>View Full Pass</span>
                                                             <ExternalLink className="w-2.5 h-2.5" />
                                                         </span>
                                                     </div>
-                                                    <div className="text-[11px] font-bold text-white truncate">
-                                                        {sampleEventTitle}
+
+                                                    {/* Exact Card Scaled Preview inside SMS Link Preview */}
+                                                    <div className="w-full rounded-xl overflow-hidden bg-black/60 border border-slate-700/60 flex justify-center py-2 relative">
+                                                        <div className="w-full flex justify-center origin-top pointer-events-none" style={{ zoom: 0.52 }}>
+                                                            <PersonalisedCard
+                                                                guest={sampleGuest}
+                                                                event={selectedEvent || fallbackEvent}
+                                                                template={activeTemplate}
+                                                                interactive={false}
+                                                                className="pointer-events-none drop-shadow-lg"
+                                                            />
+                                                        </div>
                                                     </div>
-                                                    <div className="text-[9.5px] text-slate-400 truncate mt-0.5">
-                                                        {sampleGuestName} • {sampleGuest.allowance_label || '2X Entry'}
+
+                                                    <div>
+                                                        <div className="text-[11px] font-bold text-white truncate">
+                                                            {sampleEventTitle}
+                                                        </div>
+                                                        <div className="text-[9.5px] text-slate-400 truncate mt-0.5">
+                                                            {sampleGuestName} • {sampleGuest.allowance_label || '2X Entry'}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             )}
@@ -1120,139 +1231,91 @@ export default function Messaging({
                                             /* ═══════════ INVITATION PASS WITH ART & OPTIONAL RSVP BUTTONS ═══════════ */
                                             <div className="bg-[#1F2C34] rounded-2xl rounded-tl-none overflow-hidden border border-slate-700/80 shadow-md">
                                             
-                                            {/* Responsive Card Image Header */}
-                                            {template?.image_path ? (
+                                                {/* ── Exact Card From Template ── */}
                                                 <div 
-                                                    onClick={() => setShowPassModal(true)}
-                                                    className="relative cursor-pointer group overflow-hidden select-none"
-                                                    style={{ aspectRatio: '1 / 0.82' }}
-                                                    title="Click to view full interactive invitation pass"
+                                                    onClick={() => setPhoneViewMode('card')}
+                                                    className="w-full relative cursor-pointer group overflow-hidden bg-[#0A1017] flex flex-col items-center select-none border-b border-slate-700/80 transition"
+                                                    title="Click to view full pass on phone screen"
                                                 >
-                                                    <img 
-                                                        src={template.image_path} 
-                                                        alt={template.name || 'Invitation Template'} 
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
-                                                    />
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40" />
-
-                                                    {/* Top Badge */}
-                                                    <div className="absolute top-2 left-2.5 right-2.5 flex items-center justify-between">
-                                                        <span className="px-2 py-0.5 rounded-full bg-black/60 border border-white/20 text-[8px] font-extrabold uppercase tracking-widest text-white backdrop-blur-xs">
-                                                            {template.elements_config?.headline_text || template.headline || 'INVITATION PASS'}
+                                                    {/* Floating Pass Badge on Card */}
+                                                    <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-20 pointer-events-none">
+                                                        <span className="px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md border border-white/20 text-[7.5px] font-extrabold uppercase tracking-widest text-cyan-300 shadow-sm flex items-center gap-1">
+                                                            <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
+                                                            <span>{activeTemplate?.name || 'Invitation Pass'}</span>
                                                         </span>
-                                                        <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-[8px] font-black uppercase text-slate-950 flex items-center gap-1 shadow-sm">
+                                                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-[7.5px] font-black uppercase text-slate-950 flex items-center gap-1 shadow-sm">
                                                             <CheckCheck className="w-2.5 h-2.5 stroke-[3]" />
-                                                            <span>INVITATION PASS</span>
+                                                            <span>EXACT PASS</span>
                                                         </span>
                                                     </div>
 
-                                                    {/* Center Couple / Event Name */}
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 pointer-events-none">
-                                                        <div className="font-serif italic font-normal text-white text-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] leading-tight">
-                                                            {template.elements_config?.couple_names || sampleEventTitle}
-                                                        </div>
-                                                        <div className="text-[8px] text-amber-200 uppercase font-bold tracking-widest mt-0.5 drop-shadow-sm">
-                                                            {sampleDate}
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Bottom Guest Plaque Overlay */}
-                                                    <div className="absolute bottom-2 left-2 right-2 p-1.5 rounded-xl bg-black/75 border border-white/20 backdrop-blur-md flex items-center justify-between">
-                                                        <div className="truncate pr-2">
-                                                            <div className="text-[7px] text-slate-300 uppercase tracking-widest font-bold">INVITATION FOR</div>
-                                                            <div className="text-[10.5px] font-black text-white truncate font-serif">{sampleGuestName}</div>
-                                                        </div>
-                                                        <div className="text-[8px] font-extrabold text-amber-300 bg-amber-950/80 border border-amber-500/50 px-1.5 py-0.5 rounded-md flex-shrink-0 uppercase">
-                                                            {sampleGuest.allowance_label || '2X ENTRY'}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ) : (
-                                                /* Gradient / Signature Kardovo Card */
-                                                <div 
-                                                    onClick={() => setShowPassModal(true)}
-                                                    className="p-3 relative cursor-pointer group overflow-hidden select-none"
-                                                    style={{
-                                                        background: `linear-gradient(135deg, ${template?.brand_color_from || '#0D1B2A'} 0%, #060E1A 50%, ${template?.brand_color_to || '#0B1E35'} 100%)`,
-                                                        borderBottom: '1px solid rgba(0, 163, 255, 0.25)'
-                                                    }}
-                                                    title="Click to view full interactive invitation pass"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <img src="/images/kardovo_logo.png" alt="Kardovo" className="w-4 h-4 object-contain" />
-                                                            <span className="font-black text-[11px] text-white tracking-widest">KARDOVO</span>
-                                                        </div>
-                                                        <span className="text-[7.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/20 text-cyan-300 border border-blue-400/40 flex items-center gap-1">
-                                                            <ShieldCheck className="w-2.5 h-2.5" />
-                                                            VERIFIED PASS
+                                                    {/* Hover Expand Overlay */}
+                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200 z-30 pointer-events-none flex items-center justify-center">
+                                                        <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 px-3 py-1.5 rounded-xl bg-slate-900/90 text-white font-bold text-[10.5px] flex items-center gap-1.5 shadow-2xl border border-white/20">
+                                                            <ExternalLink className="w-3 h-3 text-cyan-400" />
+                                                            <span>View Full Pass</span>
                                                         </span>
                                                     </div>
 
-                                                    <div className="mt-2 text-center">
-                                                        <div className="text-[8px] font-extrabold uppercase tracking-widest text-cyan-400">
-                                                            {template?.headline || 'OFFICIAL INVITATION'}
-                                                        </div>
-                                                        <h4 className="text-xs font-black text-white mt-0.5 truncate font-display">
-                                                            {sampleEventTitle}
-                                                        </h4>
-                                                    </div>
-
-                                                    <div className="mt-2 p-1.5 rounded-xl bg-black/60 border border-white/10 text-center">
-                                                        <div className="text-[7px] text-slate-400 uppercase tracking-widest font-bold">ISSUED TO</div>
-                                                        <div className="text-[11px] font-black text-white font-serif italic truncate">{sampleGuestName}</div>
-                                                        <div className="text-[7.5px] font-extrabold text-cyan-300 mt-0.5 uppercase">
-                                                            {sampleGuest.allowance_label || 'DOUBLE ENTRY • 2X'}
+                                                    {/* Live Scaled Exact Card */}
+                                                    <div className="w-full flex justify-center py-2 px-1 overflow-hidden pointer-events-none">
+                                                        <div className="w-full flex justify-center origin-top pointer-events-none" style={{ zoom: 0.63 }}>
+                                                            <PersonalisedCard
+                                                                guest={sampleGuest}
+                                                                event={selectedEvent || fallbackEvent}
+                                                                template={activeTemplate}
+                                                                interactive={false}
+                                                                className="pointer-events-none drop-shadow-2xl"
+                                                            />
                                                         </div>
                                                     </div>
                                                 </div>
-                                            )}
 
-                                            {/* Formatted Message Caption */}
-                                            <div className="p-3 text-[11.5px] text-slate-100 leading-relaxed font-sans whitespace-pre-line">
-                                                {formattedCaption}
-                                            </div>
+                                                {/* Formatted Message Caption */}
+                                                <div className="p-3 text-[11.5px] text-slate-100 leading-relaxed font-sans whitespace-pre-line">
+                                                    {formattedCaption}
+                                                </div>
 
-                                            {/* Interactive Quick Reply Buttons */}
-                                            <div className="border-t border-slate-700 divide-y divide-slate-700 bg-[#17232A]">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowPassModal(true)}
-                                                    className="w-full py-2.5 px-3 text-center text-xs font-bold text-cyan-300 hover:bg-slate-800 flex items-center justify-center gap-1.5 transition"
-                                                >
-                                                    <Sparkles className="w-3.5 h-3.5" />
-                                                    <span>View Invitation Pass</span>
-                                                </button>
-                                                {campaignType === 'pass_invitation' && (
-                                                    <>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setPreviewRsvpTapped('attending')}
-                                                            className={`w-full py-2.5 px-3 text-center text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                                                                previewRsvpTapped === 'attending' 
-                                                                    ? 'bg-emerald-950/80 text-emerald-400 font-extrabold' 
-                                                                    : 'text-emerald-400 hover:bg-slate-800'
-                                                            }`}
-                                                        >
-                                                            <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                                            <span>Will Attend</span>
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setPreviewRsvpTapped('declined')}
-                                                            className={`w-full py-2.5 px-3 text-center text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                                                                previewRsvpTapped === 'declined' 
-                                                                    ? 'bg-rose-950/80 text-rose-400 font-extrabold' 
-                                                                    : 'text-slate-400 hover:bg-slate-800'
-                                                            }`}
-                                                        >
-                                                            <span>✕ Cannot Attend</span>
-                                                        </button>
-                                                    </>
-                                                )}
+                                                {/* Interactive Quick Reply Buttons */}
+                                                <div className="border-t border-slate-700 divide-y divide-slate-700 bg-[#17232A]">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setPhoneViewMode('card')}
+                                                        className="w-full py-2.5 px-3 text-center text-xs font-bold text-cyan-300 hover:bg-slate-800 flex items-center justify-center gap-1.5 transition"
+                                                    >
+                                                        <Sparkles className="w-3.5 h-3.5" />
+                                                        <span>View Invitation Pass</span>
+                                                    </button>
+                                                    {campaignType === 'pass_invitation' && (
+                                                        <>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPreviewRsvpTapped('attending')}
+                                                                className={`w-full py-2.5 px-3 text-center text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                                                                    previewRsvpTapped === 'attending' 
+                                                                        ? 'bg-emerald-950/80 text-emerald-400 font-extrabold' 
+                                                                        : 'text-emerald-400 hover:bg-slate-800'
+                                                                }`}
+                                                            >
+                                                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                                                <span>Will Attend</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPreviewRsvpTapped('declined')}
+                                                                className={`w-full py-2.5 px-3 text-center text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                                                                    previewRsvpTapped === 'declined' 
+                                                                        ? 'bg-rose-950/80 text-rose-400 font-extrabold' 
+                                                                        : 'text-slate-400 hover:bg-slate-800'
+                                                                }`}
+                                                            >
+                                                                <span>✕ Cannot Attend</span>
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
 
                                         {/* Outgoing Guest Tap Message Bubble */}
                                         {campaignType === 'pass_invitation' && previewRsvpTapped && (
@@ -1533,8 +1596,8 @@ export default function Messaging({
                         <div className="w-full flex justify-center py-2">
                             <PersonalisedCard
                                 guest={sampleGuest}
-                                event={selectedEvent}
-                                template={template}
+                                event={selectedEvent || fallbackEvent}
+                                template={activeTemplate}
                                 interactive={true}
                             />
                         </div>

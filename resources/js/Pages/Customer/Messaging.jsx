@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, useForm, router, usePage } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import StatusBadge from '@/Components/StatusBadge';
@@ -22,7 +22,6 @@ import {
     ChevronRight, 
     ChevronDown,
     ArrowRight, 
-    ArrowLeft,
     RotateCcw,
     ExternalLink,
     Settings,
@@ -71,7 +70,6 @@ const TEXT_ONLY_PRESETS = [
 export default function Messaging({ 
     events = [], 
     selectedEvent, 
-    templates = [],
     recentMessages = [], 
     quotas = null,
     gateways = {},
@@ -100,7 +98,6 @@ export default function Messaging({
     
     // Interactive chat preview simulation state
     const [previewRsvpTapped, setPreviewRsvpTapped] = useState('attending');
-    const [phoneViewMode, setPhoneViewMode] = useState('chat'); // 'chat' | 'card'
     const [recipientSearch, setRecipientSearch] = useState('');
     const [showPassModal, setShowPassModal] = useState(false);
     const [gatewayModalOpen, setGatewayModalOpen] = useState(false);
@@ -205,34 +202,6 @@ export default function Messaging({
         broadcastForm.setData('event_id', eventId);
     };
 
-    const [activeTemplateId, setActiveTemplateId] = useState(
-        selectedEvent?.card_template_id || selectedEvent?.card_template?.id || selectedEvent?.cardTemplate?.id || null
-    );
-
-    useEffect(() => {
-        const tId = selectedEvent?.card_template_id || selectedEvent?.card_template?.id || selectedEvent?.cardTemplate?.id || null;
-        setActiveTemplateId(tId);
-    }, [selectedEvent?.id, selectedEvent?.card_template_id]);
-
-    const activeTemplate = useMemo(() => {
-        if (activeTemplateId && templates && templates.length > 0) {
-            const found = templates.find(t => String(t.id) === String(activeTemplateId));
-            if (found) return found;
-        }
-        return selectedEvent?.card_template || selectedEvent?.cardTemplate || templates?.[0] || null;
-    }, [activeTemplateId, templates, selectedEvent]);
-
-    const handleSwitchTemplate = (templateId) => {
-        setActiveTemplateId(templateId);
-        if (!selectedEvent) return;
-        router.patch(route('messaging.updateEventTemplate', selectedEvent.id), {
-            card_template_id: templateId
-        }, {
-            preserveScroll: true,
-            preserveState: true,
-        });
-    };
-
     const handleSendBroadcast = (e) => {
         e.preventDefault();
         broadcastForm.post(route('messaging.broadcast'), {
@@ -256,15 +225,7 @@ export default function Messaging({
         qr_token: 'kdv_neema_mbwana_29841872',
     };
 
-    const fallbackEvent = {
-        title: selectedEvent?.title || 'Neema & Baraka — Wedding Reception',
-        venue: selectedEvent?.venue || 'Dar es Salaam Serena Hotel',
-        event_date: selectedEvent?.event_date || '2026-09-14',
-        event_time: selectedEvent?.event_time || '4:00 PM — Reception & Dinner',
-        city: selectedEvent?.city || 'Dar es Salaam',
-    };
-
-    const template = activeTemplate;
+    const template = selectedEvent?.card_template || selectedEvent?.cardTemplate || null;
     const sampleGuestName = sampleGuest.name;
     const sampleEventTitle = selectedEvent?.title || 'Neema & Baraka — Wedding Reception';
     const sampleVenue = selectedEvent?.venue || 'Dar es Salaam Serena Hotel';
@@ -377,14 +338,14 @@ export default function Messaging({
                                         onClick={() => handleCampaignTypeChange('pass_invitation')}
                                         className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex items-center justify-between gap-3 ${
                                             campaignType === 'pass_invitation'
-                                                ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
+                                                ? 'bg-cyan-50/70 dark:bg-cyan-950/30 border-cyan-500/80 ring-2 ring-cyan-500/20 text-slate-900 dark:text-white shadow-xs'
+                                                : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
                                         }`}
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
                                                 campaignType === 'pass_invitation'
-                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs'
+                                                    ? 'bg-cyan-600 text-white shadow-xs'
                                                     : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'
                                             }`}>
                                                 <Ticket className="w-4 h-4" />
@@ -395,7 +356,7 @@ export default function Messaging({
                                         </div>
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
                                             campaignType === 'pass_invitation'
-                                                ? 'border-slate-900 bg-slate-900 dark:border-cyan-500 dark:bg-cyan-500 text-white'
+                                                ? 'border-cyan-600 bg-cyan-600 text-white'
                                                 : 'border-slate-300 dark:border-slate-600'
                                         }`}>
                                             {campaignType === 'pass_invitation' && <Check className="w-2.5 h-2.5 stroke-[3.5]" />}
@@ -407,14 +368,14 @@ export default function Messaging({
                                         onClick={() => handleCampaignTypeChange('pass_only')}
                                         className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex items-center justify-between gap-3 ${
                                             campaignType === 'pass_only'
-                                                ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
+                                                ? 'bg-blue-50/70 dark:bg-blue-950/30 border-blue-500/80 ring-2 ring-blue-500/20 text-slate-900 dark:text-white shadow-xs'
+                                                : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
                                         }`}
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
                                                 campaignType === 'pass_only'
-                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs'
+                                                    ? 'bg-blue-600 text-white shadow-xs'
                                                     : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'
                                             }`}>
                                                 <Sparkles className="w-4 h-4" />
@@ -425,7 +386,7 @@ export default function Messaging({
                                         </div>
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
                                             campaignType === 'pass_only'
-                                                ? 'border-slate-900 bg-slate-900 dark:border-cyan-500 dark:bg-cyan-500 text-white'
+                                                ? 'border-blue-600 bg-blue-600 text-white'
                                                 : 'border-slate-300 dark:border-slate-600'
                                         }`}>
                                             {campaignType === 'pass_only' && <Check className="w-2.5 h-2.5 stroke-[3.5]" />}
@@ -437,14 +398,14 @@ export default function Messaging({
                                         onClick={() => handleCampaignTypeChange('text_only')}
                                         className={`p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex items-center justify-between gap-3 ${
                                             campaignType === 'text_only'
-                                                ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
+                                                ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-500/80 ring-2 ring-emerald-500/20 text-slate-900 dark:text-white shadow-xs'
+                                                : 'bg-white dark:bg-white/[0.03] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/[0.15]'
                                         }`}
                                     >
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-all ${
                                                 campaignType === 'text_only'
-                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs'
+                                                    ? 'bg-emerald-600 text-white shadow-xs'
                                                     : 'bg-slate-100 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400'
                                             }`}>
                                                 <MessageSquare className="w-4 h-4" />
@@ -455,7 +416,7 @@ export default function Messaging({
                                         </div>
                                         <div className={`w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-all ${
                                             campaignType === 'text_only'
-                                                ? 'border-slate-900 bg-slate-900 dark:border-cyan-500 dark:bg-cyan-500 text-white'
+                                                ? 'border-emerald-600 bg-emerald-600 text-white'
                                                 : 'border-slate-300 dark:border-slate-600'
                                         }`}>
                                             {campaignType === 'text_only' && <Check className="w-2.5 h-2.5 stroke-[3.5]" />}
@@ -465,10 +426,11 @@ export default function Messaging({
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-start">
+                                {/* Event Selector */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <label className="block text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
-                                            Select Target Event <span className="text-slate-500">*</span>
+                                            Select Target Event <span className="text-cyan-600 dark:text-cyan-400">*</span>
                                         </label>
                                         <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-mono font-bold bg-slate-100 dark:bg-white/[0.08] px-2 py-0.5 rounded-full">
                                             {events.length} available
@@ -476,7 +438,7 @@ export default function Messaging({
                                     </div>
                                     <div className="relative">
                                         <select
-                                            className="block w-full h-12 border border-slate-300/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-bold px-4 hover:border-slate-400 dark:hover:border-white/20 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 shadow-[0_2px_10px_rgba(0,0,0,0.03)] cursor-pointer appearance-none pr-10 transition duration-200"
+                                            className="block w-full h-12 border border-slate-300/80 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-bold px-4 hover:border-cyan-500/70 dark:hover:border-cyan-400 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 shadow-[0_2px_10px_rgba(0,0,0,0.03)] cursor-pointer appearance-none pr-10 transition duration-200"
                                             value={selectedEvent?.id || ''}
                                             onChange={(e) => handleSelectEvent(e.target.value)}
                                         >
@@ -496,12 +458,13 @@ export default function Messaging({
                                     </div>
                                 </div>
 
+                                {/* Channel Switcher */}
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                         <label className="block text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
                                             Delivery Channel
                                         </label>
-                                        <span className="text-[10.5px] text-slate-600 dark:text-slate-400 font-mono font-medium">
+                                        <span className="text-[10.5px] text-cyan-700 dark:text-cyan-300 font-mono font-bold">
                                             {channel === 'whatsapp' ? 'Direct WhatsApp API' : 'Direct SMS Network'}
                                         </span>
                                     </div>
@@ -511,11 +474,11 @@ export default function Messaging({
                                             onClick={() => handleChannelChange('whatsapp')}
                                             className={`h-full text-xs font-black rounded-2xl border flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 cursor-pointer backdrop-blur-xl ${
                                                 channel === 'whatsapp' 
-                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white border-slate-900 dark:border-cyan-500 shadow-xs ring-1 ring-slate-900/10 dark:ring-cyan-400/30' 
-                                                    : 'bg-white/80 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] hover:border-slate-400 shadow-2xs'
+                                                    ? 'bg-emerald-500/15 dark:bg-emerald-950/60 border-emerald-500/60 text-emerald-900 dark:text-emerald-300 shadow-[0_4px_15px_rgba(16,185,129,0.2)] ring-2 ring-emerald-500/40' 
+                                                    : 'bg-white/80 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] hover:border-emerald-500/60 hover:shadow-[0_2px_12px_rgba(16,185,129,0.15)] shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
                                             }`}
                                         >
-                                            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                             <span>WhatsApp API</span>
                                         </button>
                                         <button
@@ -523,20 +486,25 @@ export default function Messaging({
                                             onClick={() => handleChannelChange('sms')}
                                             className={`h-full text-xs font-black rounded-2xl border flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 cursor-pointer backdrop-blur-xl ${
                                                 channel === 'sms' 
-                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white border-slate-900 dark:border-cyan-500 shadow-xs ring-1 ring-slate-900/10 dark:ring-cyan-400/30' 
-                                                    : 'bg-white/80 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] hover:border-slate-400 shadow-2xs'
+                                                    ? 'bg-blue-500/15 dark:bg-blue-950/60 border-blue-500/60 text-blue-900 dark:text-blue-300 shadow-[0_4px_15px_rgba(59,130,246,0.2)] ring-2 ring-blue-500/40' 
+                                                    : 'bg-white/80 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-white/[0.08] hover:border-blue-500/60 hover:shadow-[0_2px_12px_rgba(59,130,246,0.15)] shadow-[0_2px_8px_rgba(0,0,0,0.02)]'
                                             }`}
                                         >
-                                            <span className="w-2 h-2 rounded-full bg-blue-400" />
+                                            <span className="w-2 h-2 rounded-full bg-blue-500" />
                                             <span>SMS Gateway</span>
                                         </button>
                                     </div>
                                 </div>
                             </div>
 
+                            {/* Gateway Connection & Telemetry Bar */}
                             <div className="p-4 bg-white/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] backdrop-blur-xl shadow-[0_4px_15px_rgba(0,0,0,0.02)] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center border shadow-xs flex-shrink-0 ${
+                                        channel === 'whatsapp' 
+                                            ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
+                                            : 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30'
+                                    }`}>
                                         <ShieldCheck className="w-4 h-4 stroke-[2.5]" />
                                     </div>
                                     <div className="space-y-0.5">
@@ -544,7 +512,7 @@ export default function Messaging({
                                             <span className="font-black text-xs text-slate-900 dark:text-white font-display">
                                                 {channel === 'whatsapp' ? (gateways.whatsapp?.provider || 'Meta WhatsApp Cloud API') : (gateways.sms?.provider || 'NextSMS Gateway')}
                                             </span>
-                                            <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] px-2.5 py-0.5 rounded-full shadow-2xs">
+                                            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                 <span>{channel === 'whatsapp' ? (gateways.whatsapp?.status || 'Connected') : (gateways.sms?.status || 'Active')}</span>
                                             </span>
@@ -555,74 +523,82 @@ export default function Messaging({
                                     </div>
                                 </div>
 
-                                <button
-                                    type="button"
-                                    onClick={() => setGatewayModalOpen(true)}
-                                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] border border-slate-300/80 dark:border-white/[0.08] hover:border-slate-400 text-xs font-bold text-slate-800 dark:text-slate-200 shadow-2xs transition-all duration-200 active:scale-95 cursor-pointer self-start sm:self-center"
-                                >
-                                    <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                                    <span>Configure Gateway</span>
-                                </button>
-                            </div>
-
-                            {/* Live Account Quota Telemetry Cards */}
-                            {activeQuotas && (
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                                    <div className="p-3.5 rounded-2xl border bg-white dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.08] shadow-xs">
-                                        <div className="flex items-center justify-between text-xs font-bold">
-                                            <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-display">
-                                                <span>💬 WhatsApp Quota</span>
-                                            </span>
-                                            <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
-                                                {activeQuotas.whatsapp_limit !== null ? `${activeQuotas.whatsapp_remaining} remaining` : 'Unlimited'}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                                            <span>Dispatched: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.whatsapp_used}</strong></span>
-                                            <span>Limit: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.whatsapp_limit !== null ? activeQuotas.whatsapp_limit : '∞'}</strong></span>
-                                        </div>
-                                        {activeQuotas.whatsapp_limit !== null && (
-                                            <div className="mt-2 w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="bg-slate-900 dark:bg-cyan-500 h-full rounded-full transition-all duration-300"
-                                                    style={{ width: `${Math.min(100, Math.round((activeQuotas.whatsapp_used / Math.max(1, activeQuotas.whatsapp_limit)) * 100))}%` }}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div className="p-3.5 rounded-2xl border bg-white dark:bg-white/[0.03] border-slate-200/80 dark:border-white/[0.08] shadow-xs">
-                                        <div className="flex items-center justify-between text-xs font-bold">
-                                            <span className="text-slate-800 dark:text-slate-200 flex items-center gap-1.5 font-display">
-                                                <span>📱 Regular SMS Quota</span>
-                                            </span>
-                                            <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
-                                                {activeQuotas.sms_limit !== null ? `${activeQuotas.sms_remaining} remaining` : 'Unlimited'}
-                                            </span>
-                                        </div>
-                                        <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                                            <span>Dispatched: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.sms_used}</strong></span>
-                                            <span>Limit: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.sms_limit !== null ? activeQuotas.sms_limit : '∞'}</strong></span>
-                                        </div>
-                                        {activeQuotas.sms_limit !== null && (
-                                            <div className="mt-2 w-full bg-slate-100 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
-                                                <div 
-                                                    className="bg-slate-900 dark:bg-cyan-500 h-full rounded-full transition-all duration-300"
-                                                    style={{ width: `${Math.min(100, Math.round((activeQuotas.sms_used / Math.max(1, activeQuotas.sms_limit)) * 100))}%` }}
-                                                />
-                                            </div>
-                                        )}
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setGatewayModalOpen(true)}
+                                        className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] border border-slate-300/80 dark:border-white/[0.08] hover:border-cyan-500/70 text-xs font-black text-slate-800 dark:text-slate-200 shadow-xs hover:shadow-[0_2px_10px_rgba(6,182,212,0.15)] transition-all duration-200 active:scale-95 cursor-pointer self-start sm:self-center"
+                                    >
+                                        <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                                        <span>Configure Gateway</span>
+                                    </button>
                                 </div>
-                            )}
-                        </div>
+
+                                {/* Live Account Quota Telemetry Cards */}
+                                {activeQuotas && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                                        <div className={`p-3.5 rounded-2xl border transition-all ${
+                                            channel === 'whatsapp' 
+                                                ? 'bg-emerald-500/10 dark:bg-emerald-950/40 border-emerald-500/40 shadow-xs' 
+                                                : 'bg-white/60 dark:bg-white/[0.02] border-slate-200/80 dark:border-white/[0.06]'
+                                        }`}>
+                                            <div className="flex items-center justify-between text-xs font-bold">
+                                                <span className="text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5 font-display">
+                                                    <span>💬 WhatsApp Quota</span>
+                                                </span>
+                                                <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
+                                                    {activeQuotas.whatsapp_limit !== null ? `${activeQuotas.whatsapp_remaining} remaining` : 'Unlimited'}
+                                                </span>
+                                            </div>
+                                            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                                                <span>Dispatched: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.whatsapp_used}</strong></span>
+                                                <span>Limit: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.whatsapp_limit !== null ? activeQuotas.whatsapp_limit : '∞'}</strong></span>
+                                            </div>
+                                            {activeQuotas.whatsapp_limit !== null && (
+                                                <div className="mt-2 w-full bg-slate-200 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                                                        style={{ width: `${Math.min(100, Math.round((activeQuotas.whatsapp_used / Math.max(1, activeQuotas.whatsapp_limit)) * 100))}%` }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className={`p-3.5 rounded-2xl border transition-all ${
+                                            channel === 'sms' 
+                                                ? 'bg-blue-500/10 dark:bg-blue-950/40 border-blue-500/40 shadow-xs' 
+                                                : 'bg-white/60 dark:bg-white/[0.02] border-slate-200/80 dark:border-white/[0.06]'
+                                        }`}>
+                                            <div className="flex items-center justify-between text-xs font-bold">
+                                                <span className="text-blue-800 dark:text-blue-300 flex items-center gap-1.5 font-display">
+                                                    <span>📱 Regular SMS Quota</span>
+                                                </span>
+                                                <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
+                                                    {activeQuotas.sms_limit !== null ? `${activeQuotas.sms_remaining} remaining` : 'Unlimited'}
+                                                </span>
+                                            </div>
+                                            <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-mono">
+                                                <span>Dispatched: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.sms_used}</strong></span>
+                                                <span>Limit: <strong className="text-slate-800 dark:text-slate-200">{activeQuotas.sms_limit !== null ? activeQuotas.sms_limit : '∞'}</strong></span>
+                                            </div>
+                                            {activeQuotas.sms_limit !== null && (
+                                                <div className="mt-2 w-full bg-slate-200 dark:bg-white/10 h-1.5 rounded-full overflow-hidden">
+                                                    <div 
+                                                        className="bg-blue-500 h-full rounded-full transition-all duration-300"
+                                                        style={{ width: `${Math.min(100, Math.round((activeQuotas.sms_used / Math.max(1, activeQuotas.sms_limit)) * 100))}%` }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
 
                         {/* Broadcast Campaign Dispatcher Form */}
                         <div className="bg-white/80 dark:bg-[#0B1524]/90 backdrop-blur-3xl backdrop-saturate-180 p-6 sm:p-7 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.04)] dark:shadow-card space-y-6">
                             <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-4">
                                 <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-200 flex items-center justify-center border border-slate-200/60 dark:border-white/[0.08] shadow-xs">
-                                        <Send className="w-4 h-4" />
+                                    <div className="w-7 h-7 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30 shadow-xs">
+                                        <Send className="w-4 h-4 stroke-[2.5]" />
                                     </div>
                                     <span>Broadcast Campaign Dispatcher</span>
                                 </h3>
@@ -630,90 +606,6 @@ export default function Messaging({
                                     Step 03 / Delivery
                                 </span>
                             </div>
-
-                            {/* ═══════════════ DEPLOYMENT PASS TEMPLATE & APPROVAL ═══════════════ */}
-                            {campaignType !== 'text_only' ? (
-                                <div className="p-4 sm:p-5 bg-slate-50/80 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <Ticket className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                                            <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-display">
-                                                Card Template for Deployment
-                                            </span>
-                                        </div>
-                                        <span className="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] px-2.5 py-0.5 rounded-full shadow-2xs self-start sm:self-auto">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                            <span>Approved for Broadcast</span>
-                                        </span>
-                                    </div>
-
-                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.06] shadow-2xs">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            {activeTemplate?.image_path ? (
-                                                <img 
-                                                    src={activeTemplate.image_path} 
-                                                    alt={activeTemplate.name} 
-                                                    className="w-12 h-14 object-cover rounded-lg border border-slate-200 dark:border-white/10 flex-shrink-0 shadow-xs"
-                                                />
-                                            ) : (
-                                                <div 
-                                                    className="w-12 h-14 rounded-lg flex-shrink-0 flex items-center justify-center text-white text-[9px] font-bold p-1 text-center shadow-xs border border-white/10 font-mono"
-                                                    style={{
-                                                        background: `linear-gradient(135deg, ${activeTemplate?.brand_color_from || '#0D1B2A'} 0%, ${activeTemplate?.brand_color_to || '#0B1E35'} 100%)`
-                                                    }}
-                                                >
-                                                    PASS
-                                                </div>
-                                            )}
-                                            <div className="min-w-0">
-                                                <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                                    {activeTemplate?.name || 'Kardovo Signature Pass (Default)'}
-                                                </div>
-                                                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5 truncate">
-                                                    {activeTemplate?.image_path ? '4K Custom Artwork Pass' : 'Vector Gradient Pass'} • {activeTemplate?.headline || 'OFFICIAL INVITATION'}
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassModal(true)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-100 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] text-xs font-bold text-slate-700 dark:text-slate-200 shadow-xs transition active:scale-95 cursor-pointer"
-                                                title="Preview Full 4K Invitation Pass"
-                                            >
-                                                <Sparkles className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                                                <span>Preview Pass</span>
-                                            </button>
-
-                                            {templates && templates.length > 0 && selectedEvent && (
-                                                <div className="relative">
-                                                    <select
-                                                        value={activeTemplate?.id || ''}
-                                                        onChange={(e) => handleSwitchTemplate(e.target.value)}
-                                                        className="text-xs font-bold py-1.5 pl-2.5 pr-7 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-800 dark:text-slate-200 cursor-pointer appearance-none hover:border-slate-400 dark:hover:border-white/20 shadow-xs focus:ring-1 focus:ring-cyan-500"
-                                                        title="Switch or approve another template for this event"
-                                                    >
-                                                        {templates.map(tpl => (
-                                                            <option key={tpl.id} value={tpl.id} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
-                                                                Switch: {tpl.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                    <ChevronDown className="w-3.5 h-3.5 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="p-3.5 bg-slate-50 dark:bg-white/[0.02] rounded-2xl border border-slate-200/60 dark:border-white/[0.06] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                                    <span className="flex items-center gap-2">
-                                        <MessageSquare className="w-4 h-4 text-slate-400" />
-                                        <span>Plain Text Mode: No card artwork attachment will be sent with this broadcast.</span>
-                                    </span>
-                                </div>
-                            )}
 
                             {/* Recipient Audience Filter Capsules */}
                             <div className="space-y-2.5">
@@ -741,13 +633,13 @@ export default function Messaging({
                                             }}
                                             className={`p-3.5 rounded-2xl border text-center transition-all duration-200 flex flex-col items-center justify-center active:scale-95 cursor-pointer backdrop-blur-xl ${
                                                 targetFilter === opt.id 
-                                                    ? 'bg-slate-900 dark:bg-cyan-600 text-white border-slate-900 dark:border-cyan-400 font-bold shadow-xs ring-1 ring-slate-900/10 dark:ring-cyan-400/30' 
-                                                    : 'bg-white dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-white/20 shadow-2xs'
+                                                    ? 'bg-kardovo-navy dark:bg-cyan-600 text-white border-cyan-400 dark:border-cyan-400 font-black shadow-[0_6px_20px_rgba(5,13,26,0.25)] ring-2 ring-cyan-500/60 scale-[1.02]' 
+                                                    : 'bg-white/85 dark:bg-white/[0.04] border-slate-300/80 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 hover:bg-white dark:hover:bg-white/[0.08] hover:border-cyan-500/70 hover:shadow-[0_4px_15px_rgba(6,182,212,0.15)] shadow-[0_2px_10px_rgba(0,0,0,0.03)]'
                                             }`}
                                         >
                                             <span className="text-xs font-bold leading-tight">{opt.label}</span>
-                                            <span className={`text-[10.5px] px-2.5 py-0.5 rounded-full font-mono mt-2 font-bold ${
-                                                targetFilter === opt.id ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.06]'
+                                            <span className={`text-[10.5px] px-2.5 py-0.5 rounded-full font-mono mt-2 font-black ${
+                                                targetFilter === opt.id ? 'bg-white/20 text-white' : 'bg-slate-200/80 dark:bg-white/[0.1] text-slate-800 dark:text-slate-200'
                                             }`}>
                                                 {opt.count} {opt.count === 1 ? 'guest' : 'guests'}
                                             </span>
@@ -760,7 +652,7 @@ export default function Messaging({
                             <div className="rounded-2xl border border-slate-300/80 dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.02] overflow-hidden backdrop-blur-xl shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
                                 <div className="p-4 bg-white/90 dark:bg-white/[0.04] border-b border-slate-200/80 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                     <div className="flex items-center gap-2">
-                                        <Users className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                                         <span className="text-xs font-black text-slate-900 dark:text-white font-display">
                                             Matching Recipients ({filteredGuests.length})
                                         </span>
@@ -772,7 +664,7 @@ export default function Messaging({
                                             placeholder="Search recipients..."
                                             value={recipientSearch}
                                             onChange={(e) => setRecipientSearch(e.target.value)}
-                                            className="bg-white dark:bg-[#08121E] border border-slate-300 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-[11px] font-bold rounded-xl pl-8 pr-3 py-1.5 w-full sm:w-52 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 shadow-xs transition duration-200 outline-none"
+                                            className="bg-white dark:bg-[#08121E] border border-slate-300 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-[11px] font-bold rounded-xl pl-8 pr-3 py-1.5 w-full sm:w-52 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 shadow-xs transition duration-200 outline-none"
                                         />
                                     </div>
                                 </div>
@@ -788,7 +680,7 @@ export default function Messaging({
                                         searchedFilteredGuests.map((guest) => (
                                             <div key={guest.id} className="p-3.5 px-4 flex items-center justify-between text-xs hover:bg-white/90 dark:hover:bg-white/[0.06] transition">
                                                 <div className="min-w-0 flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                                    <div className="w-8 h-8 rounded-xl bg-cyan-500/15 dark:bg-cyan-950/40 border border-cyan-500/30 dark:border-cyan-800/40 text-cyan-900 dark:text-cyan-300 font-black text-xs flex items-center justify-center flex-shrink-0 shadow-xs">
                                                         {guest.name.charAt(0)}
                                                     </div>
                                                     <div className="truncate">
@@ -804,22 +696,22 @@ export default function Messaging({
                                                 </div>
 
                                                 <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                                                    <span className={`text-[9.5px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full ${
+                                                    <span className={`text-[9.5px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
                                                         guest.delivery_status === 'delivered' || guest.delivery_status === 'sent'
-                                                            ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40'
+                                                            ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/40'
                                                             : guest.delivery_status === 'failed'
-                                                            ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40'
-                                                            : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08]'
+                                                            ? 'bg-rose-100 dark:bg-rose-950/40 text-rose-800 dark:text-rose-300 border border-rose-300 dark:border-rose-800/40'
+                                                            : 'bg-slate-200/80 dark:bg-white/[0.08] text-slate-800 dark:text-slate-300 border border-slate-300 dark:border-white/[0.08]'
                                                     }`}>
                                                         {guest.delivery_status || 'draft'}
                                                     </span>
 
-                                                    <span className={`text-[9.5px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full ${
+                                                    <span className={`text-[9.5px] font-extrabold uppercase px-2.5 py-0.5 rounded-full ${
                                                         guest.rsvp_status === 'attending'
-                                                            ? 'text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40'
+                                                            ? 'bg-emerald-500/20 text-emerald-900 dark:text-emerald-200 font-black border border-emerald-500/30'
                                                             : guest.rsvp_status === 'declined'
-                                                            ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40'
-                                                            : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08]'
+                                                            ? 'bg-rose-500/20 text-rose-900 dark:text-rose-200 font-black border border-rose-500/30'
+                                                            : 'bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-300 border border-amber-300 dark:border-amber-800/40'
                                                     }`}>
                                                         {guest.rsvp_status === 'attending' ? 'Attending' : guest.rsvp_status === 'declined' ? 'Declined' : 'Pending RSVP'}
                                                     </span>
@@ -835,7 +727,7 @@ export default function Messaging({
                                 <div className="space-y-1.5 pt-1">
                                     <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-bold">
                                         <span className="flex items-center gap-1.5">
-                                            <Sparkles className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                            <Sparkles className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                             <span>Quick Text Presets:</span>
                                         </span>
                                     </div>
@@ -848,7 +740,7 @@ export default function Messaging({
                                                     setCustomCaption(preset.text);
                                                     broadcastForm.setData('custom_caption', preset.text);
                                                 }}
-                                                className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-[11px] font-bold text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/[0.08] transition active:scale-95 cursor-pointer"
+                                                className="px-3 py-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 dark:hover:text-emerald-300 border border-slate-200 dark:border-white/[0.08] hover:border-emerald-300 dark:hover:border-emerald-700/50 text-[11px] font-bold text-slate-700 dark:text-slate-300 transition active:scale-95 cursor-pointer"
                                             >
                                                 {preset.title}
                                             </button>
@@ -870,7 +762,7 @@ export default function Messaging({
                                             setCustomCaption(templ);
                                             broadcastForm.setData('custom_caption', templ);
                                         }}
-                                        className="text-[11px] text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white font-bold cursor-pointer underline"
+                                        className="text-[11px] text-cyan-700 dark:text-cyan-400 hover:underline font-extrabold cursor-pointer"
                                     >
                                         Reset to Default {channel === 'sms' ? 'SMS' : 'WhatsApp'} Template
                                     </button>
@@ -878,7 +770,7 @@ export default function Messaging({
 
                                 <textarea
                                     rows={3}
-                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/85 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-medium p-4 leading-relaxed shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition duration-200 outline-none"
+                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/85 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-medium p-4 leading-relaxed shadow-[0_2px_12px_rgba(0,0,0,0.03)] hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition duration-200 outline-none"
                                     value={customCaption}
                                     onChange={(e) => {
                                         setCustomCaption(e.target.value);
@@ -894,7 +786,7 @@ export default function Messaging({
                                             key={tag}
                                             type="button"
                                             onClick={() => insertPlaceholder(tag)}
-                                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-300 font-mono text-[10.5px] font-bold border border-slate-200/80 dark:border-white/[0.08] hover:border-slate-400 transition shadow-2xs cursor-pointer active:scale-95"
+                                            className="px-3 py-1.5 rounded-xl bg-white/85 hover:bg-white dark:bg-white/[0.08] dark:hover:bg-white/[0.15] text-slate-900 dark:text-slate-200 font-mono text-[10.5px] font-black border border-slate-300/80 dark:border-white/[0.08] hover:border-cyan-500/80 hover:shadow-[0_2px_8px_rgba(6,182,212,0.2)] transition duration-200 shadow-[0_1px_4px_rgba(0,0,0,0.03)] cursor-pointer active:scale-95"
                                         >
                                             + {'{' + tag + '}'}
                                         </button>
@@ -914,7 +806,7 @@ export default function Messaging({
                                     <div className="flex items-center justify-between">
                                         <div className="space-y-0.5">
                                             <div className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display flex items-center gap-2">
-                                                <Sparkles className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                                                <Sparkles className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                                                 <span>Automated WhatsApp RSVP Confirmation Reply</span>
                                             </div>
                                             <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -933,7 +825,7 @@ export default function Messaging({
                                                 }}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600"></div>
+                                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
                                         </label>
                                     </div>
 
@@ -942,7 +834,7 @@ export default function Messaging({
                                             {/* 1. Attending Response Text */}
                                             <div className="space-y-1.5">
                                                 <div className="flex items-center justify-between">
-                                                    <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                                    <label className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
                                                         <span className="w-2 h-2 rounded-full bg-emerald-500" />
                                                         <span>"Will Attend" Confirmation Reply</span>
                                                     </label>
@@ -956,7 +848,7 @@ export default function Messaging({
                                                         broadcastForm.setData('rsvp_attending_text', e.target.value);
                                                     }}
                                                     placeholder="Thank you {{guest_name}}! Your RSVP has been confirmed for {{event_title}}..."
-                                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-3 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition outline-none"
+                                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-3 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
                                                 />
                                             </div>
 
@@ -976,7 +868,7 @@ export default function Messaging({
                                                         broadcastForm.setData('rsvp_declined_text', e.target.value);
                                                     }}
                                                     placeholder="Thank you {{guest_name}} for letting us know..."
-                                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-3 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition outline-none"
+                                                    className="block w-full border border-slate-300/90 dark:border-white/[0.08] bg-white/90 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-3 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition outline-none"
                                                 />
                                             </div>
                                         </div>
@@ -993,9 +885,9 @@ export default function Messaging({
                                     <PrimaryButton 
                                         onClick={handleSendBroadcast}
                                         disabled={broadcastForm.processing || filteredGuests.length === 0} 
-                                        className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white gap-2 shadow-xs disabled:opacity-50 py-3.5 px-7 rounded-2xl text-xs font-bold cursor-pointer active:scale-95 transition"
+                                        className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white dark:text-slate-950 gap-2 shadow-xl hover:shadow-2xl disabled:opacity-50 py-3.5 px-7 rounded-2xl text-xs font-black cursor-pointer active:scale-95"
                                     >
-                                        <Send className="w-3.5 h-3.5 text-white stroke-[2.5]" />
+                                        <Send className="w-3.5 h-3.5 text-cyan-400 dark:text-slate-950 stroke-[2.5]" />
                                         <span>Dispatch Campaign Now</span>
                                     </PrimaryButton>
                                 ) : (
@@ -1016,53 +908,20 @@ export default function Messaging({
                     {/* Right: Interactive Smartphone Preview (5 cols) */}
                     <div className="lg:col-span-5 flex flex-col items-center space-y-4 lg:sticky lg:top-6 lg:self-start">
                         {/* Control Header Card */}
-                        <div className="w-full bg-white/70 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 p-3.5 sm:p-4 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="w-full bg-white/70 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 p-4 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card flex items-center justify-between">
                             <div className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2 font-display">
-                                <Smartphone className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                                <span>{channel === 'whatsapp' ? 'WhatsApp Live Simulation' : 'SMS Live Simulation'}</span>
+                                <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                <span>{channel === 'whatsapp' ? 'WhatsApp Live View' : 'SMS Live View'}</span>
                             </div>
-
-                            <div className="flex items-center gap-2 self-end sm:self-auto">
-                                {/* Phone View Toggle: Chat View vs Direct Pass View */}
-                                <div className="inline-flex p-0.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08]">
-                                    <button
-                                        type="button"
-                                        onClick={() => setPhoneViewMode('chat')}
-                                        className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition ${
-                                            phoneViewMode === 'chat'
-                                                ? 'bg-white dark:bg-[#0E1726] text-slate-900 dark:text-white shadow-xs'
-                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                                        }`}
-                                        title="View messaging chat flow"
-                                    >
-                                        💬 Chat View
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setPhoneViewMode('card')}
-                                        className={`px-2.5 py-1 rounded-lg text-[10.5px] font-bold transition ${
-                                            phoneViewMode === 'card'
-                                                ? 'bg-white dark:bg-[#0E1726] text-slate-900 dark:text-white shadow-xs'
-                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                                        }`}
-                                        title="View exact invitation pass on phone screen"
-                                    >
-                                        🪪 Pass Screen
-                                    </button>
-                                </div>
-
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setPreviewRsvpTapped(null);
-                                        setPhoneViewMode('chat');
-                                    }}
-                                    className="p-1.5 rounded-xl bg-white/80 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition active:scale-95 cursor-pointer"
-                                    title="Reset Simulation"
-                                >
-                                    <RotateCcw className="w-3.5 h-3.5" />
-                                </button>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setPreviewRsvpTapped(null)}
+                                className="text-[11px] font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/80 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] shadow-xs transition active:scale-95 cursor-pointer"
+                                title="Reset Simulation"
+                            >
+                                <RotateCcw className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                                <span>Reset Simulation</span>
+                            </button>
                         </div>
 
                         {/* Virtual Phone Mockup Container */}
@@ -1074,41 +933,7 @@ export default function Messaging({
                                     <div className="w-2 h-2 rounded-full bg-slate-800" />
                                 </div>
 
-                            {phoneViewMode === 'card' ? (
-                                /* ═══════════ DIRECT PHONE INVITATION PASS SCREEN ═══════════ */
-                                <div className="space-y-2">
-                                    <div className="bg-[#1F2430] p-2.5 px-3 rounded-t-2xl flex items-center justify-between border-b border-slate-700">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-                                            <span className="text-[11px] font-black text-white tracking-wider truncate">
-                                                {activeTemplate?.name || 'Kardovo Invitation Pass'}
-                                            </span>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => setPhoneViewMode('chat')}
-                                            className="text-[10px] font-bold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-800/40 flex-shrink-0"
-                                        >
-                                            <ArrowLeft className="w-2.5 h-2.5" />
-                                            <span>Chat</span>
-                                        </button>
-                                    </div>
-
-                                    <div className="bg-[#0B0F19] p-2 rounded-b-2xl overflow-y-auto max-h-[580px] scrollbar-thin flex flex-col items-center">
-                                        <div className="w-full flex justify-center py-1">
-                                            <div style={{ zoom: 0.67 }} className="pointer-events-none">
-                                                <PersonalisedCard
-                                                    guest={sampleGuest}
-                                                    event={selectedEvent || fallbackEvent}
-                                                    template={activeTemplate}
-                                                    interactive={false}
-                                                    className="drop-shadow-2xl"
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ) : channel === 'sms' ? (
+                            {channel === 'sms' ? (
                                 <>
                                     {/* SMS App Header */}
                                     <div className="bg-[#1F2430] p-2.5 px-3 rounded-t-2xl flex items-center gap-2.5 border-b border-slate-700">
@@ -1144,38 +969,22 @@ export default function Messaging({
 
                                             {campaignType !== 'text_only' && (
                                                 <div 
-                                                    onClick={() => setPhoneViewMode('card')}
-                                                    className="p-2.5 rounded-2xl bg-[#141B26] border border-slate-700/80 hover:border-blue-500/60 cursor-pointer transition shadow-lg group space-y-2"
-                                                    title="Click to view full pass on phone screen"
+                                                    onClick={() => setShowPassModal(true)}
+                                                    className="p-2.5 rounded-2xl bg-[#141B26] border border-slate-700/80 hover:border-blue-500/60 cursor-pointer transition shadow-lg group"
+                                                    title="Click to preview invitation pass"
                                                 >
-                                                    <div className="flex items-center justify-between text-[8.5px] font-bold text-slate-400 uppercase tracking-wider">
+                                                    <div className="flex items-center justify-between text-[8.5px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                                                         <span>kdv.app/p/{samplePassCode}</span>
                                                         <span className="text-blue-400 flex items-center gap-0.5 group-hover:underline">
-                                                            <span>View Full Pass</span>
+                                                            <span>View Invitation Pass</span>
                                                             <ExternalLink className="w-2.5 h-2.5" />
                                                         </span>
                                                     </div>
-
-                                                    {/* Exact Card Scaled Preview inside SMS Link Preview */}
-                                                    <div className="w-full rounded-xl overflow-hidden bg-black/60 border border-slate-700/60 flex justify-center py-2 relative">
-                                                        <div className="w-full flex justify-center origin-top pointer-events-none" style={{ zoom: 0.52 }}>
-                                                            <PersonalisedCard
-                                                                guest={sampleGuest}
-                                                                event={selectedEvent || fallbackEvent}
-                                                                template={activeTemplate}
-                                                                interactive={false}
-                                                                className="pointer-events-none drop-shadow-lg"
-                                                            />
-                                                        </div>
+                                                    <div className="text-[11px] font-bold text-white truncate">
+                                                        {sampleEventTitle}
                                                     </div>
-
-                                                    <div>
-                                                        <div className="text-[11px] font-bold text-white truncate">
-                                                            {sampleEventTitle}
-                                                        </div>
-                                                        <div className="text-[9.5px] text-slate-400 truncate mt-0.5">
-                                                            {sampleGuestName} • {sampleGuest.allowance_label || '2X Entry'}
-                                                        </div>
+                                                    <div className="text-[9.5px] text-slate-400 truncate mt-0.5">
+                                                        {sampleGuestName} • {sampleGuest.allowance_label || '2X Entry'}
                                                     </div>
                                                 </div>
                                             )}
@@ -1231,91 +1040,139 @@ export default function Messaging({
                                             /* ═══════════ INVITATION PASS WITH ART & OPTIONAL RSVP BUTTONS ═══════════ */
                                             <div className="bg-[#1F2C34] rounded-2xl rounded-tl-none overflow-hidden border border-slate-700/80 shadow-md">
                                             
-                                                {/* ── Exact Card From Template ── */}
+                                            {/* Responsive Card Image Header */}
+                                            {template?.image_path ? (
                                                 <div 
-                                                    onClick={() => setPhoneViewMode('card')}
-                                                    className="w-full relative cursor-pointer group overflow-hidden bg-[#0A1017] flex flex-col items-center select-none border-b border-slate-700/80 transition"
-                                                    title="Click to view full pass on phone screen"
+                                                    onClick={() => setShowPassModal(true)}
+                                                    className="relative cursor-pointer group overflow-hidden select-none"
+                                                    style={{ aspectRatio: '1 / 0.82' }}
+                                                    title="Click to view full interactive invitation pass"
                                                 >
-                                                    {/* Floating Pass Badge on Card */}
-                                                    <div className="absolute top-2 left-2 right-2 flex items-center justify-between z-20 pointer-events-none">
-                                                        <span className="px-2 py-0.5 rounded-full bg-black/65 backdrop-blur-md border border-white/20 text-[7.5px] font-extrabold uppercase tracking-widest text-cyan-300 shadow-sm flex items-center gap-1">
-                                                            <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
-                                                            <span>{activeTemplate?.name || 'Invitation Pass'}</span>
+                                                    <img 
+                                                        src={template.image_path} 
+                                                        alt={template.name || 'Invitation Template'} 
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/40" />
+
+                                                    {/* Top Badge */}
+                                                    <div className="absolute top-2 left-2.5 right-2.5 flex items-center justify-between">
+                                                        <span className="px-2 py-0.5 rounded-full bg-black/60 border border-white/20 text-[8px] font-extrabold uppercase tracking-widest text-white backdrop-blur-xs">
+                                                            {template.elements_config?.headline_text || template.headline || 'INVITATION PASS'}
                                                         </span>
-                                                        <span className="px-1.5 py-0.5 rounded-full bg-emerald-500 text-[7.5px] font-black uppercase text-slate-950 flex items-center gap-1 shadow-sm">
+                                                        <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-[8px] font-black uppercase text-slate-950 flex items-center gap-1 shadow-sm">
                                                             <CheckCheck className="w-2.5 h-2.5 stroke-[3]" />
-                                                            <span>EXACT PASS</span>
+                                                            <span>INVITATION PASS</span>
                                                         </span>
                                                     </div>
 
-                                                    {/* Hover Expand Overlay */}
-                                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200 z-30 pointer-events-none flex items-center justify-center">
-                                                        <span className="opacity-0 group-hover:opacity-100 transition-all duration-200 scale-95 group-hover:scale-100 px-3 py-1.5 rounded-xl bg-slate-900/90 text-white font-bold text-[10.5px] flex items-center gap-1.5 shadow-2xl border border-white/20">
-                                                            <ExternalLink className="w-3 h-3 text-cyan-400" />
-                                                            <span>View Full Pass</span>
-                                                        </span>
+                                                    {/* Center Couple / Event Name */}
+                                                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 pointer-events-none">
+                                                        <div className="font-serif italic font-normal text-white text-lg drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] leading-tight">
+                                                            {template.elements_config?.couple_names || sampleEventTitle}
+                                                        </div>
+                                                        <div className="text-[8px] text-amber-200 uppercase font-bold tracking-widest mt-0.5 drop-shadow-sm">
+                                                            {sampleDate}
+                                                        </div>
                                                     </div>
 
-                                                    {/* Live Scaled Exact Card */}
-                                                    <div className="w-full flex justify-center py-2 px-1 overflow-hidden pointer-events-none">
-                                                        <div className="w-full flex justify-center origin-top pointer-events-none" style={{ zoom: 0.63 }}>
-                                                            <PersonalisedCard
-                                                                guest={sampleGuest}
-                                                                event={selectedEvent || fallbackEvent}
-                                                                template={activeTemplate}
-                                                                interactive={false}
-                                                                className="pointer-events-none drop-shadow-2xl"
-                                                            />
+                                                    {/* Bottom Guest Plaque Overlay */}
+                                                    <div className="absolute bottom-2 left-2 right-2 p-1.5 rounded-xl bg-black/75 border border-white/20 backdrop-blur-md flex items-center justify-between">
+                                                        <div className="truncate pr-2">
+                                                            <div className="text-[7px] text-slate-300 uppercase tracking-widest font-bold">INVITATION FOR</div>
+                                                            <div className="text-[10.5px] font-black text-white truncate font-serif">{sampleGuestName}</div>
+                                                        </div>
+                                                        <div className="text-[8px] font-extrabold text-amber-300 bg-amber-950/80 border border-amber-500/50 px-1.5 py-0.5 rounded-md flex-shrink-0 uppercase">
+                                                            {sampleGuest.allowance_label || '2X ENTRY'}
                                                         </div>
                                                     </div>
                                                 </div>
+                                            ) : (
+                                                /* Gradient / Signature Kardovo Card */
+                                                <div 
+                                                    onClick={() => setShowPassModal(true)}
+                                                    className="p-3 relative cursor-pointer group overflow-hidden select-none"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${template?.brand_color_from || '#0D1B2A'} 0%, #060E1A 50%, ${template?.brand_color_to || '#0B1E35'} 100%)`,
+                                                        borderBottom: '1px solid rgba(0, 163, 255, 0.25)'
+                                                    }}
+                                                    title="Click to view full interactive invitation pass"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <img src="/images/kardovo_logo.png" alt="Kardovo" className="w-4 h-4 object-contain" />
+                                                            <span className="font-black text-[11px] text-white tracking-widest">KARDOVO</span>
+                                                        </div>
+                                                        <span className="text-[7.5px] font-extrabold uppercase px-1.5 py-0.5 rounded-full bg-blue-500/20 text-cyan-300 border border-blue-400/40 flex items-center gap-1">
+                                                            <ShieldCheck className="w-2.5 h-2.5" />
+                                                            VERIFIED PASS
+                                                        </span>
+                                                    </div>
 
-                                                {/* Formatted Message Caption */}
-                                                <div className="p-3 text-[11.5px] text-slate-100 leading-relaxed font-sans whitespace-pre-line">
-                                                    {formattedCaption}
-                                                </div>
+                                                    <div className="mt-2 text-center">
+                                                        <div className="text-[8px] font-extrabold uppercase tracking-widest text-cyan-400">
+                                                            {template?.headline || 'OFFICIAL INVITATION'}
+                                                        </div>
+                                                        <h4 className="text-xs font-black text-white mt-0.5 truncate font-display">
+                                                            {sampleEventTitle}
+                                                        </h4>
+                                                    </div>
 
-                                                {/* Interactive Quick Reply Buttons */}
-                                                <div className="border-t border-slate-700 divide-y divide-slate-700 bg-[#17232A]">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setPhoneViewMode('card')}
-                                                        className="w-full py-2.5 px-3 text-center text-xs font-bold text-cyan-300 hover:bg-slate-800 flex items-center justify-center gap-1.5 transition"
-                                                    >
-                                                        <Sparkles className="w-3.5 h-3.5" />
-                                                        <span>View Invitation Pass</span>
-                                                    </button>
-                                                    {campaignType === 'pass_invitation' && (
-                                                        <>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setPreviewRsvpTapped('attending')}
-                                                                className={`w-full py-2.5 px-3 text-center text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                                                                    previewRsvpTapped === 'attending' 
-                                                                        ? 'bg-emerald-950/80 text-emerald-400 font-extrabold' 
-                                                                        : 'text-emerald-400 hover:bg-slate-800'
-                                                                }`}
-                                                            >
-                                                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                                                <span>Will Attend</span>
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setPreviewRsvpTapped('declined')}
-                                                                className={`w-full py-2.5 px-3 text-center text-xs font-bold flex items-center justify-center gap-1.5 transition ${
-                                                                    previewRsvpTapped === 'declined' 
-                                                                        ? 'bg-rose-950/80 text-rose-400 font-extrabold' 
-                                                                        : 'text-slate-400 hover:bg-slate-800'
-                                                                }`}
-                                                            >
-                                                                <span>✕ Cannot Attend</span>
-                                                            </button>
-                                                        </>
-                                                    )}
+                                                    <div className="mt-2 p-1.5 rounded-xl bg-black/60 border border-white/10 text-center">
+                                                        <div className="text-[7px] text-slate-400 uppercase tracking-widest font-bold">ISSUED TO</div>
+                                                        <div className="text-[11px] font-black text-white font-serif italic truncate">{sampleGuestName}</div>
+                                                        <div className="text-[7.5px] font-extrabold text-cyan-300 mt-0.5 uppercase">
+                                                            {sampleGuest.allowance_label || 'DOUBLE ENTRY • 2X'}
+                                                        </div>
+                                                    </div>
                                                 </div>
+                                            )}
+
+                                            {/* Formatted Message Caption */}
+                                            <div className="p-3 text-[11.5px] text-slate-100 leading-relaxed font-sans whitespace-pre-line">
+                                                {formattedCaption}
                                             </div>
-                                        )}
+
+                                            {/* Interactive Quick Reply Buttons */}
+                                            <div className="border-t border-slate-700 divide-y divide-slate-700 bg-[#17232A]">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowPassModal(true)}
+                                                    className="w-full py-2.5 px-3 text-center text-xs font-bold text-cyan-300 hover:bg-slate-800 flex items-center justify-center gap-1.5 transition"
+                                                >
+                                                    <Sparkles className="w-3.5 h-3.5" />
+                                                    <span>View Invitation Pass</span>
+                                                </button>
+                                                {campaignType === 'pass_invitation' && (
+                                                    <>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPreviewRsvpTapped('attending')}
+                                                            className={`w-full py-2.5 px-3 text-center text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                                                                previewRsvpTapped === 'attending' 
+                                                                    ? 'bg-emerald-950/80 text-emerald-400 font-extrabold' 
+                                                                    : 'text-emerald-400 hover:bg-slate-800'
+                                                            }`}
+                                                        >
+                                                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                                            <span>Will Attend</span>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPreviewRsvpTapped('declined')}
+                                                            className={`w-full py-2.5 px-3 text-center text-xs font-bold flex items-center justify-center gap-1.5 transition ${
+                                                                previewRsvpTapped === 'declined' 
+                                                                    ? 'bg-rose-950/80 text-rose-400 font-extrabold' 
+                                                                    : 'text-slate-400 hover:bg-slate-800'
+                                                            }`}
+                                                        >
+                                                            <span>✕ Cannot Attend</span>
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
 
                                         {/* Outgoing Guest Tap Message Bubble */}
                                         {campaignType === 'pass_invitation' && previewRsvpTapped && (
@@ -1354,16 +1211,16 @@ export default function Messaging({
                     {/* Header */}
                     <div className="p-5 sm:p-6 border-b border-slate-200/80 dark:border-white/[0.08] bg-white/85 dark:bg-white/[0.03] backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.08] flex items-center justify-center shadow-xs flex-shrink-0">
-                                <Clock className="w-4 h-4" />
+                            <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-300 border border-cyan-500/30 flex items-center justify-center shadow-xs flex-shrink-0">
+                                <Clock className="w-5 h-5" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display">
                                         Recent Message Delivery Logs
                                     </h3>
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] px-2.5 py-0.5 rounded-full">
-                                        <ListOrdered className="w-3 h-3 text-slate-500" />
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30 font-mono">
+                                        <ListOrdered className="w-3 h-3" />
                                         <span>Numbered &amp; Filterable</span>
                                     </span>
                                 </div>
@@ -1389,7 +1246,7 @@ export default function Messaging({
                                 value={logSearch}
                                 onChange={(e) => setLogSearch(e.target.value)}
                                 placeholder="Search logs by guest, phone, event, status..."
-                                className="w-full pl-9 pr-9 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#08121E] border border-slate-300/80 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition shadow-2xs outline-none"
+                                className="w-full pl-9 pr-9 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#08121E] border border-slate-300/80 dark:border-white/[0.08] text-slate-900 dark:text-white placeholder-slate-400 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition shadow-2xs outline-none"
                             />
                             {logSearch && (
                                 <button
@@ -1409,9 +1266,9 @@ export default function Messaging({
                                 <button
                                     type="button"
                                     onClick={() => setLogChannelFilter('all')}
-                                    className={`px-2.5 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-lg font-black transition-all cursor-pointer ${
                                         logChannelFilter === 'all'
-                                            ? 'bg-white dark:bg-[#08121E] text-slate-900 dark:text-white shadow-2xs'
+                                            ? 'bg-white dark:bg-[#08121E] text-slate-900 dark:text-white shadow-2xs ring-1 ring-slate-300/60 dark:ring-white/20'
                                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                                 >
@@ -1420,10 +1277,10 @@ export default function Messaging({
                                 <button
                                     type="button"
                                     onClick={() => setLogChannelFilter('whatsapp')}
-                                    className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-lg font-black transition-all flex items-center gap-1 cursor-pointer ${
                                         logChannelFilter === 'whatsapp'
-                                            ? 'bg-white dark:bg-[#08121E] text-slate-900 dark:text-white shadow-2xs'
-                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                            ? 'bg-white dark:bg-[#08121E] text-emerald-700 dark:text-emerald-300 shadow-2xs ring-1 ring-emerald-500/40'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-emerald-700 dark:hover:text-emerald-300'
                                     }`}
                                 >
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -1432,10 +1289,10 @@ export default function Messaging({
                                 <button
                                     type="button"
                                     onClick={() => setLogChannelFilter('sms')}
-                                    className={`px-2.5 py-1 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                    className={`px-2.5 py-1 rounded-lg font-black transition-all flex items-center gap-1 cursor-pointer ${
                                         logChannelFilter === 'sms'
-                                            ? 'bg-white dark:bg-[#08121E] text-slate-900 dark:text-white shadow-2xs'
-                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                            ? 'bg-white dark:bg-[#08121E] text-blue-700 dark:text-blue-300 shadow-2xs ring-1 ring-blue-500/40'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-blue-700 dark:hover:text-blue-300'
                                     }`}
                                 >
                                     <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
@@ -1447,7 +1304,7 @@ export default function Messaging({
                             <select
                                 value={logStatusFilter}
                                 onChange={(e) => setLogStatusFilter(e.target.value)}
-                                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300/80 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-800 dark:text-slate-200 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-400 focus:ring-2 focus:ring-slate-900/10 transition cursor-pointer shadow-2xs"
+                                className="px-3 py-1.5 text-xs font-bold rounded-xl border border-slate-300/80 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-800 dark:text-slate-200 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition cursor-pointer shadow-2xs"
                             >
                                 <option value="all" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">All Statuses</option>
                                 <option value="delivered" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Delivered</option>
@@ -1468,7 +1325,7 @@ export default function Messaging({
                                     className="px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-200/60 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] rounded-xl flex items-center gap-1 transition active:scale-95 cursor-pointer"
                                     title="Reset filters"
                                 >
-                                    <RotateCcw className="w-3 h-3 text-slate-500" />
+                                    <RotateCcw className="w-3 h-3" />
                                     <span>Reset</span>
                                 </button>
                             )}
@@ -1511,7 +1368,7 @@ export default function Messaging({
                                                             setLogChannelFilter('all');
                                                             setLogStatusFilter('all');
                                                         }}
-                                                        className="mt-1 px-3 py-1 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] rounded-xl hover:bg-slate-200 transition"
+                                                        className="mt-1 px-3 py-1 text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/40 rounded-xl hover:underline transition"
                                                     >
                                                         Clear search &amp; filters
                                                     </button>
@@ -1524,7 +1381,7 @@ export default function Messaging({
                                         <tr key={msg.id} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.04] transition duration-150 group">
                                             {/* Number Index */}
                                             <td className="py-3.5 px-4 text-center">
-                                                <span className="inline-block font-mono text-[11px] font-bold px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08] transition">
+                                                <span className="inline-block font-mono text-[11px] font-black px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08] group-hover:border-cyan-500/50 group-hover:text-cyan-700 dark:group-hover:text-cyan-300 transition">
                                                     {String(index + 1).padStart(2, '0')}
                                                 </span>
                                             </td>
@@ -1532,7 +1389,7 @@ export default function Messaging({
                                             {/* Recipient */}
                                             <td className="py-3.5 px-5 font-black text-slate-900 dark:text-white">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-xl bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 font-bold flex items-center justify-center text-xs shadow-2xs flex-shrink-0">
+                                                    <div className="w-8 h-8 rounded-xl bg-white dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 font-black flex items-center justify-center text-xs shadow-2xs flex-shrink-0">
                                                         {(msg.guest?.name || 'G').charAt(0)}
                                                     </div>
                                                     <span className="text-[12.5px] truncate max-w-[180px]">{msg.guest?.name || 'Guest'}</span>
@@ -1546,7 +1403,11 @@ export default function Messaging({
 
                                             {/* Channel */}
                                             <td className="py-3.5 px-4">
-                                                <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08]">
+                                                <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full inline-flex items-center gap-1 ${
+                                                    msg.channel === 'whatsapp'
+                                                        ? 'bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/40'
+                                                        : 'bg-blue-100 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800/40'
+                                                }`}>
                                                     <span className={`w-1.5 h-1.5 rounded-full ${msg.channel === 'whatsapp' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
                                                     <span>{msg.channel}</span>
                                                 </span>
@@ -1579,7 +1440,7 @@ export default function Messaging({
                     <div className="p-6 bg-white/95 dark:bg-[#090E17] text-slate-900 dark:text-white flex flex-col items-center rounded-3xl backdrop-blur-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xl">
                         <div className="w-full flex items-center justify-between pb-3 mb-4 border-b border-slate-200/80 dark:border-slate-800">
                             <div className="flex items-center gap-2">
-                                <Sparkles className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white font-display">
                                     Recipient Invitation Pass Preview
                                 </h3>
@@ -1596,8 +1457,8 @@ export default function Messaging({
                         <div className="w-full flex justify-center py-2">
                             <PersonalisedCard
                                 guest={sampleGuest}
-                                event={selectedEvent || fallbackEvent}
-                                template={activeTemplate}
+                                event={selectedEvent}
+                                template={template}
                                 interactive={true}
                             />
                         </div>

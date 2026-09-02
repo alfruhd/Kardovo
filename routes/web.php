@@ -57,7 +57,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/messaging', [MessagingController::class, 'index'])->name('messaging.index');
     Route::post('/messaging/broadcast', [MessagingController::class, 'sendBroadcast'])->name('messaging.broadcast');
     Route::post('/guests/{guest}/send-message', [MessagingController::class, 'sendSingle'])->name('messaging.sendSingle');
-    Route::patch('/messaging/events/{event}/template', [MessagingController::class, 'updateEventTemplate'])->name('messaging.updateEventTemplate');
 
     // Scanner App (Mobile / PWA View)
     Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');

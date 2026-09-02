@@ -161,6 +161,20 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
 
     const navItems = [
         {
+            name: 'Admin Portal',
+            href: route('admin.dashboard'),
+            icon: Shield,
+            active: (currentUrl === '/admin' || currentUrl.startsWith('/admin')) && !currentUrl.startsWith('/admin/finance'),
+            show: isAdmin || isSubAdmin,
+        },
+        {
+            name: 'Financial Analytics',
+            href: route('admin.finance'),
+            icon: CircleDollarSign,
+            active: currentUrl.startsWith('/admin/finance'),
+            show: isAdmin,
+        },
+        {
             name: isAdmin ? 'All Events' : 'My Events',
             href: route('events.index'),
             icon: Calendar,
@@ -187,20 +201,6 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
             icon: QrCode,
             active: currentUrl.startsWith('/scanner'),
             show: isScanner || isAdmin || isSubAdmin || (!isSuspended && perms.can_manage_scanners !== false),
-        },
-        {
-            name: 'Admin Portal',
-            href: route('admin.dashboard'),
-            icon: Shield,
-            active: (currentUrl === '/admin' || currentUrl.startsWith('/admin')) && !currentUrl.startsWith('/admin/finance'),
-            show: isAdmin || isSubAdmin,
-        },
-        {
-            name: 'Financial Analytics',
-            href: route('admin.finance'),
-            icon: CircleDollarSign,
-            active: currentUrl.startsWith('/admin/finance'),
-            show: isAdmin,
         },
         {
             name: 'Account Profile',
@@ -370,7 +370,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                                         <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                                     </div>
                                 ) : (
-                                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-600 text-white flex items-center justify-center font-black text-xs shadow-md group-hover:ring-2 group-hover:ring-cyan-500/40 dark:group-hover:ring-cyan-400/60 transition">
+                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold font-mono text-xs shadow-2xs">
                                         {user?.name?.charAt(0) || 'U'}
                                     </div>
                                 )}
@@ -501,7 +501,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                                             <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
                                         </div>
                                     ) : (
-                                        <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-600 to-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                                        <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold font-mono text-xs shadow-2xs">
                                             {user?.name?.charAt(0) || "U"}
                                         </div>
                                     )}
@@ -523,7 +523,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                                         </div>
                                         <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-mono mt-0.5">{user?.email}</div>
                                         <div className="mt-1.5 flex items-center justify-between gap-1.5">
-                                            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-100 dark:border-cyan-800/40">
+                                            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08]">
                                                 {user?.role}
                                             </span>
                                             <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">

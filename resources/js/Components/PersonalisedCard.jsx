@@ -954,7 +954,7 @@ export default function PersonalisedCard({
                                 </div>
 
                                 {/* Verified Pass Badge */}
-                                {template?.show_category_badge !== false && (
+                                {template?.show_category_badge !== false && elementsConfig.show_verified_badge !== false && elementsConfig.show_category_badge !== false && (
                                     <div style={{ 
                                         display: 'inline-flex', 
                                         alignItems: 'center', 

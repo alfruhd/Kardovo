@@ -1274,6 +1274,55 @@ export default function CardTemplates({
                                                 <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                             </label>
                                         </div>
+                                        {/* F2. Verified Pass Badge Header (For Signature Passes) */}
+                                        {!isCustomArt && (
+                                            <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                                                (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                                                        (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <ShieldCheck className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span>Verified Pass Badge</span>
+                                                            {(form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false) ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                            Top header security pill (<em>VERIFIED PASS</em> with shield icon).
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false}
+                                                        onChange={(e) => {
+                                                            form.setData('show_category_badge', e.target.checked);
+                                                            updateDirectConfig('show_verified_badge', e.target.checked);
+                                                            updateDirectConfig('show_category_badge', e.target.checked);
+                                                        }}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
+                                            </div>
+                                        )}
 
                                         {/* G. Invitation Quote */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
@@ -2351,8 +2400,12 @@ export default function CardTemplates({
                                     <label className="flex items-center gap-2 cursor-pointer pt-2">
                                         <input
                                             type="checkbox"
-                                            checked={form.data.show_category_badge}
-                                            onChange={(e) => form.setData('show_category_badge', e.target.checked)}
+                                            checked={form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false}
+                                            onChange={(e) => {
+                                                form.setData('show_category_badge', e.target.checked);
+                                                updateDirectConfig('show_verified_badge', e.target.checked);
+                                                updateDirectConfig('show_category_badge', e.target.checked);
+                                            }}
                                             className="rounded text-cyan-600 focus:ring-cyan-500"
                                         />
                                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200">

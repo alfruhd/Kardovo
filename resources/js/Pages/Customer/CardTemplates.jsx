@@ -830,7 +830,7 @@ export default function CardTemplates({
                                         <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-[11px] font-bold">
                                             <input
                                                 type="checkbox"
-                                                checked={form.data.show_category_badge !== false && form.data.show_headline !== false}
+                                                checked={form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false}
                                                 onChange={(e) => {
                                                     const isChecked = e.target.checked;
                                                     form.setData("show_headline", isChecked);
@@ -840,19 +840,19 @@ export default function CardTemplates({
                                                 }}
                                                 className="rounded text-cyan-600 focus:ring-cyan-500 h-3.5 w-3.5 cursor-pointer"
                                             />
-                                            <span className={(form.data.show_category_badge !== false && form.data.show_headline !== false) ? "text-cyan-600 dark:text-cyan-400" : "text-slate-400"}>
-                                                {(form.data.show_category_badge !== false && form.data.show_headline !== false) ? "Visible" : "Hidden"}
+                                            <span className={(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "text-cyan-600 dark:text-cyan-400" : "text-slate-400"}>
+                                                {(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "Visible" : "Hidden"}
                                             </span>
                                         </label>
                                     </div>
                                     <TextInput
                                         className={`block w-full text-xs font-bold transition-all ${
-                                            (form.data.show_category_badge === false || form.data.show_headline === false)
+                                            (form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false)
                                                 ? "opacity-40 bg-slate-100 dark:bg-white/[0.04]"
                                                 : ""
                                         }`}
-                                        value={form.data.headline || ""}
-                                        disabled={form.data.show_category_badge === false || form.data.show_headline === false}
+                                        value={form.data.elements_config?.headline_text ?? form.data.headline ?? ""}
+                                        disabled={form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false}
                                         onChange={(e) => {
                                             form.setData("headline", e.target.value);
                                             updateDirectConfig("headline_text", e.target.value);
@@ -871,7 +871,7 @@ export default function CardTemplates({
                                                 min="1"
                                                 max="90"
                                                 step="0.5"
-                                                disabled={form.data.show_category_badge === false || form.data.show_headline === false}
+                                                disabled={form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false}
                                                 value={parseFloat(form.data.elements_config?.headline_y ?? form.data.elements_config?.category_badge?.y ?? 5.5)}
                                                 onChange={(e) => {
                                                     const val = parseFloat(e.target.value);

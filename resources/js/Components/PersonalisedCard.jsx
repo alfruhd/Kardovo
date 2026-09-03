@@ -198,10 +198,13 @@ export default function PersonalisedCard({
         fontWeight: '800', 
         plaqueWidth: 84 
     };
-    const headlineYPos = parseFloat(elementsConfig.headline_y);
+    const rawHeadlineY = elementsConfig.headline_y ?? elementsConfig.category_badge?.y;
+    const headlineYPos = typeof rawHeadlineY !== 'undefined' && rawHeadlineY !== '' && !isNaN(parseFloat(rawHeadlineY)) 
+        ? parseFloat(rawHeadlineY) 
+        : (isEngagement ? 5.2 : 5.5);
     const badgeCfg = elementsConfig.category_badge || { 
         x: 50, 
-        y: isEngagement ? 5.2 : 5.5, 
+        y: headlineYPos, 
         fontSize: isEngagement ? 12 : 10, 
         color: isEngagement ? '#7A1E28' : accentColor, 
         fontFamily: isEngagement ? 'cursive, Georgia, serif' : 'sans-serif', 
@@ -643,6 +646,25 @@ export default function PersonalisedCard({
                     >
                         {/* Background Artwork */}
                         <img src={imagePath} alt="Invitation Template" className="w-full h-full object-cover pointer-events-none absolute inset-0" />
+
+                        {/* Top Headline Banner / Badge */}
+                        {template?.show_category_badge !== false && template?.show_headline !== false && elementsConfig.show_headline !== false && elementsConfig.show_category_badge !== false && (
+                            <div 
+                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-3.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs border border-white/20 shadow-md transition-all whitespace-nowrap z-20"
+                                style={{
+                                    left: `${badgeCfg.x || 50}%`, 
+                                    top: `${headlineYPos}%`,
+                                    color: badgeCfg.color || '#FFFFFF', 
+                                    fontSize: `${badgeCfg.fontSize || 10.5}px`,
+                                    fontFamily: badgeCfg.fontFamily || 'sans-serif', 
+                                    fontWeight: badgeCfg.fontWeight || '700',
+                                    letterSpacing: '0.22em', 
+                                    textTransform: 'uppercase',
+                                }}
+                            >
+                                <span>{headlineText}</span>
+                            </div>
+                        )}
 
                         {/* 1. GUEST NAME (Fetched attendee name only - Zero shadow on clean text) */}
                         {elementsConfig.show_guest_name !== false && (

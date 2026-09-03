@@ -11,11 +11,7 @@ export default defineConfig({
         react(),
     ],
     server: {
-        host: '0.0.0.0',
-        origin: 'http://192.168.100.2:5173',
+        host: true,
         cors: true,
-        hmr: {
-            host: '192.168.100.2',
-        },
     },
 });

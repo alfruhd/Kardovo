@@ -1228,13 +1228,13 @@ export default function CardTemplates({
 
                                         {/* F. Headline Badge Pill */}
                                         <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            (form.data.show_category_badge && currentConfig.show_headline !== false)
+                                            (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
                                                 ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
                                                 : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                         }`}>
                                             <div className="flex items-center gap-3">
                                                 <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    (form.data.show_category_badge && currentConfig.show_headline !== false)
+                                                    (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
                                                         ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
                                                         : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                 }`}>
@@ -1243,7 +1243,7 @@ export default function CardTemplates({
                                                 <div>
                                                     <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                         <span>Headline / Top Tag Pill</span>
-                                                        {(form.data.show_category_badge && currentConfig.show_headline !== false) ? (
+                                                        {(form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false) ? (
                                                             <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
                                                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                                 <span>VISIBLE</span>
@@ -1262,10 +1262,12 @@ export default function CardTemplates({
                                             <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                                                 <input
                                                     type="checkbox"
-                                                    checked={Boolean(form.data.show_category_badge && currentConfig.show_headline !== false)}
+                                                    checked={form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false}
                                                     onChange={(e) => {
                                                         form.setData('show_category_badge', e.target.checked);
+                                                        form.setData('show_headline', e.target.checked);
                                                         updateDirectConfig('show_headline', e.target.checked);
+                                                        updateDirectConfig('show_category_badge', e.target.checked);
                                                     }}
                                                     className="sr-only peer"
                                                 />

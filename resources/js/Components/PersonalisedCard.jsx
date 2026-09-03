@@ -637,7 +637,7 @@ export default function PersonalisedCard({
                         )}
                     </div>
                 ) : (
-                    /* ═══════════ UPLOADED CUSTOM ARTWORK (4 Essential Elements Only) ═══════════ */
+                    /* ═══════════ UPLOADED CUSTOM ARTWORK (All 9 Layers Dynamically Controlled) ═══════════ */
                     <div 
                         ref={cardRef}
                         id="kardovo-invitation-card"
@@ -663,6 +663,61 @@ export default function PersonalisedCard({
                                 }}
                             >
                                 <span>{headlineText}</span>
+                            </div>
+                        )}
+
+                        {/* Couple Names / Header Section */}
+                        {elementsConfig.show_couple_names !== false && elementsConfig.show_title !== false && coupleNames && (
+                            <div className="absolute -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none px-4 z-10 space-y-0.5" style={{ left: '50%', top: `${coupleNamesY}%` }}>
+                                {subtitleText && (
+                                    <div 
+                                        className="font-medium tracking-wide px-4 drop-shadow-xs leading-tight mb-1"
+                                        style={{ 
+                                            fontSize: `${subtitleFontSize}px`, 
+                                            color: subtitleColor 
+                                        }}
+                                    >
+                                        {subtitleText}
+                                    </div>
+                                )}
+                                <h1 
+                                    className="tracking-wide transition-all leading-tight drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]"
+                                    style={{ 
+                                        fontSize: `${coupleNamesFontSize}px`, 
+                                        color: coupleNamesColor,
+                                        fontFamily: coupleNamesFontFamily,
+                                        fontStyle: 'italic',
+                                        textShadow: '0 2px 10px rgba(0,0,0,0.8), 0 4px 20px rgba(0,0,0,0.6)' 
+                                    }}
+                                >
+                                    {coupleNames}
+                                </h1>
+                            </div>
+                        )}
+
+                        {/* Date & Details Section */}
+                        {elementsConfig.show_date !== false && elementsConfig.show_date_details !== false && (
+                            <div className="absolute -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none px-6 z-10 space-y-1" style={{ left: '50%', top: `${dateY}%` }}>
+                                <div className="font-bold uppercase tracking-[0.25em] drop-shadow-sm" style={{ fontSize: `${dateFontSize}px`, color: dateColor }}>{dateMonth}</div>
+                                <div className="flex items-center justify-center gap-3 uppercase font-extrabold tracking-widest drop-shadow-sm" style={{ fontSize: `${dateFontSize * 1.05}px`, color: dateColor }}>
+                                    <span>{dateDayName}</span>
+                                    <span className="font-serif italic font-normal mx-1 drop-shadow-md" style={{ fontSize: `${dateFontSize * 1.8}px`, color: dateNumColor }}>{dateDayNum}</span>
+                                    <span>{dateTime}</span>
+                                </div>
+                                <div className="font-bold tracking-widest drop-shadow-sm" style={{ fontSize: `${dateFontSize}px`, color: dateColor }}>{dateYear}</div>
+                                
+                                {elementsConfig.show_quote !== false && invitationQuote && (
+                                    <p className="font-bold uppercase tracking-wider leading-relaxed drop-shadow-md px-1 pt-0.5" style={{ fontSize: `${quoteFontSize}px`, color: quoteColor }}>{invitationQuote}</p>
+                                )}
+
+                                {elementsConfig.show_venue !== false && (
+                                    <div className="uppercase tracking-widest font-semibold pt-0.5 space-y-0.5" style={{ fontSize: `${customVenueFontSize}px`, color: customVenueColor }}>
+                                        <div className="tracking-[0.2em] font-bold" style={{ color: dateNumColor }}>{venueName}</div>
+                                        {venueSub && <div className="lowercase font-normal opacity-90" style={{ fontSize: `${customVenueFontSize * 0.9}px` }}>{venueSub}</div>}
+                                        {venueDate && <div className="tracking-wider opacity-80">{venueDate}</div>}
+                                        {saveTheDate && <div className="font-extrabold tracking-[0.25em] pt-0.5">{saveTheDate}</div>}
+                                    </div>
+                                )}
                             </div>
                         )}
 

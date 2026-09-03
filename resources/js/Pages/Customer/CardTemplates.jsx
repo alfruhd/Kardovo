@@ -4,6 +4,7 @@ import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import PersonalisedCard from '@/Components/PersonalisedCard';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
+import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
@@ -33,7 +34,8 @@ import {
     ShieldCheck,
     CheckCircle2,
     AlertTriangle,
-    Lock
+    Lock,
+    Loader2
 } from 'lucide-react';
 
 export default function CardTemplates({ 
@@ -50,6 +52,14 @@ export default function CardTemplates({
     const [currentTpl, setCurrentTpl] = useState(() => {
         return selectedTemplate || templates[0] || null;
     });
+
+    useEffect(() => {
+        if (selectedTemplate) {
+            handleSelectTemplate(selectedTemplate);
+        } else if (templates.length > 0 && !currentTpl) {
+            handleSelectTemplate(templates[0]);
+        }
+    }, [selectedTemplate?.id]);
 
     const isCustomArt = Boolean(currentTpl?.template_type === 'custom_art' && currentTpl?.image_path);
     const isPredefinedTemplate = Boolean(currentTpl?.user_id === null || 
@@ -375,7 +385,17 @@ export default function CardTemplates({
 
     const handleUploadSubmit = (e) => {
         e.preventDefault();
-        if (!uploadForm.data.image_file) return;
+        uploadForm.clearErrors();
+
+        if (!uploadForm.data.name?.trim()) {
+            uploadForm.setError('name', 'Please provide a name for this custom template.');
+            return;
+        }
+
+        if (!uploadForm.data.image_file) {
+            uploadForm.setError('image_file', 'Please select an image artwork file (PNG, JPG, WEBP, SVG) to upload.');
+            return;
+        }
 
         const isMinimal = uploadForm.data.overlay_mode !== 'full';
         const customElementsConfig = {
@@ -400,6 +420,7 @@ export default function CardTemplates({
             elements_config: customElementsConfig,
         })).post(route('templates.store'), {
             forceFormData: true,
+            preserveScroll: true,
             onSuccess: () => {
                 setUploadModalOpen(false);
                 uploadForm.reset();
@@ -2860,7 +2881,7 @@ export default function CardTemplates({
                     <form onSubmit={handleUploadSubmit} className="p-6 sm:p-7 space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
                             <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                <Upload className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                                 <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
                                     Import Custom 4K Artwork Asset
                                 </h3>
@@ -2868,42 +2889,78 @@ export default function CardTemplates({
                             <button
                                 type="button"
                                 onClick={() => setUploadModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1"
+                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
                         </div>
 
+                        {uploadForm.hasErrors && Object.keys(uploadForm.errors).length > 0 && (
+                            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 text-xs text-rose-700 dark:text-rose-300 space-y-1">
+                                <div className="font-bold flex items-center gap-1.5">
+                                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                                    <span>Please fix the following issues:</span>
+                                </div>
+                                <ul className="list-disc list-inside space-y-0.5 text-[11px] pl-1">
+                                    {Object.entries(uploadForm.errors).map(([key, err]) => (
+                                        <li key={key}>{err}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
                         <div>
                             <InputLabel value="Template Style Name *" />
                             <TextInput
-                                className="block w-full text-xs font-bold"
+                                className="block w-full text-xs font-bold mt-1"
                                 value={uploadForm.data.name}
-                                onChange={(e) => uploadForm.setData('name', e.target.value)}
+                                onChange={(e) => {
+                                    uploadForm.setData('name', e.target.value);
+                                    if (uploadForm.errors.name) uploadForm.clearErrors('name');
+                                }}
                                 required
                                 placeholder="e.g. Traditional Wedding Gold & Blue"
                             />
+                            <InputError message={uploadForm.errors.name} className="mt-1" />
                         </div>
 
                         <div>
-                            <InputLabel value="Select High-Resolution Image (PNG, JPG, WEBP) *" />
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => uploadForm.setData('image_file', e.target.files[0])}
-                                className="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 hover:file:bg-slate-800 dark:file:bg-cyan-600 dark:hover:file:bg-cyan-500 file:text-white cursor-pointer border border-slate-300 dark:border-white/[0.08] rounded-xl p-1 bg-white dark:bg-[#08121E]"
-                                required
-                            />
+                            <InputLabel value="Select High-Resolution Image (PNG, JPG, WEBP, SVG) *" />
+                            <div className="mt-1">
+                                <input
+                                    type="file"
+                                    id="custom-artwork-file-input"
+                                    accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0] || null;
+                                        uploadForm.setData('image_file', file);
+                                        if (uploadForm.errors.image_file) uploadForm.clearErrors('image_file');
+                                    }}
+                                    className="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 hover:file:bg-slate-800 dark:file:bg-cyan-600 dark:hover:file:bg-cyan-500 file:text-white cursor-pointer border border-slate-300 dark:border-white/[0.08] rounded-xl p-1 bg-white dark:bg-[#08121E]"
+                                />
+                            </div>
+                            <InputError message={uploadForm.errors.image_file} className="mt-1" />
+
                             {uploadForm.data.image_file && (
-                                <div className="mt-2 w-full h-28 rounded-xl overflow-hidden bg-slate-900 border border-slate-700 relative flex items-center justify-center shadow-md">
-                                    <img
-                                        src={URL.createObjectURL(uploadForm.data.image_file)}
-                                        alt="Upload Preview"
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs border border-white/10">
-                                        Artwork Preview Ready
-                                    </span>
+                                <div className="mt-2.5 p-2 rounded-2xl bg-slate-900 border border-slate-700/80 space-y-2">
+                                    <div className="w-full h-36 rounded-xl overflow-hidden bg-black/60 relative flex items-center justify-center">
+                                        <img
+                                            src={URL.createObjectURL(uploadForm.data.image_file)}
+                                            alt="Upload Preview"
+                                            className="w-full h-full object-contain"
+                                        />
+                                        <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs border border-white/10">
+                                            Artwork Preview Ready
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center justify-between px-1 text-[11px] text-slate-300 font-mono">
+                                        <span className="truncate max-w-[200px]" title={uploadForm.data.image_file.name}>
+                                            📄 {uploadForm.data.image_file.name}
+                                        </span>
+                                        <span>
+                                            {(uploadForm.data.image_file.size / (1024 * 1024)).toFixed(2)} MB
+                                        </span>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -2975,11 +3032,25 @@ export default function CardTemplates({
                         </div>
 
                         <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
-                            <SecondaryButton onClick={() => setUploadModalOpen(false)}>
+                            <SecondaryButton type="button" onClick={() => setUploadModalOpen(false)}>
                                 Cancel
                             </SecondaryButton>
-                            <PrimaryButton disabled={uploadForm.processing} className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs transition active:scale-95">
-                                Upload &amp; Create Template
+                            <PrimaryButton 
+                                type="submit"
+                                disabled={uploadForm.processing} 
+                                className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1.5"
+                            >
+                                {uploadForm.processing ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin text-white" />
+                                        <span>Importing 4K Artwork...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-3.5 h-3.5" />
+                                        <span>Upload &amp; Create Template</span>
+                                    </>
+                                )}
                             </PrimaryButton>
                         </div>
                     </form>

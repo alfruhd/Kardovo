@@ -93,13 +93,18 @@ class CardTemplateController extends Controller
             'show_unique_code' => 'boolean',
             'footer_text' => 'nullable|string|max:255',
             'elements_config' => 'nullable|array',
-            'image_file' => 'nullable|image|max:10240', // 10MB max
+            'image_file' => 'nullable|file|mimes:jpeg,png,jpg,webp,svg,gif,bmp,avif|max:20480', // 20MB max
         ]);
 
         if ($request->hasFile('image_file')) {
+            $assetsDir = public_path('template_assets');
+            if (!file_exists($assetsDir)) {
+                mkdir($assetsDir, 0755, true);
+            }
             $file = $request->file('image_file');
-            $fileName = 'custom_tpl_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('template_assets'), $fileName);
+            $extension = $file->getClientOriginalExtension() ?: 'png';
+            $fileName = 'custom_tpl_' . time() . '_' . uniqid() . '.' . $extension;
+            $file->move($assetsDir, $fileName);
             $validated['image_path'] = '/template_assets/' . $fileName;
             $validated['template_type'] = 'custom_art';
         }
@@ -113,7 +118,8 @@ class CardTemplateController extends Controller
 
         $template = CardTemplate::create($validated);
 
-        return back()->with('success', "Card template '{$template->name}' created successfully!");
+        return redirect()->route('templates.index', ['template_id' => $template->id])
+            ->with('success', "Custom artwork '{$template->name}' imported and created successfully!");
     }
 
     public function update(Request $request, CardTemplate $cardTemplate)

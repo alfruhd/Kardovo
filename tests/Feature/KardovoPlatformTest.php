@@ -254,5 +254,37 @@ class KardovoPlatformTest extends TestCase
         $patchResponse->assertStatus(302);
         $this->assertEquals($customTemplate->id, $event->fresh()->card_template_id);
     }
+
+    public function test_customer_can_upload_and_create_custom_artwork_template(): void
+    {
+        $customer = User::where('role', 'customer')->first();
+        \Illuminate\Support\Facades\Storage::fake('public');
+        $file = \Illuminate\Http\UploadedFile::fake()->image('wedding_flyer.png', 800, 1200);
+
+        $response = $this->actingAs($customer)->post(route('templates.store'), [
+            'name' => 'Royal Purple Custom Artwork',
+            'template_type' => 'custom_art',
+            'image_file' => $file,
+            'headline' => 'ROYAL WEDDING INVITATION',
+            'overlay_mode' => 'minimal',
+            'show_qr' => true,
+            'show_unique_code' => true,
+            'show_category_badge' => false,
+            'elements_config' => [
+                'show_guest_name' => true,
+                'show_qr' => true,
+                'show_unique_code' => true,
+                'guest_name' => ['x' => 50, 'y' => 71.5, 'fontSize' => 20],
+            ],
+        ]);
+
+        $response->assertStatus(302);
+        $this->assertDatabaseHas('card_templates', [
+            'name' => 'Royal Purple Custom Artwork',
+            'user_id' => $customer->id,
+            'template_type' => 'custom_art',
+        ]);
+    }
 }
+
 

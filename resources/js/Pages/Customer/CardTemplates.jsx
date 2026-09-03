@@ -383,19 +383,27 @@ export default function CardTemplates({
         }
     };
 
+    const [isUploadingArtwork, setIsUploadingArtwork] = useState(false);
+
     const handleUploadSubmit = (e) => {
-        e.preventDefault();
+        if (e && e.preventDefault) e.preventDefault();
         uploadForm.clearErrors();
 
-        if (!uploadForm.data.name?.trim()) {
-            uploadForm.setError('name', 'Please provide a name for this custom template.');
-            return;
+        const name = uploadForm.data.name?.trim();
+        const file = uploadForm.data.image_file;
+
+        let hasError = false;
+        if (!name) {
+            uploadForm.setError('name', 'Template Style Name is required.');
+            hasError = true;
         }
 
-        if (!uploadForm.data.image_file) {
+        if (!file) {
             uploadForm.setError('image_file', 'Please select an image artwork file (PNG, JPG, WEBP, SVG) to upload.');
-            return;
+            hasError = true;
         }
+
+        if (hasError) return;
 
         const isMinimal = uploadForm.data.overlay_mode !== 'full';
         const customElementsConfig = {
@@ -412,18 +420,39 @@ export default function CardTemplates({
             card_number: { x: 50, y: 96, fontSize: 9.5, color: '#FFFFFF' },
         };
 
-        uploadForm.transform((data) => ({
-            ...data,
-            show_qr: data.show_qr ?? true,
-            show_unique_code: data.show_unique_code ?? true,
-            show_category_badge: isMinimal ? false : (data.show_headline ?? true),
-            elements_config: customElementsConfig,
-        })).post(route('templates.store'), {
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('template_type', 'custom_art');
+        formData.append('image_file', file);
+        formData.append('headline', uploadForm.data.headline || "YOU'RE INVITED");
+        formData.append('show_qr', uploadForm.data.show_qr ? '1' : '0');
+        formData.append('show_unique_code', uploadForm.data.show_unique_code ? '1' : '0');
+        formData.append('show_category_badge', isMinimal ? '0' : '1');
+        
+        Object.entries(customElementsConfig).forEach(([key, val]) => {
+            if (typeof val === 'object' && val !== null) {
+                Object.entries(val).forEach(([subKey, subVal]) => {
+                    formData.append(`elements_config[${key}][${subKey}]`, subVal);
+                });
+            } else {
+                formData.append(`elements_config[${key}]`, val ? '1' : '0');
+            }
+        });
+
+        setIsUploadingArtwork(true);
+        router.post(route('templates.store'), formData, {
             forceFormData: true,
             preserveScroll: true,
+            onFinish: () => {
+                setIsUploadingArtwork(false);
+            },
             onSuccess: () => {
                 setUploadModalOpen(false);
                 uploadForm.reset();
+            },
+            onError: (errs) => {
+                console.error('Template upload errors:', errs);
+                uploadForm.setError(errs);
             }
         });
     };
@@ -2878,7 +2907,7 @@ export default function CardTemplates({
 
                 {/* Upload Custom Artwork Modal */}
                 <Modal show={uploadModalOpen} onClose={() => setUploadModalOpen(false)} maxWidth="md">
-                    <form onSubmit={handleUploadSubmit} className="p-6 sm:p-7 space-y-4">
+                    <form noValidate onSubmit={handleUploadSubmit} className="p-6 sm:p-7 space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
                             <div className="flex items-center gap-2">
                                 <Upload className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
@@ -2918,7 +2947,6 @@ export default function CardTemplates({
                                     uploadForm.setData('name', e.target.value);
                                     if (uploadForm.errors.name) uploadForm.clearErrors('name');
                                 }}
-                                required
                                 placeholder="e.g. Traditional Wedding Gold & Blue"
                             />
                             <InputError message={uploadForm.errors.name} className="mt-1" />
@@ -3036,11 +3064,12 @@ export default function CardTemplates({
                                 Cancel
                             </SecondaryButton>
                             <PrimaryButton 
-                                type="submit"
-                                disabled={uploadForm.processing} 
-                                className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1.5"
+                                type="button"
+                                onClick={handleUploadSubmit}
+                                disabled={isUploadingArtwork || uploadForm.processing} 
+                                className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
                             >
-                                {uploadForm.processing ? (
+                                {isUploadingArtwork || uploadForm.processing ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin text-white" />
                                         <span>Importing 4K Artwork...</span>

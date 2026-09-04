@@ -967,44 +967,34 @@ export default function Messaging({
                                                         {formattedCaption}
                                                     </div>
 
-                                                    {/* Quick Action Buttons */}
-                                                    <div className="border-t border-slate-700 divide-y divide-slate-700 bg-[#17232A]">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowPassModal(true)}
-                                                            className="w-full py-2 text-center text-xs font-semibold text-cyan-300 hover:bg-slate-800 flex items-center justify-center gap-1 transition"
-                                                        >
-                                                            <Sparkles className="w-3 h-3" />
-                                                            <span>View Invitation Pass</span>
-                                                        </button>
-                                                        {campaignType === 'pass_invitation' && (
-                                                            <>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setPreviewRsvpTapped('attending')}
-                                                                    className={`w-full py-2 text-center text-xs font-semibold flex items-center justify-center gap-1 transition ${
-                                                                        previewRsvpTapped === 'attending'
-                                                                            ? 'bg-emerald-950/80 text-emerald-400 font-bold'
-                                                                            : 'text-emerald-400 hover:bg-slate-800'
-                                                                    }`}
-                                                                >
-                                                                    <Check className="w-3 h-3" />
-                                                                    <span>Will Attend</span>
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setPreviewRsvpTapped('declined')}
-                                                                    className={`w-full py-2 text-center text-xs font-semibold flex items-center justify-center gap-1 transition ${
-                                                                        previewRsvpTapped === 'declined'
-                                                                            ? 'bg-rose-950/80 text-rose-400 font-bold'
-                                                                            : 'text-slate-400 hover:bg-slate-800'
-                                                                    }`}
-                                                                >
-                                                                    <span>✕ Cannot Attend</span>
-                                                                </button>
-                                                            </>
-                                                        )}
-                                                    </div>
+                                                    {/* Quick Action RSVP Buttons */}
+                                                    {campaignType === 'pass_invitation' && (
+                                                        <div className="border-t border-slate-700 divide-y divide-slate-700 bg-[#17232A]">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPreviewRsvpTapped('attending')}
+                                                                className={`w-full py-2 text-center text-xs font-semibold flex items-center justify-center gap-1 transition ${
+                                                                    previewRsvpTapped === 'attending'
+                                                                        ? 'bg-emerald-950/80 text-emerald-400 font-bold'
+                                                                        : 'text-emerald-400 hover:bg-slate-800'
+                                                                }`}
+                                                            >
+                                                                <Check className="w-3 h-3" />
+                                                                <span>Will Attend</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPreviewRsvpTapped('declined')}
+                                                                className={`w-full py-2 text-center text-xs font-semibold flex items-center justify-center gap-1 transition ${
+                                                                    previewRsvpTapped === 'declined'
+                                                                        ? 'bg-rose-950/80 text-rose-400 font-bold'
+                                                                        : 'text-slate-400 hover:bg-slate-800'
+                                                                }`}
+                                                            >
+                                                                <span>✕ Cannot Attend</span>
+                                                            </button>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             )}
 

@@ -126,7 +126,7 @@ class MessagingController extends Controller
             'event_id' => 'required|exists:events,id',
             'card_template_id' => 'nullable|exists:card_templates,id',
             'channel' => 'required|in:whatsapp,sms',
-            'campaign_type' => 'nullable|in:pass_invitation,pass_only,text_only',
+            'campaign_type' => 'nullable|in:pass_invitation,pass_only,text_only,text_rsvp',
             'target_filter' => 'required|in:all,draft,failed,pending_rsvp',
             'custom_caption' => 'nullable|string|max:1000',
             'enable_auto_reply' => 'nullable|boolean',
@@ -214,6 +214,8 @@ class MessagingController extends Controller
             } else {
                 if ($campaignType === 'text_only') {
                     $caption = "Habari {$guest->name}! Important update regarding {$event->title}: we look forward to seeing you on {$eventDateStr} at {$event->venue}.";
+                } elseif ($campaignType === 'text_rsvp') {
+                    $caption = "Habari {$guest->name}! You're cordially invited to {$event->title} on {$eventDateStr} at {$event->venue}. Please tap below to confirm your attendance:";
                 } elseif ($campaignType === 'pass_only') {
                     $caption = "Hi {$guest->name}! You're invited to {$event->title} on {$eventDateStr}. Please view your official invitation pass below:";
                 } else {
@@ -242,7 +244,7 @@ class MessagingController extends Controller
             $sentCount++;
         }
 
-        $typeLabel = $campaignType === 'text_only' ? 'text broadcast' : 'invitation pass';
+        $typeLabel = in_array($campaignType, ['text_only', 'text_rsvp']) ? 'text broadcast' : 'invitation pass';
         return back()->with('success', "Dispatched {$sentCount} {$validated['channel']} {$typeLabel} messages successfully!");
     }
 

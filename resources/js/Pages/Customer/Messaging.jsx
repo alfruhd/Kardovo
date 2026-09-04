@@ -471,15 +471,15 @@ export default function Messaging({
                                                 key={mode.id}
                                                 type="button"
                                                 onClick={() => handleCampaignTypeChange(mode.id)}
-                                                className={`p-2 rounded-xl border text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                                                className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                                                     isCurrent
-                                                        ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-xs'
-                                                        : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                                                        ? 'bg-slate-900 text-white dark:bg-cyan-600 dark:text-white border-transparent dark:border-cyan-500 shadow-xs'
+                                                        : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 dark:hover:text-slate-200'
                                                 }`}
                                             >
-                                                <IconComponent className="w-3.5 h-3.5" />
+                                                <IconComponent className={`w-3.5 h-3.5 ${isCurrent ? 'text-cyan-400 dark:text-white' : 'text-slate-500 dark:text-slate-400'}`} />
                                                 <span className="text-xs font-bold">{mode.label}</span>
-                                                <span className="text-[9px] opacity-75">{mode.desc}</span>
+                                                <span className={`text-[9px] ${isCurrent ? 'text-slate-300 dark:text-cyan-100' : 'opacity-75'}`}>{mode.desc}</span>
                                             </button>
                                         );
                                     })}
@@ -588,13 +588,13 @@ export default function Messaging({
                                         }}
                                         className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center cursor-pointer ${
                                             targetFilter === opt.id
-                                                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-xs'
-                                                : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+                                                ? 'bg-slate-900 text-white dark:bg-cyan-600 dark:text-white border-transparent dark:border-cyan-500 shadow-xs'
+                                                : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 dark:hover:text-slate-200'
                                         }`}
                                     >
                                         <span className="text-[11px] font-bold leading-tight">{opt.label}</span>
                                         <span className={`text-[10px] font-mono mt-1 px-1.5 py-0.5 rounded-md ${
-                                            targetFilter === opt.id ? 'bg-white/20 dark:bg-slate-200' : 'bg-slate-200/60 dark:bg-slate-800'
+                                            targetFilter === opt.id ? 'bg-white/20 text-white dark:bg-cyan-700/80 dark:text-cyan-100' : 'bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                                         }`}>
                                             {opt.count}
                                         </span>

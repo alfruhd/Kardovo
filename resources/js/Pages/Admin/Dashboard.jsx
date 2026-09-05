@@ -643,14 +643,14 @@ export default function AdminDashboard({
                             className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                         >
                             <div className="flex items-center justify-between">
-                                <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Sub Admins</span>
+                                <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Sub Admins</span>
                                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                     <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 </div>
                             </div>
                             <div className="mt-2.5 sm:mt-3">
                                 <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats.total_sub_admins || subAdmins.length}</div>
-                                <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Delegated staff</div>
+                                <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Delegated staff</div>
                             </div>
                         </div>
                     )}
@@ -661,14 +661,14 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Organisers</span>
+                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Organisers</span>
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
                         <div className="mt-2.5 sm:mt-3">
                             <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats.total_customers || customers.length}</div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Active accounts</div>
+                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Active accounts</div>
                         </div>
                     </div>
 
@@ -678,14 +678,14 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Gate Staff</span>
+                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Gate Staff</span>
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
                         <div className="mt-2.5 sm:mt-3">
                             <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats.total_gate_staff || gateStaff.length}</div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Mobile scanners</div>
+                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Mobile scanners</div>
                         </div>
                     </div>
 
@@ -695,14 +695,14 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Global Events</span>
+                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Global Events</span>
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
                         <div className="mt-2.5 sm:mt-3">
                             <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats.total_events || allEvents.length}</div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">All campaigns</div>
+                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">All campaigns</div>
                         </div>
                     </div>
 
@@ -712,14 +712,14 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Guest Passes</span>
+                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Guest Passes</span>
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
                         <div className="mt-2.5 sm:mt-3">
                             <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(stats.total_guests || 0).toLocaleString()}</div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Issued passes</div>
+                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Issued passes</div>
                         </div>
                     </div>
 
@@ -729,14 +729,14 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Check-ins</span>
+                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Check-ins</span>
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <CheckCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
                         <div className="mt-2.5 sm:mt-3">
                             <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(stats.total_checkins || 0).toLocaleString()}</div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Admitted guests</div>
+                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Admitted guests</div>
                         </div>
                     </div>
 
@@ -746,14 +746,14 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Scan Audits</span>
+                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Scan Audits</span>
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
                         <div className="mt-2.5 sm:mt-3">
                             <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(stats.total_scans || 0).toLocaleString()}</div>
-                            <div className="text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">Total logs</div>
+                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Total logs</div>
                         </div>
                     </div>
                 </div>

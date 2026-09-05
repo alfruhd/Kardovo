@@ -974,7 +974,6 @@ export default function CardTemplates({
 
                         {/* Inspector Body (Flex Layout with Internal Scroll) */}
                         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                            
                             {/* Scrollable Form Body Container */}
                             <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
                             
@@ -983,7 +982,6 @@ export default function CardTemplates({
                                 <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-cyan-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
                                         {inspectorTab === 'layers' && <Layers className="w-4 h-4 text-white" />}
-                                        {inspectorTab === 'content' && <Type className="w-4 h-4 text-white" />}
                                         {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? <ImageIcon className="w-4 h-4 text-white" /> : <Palette className="w-4 h-4 text-white" />)}
                                         {inspectorTab === 'plaque' && <Move className="w-4 h-4 text-white" />}
                                         {(inspectorTab === 'category' || inspectorTab === 'badge') && <ShieldCheck className="w-4 h-4 text-white" />}

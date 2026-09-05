@@ -668,4 +668,38 @@ class MessagingController extends Controller
 
         return back()->with('success', "Broadcast delivery log for \"{$recipient}\" deleted successfully.");
     }
+
+    public function clearLogs(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            abort(401);
+        }
+
+        $eventId = $request->input('event_id');
+        $query = Message::query();
+
+        if (!$user->isAdmin()) {
+            if ($user->isSubAdmin()) {
+                $assignedCustomerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
+                $assignedEventIds = $user->assignedEvents()->pluck('events.id')->toArray();
+                $query->whereHas('event', function ($q) use ($assignedCustomerIds, $assignedEventIds) {
+                    $q->whereIn('id', $assignedEventIds)->orWhereIn('user_id', $assignedCustomerIds);
+                });
+            } else {
+                $query->whereHas('event', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+            }
+        }
+
+        if ($eventId) {
+            $query->where('event_id', $eventId);
+        }
+
+        $deletedCount = $query->delete();
+
+        return back()->with('success', "Cleared {$deletedCount} broadcast delivery log(s) successfully.");
+    }
 }

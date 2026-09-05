@@ -60,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/messaging/broadcast', [MessagingController::class, 'sendBroadcast'])->name('messaging.broadcast');
     Route::post('/guests/{guest}/send-message', [MessagingController::class, 'sendSingle'])->name('messaging.sendSingle');
     Route::patch('/messaging/events/{event}/template', [MessagingController::class, 'updateEventTemplate'])->name('messaging.updateEventTemplate');
+    Route::delete('/messaging/logs/clear-all', [MessagingController::class, 'clearLogs'])->name('messaging.clearLogs');
     Route::delete('/messaging/logs/{message}', [MessagingController::class, 'destroyLog'])->name('messaging.destroyLog');
 
     // Scanner App (Mobile / PWA View)

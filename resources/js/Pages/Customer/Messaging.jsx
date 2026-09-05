@@ -366,6 +366,18 @@ export default function Messaging({
         }
     };
 
+    const handleClearAllLogs = () => {
+        const targetDesc = selectedEvent ? `event "${selectedEvent.title}"` : 'all your events';
+        if (confirm(`Are you sure you want to permanently clear all broadcast delivery logs for ${targetDesc}?\n\nThis action cannot be undone.`)) {
+            router.delete(route('messaging.clearLogs'), {
+                data: {
+                    event_id: selectedEvent?.id || undefined,
+                },
+                preserveScroll: true,
+            });
+        }
+    };
+
     const sampleGuest = selectedEvent?.guests?.[0] || {
         id: 1,
         name: 'Neema Mbwana',
@@ -1228,6 +1240,20 @@ export default function Messaging({
                                 <option value="failed">Failed</option>
                                 <option value="pending">Pending</option>
                             </select>
+
+                            {/* Clear All Logs Button (Far Right) */}
+                            {canDeleteLogs && (
+                                <button
+                                    type="button"
+                                    onClick={handleClearAllLogs}
+                                    disabled={recentMessages.length === 0}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs ml-auto"
+                                    title="Clear all broadcast delivery logs"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>Clear All Logs</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 

@@ -859,13 +859,13 @@ export default function CardTemplates({
                                     </div>
                                 </div>
 
-                            {/* Sub-Tabs Bar (Clean Horizontal Dock) */}
-                            <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] overflow-x-auto no-scrollbar scroll-smooth">
+                            {/* Sub-Tabs Bar (Clean Segmented Tab Grid) */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-1.5 p-1.5 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08]">
                                 {/* 1: Layers & Elements */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("layers")}
-                                    className={`flex-1 min-w-[125px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                                    className={`w-full py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center ${
                                         inspectorTab === "layers"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -873,14 +873,14 @@ export default function CardTemplates({
                                     title="Layers & Elements"
                                 >
                                     <Layers className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "layers" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>Layers &amp; Elements</span>
+                                    <span className="truncate">Layers &amp; Elements</span>
                                 </button>
 
                                 {/* 2: Content & Text */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("content")}
-                                    className={`flex-1 min-w-[120px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                                    className={`w-full py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center ${
                                         inspectorTab === "content"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -888,14 +888,14 @@ export default function CardTemplates({
                                     title="Content & Text"
                                 >
                                     <Type className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "content" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>Content &amp; Text</span>
+                                    <span className="truncate">Content &amp; Text</span>
                                 </button>
 
                                 {/* 3: Artwork Asset / Palette & Style */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab(isCustomArt ? "artwork" : "palette")}
-                                    className={`flex-1 min-w-[120px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                                    className={`w-full py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center ${
                                         (inspectorTab === "artwork" || inspectorTab === "palette")
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -907,14 +907,14 @@ export default function CardTemplates({
                                     ) : (
                                         <Palette className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "palette" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     )}
-                                    <span>{isCustomArt ? "Artwork Asset" : "Palette & Style"}</span>
+                                    <span className="truncate">{isCustomArt ? "Artwork Asset" : "Palette & Style"}</span>
                                 </button>
 
                                 {/* 4: Guest Plaque */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("plaque")}
-                                    className={`flex-1 min-w-[115px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                                    className={`w-full py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center ${
                                         inspectorTab === "plaque"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -922,14 +922,14 @@ export default function CardTemplates({
                                     title="Guest Plaque"
                                 >
                                     <Move className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "plaque" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>Guest Plaque</span>
+                                    <span className="truncate">Guest Plaque</span>
                                 </button>
 
                                 {/* 5: Allowance Badge / Verified Badge */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab(isCustomArt ? "category" : "badge")}
-                                    className={`flex-1 min-w-[125px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                                    className={`w-full py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center ${
                                         (inspectorTab === "badge" || inspectorTab === "category")
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -937,14 +937,14 @@ export default function CardTemplates({
                                     title={isCustomArt ? "Allowance Badge" : "Verified Badge"}
                                 >
                                     <ShieldCheck className={`w-3.5 h-3.5 flex-shrink-0 ${(inspectorTab === "badge" || inspectorTab === "category") ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>{isCustomArt ? "Allowance Badge" : "Verified Badge"}</span>
+                                    <span className="truncate">{isCustomArt ? "Allowance Badge" : "Verified Badge"}</span>
                                 </button>
 
                                 {/* 6: QR Code */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("qr")}
-                                    className={`flex-1 min-w-[95px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                                    className={`w-full py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center ${
                                         inspectorTab === "qr"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -952,14 +952,14 @@ export default function CardTemplates({
                                     title="QR Code"
                                 >
                                     <QrCode className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "qr" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>QR Code</span>
+                                    <span className="truncate">QR Code</span>
                                 </button>
 
                                 {/* 7: Security Code */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("security")}
-                                    className={`flex-1 min-w-[115px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
+                                    className={`w-full py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 text-center ${
                                         inspectorTab === "security"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -967,7 +967,7 @@ export default function CardTemplates({
                                     title="Security Code"
                                 >
                                     <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "security" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>Security Code</span>
+                                    <span className="truncate">Security Code</span>
                                 </button>
                             </div>
                         </div>

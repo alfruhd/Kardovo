@@ -200,12 +200,12 @@ export default function MyEvents({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                         <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight font-display">
-                            {isAdmin ? `All Platform Events Portfolio` : `Welcome back, ${auth?.user?.name || 'Organiser'}`}
+                            {isAdmin ? 'All Platform Events Portfolio' : 'My Events'}
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
                             {isAdmin 
                                 ? `Displaying all ${events.length} events across all organizers & customer accounts in the system.`
-                                : `You're managing ${events.length} ${events.length === 1 ? 'event' : 'active events'} in your portfolio.`}
+                                : `You're managing ${events.length} ${events.length === 1 ? 'event' : 'events'} in your portfolio.`}
                         </p>
                     </div>
 
@@ -844,21 +844,34 @@ export default function MyEvents({
 
             {/* Create Event Modal */}
             <Modal show={createModalOpen} onClose={() => setCreateModalOpen(false)} maxWidth="md">
-                <form onSubmit={handleCreateSubmit} className="p-6">
-                    <h3 className="text-lg font-bold text-kardovo-navy font-display">
-                        Create New Event
-                    </h3>
-                    <p className="text-xs text-slate-500 mt-1">
-                        Enter basic event details to start generating personalized passes.
-                    </p>
+                <form onSubmit={handleCreateSubmit} className="p-6 sm:p-7 space-y-5">
+                    <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/[0.08]">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-800 dark:text-cyan-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
+                                    <Plus className="w-3 h-3" />
+                                    <span>New Event</span>
+                                </span>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-900 dark:text-white font-display">
+                                Create New Event
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                Enter basic event details to start generating personalized passes.
+                            </p>
+                        </div>
+                        <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center flex-shrink-0">
+                            <Calendar className="w-5 h-5" />
+                        </div>
+                    </div>
 
-                    <div className="mt-4 space-y-4">
+                    <div className="space-y-4">
                         <div>
                             <InputLabel htmlFor="title" value="Event Title *" />
                             <TextInput
                                 id="title"
                                 type="text"
-                                className="mt-1 block w-full text-sm"
+                                className="mt-1 block w-full text-xs font-bold py-2.5 rounded-2xl"
                                 placeholder="e.g. Neema & Baraka — Wedding Reception"
                                 value={data.title}
                                 onChange={(e) => setData('title', e.target.value)}
@@ -891,7 +904,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="event_date"
                                     type="date"
-                                    className="mt-1 block w-full text-sm"
+                                    className="mt-1 block w-full text-xs font-bold py-2 rounded-2xl"
                                     value={data.event_date}
                                     onChange={(e) => setData('event_date', e.target.value)}
                                     required
@@ -905,7 +918,7 @@ export default function MyEvents({
                             <TextInput
                                 id="event_time"
                                 type="text"
-                                className="mt-1 block w-full text-sm"
+                                className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl"
                                 placeholder="e.g. 4:00 PM — Reception & Dinner"
                                 value={data.event_time}
                                 onChange={(e) => setData('event_time', e.target.value)}
@@ -918,7 +931,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="venue"
                                     type="text"
-                                    className="mt-1 block w-full text-sm"
+                                    className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl"
                                     placeholder="e.g. Kunduchi Beach Gardens"
                                     value={data.venue}
                                     onChange={(e) => setData('venue', e.target.value)}
@@ -932,7 +945,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="city"
                                     type="text"
-                                    className="mt-1 block w-full text-sm"
+                                    className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl"
                                     value={data.city}
                                     onChange={(e) => setData('city', e.target.value)}
                                 />
@@ -959,11 +972,11 @@ export default function MyEvents({
                         )}
                     </div>
 
-                    <div className="mt-6 flex justify-end gap-3">
+                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
                         <SecondaryButton onClick={() => setCreateModalOpen(false)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={processing} className="bg-kardovo-blue-dark">
+                        <PrimaryButton disabled={processing} className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-bold text-xs uppercase tracking-wider">
                             Create Event
                         </PrimaryButton>
                     </div>
@@ -1121,7 +1134,7 @@ export default function MyEvents({
                                 <InputLabel htmlFor="edit_user_id" value="Assigned Organiser (Customer Account)" />
                                 <select
                                     id="edit_user_id"
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-cyan-500 focus:ring-cyan-500 shadow-2xs cursor-pointer focus:border-kardovo-blue-dark focus:ring-kardovo-blue-dark font-medium"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-cyan-500 focus:ring-cyan-500 shadow-2xs cursor-pointer font-medium"
                                     value={editForm.data.user_id}
                                     onChange={(e) => editForm.setData('user_id', e.target.value)}
                                 >
@@ -1148,11 +1161,11 @@ export default function MyEvents({
                         </div>
                     </div>
 
-                    <div className="mt-6 flex justify-end gap-3">
+                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
                         <SecondaryButton onClick={() => setEditModalOpen(false)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={editForm.processing} className="bg-kardovo-blue-dark">
+                        <PrimaryButton disabled={editForm.processing} className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white dark:text-slate-950 font-bold text-xs uppercase tracking-wider">
                             Save Changes
                         </PrimaryButton>
                     </div>

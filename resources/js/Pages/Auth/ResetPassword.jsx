@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -6,9 +7,12 @@ import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { validatePassword, generateStrongPassword } from '@/Utils/validation';
-import { Check, X, Sparkles } from 'lucide-react';
+import { Check, X, Sparkles, Eye, EyeOff } from 'lucide-react';
 
 export default function ResetPassword({ token, email }) {
+    const [showPassword, setShowPassword] = useState(false);
+    const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
+
     const { data, setData, post, processing, errors, reset } = useForm({
         token: token,
         email: email,
@@ -97,20 +101,30 @@ export default function ResetPassword({ token, email }) {
                         </div>
                     </div>
 
-                    <TextInput
-                        id="password"
-                        type="password"
-                        name="password"
-                        value={data.password}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        isFocused={true}
-                        onChange={(e) => setData('password', e.target.value)}
-                        placeholder="Min 8 chars, uppercase, lowercase, numbers & symbols"
-                        hasError={Boolean(errors.password)}
-                        isValid={Boolean(isStrong)}
-                        required
-                    />
+                    <div className="relative mt-1">
+                        <TextInput
+                            id="password"
+                            type={showPassword ? 'text' : 'password'}
+                            name="password"
+                            value={data.password}
+                            className="block w-full pr-10"
+                            autoComplete="new-password"
+                            isFocused={true}
+                            onChange={(e) => setData('password', e.target.value)}
+                            placeholder="Min 8 chars, uppercase, lowercase, numbers & symbols"
+                            hasError={Boolean(errors.password)}
+                            isValid={Boolean(isStrong)}
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer focus:outline-none transition"
+                            title={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
 
                     <PasswordStrengthMeter password={data.password} />
 
@@ -135,21 +149,31 @@ export default function ResetPassword({ token, email }) {
                         )}
                     </div>
 
-                    <TextInput
-                        type="password"
-                        id="password_confirmation"
-                        name="password_confirmation"
-                        value={data.password_confirmation}
-                        className="mt-1 block w-full"
-                        autoComplete="new-password"
-                        onChange={(e) =>
-                            setData('password_confirmation', e.target.value)
-                        }
-                        placeholder="Repeat new password"
-                        hasError={Boolean(errors.password_confirmation || isMismatch)}
-                        isValid={Boolean(isMatch)}
-                        required
-                    />
+                    <div className="relative mt-1">
+                        <TextInput
+                            type={showPasswordConfirm ? 'text' : 'password'}
+                            id="password_confirmation"
+                            name="password_confirmation"
+                            value={data.password_confirmation}
+                            className="block w-full pr-10"
+                            autoComplete="new-password"
+                            onChange={(e) =>
+                                setData('password_confirmation', e.target.value)
+                            }
+                            placeholder="Repeat new password"
+                            hasError={Boolean(errors.password_confirmation || isMismatch)}
+                            isValid={Boolean(isMatch)}
+                            required
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer focus:outline-none transition"
+                            title={showPasswordConfirm ? 'Hide password' : 'Show password'}
+                        >
+                            {showPasswordConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
 
                     <InputError
                         message={errors.password_confirmation}

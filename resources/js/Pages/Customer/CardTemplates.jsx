@@ -73,10 +73,11 @@ export default function CardTemplates({
     const [uploadModalOpen, setUploadModalOpen] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState(null);
+    const [uploadedImgMeta, setUploadedImgMeta] = useState(null);
 
     // Dummy test guest state for live stage preview
     const [testGuestName, setTestGuestName] = useState(sampleGuest?.name || 'Alfred Mashauri');
-    const [testAllowance, setTestAllowance] = useState(sampleGuest?.allowance_label || 'DOUBLE ENTRY • 2X');
+    const [testAllowance, setTestAllowance] = useState(sampleGuest?.category ? sampleGuest.category.toUpperCase() : 'DOUBLE ENTRY');
 
     // Helper to merge template config with smart defaults for all text fields
     const buildMergedElementsConfig = (tpl) => {
@@ -157,6 +158,12 @@ export default function CardTemplates({
             bg_solid_color: cfg.bg_solid_color || '#FFFFFF',
             bg_image: cfg.bg_image || tpl?.image_path || null,
             bg_overlay_opacity: cfg.bg_overlay_opacity ?? 0.35,
+
+            // Canvas Aspect Ratio & Orientation Controls
+            aspect_ratio: cfg.aspect_ratio || '',
+            orientation: cfg.orientation || (isCustom ? 'portrait' : 'portrait'),
+            image_width: cfg.image_width || null,
+            image_height: cfg.image_height || null,
 
             // Layer Visibility Flags (Customizable Overlays)
             show_guest_name: cfg.show_guest_name ?? true,
@@ -254,6 +261,7 @@ export default function CardTemplates({
         if (preset === 'minimal') {
             newLayers = {
                 show_guest_name: true,
+                show_allowance_badge: true,
                 show_qr: true,
                 show_unique_code: true,
                 show_headline: false,
@@ -275,6 +283,7 @@ export default function CardTemplates({
         } else if (preset === 'full') {
             newLayers = {
                 show_guest_name: true,
+                show_allowance_badge: true,
                 show_qr: true,
                 show_unique_code: true,
                 show_headline: true,
@@ -296,6 +305,7 @@ export default function CardTemplates({
         } else if (preset === 'pass_only') {
             newLayers = {
                 show_guest_name: false,
+                show_allowance_badge: false,
                 show_qr: true,
                 show_unique_code: true,
                 show_headline: false,
@@ -350,21 +360,50 @@ export default function CardTemplates({
         }
     };
 
-    const updateNestedConfig = (section, key, value) => {
-        form.setData('elements_config', {
-            ...form.data.elements_config,
-            [section]: {
-                ...(form.data.elements_config[section] || {}),
-                [key]: value
-            }
-        });
+    const updateNestedConfig = (section, keyOrObj, value) => {
+        if (typeof keyOrObj === 'object' && keyOrObj !== null) {
+            form.setData(prev => ({
+                ...prev,
+                elements_config: {
+                    ...(prev.elements_config || {}),
+                    [section]: {
+                        ...((prev.elements_config || {})[section] || {}),
+                        ...keyOrObj
+                    }
+                }
+            }));
+        } else {
+            form.setData(prev => ({
+                ...prev,
+                elements_config: {
+                    ...(prev.elements_config || {}),
+                    [section]: {
+                        ...((prev.elements_config || {})[section] || {}),
+                        [keyOrObj]: value
+                    }
+                }
+            }));
+        }
     };
 
-    const updateDirectConfig = (key, value) => {
-        form.setData('elements_config', {
-            ...form.data.elements_config,
-            [key]: value
-        });
+    const updateDirectConfig = (keyOrObj, value) => {
+        if (typeof keyOrObj === 'object' && keyOrObj !== null) {
+            form.setData(prev => ({
+                ...prev,
+                elements_config: {
+                    ...(prev.elements_config || {}),
+                    ...keyOrObj
+                }
+            }));
+        } else {
+            form.setData(prev => ({
+                ...prev,
+                elements_config: {
+                    ...(prev.elements_config || {}),
+                    [keyOrObj]: value
+                }
+            }));
+        }
     };
 
     const handleSaveTemplate = (e) => {
@@ -418,6 +457,10 @@ export default function CardTemplates({
             guest_name: { x: 50, y: 71.5, fontSize: 20, color: '#FFFFFF', plaqueWidth: 84 },
             qr_code: { x: 50, y: 85.5, size: 88, darkColor: '#111827', lightColor: '#FFFFFF' },
             card_number: { x: 50, y: 96, fontSize: 9.5, color: '#FFFFFF' },
+            aspect_ratio: uploadedImgMeta?.ratio || '',
+            orientation: uploadedImgMeta?.orientation || 'portrait',
+            image_width: uploadedImgMeta?.width || null,
+            image_height: uploadedImgMeta?.height || null,
         };
 
         const formData = new FormData();
@@ -530,20 +573,27 @@ export default function CardTemplates({
                 {/* ═══════════════════════════════════════════════════════════ */}
                 {/* 2. CARD TEMPLATE PRESET SELECTOR GRID (CLICK TO EDIT)       */}
                 {/* ═══════════════════════════════════════════════════════════ */}
-                <div className="bg-white/70 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card space-y-4">
+                <div className="bg-white dark:bg-[#0B1524] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Layers className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                            <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                                Available Template Presets (Click Any Preset to Edit)
-                            </span>
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 flex items-center justify-center border border-slate-200/60 dark:border-white/[0.06]">
+                                <Layers className="w-3.5 h-3.5" />
+                            </div>
+                            <div>
+                                <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                                    Template Presets
+                                </h3>
+                                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                    Click any design to customize and preview live
+                                </p>
+                            </div>
                         </div>
-                        <span className="text-xs text-slate-500 dark:text-slate-400 font-medium font-mono">
-                            {templates.length} templates configured
+                        <span className="px-2.5 py-1 rounded-full text-[10.5px] font-mono font-bold bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.06]">
+                            {templates.length} {templates.length === 1 ? 'Design' : 'Designs'}
                         </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-3.5">
                         {templates.map((tpl) => {
                             const isSelected = currentTpl?.id === tpl.id;
                             const imgUrl = (isSelected && currentTpl?.image_path)
@@ -558,101 +608,87 @@ export default function CardTemplates({
                                 <div
                                     key={tpl.id}
                                     onClick={() => handleSelectTemplate(tpl)}
-                                    className={`p-3.5 rounded-2xl border text-left flex flex-col justify-between transition-all group relative overflow-hidden cursor-pointer active:scale-95 w-full backdrop-blur-xl ${
+                                    className={`group relative p-2.5 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col justify-between text-left select-none active:scale-[0.98] ${
                                         isSelected 
-                                            ? 'border-slate-900 dark:border-cyan-400 ring-2 ring-slate-900/10 dark:ring-cyan-400/30 bg-slate-50/80 dark:bg-white/[0.04] shadow-md scale-[1.01]' 
-                                            : 'border-slate-200/80 dark:border-white/[0.08] hover:border-slate-400 dark:hover:border-white/[0.2] bg-white/60 dark:bg-white/[0.02] shadow-xs hover:shadow-card'
+                                            ? 'border-cyan-500/80 dark:border-cyan-400/80 bg-cyan-500/[0.04] dark:bg-cyan-400/[0.04] ring-2 ring-cyan-500/20 dark:ring-cyan-400/20 shadow-xs' 
+                                            : 'border-slate-200/80 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.18] bg-slate-50/50 dark:bg-white/[0.02] shadow-2xs hover:shadow-xs'
                                     }`}
                                 >
                                     <div className="w-full">
-                                        {isCustom && imgUrl ? (
-                                            <div className="w-full h-32 rounded-xl overflow-hidden mb-3 bg-slate-900 border border-slate-200/80 dark:border-white/[0.08] relative group/thumb">
+                                        {/* Thumbnail Container */}
+                                        <div className="w-full h-32 rounded-lg overflow-hidden relative bg-slate-950 border border-slate-200/60 dark:border-white/[0.06]">
+                                            {isCustom && imgUrl ? (
                                                 <img 
                                                     src={imgUrl} 
                                                     alt={tpl.name} 
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500" 
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                                                     onError={(e) => {
                                                         e.currentTarget.onerror = null;
                                                         e.currentTarget.src = '/templates/zamroth_husna_bg.jpg';
                                                     }}
                                                 />
-                                                {isRecommended && (
-                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-slate-900/80 dark:bg-black/70 text-white text-[9px] font-bold tracking-wide uppercase shadow-sm backdrop-blur-xs border border-white/10">
-                                                        ★ Recommended
-                                                    </span>
-                                                )}
-                                                {isPersonal && (
-                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-slate-900/80 dark:bg-black/70 text-white text-[9px] font-bold tracking-wide uppercase shadow-sm backdrop-blur-xs border border-white/10">
-                                                        👤 My Template
-                                                    </span>
-                                                )}
+                                            ) : (
+                                                <div 
+                                                    className="w-full h-full flex items-center justify-center p-3 text-white text-center font-bold text-xs"
+                                                    style={{
+                                                        background: `linear-gradient(135deg, ${tpl.brand_color_from || '#0A1128'} 0%, #008EE8 50%, ${tpl.brand_color_to || '#008EE8'} 100%)`
+                                                    }}
+                                                >
+                                                    <span className="font-extrabold tracking-wider truncate">{tpl.headline || 'GRADIENT PASS'}</span>
+                                                </div>
+                                            )}
 
-                                                {/* Delete button on custom template card */}
-                                                {canDeleteThis && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => openDeleteConfirmation(e, tpl)}
-                                                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-700 text-white shadow-md transition active:scale-90 opacity-80 hover:opacity-100 cursor-pointer"
-                                                        title="Delete this template"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                )}
+                                            {/* Status Badge */}
+                                            <div className="absolute top-2 left-2">
+                                                {isSelected ? (
+                                                    <span className="px-2 py-0.5 rounded-md bg-cyan-500 text-slate-950 text-[9.5px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                                        <Check className="w-2.5 h-2.5 stroke-[3]" /> Active
+                                                    </span>
+                                                ) : isPersonal ? (
+                                                    <span className="px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-md text-white text-[9.5px] font-bold tracking-wide border border-white/10 shadow-sm">
+                                                        Custom
+                                                    </span>
+                                                ) : isRecommended ? (
+                                                    <span className="px-2 py-0.5 rounded-md bg-slate-900/80 backdrop-blur-md text-white text-[9.5px] font-bold tracking-wide border border-white/10 shadow-sm">
+                                                        Preset
+                                                    </span>
+                                                ) : null}
+                                            </div>
 
-                                                <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/75 text-white text-[9px] font-bold backdrop-blur-xs">
-                                                    4K Custom Art
+                                            {/* Delete Button (Hover) */}
+                                            {canDeleteThis && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => openDeleteConfirmation(e, tpl)}
+                                                    className="absolute top-2 right-2 p-1.5 rounded-md bg-black/60 hover:bg-rose-600 text-white backdrop-blur-md border border-white/10 shadow-sm transition active:scale-90 opacity-0 group-hover:opacity-100 cursor-pointer"
+                                                    title="Delete this template"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        {/* Card Info */}
+                                        <div className="mt-2.5 px-0.5 flex items-center justify-between gap-2">
+                                            <div className="min-w-0 flex-1">
+                                                <h4 className="font-bold text-xs text-slate-900 dark:text-white truncate" title={tpl.name}>
+                                                    {tpl.name}
+                                                </h4>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate">
+                                                    {isCustom ? 'Custom Artwork' : 'Gradient Canvas'}
+                                                </p>
+                                            </div>
+
+                                            {isSelected ? (
+                                                <span className="w-5 h-5 rounded-full bg-cyan-500 dark:bg-cyan-400 text-slate-950 flex items-center justify-center shrink-0 shadow-xs">
+                                                    <Check className="w-3 h-3 stroke-[3]" />
                                                 </span>
-                                            </div>
-                                        ) : (
-                                            <div 
-                                                className="w-full h-32 rounded-xl mb-3 flex items-center justify-center p-4 text-white text-center font-bold text-xs shadow-inner relative overflow-hidden"
-                                                style={{
-                                                    background: `linear-gradient(135deg, ${tpl.brand_color_from || '#0A1128'} 0%, #008EE8 50%, ${tpl.brand_color_to || '#008EE8'} 100%)`
-                                                }}
-                                            >
-                                                {isPersonal && (
-                                                    <span className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-slate-900/80 dark:bg-black/70 text-white text-[9px] font-bold tracking-wide uppercase shadow-sm backdrop-blur-xs border border-white/10">
-                                                        👤 My Template
-                                                    </span>
-                                                )}
-
-                                                {/* Delete button on gradient template card */}
-                                                {canDeleteThis && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => openDeleteConfirmation(e, tpl)}
-                                                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-700 text-white shadow-md transition active:scale-90 opacity-80 hover:opacity-100 cursor-pointer"
-                                                        title="Delete this template"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                )}
-
-                                                <span className="font-extrabold tracking-wider">{tpl.headline || 'GRADIENT PASS'}</span>
-                                            </div>
-                                        )}
-
-                                        <div className="font-bold text-slate-900 dark:text-white text-xs truncate">
-                                            {tpl.name}
+                                            ) : (
+                                                <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors shrink-0">
+                                                    Edit →
+                                                </span>
+                                            )}
                                         </div>
-                                        <div className="text-[10.5px] text-slate-500 dark:text-slate-400 capitalize truncate mt-0.5 font-mono">
-                                            {isCustom ? 'Custom Artwork' : 'Gradient Canvas'}
-                                        </div>
-                                    </div>
-
-                                    <div className="mt-3 pt-2 border-t border-slate-200/60 dark:border-white/[0.08] flex items-center justify-between w-full">
-                                        <span className={`text-[10px] font-bold uppercase px-2.5 py-1 rounded-full transition ${
-                                            isSelected 
-                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs' 
-                                                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 group-hover:bg-slate-200 dark:group-hover:bg-white/[0.1] group-hover:text-slate-900 dark:group-hover:text-white'
-                                        }`}>
-                                            {isSelected ? 'Editing Now' : 'Click to Edit'}
-                                        </span>
-                                        {isSelected && (
-                                            <div className="w-5 h-5 rounded-full bg-slate-900 dark:bg-cyan-600 text-white flex items-center justify-center shadow-xs">
-                                                <Check className="w-3 h-3 stroke-[3]" />
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
                             );
@@ -661,45 +697,175 @@ export default function CardTemplates({
                 </div>
 
                 {/* ═══════════════════════════════════════════════════════════ */}
-                {/* 3. SPLIT WORKSPACE: ELEMENT INSPECTOR & LIVE 4K STAGE       */}
+                {/* 3. PRIMARY TEMPLATE IDENTITY & 4K STUDIO WORKSPACE           */}
                 {/* ═══════════════════════════════════════════════════════════ */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <form onSubmit={handleSaveTemplate} className="space-y-6">
                     
-                    {/* Left: Studio Element & Coordinate Inspector (7 cols) */}
-                    <div className="lg:col-span-7 bg-white/75 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_10px_35px_rgba(0,0,0,0.04)] dark:shadow-card overflow-hidden flex flex-col lg:max-h-[calc(100vh-6rem)] lg:sticky lg:top-6">
-                        
-                        {/* Inspector Header & Segmented Tabs (Fixed at Top of Card) */}
-                        <div className="p-5 sm:p-6 border-b border-slate-200/60 dark:border-white/[0.08] bg-white/50 dark:bg-white/[0.03] backdrop-blur-xl flex-shrink-0">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                        <SlidersHorizontal className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
-                                            Element Placement &amp; Content Inspector
-                                        </h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                                            Editing Template: <strong className="text-slate-900 dark:text-white">{currentTpl?.name}</strong>
-                                        </p>
-                                    </div>
+                    {/* Standalone Primary Template Identity Card */}
+                    <div className="bg-white dark:bg-[#0B1524] p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-4">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-white/[0.08]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-cyan-300 flex items-center justify-center border border-cyan-500/20 shadow-2xs">
+                                    <Sparkles className="w-4 h-4" />
                                 </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                        <span>Primary Template Identity</span>
+                                    </h3>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        Configure preset title and top headline banner overlay
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+                                    Global Preset Attributes
+                                </span>
+                            </div>
+                        </div>
 
-                                <div className="flex items-center gap-2">
-                                    <span className="inline-flex items-center gap-1.5 text-[10.5px] font-mono font-medium text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-[#0B1524] px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span>Live Vector Sync</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-start">
+                            {/* 1. Template Name */}
+                            <div className="space-y-1.5 flex flex-col justify-start">
+                                <div className="h-6 flex items-center justify-between">
+                                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                                        Template Name <span className="text-rose-500">*</span>
+                                    </label>
+                                    <span className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500 px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.06]">
+                                        Preset Title
+                                    </span>
+                                </div>
+                                <TextInput
+                                    className="block w-full h-10 text-xs font-bold bg-white dark:bg-[#07111D] border-slate-200 dark:border-white/[0.1] focus:border-cyan-500 focus:ring-cyan-500/20 shadow-2xs rounded-xl"
+                                    value={form.data.name}
+                                    onChange={(e) => form.setData('name', e.target.value)}
+                                    required
+                                    placeholder="e.g. Royal Emerald 4K Pass"
+                                />
+                            </div>
+
+                            {/* 2. Headline Banner Text */}
+                            <div className="space-y-1.5 flex flex-col justify-start">
+                                <div className="h-6 flex items-center justify-between">
+                                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                        Headline Banner Text
+                                    </label>
+                                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] transition hover:bg-slate-200 dark:hover:bg-white/[0.1]">
+                                        <input
+                                            type="checkbox"
+                                            checked={form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false}
+                                            onChange={(e) => {
+                                                const isChecked = e.target.checked;
+                                                form.setData("show_headline", isChecked);
+                                                form.setData("show_category_badge", isChecked);
+                                                updateDirectConfig("show_headline", isChecked);
+                                                updateDirectConfig("show_category_badge", isChecked);
+                                            }}
+                                            className="rounded text-cyan-600 focus:ring-cyan-500 h-3.5 w-3.5 cursor-pointer"
+                                        />
+                                        <span className={(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "text-cyan-600 dark:text-cyan-400 font-black" : "text-slate-400 font-medium"}>
+                                            {(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "Visible" : "Hidden"}
+                                        </span>
+                                    </label>
+                                </div>
+                                <TextInput
+                                    className={`block w-full h-10 text-xs font-bold bg-white dark:bg-[#07111D] border-slate-200 dark:border-white/[0.1] focus:border-cyan-500 focus:ring-cyan-500/20 shadow-2xs rounded-xl transition-all ${
+                                        (form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false)
+                                            ? "opacity-40 bg-slate-100 dark:bg-white/[0.04]"
+                                            : ""
+                                    }`}
+                                    value={form.data.elements_config?.headline_text ?? form.data.headline ?? ""}
+                                    disabled={form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false}
+                                    onChange={(e) => {
+                                        form.setData("headline", e.target.value);
+                                        updateDirectConfig("headline_text", e.target.value);
+                                    }}
+                                    placeholder="e.g. WEDDING INVITATION"
+                                />
+                            </div>
+                        </div>
+
+                        {/* 3. Headline Vertical Position (Y%) Slider */}
+                        <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 dark:bg-white/[0.02] -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 sm:p-5 rounded-b-3xl">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-7 h-7 rounded-lg bg-white dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs">
+                                    <Move className="w-3.5 h-3.5" />
+                                </div>
+                                <div>
+                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                                        Headline Vertical Position (Y%)
+                                    </span>
+                                    <span className="text-[10.5px] text-slate-500 dark:text-slate-400 block font-medium">
+                                        Fine-tune distance from pass top
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Sub-Tabs Grid Bar (Clean, Unified Monochromatic Segmented Bar) */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1.5 rounded-2xl bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08]">
-                                {/* Row 1, Col 1: Layers & Elements */}
+                            <div className="flex items-center gap-3 w-full sm:w-72">
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="90"
+                                    step="0.5"
+                                    disabled={form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false}
+                                    value={parseFloat(form.data.elements_config?.headline_y ?? form.data.elements_config?.category_badge?.y ?? 5.5)}
+                                    onChange={(e) => {
+                                        const val = parseFloat(e.target.value);
+                                        updateDirectConfig("headline_y", val);
+                                        updateNestedConfig("category_badge", "y", val);
+                                    }}
+                                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 disabled:opacity-40"
+                                />
+                                <span className="text-xs font-mono font-black text-cyan-700 dark:text-cyan-300 bg-white dark:bg-[#07111D] px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-white/[0.08] shadow-2xs min-w-[54px] text-center shrink-0">
+                                    {parseFloat(form.data.elements_config?.headline_y ?? form.data.elements_config?.category_badge?.y ?? 5.5)}%
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Split Workspace Grid */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        
+                        {/* Left: Studio Element & Coordinate Inspector (7 cols) */}
+                        <div className="lg:col-span-7 bg-white/75 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_10px_35px_rgba(0,0,0,0.04)] dark:shadow-card overflow-hidden flex flex-col lg:max-h-[calc(100vh-6rem)] lg:sticky lg:top-6">
+                            
+                            {/* Inspector Header & Segmented Tabs (Fixed at Top of Card) */}
+                            <div className="p-5 sm:p-6 border-b border-slate-200/60 dark:border-white/[0.08] bg-white/50 dark:bg-white/[0.03] backdrop-blur-xl flex-shrink-0">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                            <SlidersHorizontal className="w-4 h-4 text-slate-700 dark:text-slate-300" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="text-base font-black text-slate-900 dark:text-white font-display truncate">
+                                                Element Placement &amp; Content Inspector
+                                            </h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate flex items-center gap-1.5">
+                                                <span>Editing Template:</span>
+                                                <span className="font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-white/[0.08] px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-white/[0.08] truncate max-w-[260px] inline-block">
+                                                    {currentTpl?.name}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-auto">
+                                        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/50 shadow-xs">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                            <span>Live Vector Sync</span>
+                                        </span>
+                                    </div>
+                                </div>
+
+                            {/* Sub-Tabs Bar (Clean Horizontal Dock) */}
+                            <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] overflow-x-auto no-scrollbar scroll-smooth">
+                                {/* 1: Layers & Elements */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("layers")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                    className={`flex-1 min-w-[125px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                                         inspectorTab === "layers"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -707,14 +873,14 @@ export default function CardTemplates({
                                     title="Layers & Elements"
                                 >
                                     <Layers className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "layers" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span className="truncate">Layers &amp; Elements</span>
+                                    <span>Layers &amp; Elements</span>
                                 </button>
 
-                                {/* Row 1, Col 2: Content & Text */}
+                                {/* 2: Content & Text */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("content")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                    className={`flex-1 min-w-[120px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                                         inspectorTab === "content"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -722,14 +888,14 @@ export default function CardTemplates({
                                     title="Content & Text"
                                 >
                                     <Type className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "content" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span className="truncate">Content &amp; Text</span>
+                                    <span>Content &amp; Text</span>
                                 </button>
 
-                                {/* Row 1, Col 3: Artwork Asset */}
+                                {/* 3: Artwork Asset / Palette & Style */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab(isCustomArt ? "artwork" : "palette")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                    className={`flex-1 min-w-[120px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                                         (inspectorTab === "artwork" || inspectorTab === "palette")
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -741,14 +907,14 @@ export default function CardTemplates({
                                     ) : (
                                         <Palette className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "palette" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     )}
-                                    <span className="truncate">{isCustomArt ? "Artwork Asset" : "Palette & Style"}</span>
+                                    <span>{isCustomArt ? "Artwork Asset" : "Palette & Style"}</span>
                                 </button>
 
-                                {/* Row 1, Col 4: Guest Plaque */}
+                                {/* 4: Guest Plaque */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("plaque")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                    className={`flex-1 min-w-[115px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                                         inspectorTab === "plaque"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -756,29 +922,29 @@ export default function CardTemplates({
                                     title="Guest Plaque"
                                 >
                                     <Move className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "plaque" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span className="truncate">Guest Plaque</span>
+                                    <span>Guest Plaque</span>
                                 </button>
 
-                                {/* Row 2, Col 1 (Below Layers & Elements) */}
+                                {/* 5: Allowance Badge / Verified Badge */}
                                 <button
                                     type="button"
-                                    onClick={() => setInspectorTab(isUploadedCustomArt ? "category" : "badge")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                    onClick={() => setInspectorTab(isCustomArt ? "category" : "badge")}
+                                    className={`flex-1 min-w-[125px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                                         (inspectorTab === "badge" || inspectorTab === "category")
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
                                     }`}
-                                    title="Verified Badge"
+                                    title={isCustomArt ? "Allowance Badge" : "Verified Badge"}
                                 >
                                     <ShieldCheck className={`w-3.5 h-3.5 flex-shrink-0 ${(inspectorTab === "badge" || inspectorTab === "category") ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span className="truncate">Verified Badge</span>
+                                    <span>{isCustomArt ? "Allowance Badge" : "Verified Badge"}</span>
                                 </button>
 
-                                {/* Row 2, Col 2 (Below Content & Text) */}
+                                {/* 6: QR Code */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("qr")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                    className={`flex-1 min-w-[95px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                                         inspectorTab === "qr"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -786,14 +952,14 @@ export default function CardTemplates({
                                     title="QR Code"
                                 >
                                     <QrCode className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "qr" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span className="truncate">QR Code</span>
+                                    <span>QR Code</span>
                                 </button>
 
-                                {/* Row 2, Col 3 (Directly Below Artwork Asset) */}
+                                {/* 7: Security Code */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("security")}
-                                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center gap-2 cursor-pointer active:scale-95 ${
+                                    className={`flex-1 min-w-[115px] whitespace-nowrap py-2 px-3 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                                         inspectorTab === "security"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/[0.06]"
@@ -801,520 +967,456 @@ export default function CardTemplates({
                                     title="Security Code"
                                 >
                                     <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "security" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span className="truncate">Security Code</span>
+                                    <span>Security Code</span>
                                 </button>
                             </div>
                         </div>
 
-                        {/* Inspector Form (Flex Layout with Internal Scroll) */}
-                        <form onSubmit={handleSaveTemplate} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                        {/* Inspector Body (Flex Layout with Internal Scroll) */}
+                        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                             
                             {/* Scrollable Form Body Container */}
-                            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
                             
-                            {/* General Template Meta (Always visible) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-4 border-b border-slate-100 dark:border-white/[0.08]">
-                                <div>
-                                    <InputLabel value="Template Name *" />
-                                    <TextInput
-                                        className="block w-full text-xs font-bold"
-                                        value={form.data.name}
-                                        onChange={(e) => form.setData('name', e.target.value)}
-                                        required
-                                        placeholder="e.g. Royal Emerald 4K Pass"
-                                    />
-                                </div>
-                                <div>
-                                    <div className="flex items-center justify-between mb-1">
-                                        <InputLabel value="Headline Banner Text" />
-                                        <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-[11px] font-bold">
-                                            <input
-                                                type="checkbox"
-                                                checked={form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false}
-                                                onChange={(e) => {
-                                                    const isChecked = e.target.checked;
-                                                    form.setData("show_headline", isChecked);
-                                                    form.setData("show_category_badge", isChecked);
-                                                    updateDirectConfig("show_headline", isChecked);
-                                                    updateDirectConfig("show_category_badge", isChecked);
-                                                }}
-                                                className="rounded text-cyan-600 focus:ring-cyan-500 h-3.5 w-3.5 cursor-pointer"
-                                            />
-                                            <span className={(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "text-cyan-600 dark:text-cyan-400" : "text-slate-400"}>
-                                                {(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "Visible" : "Hidden"}
-                                            </span>
-                                        </label>
+                            {/* ── Active Category Context Header Banner ── */}
+                            <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-slate-100/60 dark:from-white/[0.04] dark:to-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-4 shadow-2xs">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-cyan-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
+                                        {inspectorTab === 'layers' && <Layers className="w-4 h-4 text-white" />}
+                                        {inspectorTab === 'content' && <Type className="w-4 h-4 text-white" />}
+                                        {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? <ImageIcon className="w-4 h-4 text-white" /> : <Palette className="w-4 h-4 text-white" />)}
+                                        {inspectorTab === 'plaque' && <Move className="w-4 h-4 text-white" />}
+                                        {(inspectorTab === 'category' || inspectorTab === 'badge') && <ShieldCheck className="w-4 h-4 text-white" />}
+                                        {inspectorTab === 'qr' && <QrCode className="w-4 h-4 text-white" />}
+                                        {inspectorTab === 'security' && <Clock className="w-4 h-4 text-white" />}
                                     </div>
-                                    <TextInput
-                                        className={`block w-full text-xs font-bold transition-all ${
-                                            (form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false)
-                                                ? "opacity-40 bg-slate-100 dark:bg-white/[0.04]"
-                                                : ""
-                                        }`}
-                                        value={form.data.elements_config?.headline_text ?? form.data.headline ?? ""}
-                                        disabled={form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false}
-                                        onChange={(e) => {
-                                            form.setData("headline", e.target.value);
-                                            updateDirectConfig("headline_text", e.target.value);
-                                        }}
-                                        placeholder="e.g. WEDDING INVITATION"
-                                    />
-                                    
-                                    {/* Headline Vertical Position (Y%) Slider */}
-                                    <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between gap-3">
-                                        <span className="text-[10.5px] font-bold text-slate-500 dark:text-slate-400">
-                                            Headline Vertical Position (Y%)
-                                        </span>
-                                        <div className="flex items-center gap-2 flex-1 max-w-[180px]">
-                                            <input
-                                                type="range"
-                                                min="1"
-                                                max="90"
-                                                step="0.5"
-                                                disabled={form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false}
-                                                value={parseFloat(form.data.elements_config?.headline_y ?? form.data.elements_config?.category_badge?.y ?? 5.5)}
-                                                onChange={(e) => {
-                                                    const val = parseFloat(e.target.value);
-                                                    updateDirectConfig("headline_y", val);
-                                                    updateNestedConfig("category_badge", "y", val);
-                                                }}
-                                                className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 disabled:opacity-40"
-                                            />
-                                            <span className="text-[11px] font-mono font-bold text-cyan-600 dark:text-cyan-400 min-w-[38px] text-right">
-                                                {parseFloat(form.data.elements_config?.headline_y ?? form.data.elements_config?.category_badge?.y ?? 5.5)}%
-                                            </span>
+                                    <div>
+                                        <div className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                            {inspectorTab === 'layers' && 'Layers & Elements'}
+                                            {inspectorTab === 'content' && 'Content & Text'}
+                                            {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? 'Artwork Asset' : 'Palette & Style')}
+                                            {inspectorTab === 'plaque' && 'Guest Plaque'}
+                                            {(inspectorTab === 'category' || inspectorTab === 'badge') && (isCustomArt ? 'Allowance Badge' : 'Verified Badge')}
+                                            {inspectorTab === 'qr' && 'QR Code Token'}
+                                            {inspectorTab === 'security' && 'Security Code'}
                                         </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                                            {inspectorTab === 'layers' && 'Toggle element layers, titles, badges, and QR codes.'}
+                                            {inspectorTab === 'content' && (isCustomArt ? 'Edit host names, date, quote, and venue text.' : 'Edit headlines, titles, date, and venue details.')}
+                                            {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? 'Flyer artwork, aspect ratio, and image fit.' : 'Gradient tones, colors, and background theme.')}
+                                            {inspectorTab === 'plaque' && 'Position, size, and style guest name.'}
+                                            {(inspectorTab === 'category' || inspectorTab === 'badge') && (isCustomArt ? 'Position, size, and style allowance badge.' : 'Position and style verified badge.')}
+                                            {inspectorTab === 'qr' && 'Position, size, and color for QR pass.'}
+                                            {inspectorTab === 'security' && 'Position, size, and color for 8-digit code.'}
+                                        </p>
                                     </div>
+                                </div>
+                                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] text-[10px] font-mono font-semibold text-slate-700 dark:text-slate-300 shadow-2xs flex-shrink-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                    <span>Live Sync</span>
                                 </div>
                             </div>
 
                             {/* TAB: FIELD LAYERS & VISIBILITY SELECTOR */}
                             {inspectorTab === 'layers' && (
-                                <div className="space-y-6 animate-fadeIn">
-                                    <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.08]">
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <Layers className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
-                                            <span>Field &amp; Layer Visibility Selector</span>
+                                <div className="space-y-5 animate-fadeIn">
+                                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-white/[0.08]">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-6 h-6 rounded-lg bg-cyan-500/15 dark:bg-cyan-400/15 text-cyan-600 dark:text-cyan-300 flex items-center justify-center border border-cyan-500/20 shadow-2xs">
+                                                <Layers className="w-3.5 h-3.5" />
+                                            </div>
+                                            <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
+                                                Layer Visibility
+                                            </span>
                                         </div>
-                                        <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 font-medium">
-                                            Live Canvas Sync
+                                        <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-white/[0.06]">
+                                            Live Sync
                                         </span>
                                     </div>
 
                                     {/* 1. Quick Presets Bar */}
-                                    <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-2.5">
-                                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center justify-between">
-                                            <span>Quick Overlay Presets</span>
-                                            <span className="text-[10.5px] text-slate-500 font-normal">Choose an instant layout preset</span>
+                                    <div className="p-4 sm:p-4.5 bg-gradient-to-br from-slate-50 to-slate-100/70 dark:from-white/[0.04] dark:to-white/[0.01] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3 shadow-xs">
+                                        <div className="flex items-center justify-between">
+                                            <div className="text-xs font-bold text-slate-900 dark:text-white">
+                                                Quick Layouts
+                                            </div>
+                                            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
+                                                One-click layer setups
+                                            </span>
                                         </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                                            {/* Minimal Pass */}
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('minimal')}
-                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-slate-400 dark:hover:border-white/20 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between shadow-2xs"
+                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 dark:hover:border-cyan-400 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
                                             >
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white">Minimal Pass</span>
-                                                    <span className="text-[9.5px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] px-1.5 py-0.5 rounded-full font-mono">Popular</span>
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate">
+                                                        Minimal Pass
+                                                    </span>
+                                                    <span className="text-[9px] font-mono font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-full shrink-0">
+                                                        Popular
+                                                    </span>
                                                 </div>
-                                                <span className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
-                                                    Name + QR + Security Code only. For custom flyers with artwork text.
+                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
+                                                    Name, QR &amp; security code only.
                                                 </span>
                                             </button>
 
+                                            {/* Full Suite */}
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('full')}
-                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-slate-400 dark:hover:border-white/20 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between shadow-2xs"
+                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 dark:hover:border-cyan-400 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white">Full Suite</span>
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate">
+                                                        Full Suite
+                                                    </span>
                                                 </div>
-                                                <span className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
-                                                    Display all fields: Titles, Dates, Quotes, Venue &amp; Guest Plaque.
+                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
+                                                    All details, schedule &amp; guest plaque.
                                                 </span>
                                             </button>
 
+                                            {/* QR Pass Only */}
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('pass_only')}
-                                                className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-slate-400 dark:hover:border-white/20 text-left transition active:scale-95 cursor-pointer flex flex-col justify-between shadow-2xs"
+                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 dark:hover:border-cyan-400 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white">QR Pass Only</span>
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate">
+                                                        QR Pass Only
+                                                    </span>
                                                 </div>
-                                                <span className="text-[10.5px] text-slate-500 dark:text-slate-400 mt-1 leading-tight">
-                                                    Only scannable QR token and Gate Code overlay.
+                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
+                                                    Scannable QR &amp; gate code only.
                                                 </span>
                                             </button>
                                         </div>
                                     </div>
 
                                     {/* 2. Individual Layer Toggle Switches */}
-                                    <div className="space-y-2.5">
+                                    <div className="space-y-3">
                                         <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                                             Select Which Elements Appear on the Pass
                                         </div>
 
-                                        {/* A. Guest Name (Standalone) */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            currentConfig.show_guest_name !== false
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    currentConfig.show_guest_name !== false
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                }`}>
-                                                    <Move className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Guest Attendee Name</span>
-                                                        {currentConfig.show_guest_name !== false ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Fetched name only for the guest attendee (e.g. <em>Alfred Mashauri</em>).
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={currentConfig.show_guest_name !== false}
-                                                    onChange={(e) => updateDirectConfig('show_guest_name', e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
-                                        </div>
-
-                                        {/* A2. Invitation Category / Allowance Badge (Separate Standalone Field) */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            currentConfig.show_allowance_badge !== false
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    currentConfig.show_allowance_badge !== false
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                }`}>
-                                                    <ShieldCheck className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Invitation Category / Allowance Badge</span>
-                                                        {currentConfig.show_allowance_badge !== false ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Independent access category pill (e.g. <em>DOUBLE ENTRY • 2X</em> or <em>SINGLE ENTRY ACCESS</em>).
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={currentConfig.show_allowance_badge !== false}
-                                                    onChange={(e) => updateDirectConfig('show_allowance_badge', e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
-                                        </div>
-
-                                        {/* B. QR Code Pass */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            (form.data.show_qr && currentConfig.show_qr !== false)
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    (form.data.show_qr && currentConfig.show_qr !== false)
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                }`}>
-                                                    <QrCode className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Scannable QR Code Pass</span>
-                                                        {(form.data.show_qr && currentConfig.show_qr !== false) ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Sub-second camera scannable dynamic QR token for gate entry.
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={Boolean(form.data.show_qr && currentConfig.show_qr !== false)}
-                                                    onChange={(e) => {
-                                                        form.setData('show_qr', e.target.checked);
-                                                        updateDirectConfig('show_qr', e.target.checked);
-                                                    }}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
-                                        </div>
-
-                                        {/* C. Security Verification Code */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            (form.data.show_unique_code && currentConfig.show_unique_code !== false)
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    (form.data.show_unique_code && currentConfig.show_unique_code !== false)
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                }`}>
-                                                    <Clock className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Gate Security Verification Code</span>
-                                                        {(form.data.show_unique_code && currentConfig.show_unique_code !== false) ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        8-digit numeric passcode for manual gate staff override lookup.
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={Boolean(form.data.show_unique_code && currentConfig.show_unique_code !== false)}
-                                                    onChange={(e) => {
-                                                        form.setData('show_unique_code', e.target.checked);
-                                                        updateDirectConfig('show_unique_code', e.target.checked);
-                                                    }}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
-                                        </div>
-
-                                        {/* D. Couple / Host Names */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            currentConfig.show_couple_names !== false
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    currentConfig.show_couple_names !== false
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                }`}>
-                                                    <Type className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Couple / Event Host Names</span>
-                                                        {currentConfig.show_couple_names !== false ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Large centerpiece event title (e.g. <em>Zamroth &amp; Husna</em>). Turn off if already drawn in your flyer.
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={currentConfig.show_couple_names !== false}
-                                                    onChange={(e) => updateDirectConfig('show_couple_names', e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
-                                        </div>
-
-                                        {/* E. Date & Schedule Details */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            currentConfig.show_date !== false
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    currentConfig.show_date !== false
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                }`}>
-                                                    <Calendar className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Date, Day &amp; Schedule Details</span>
-                                                        {currentConfig.show_date !== false ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Month, day, time, and year schedule blocks.
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={currentConfig.show_date !== false}
-                                                    onChange={(e) => updateDirectConfig('show_date', e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
-                                        </div>
-
-                                        {/* F. Headline Badge Pill */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                }`}>
-                                                    <ShieldCheck className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Headline / Top Tag Pill</span>
-                                                        {(form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false) ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Header tag badge (e.g. <em>WEDDING INVITATION</em> or <em>EXCLUSIVE PASS</em>).
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false}
-                                                    onChange={(e) => {
-                                                        form.setData('show_category_badge', e.target.checked);
-                                                        form.setData('show_headline', e.target.checked);
-                                                        updateDirectConfig('show_headline', e.target.checked);
-                                                        updateDirectConfig('show_category_badge', e.target.checked);
-                                                    }}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
-                                        </div>
-                                        {/* F2. Verified Pass Badge Header (For Signature Passes) */}
-                                        {!isCustomArt && (
-                                            <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                                (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
+                                        <div className="space-y-2.5">
+                                            {/* A. Guest Name (Standalone) */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                currentConfig.show_guest_name !== false
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
                                                     : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                             }`}>
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                        (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        currentConfig.show_guest_name !== false
                                                             ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
-                                                        <ShieldCheck className="w-4 h-4" />
+                                                        <Move className="w-4 h-4" />
                                                     </div>
-                                                    <div>
+                                                    <div className="min-w-0">
                                                         <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span>Verified Pass Badge</span>
-                                                            {(form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false) ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
+                                                            <span className="truncate">Guest Attendee Name</span>
+                                                            {currentConfig.show_guest_name !== false ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                                     <span>VISIBLE</span>
                                                                 </span>
                                                             ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
                                                                     <span>HIDDEN</span>
                                                                 </span>
                                                             )}
                                                         </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                            Top header security pill (<em>VERIFIED PASS</em> with shield icon).
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            Fetched name only for the guest attendee (e.g. <em>Alfred Mashauri</em>).
                                                         </div>
                                                     </div>
                                                 </div>
                                                 <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                                                     <input
                                                         type="checkbox"
-                                                        checked={form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false}
+                                                        checked={currentConfig.show_guest_name !== false}
+                                                        onChange={(e) => updateDirectConfig('show_guest_name', e.target.checked)}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
+                                            </div>
+
+                                            {/* A2. Invitation Category / Allowance Badge */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                currentConfig.show_allowance_badge !== false
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        currentConfig.show_allowance_badge !== false
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <ShieldCheck className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span className="truncate">Invitation Category / Allowance Badge</span>
+                                                            {currentConfig.show_allowance_badge !== false ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            Independent access category pill (e.g. <em>DOUBLE ENTRY</em> or <em>SINGLE ENTRY</em>).
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={currentConfig.show_allowance_badge !== false}
+                                                        onChange={(e) => updateDirectConfig('show_allowance_badge', e.target.checked)}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
+                                            </div>
+
+                                            {/* B. QR Code Pass */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                (form.data.show_qr && currentConfig.show_qr !== false)
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        (form.data.show_qr && currentConfig.show_qr !== false)
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <QrCode className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span className="truncate">Scannable QR Code Pass</span>
+                                                            {(form.data.show_qr && currentConfig.show_qr !== false) ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            Sub-second camera scannable dynamic QR token for gate entry.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(form.data.show_qr && currentConfig.show_qr !== false)}
+                                                        onChange={(e) => {
+                                                            form.setData('show_qr', e.target.checked);
+                                                            updateDirectConfig('show_qr', e.target.checked);
+                                                        }}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
+                                            </div>
+
+                                            {/* C. Security Verification Code */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                (form.data.show_unique_code && currentConfig.show_unique_code !== false)
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        (form.data.show_unique_code && currentConfig.show_unique_code !== false)
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <Clock className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span className="truncate">Gate Security Verification Code</span>
+                                                            {(form.data.show_unique_code && currentConfig.show_unique_code !== false) ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            8-digit numeric passcode for manual gate staff override lookup.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={Boolean(form.data.show_unique_code && currentConfig.show_unique_code !== false)}
+                                                        onChange={(e) => {
+                                                            form.setData('show_unique_code', e.target.checked);
+                                                            updateDirectConfig('show_unique_code', e.target.checked);
+                                                        }}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
+                                            </div>
+
+                                            {/* D. Couple / Host Names */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                currentConfig.show_couple_names !== false
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        currentConfig.show_couple_names !== false
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <Type className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span className="truncate">Couple / Event Host Names</span>
+                                                            {currentConfig.show_couple_names !== false ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            Large centerpiece event title (e.g. <em>Zamroth &amp; Husna</em>). Turn off if already drawn in your flyer.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={currentConfig.show_couple_names !== false}
+                                                        onChange={(e) => updateDirectConfig('show_couple_names', e.target.checked)}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
+                                            </div>
+
+                                            {/* E. Date & Schedule Details */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                currentConfig.show_date !== false
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        currentConfig.show_date !== false
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <Calendar className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span className="truncate">Date, Day &amp; Schedule Details</span>
+                                                            {currentConfig.show_date !== false ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            Month, day, time, and year schedule blocks.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={currentConfig.show_date !== false}
+                                                        onChange={(e) => updateDirectConfig('show_date', e.target.checked)}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
+                                            </div>
+
+                                            {/* F. Headline Badge Pill */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <ShieldCheck className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span className="truncate">Headline / Top Tag Pill</span>
+                                                            {(form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false) ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            Header tag badge (e.g. <em>WEDDING INVITATION</em> or <em>EXCLUSIVE PASS</em>).
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false}
                                                         onChange={(e) => {
                                                             form.setData('show_category_badge', e.target.checked);
-                                                            updateDirectConfig('show_verified_badge', e.target.checked);
+                                                            form.setData('show_headline', e.target.checked);
+                                                            updateDirectConfig('show_headline', e.target.checked);
                                                             updateDirectConfig('show_category_badge', e.target.checked);
                                                         }}
                                                         className="sr-only peer"
@@ -1322,94 +1424,144 @@ export default function CardTemplates({
                                                     <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
                                                 </label>
                                             </div>
-                                        )}
 
-                                        {/* G. Invitation Quote */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            currentConfig.show_quote !== false
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    currentConfig.show_quote !== false
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                            {/* F2. Verified Pass Badge Header (For Signature Passes) */}
+                                            {!isCustomArt && (
+                                                <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                    (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
+                                                        ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                        : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
                                                 }`}>
-                                                    <Sparkles className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Invitation Quote / Tagline</span>
-                                                        {currentConfig.show_quote !== false ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                            (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
+                                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                        }`}>
+                                                            <ShieldCheck className="w-4 h-4" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                                <span className="truncate">Verified Pass Badge</span>
+                                                                {(form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false) ? (
+                                                                    <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                        <span>VISIBLE</span>
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                        <span>HIDDEN</span>
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                                Top header security pill (<em>VERIFIED PASS</em> with shield icon).
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Romantic quote or custom invitation statement paragraph.
-                                                    </div>
+                                                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false}
+                                                            onChange={(e) => {
+                                                                form.setData('show_category_badge', e.target.checked);
+                                                                updateDirectConfig('show_verified_badge', e.target.checked);
+                                                                updateDirectConfig('show_category_badge', e.target.checked);
+                                                            }}
+                                                            className="sr-only peer"
+                                                        />
+                                                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    </label>
                                                 </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={currentConfig.show_quote !== false}
-                                                    onChange={(e) => updateDirectConfig('show_quote', e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
-                                        </div>
+                                            )}
 
-                                        {/* H. Venue & Location */}
-                                        <div className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
-                                            currentConfig.show_venue !== false
-                                                ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-xs'
-                                                : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                        }`}>
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                                                    currentConfig.show_venue !== false
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
-                                                        : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                }`}>
-                                                    <MapPin className="w-4 h-4" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                        <span>Venue Location Details</span>
-                                                        {currentConfig.show_venue !== false ? (
-                                                            <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                <span>VISIBLE</span>
-                                                            </span>
-                                                        ) : (
-                                                            <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04]">
-                                                                <span>HIDDEN</span>
-                                                            </span>
-                                                        )}
+                                            {/* G. Invitation Quote */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                currentConfig.show_quote !== false
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        currentConfig.show_quote !== false
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <Sparkles className="w-4 h-4" />
                                                     </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        Hall/Hotel venue name, city, and date sub-captions.
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span className="truncate">Invitation Quote / Tagline</span>
+                                                            {currentConfig.show_quote !== false ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            Romantic quote or custom invitation statement paragraph.
+                                                        </div>
                                                     </div>
                                                 </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={currentConfig.show_quote !== false}
+                                                        onChange={(e) => updateDirectConfig('show_quote', e.target.checked)}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
                                             </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={currentConfig.show_venue !== false}
-                                                    onChange={(e) => updateDirectConfig('show_venue', e.target.checked)}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
-                                            </label>
+
+                                            {/* H. Venue & Location */}
+                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
+                                                currentConfig.show_venue !== false
+                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
+                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
+                                            }`}>
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                                        currentConfig.show_venue !== false
+                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
+                                                    }`}>
+                                                        <MapPin className="w-4 h-4" />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                                            <span className="truncate">Venue Location Details</span>
+                                                            {currentConfig.show_venue !== false ? (
+                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                                    <span>VISIBLE</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
+                                                                    <span>HIDDEN</span>
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                                                            Hall/Hotel venue name, city, and date sub-captions.
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={currentConfig.show_venue !== false}
+                                                        onChange={(e) => updateDirectConfig('show_venue', e.target.checked)}
+                                                        className="sr-only peer"
+                                                    />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1938,6 +2090,88 @@ export default function CardTemplates({
                                             </button>
                                         </div>
                                     </div>
+
+                                    {/* Canvas Aspect Ratio & Proportions */}
+                                    <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.08] space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <div className="text-xs font-bold text-slate-900 dark:text-white">Canvas Aspect Ratio &amp; Dimensions</div>
+                                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    Ensure pass canvas matches the exact natural dimensions of your imported artwork (Landscape, Portrait, Square).
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-700 dark:text-cyan-300 font-bold uppercase">
+                                                {form.data.elements_config?.orientation || 'Auto'}
+                                            </span>
+                                        </div>
+
+                                        {/* Aspect Ratio Presets */}
+                                        <div className="grid grid-cols-3 gap-2 pt-1">
+                                            {[
+                                                { id: '', label: 'Auto (Native)', desc: 'Natural Image Ratio', orientation: 'auto' },
+                                                { id: '800 / 1200', label: 'Portrait 2:3', desc: 'Standard Pass', orientation: 'portrait' },
+                                                { id: '9 / 16', label: 'Portrait 9:16', desc: 'Story / Mobile', orientation: 'portrait' },
+                                                { id: '1200 / 800', label: 'Landscape 3:2', desc: 'Wide Pass', orientation: 'landscape' },
+                                                { id: '16 / 9', label: 'Landscape 16:9', desc: 'Cinematic Pass', orientation: 'landscape' },
+                                                { id: '1 / 1', label: 'Square 1:1', desc: 'Square Pass', orientation: 'square' },
+                                            ].map((preset) => {
+                                                const currentRatio = form.data.elements_config?.aspect_ratio || '';
+                                                const isSelected = currentRatio === preset.id;
+                                                return (
+                                                    <button
+                                                        key={preset.id || 'auto'}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            updateDirectConfig({
+                                                                aspect_ratio: preset.id,
+                                                                orientation: preset.orientation === 'auto' 
+                                                                    ? (form.data.elements_config?.orientation || 'portrait')
+                                                                    : preset.orientation
+                                                            });
+                                                        }}
+                                                        className={`p-2.5 rounded-xl border text-left transition active:scale-95 cursor-pointer flex flex-col justify-between ${
+                                                            isSelected
+                                                                ? 'border-cyan-500 dark:border-cyan-400 bg-cyan-50/70 dark:bg-cyan-950/40 ring-1 ring-cyan-500'
+                                                                : 'border-slate-200 dark:border-white/[0.08] bg-white dark:bg-white/[0.04] hover:border-slate-300 dark:hover:border-white/20'
+                                                        }`}
+                                                    >
+                                                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{preset.label}</div>
+                                                        <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{preset.desc}</div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+
+                                        {/* Custom Aspect Ratio Numeric Input */}
+                                        <div className="pt-2 flex items-center gap-3">
+                                            <div className="flex-1">
+                                                <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                                                    Custom Aspect Ratio (e.g. 1.5, 1.48, 16/9, 800/1200)
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={form.data.elements_config?.aspect_ratio || ''}
+                                                    onChange={(e) => updateDirectConfig('aspect_ratio', e.target.value)}
+                                                    placeholder="Auto (Detected from image)"
+                                                    className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-cyan-500"
+                                                />
+                                            </div>
+                                            <div className="w-36">
+                                                <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1">
+                                                    Orientation
+                                                </label>
+                                                <select
+                                                    value={form.data.elements_config?.orientation || 'portrait'}
+                                                    onChange={(e) => updateDirectConfig('orientation', e.target.value)}
+                                                    className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-cyan-500"
+                                                >
+                                                    <option value="portrait">Portrait</option>
+                                                    <option value="landscape">Landscape</option>
+                                                    <option value="square">Square</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -1962,8 +2196,19 @@ export default function CardTemplates({
                                             <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                                                 <input
                                                     type="checkbox"
-                                                    checked={Boolean(nameCfg.hide_plaque_box)}
-                                                    onChange={(e) => updateNestedConfig('guest_name', 'hide_plaque_box', e.target.checked)}
+                                                    checked={Boolean(
+                                                        nameCfg.hide_plaque_box === true || nameCfg.hide_plaque_box === 'true' || nameCfg.hide_plaque_box === 1 ||
+                                                        nameCfg.hide_name_box === true || nameCfg.hide_name_box === 'true' || nameCfg.hide_name_box === 1 ||
+                                                        nameCfg.clean_text === true || nameCfg.clean_text === 'true' || nameCfg.clean_text === 1
+                                                    )}
+                                                    onChange={(e) => {
+                                                        const isChecked = e.target.checked;
+                                                        updateNestedConfig('guest_name', {
+                                                            hide_plaque_box: isChecked,
+                                                            hide_name_box: isChecked,
+                                                            clean_text: isChecked,
+                                                        });
+                                                    }}
                                                     className="sr-only peer"
                                                 />
                                                 <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
@@ -2043,7 +2288,7 @@ export default function CardTemplates({
                                                 min="20"
                                                 max="100"
                                                 step="1"
-                                                disabled={Boolean(nameCfg.hide_plaque_box)}
+                                                disabled={Boolean(nameCfg.hide_plaque_box || nameCfg.hide_name_box || nameCfg.clean_text)}
                                                 value={nameCfg.plaqueWidth ?? 84}
                                                 onChange={(e) => updateNestedConfig('guest_name', 'plaqueWidth', parseFloat(e.target.value))}
                                                 className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600 disabled:opacity-30"
@@ -2088,8 +2333,8 @@ export default function CardTemplates({
                                 </div>
                             )}
 
-                            {/* TAB: INVITATION CATEGORY (FOR CUSTOM UPLOADED ARTWORK) */}
-                            {(inspectorTab === 'category' || (inspectorTab === 'badge' && isUploadedCustomArt)) && (
+                            {/* TAB: INVITATION CATEGORY (FOR CUSTOM ARTWORK) */}
+                            {(inspectorTab === 'category' || (inspectorTab === 'badge' && isCustomArt)) && (
                                 <div className="space-y-4 animate-fadeIn">
                                     <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.08]">
                                         <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
@@ -2109,8 +2354,17 @@ export default function CardTemplates({
                                         <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
                                             <input
                                                 type="checkbox"
-                                                checked={Boolean(allowanceCfg.hide_badge_box)}
-                                                onChange={(e) => updateNestedConfig('allowance_badge', 'hide_badge_box', e.target.checked)}
+                                                checked={Boolean(
+                                                    allowanceCfg.hide_badge_box === true || allowanceCfg.hide_badge_box === 'true' || allowanceCfg.hide_badge_box === 1 ||
+                                                    allowanceCfg.clean_text === true || allowanceCfg.clean_text === 'true' || allowanceCfg.clean_text === 1
+                                                )}
+                                                onChange={(e) => {
+                                                    const isChecked = e.target.checked;
+                                                    updateNestedConfig('allowance_badge', {
+                                                        hide_badge_box: isChecked,
+                                                        clean_text: isChecked,
+                                                    });
+                                                }}
                                                 className="sr-only peer"
                                             />
                                             <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
@@ -2191,7 +2445,7 @@ export default function CardTemplates({
                                                 min="20"
                                                 max="100"
                                                 step="1"
-                                                disabled={Boolean(allowanceCfg.hide_badge_box)}
+                                                disabled={Boolean(allowanceCfg.hide_badge_box || allowanceCfg.clean_text)}
                                                 value={allowanceCfg.plaqueWidth ?? 84}
                                                 onChange={(e) => updateNestedConfig('allowance_badge', 'plaqueWidth', parseFloat(e.target.value))}
                                                 className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600 disabled:opacity-30"
@@ -2890,7 +3144,7 @@ export default function CardTemplates({
                                     </button>
                                 )}
                             </div>
-                        </form>
+                        </div>
                     </div>
 
                     {/* Right: Live 4K Easel Stage & Test Controls (5 cols, sticky on scroll) */}
@@ -2932,7 +3186,7 @@ export default function CardTemplates({
                                         value={testAllowance}
                                         onChange={(e) => setTestAllowance(e.target.value)}
                                         className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-cyan-500 "
-                                        placeholder="e.g. VIP TABLE 1"
+                                        placeholder="e.g. DOUBLE ENTRY"
                                     />
                                 </div>
                             </div>
@@ -2959,6 +3213,7 @@ export default function CardTemplates({
                         </div>
                     </div>
                 </div>
+                </form>
 
                 {/* Upload Custom Artwork Modal */}
                 <Modal show={uploadModalOpen} onClose={() => setUploadModalOpen(false)} maxWidth="md">
@@ -3016,6 +3271,20 @@ export default function CardTemplates({
                                     accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
                                     onChange={(e) => {
                                         const file = e.target.files?.[0] || null;
+                                        if (file) {
+                                            const objectUrl = URL.createObjectURL(file);
+                                            const img = new Image();
+                                            img.onload = () => {
+                                                const w = img.naturalWidth;
+                                                const h = img.naturalHeight;
+                                                const ratio = (w / h).toFixed(4);
+                                                const orientation = w > h ? 'landscape' : (w === h ? 'square' : 'portrait');
+                                                setUploadedImgMeta({ width: w, height: h, ratio, orientation });
+                                            };
+                                            img.src = objectUrl;
+                                        } else {
+                                            setUploadedImgMeta(null);
+                                        }
                                         uploadForm.setData('image_file', file);
                                         if (uploadForm.errors.image_file) uploadForm.clearErrors('image_file');
                                     }}
@@ -3032,9 +3301,16 @@ export default function CardTemplates({
                                             alt="Upload Preview"
                                             className="w-full h-full object-contain"
                                         />
-                                        <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-black/80 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs border border-white/10">
-                                            Artwork Preview Ready
-                                        </span>
+                                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+                                            <span className="px-2 py-0.5 rounded bg-black/80 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs border border-white/10">
+                                                {uploadedImgMeta ? `${uploadedImgMeta.width} × ${uploadedImgMeta.height} px` : 'Artwork Ready'}
+                                            </span>
+                                            {uploadedImgMeta && (
+                                                <span className="px-2 py-0.5 rounded bg-cyan-600/90 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs shadow-xs">
+                                                    {uploadedImgMeta.orientation}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex items-center justify-between px-1 text-[11px] text-slate-300 font-mono">
                                         <span className="truncate max-w-[200px]" title={uploadForm.data.image_file.name}>

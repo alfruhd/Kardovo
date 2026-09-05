@@ -26,7 +26,7 @@ class DashboardController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        // Customer "My Events" Portfolio View (matching Figure 4.2 in UI/UX Design doc)
+        // Customer Portfolio View & Executive Telemetry
         $events = Event::where('user_id', $user->id)
             ->with(['cardTemplate'])
             ->withCount([
@@ -60,20 +60,46 @@ class DashboardController extends Controller
                 return $event;
             });
 
+        $totalGuests = $events->sum('total_guests');
+        $totalWillAttend = $events->sum('will_attend_count');
+        $totalCheckins = $events->sum('checkins_count');
+
         $overviewStats = [
             'total_events' => $events->count(),
-            'total_guests' => $events->sum('total_guests'),
-            'total_will_attend' => $events->sum('will_attend_count'),
-            'total_checkins' => $events->sum('checkins_count'),
+            'active_events' => $events->where('status', 'active')->count(),
+            'total_guests' => $totalGuests,
+            'total_will_attend' => $totalWillAttend,
+            'total_will_not_attend' => $events->sum('will_not_attend_count'),
+            'total_pending_rsvp' => $events->sum('pending_rsvp_count'),
+            'total_checkins' => $totalCheckins,
+            'total_messages' => $events->sum('messages_sent_count'),
+            'overall_attendance_rate' => $totalGuests > 0 ? round(($totalWillAttend / $totalGuests) * 100) : 0,
+            'overall_checkin_rate' => $totalGuests > 0 ? round(($totalCheckins / $totalGuests) * 100) : 0,
         ];
+
+        $eventIds = $events->pluck('id');
+
+        $recentScanLogs = ScanLog::whereIn('event_id', $eventIds)
+            ->with(['guest', 'event', 'scanner'])
+            ->latest()
+            ->take(8)
+            ->get();
+
+        $recentGuests = Guest::whereIn('event_id', $eventIds)
+            ->with('event')
+            ->latest()
+            ->take(6)
+            ->get();
 
         $templates = CardTemplate::where('user_id', $user->id)
             ->orWhereNull('user_id')
             ->get();
 
-        return Inertia::render('Customer/MyEvents', [
+        return Inertia::render('Customer/Dashboard', [
             'events' => $events,
             'overviewStats' => $overviewStats,
+            'recentScanLogs' => $recentScanLogs,
+            'recentGuests' => $recentGuests,
             'templates' => $templates,
         ]);
     }

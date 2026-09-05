@@ -6,10 +6,11 @@ import Modal from '@/Components/Modal';
 import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import { useForm } from '@inertiajs/react';
-import { Trash2, AlertTriangle, X } from 'lucide-react';
+import { Trash2, AlertTriangle, X, Eye, EyeOff } from 'lucide-react';
 
 export default function DeleteUserForm({ className = '' }) {
     const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const passwordInput = useRef();
 
     const {
@@ -102,19 +103,29 @@ export default function DeleteUserForm({ className = '' }) {
                             value="Confirm Password to Authorize Deletion"
                         />
 
-                        <TextInput
-                            id="password"
-                            type="password"
-                            name="password"
-                            ref={passwordInput}
-                            value={data.password}
-                            onChange={(e) =>
-                                setData('password', e.target.value)
-                            }
-                            className="block w-full text-xs font-mono"
-                            isFocused
-                            placeholder="Enter your current password"
-                        />
+                        <div className="relative mt-1">
+                            <TextInput
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                name="password"
+                                ref={passwordInput}
+                                value={data.password}
+                                onChange={(e) =>
+                                    setData('password', e.target.value)
+                                }
+                                className="block w-full text-xs font-mono pr-10"
+                                isFocused
+                                placeholder="Enter your current password"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer focus:outline-none transition"
+                                title={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                        </div>
 
                         <InputError
                             message={errors.password}

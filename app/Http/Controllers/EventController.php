@@ -133,7 +133,6 @@ class EventController extends Controller
         $recentScanLogs = ScanLog::where('event_id', $event->id)
             ->with('guest')
             ->latest('scanned_at')
-            ->limit(10)
             ->get();
 
         $templates = CardTemplate::where('user_id', $user->id)
@@ -275,5 +274,38 @@ class EventController extends Controller
         }
 
         return back()->with('success', "Event '{$eventTitle}' deleted successfully.");
+    }
+
+    public function destroyScanLog(Request $request, Event $event, ScanLog $scanLog)
+    {
+        $user = $request->user();
+        if ($event->user_id !== $user->id && !$user->isAdmin() && !$user->isSubAdmin()) {
+            abort(403, 'Unauthorized to delete this scan log.');
+        }
+
+        if ($scanLog->event_id !== $event->id) {
+            abort(404);
+        }
+
+        $scanLog->delete();
+
+        return back()->with('success', 'Gate activity log entry deleted successfully.');
+    }
+
+    public function clearScanLogs(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if ($event->user_id !== $user->id && !$user->isAdmin() && !$user->isSubAdmin()) {
+            abort(403, 'Unauthorized to clear gate activity logs.');
+        }
+
+        $count = ScanLog::where('event_id', $event->id)->count();
+        if ($count === 0) {
+            return back()->with('info', 'There are no gate activity logs to clear for this event.');
+        }
+
+        ScanLog::where('event_id', $event->id)->delete();
+
+        return back()->with('success', "All {$count} gate scan activity log(s) have been permanently cleared.");
     }
 }

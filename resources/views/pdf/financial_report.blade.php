@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kardovo Financial Statement & Cashflow Report</title>
+    <style>
+        @page {
+            margin: 28px 24px;
+        }
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            font-size: 10px;
+            color: #1e293b;
+            line-height: 1.4;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        .header-table {
+            width: 100%;
+            border-collapse: collapse;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .brand-title {
+            font-size: 20px;
+            font-weight: 900;
+            color: #0f172a;
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+        .brand-subtitle {
+            font-size: 9px;
+            font-weight: 700;
+            color: #0284c7;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            margin-top: 2px;
+        }
+        .report-meta {
+            text-align: right;
+            font-size: 9px;
+            color: #64748b;
+        }
+        .report-meta strong {
+            color: #0f172a;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #0f172a;
+            border-left: 3px solid #0284c7;
+            padding-left: 6px;
+            margin-top: 14px;
+            margin-bottom: 8px;
+        }
+
+        /* KPI Grid Table */
+        .kpi-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 6px;
+            margin-bottom: 14px;
+        }
+        .kpi-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .kpi-label {
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+        .kpi-value {
+            font-size: 13px;
+            font-weight: 900;
+            color: #0f172a;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .kpi-sub {
+            font-size: 8px;
+            color: #64748b;
+            margin-top: 3px;
+        }
+
+        /* Data Tables */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 14px;
+        }
+        .data-table th {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-size: 8px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        .data-table th.text-right, .data-table td.text-right {
+            text-align: right;
+        }
+        .data-table th.text-center, .data-table td.text-center {
+            text-align: center;
+        }
+        .data-table td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 8.5px;
+        }
+        .data-table tr:nth-child(even) td {
+            background-color: #f8fafc;
+        }
+        .data-table tr.total-row td {
+            background-color: #e2e8f0;
+            font-weight: 800;
+            border-top: 1.5px solid #cbd5e1;
+            border-bottom: 1.5px solid #94a3b8;
+        }
+
+        .badge-positive {
+            color: #059669;
+            font-weight: 700;
+        }
+        .badge-negative {
+            color: #e11d48;
+            font-weight: 700;
+        }
+
+        .footer {
+            margin-top: 20px;
+            border-top: 1px solid #cbd5e1;
+            padding-top: 8px;
+            font-size: 8px;
+            color: #94a3b8;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <table class="header-table">
+        <tr>
+            <td style="vertical-align: middle;">
+                <h1 class="brand-title">KARDOVO</h1>
+                <div class="brand-subtitle">Financial Analysis &amp; Cashflow Statement</div>
+            </td>
+            <td class="report-meta" style="vertical-align: middle;">
+                <div><strong>Period Scope:</strong> {{ strtoupper(str_replace('_', ' ', $period ?? 'All Time')) }}</div>
+                <div><strong>Generated Date:</strong> {{ date('Y-m-d H:i:s') }} (EAT)</div>
+                <div><strong>Spot FX Rate:</strong> 1 USD = {{ number_format($fx_rate['rate'] ?? 2650, 2) }} TZS</div>
+                <div><strong>Generated By:</strong> {{ $generated_by ?? 'Kardovo Financial Administration' }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Executive KPI Summary -->
+    <table class="kpi-table">
+        <tr>
+            <td class="kpi-box" style="border-left: 3px solid #2563eb; width: 25%;">
+                <div class="kpi-label" style="color: #2563eb;">Gross Revenue</div>
+                <div class="kpi-value" style="color: #2563eb;">{{ number_format($metrics['gross_revenue'] ?? 0) }} TZS</div>
+                <div class="kpi-sub">${{ number_format(($metrics['gross_revenue'] ?? 0) / max(1, $fx_rate['rate'] ?? 2650), 2) }} USD</div>
+            </td>
+            <td class="kpi-box" style="border-left: 3px solid #e11d48; width: 25%;">
+                <div class="kpi-label" style="color: #e11d48;">Operating Expenses</div>
+                <div class="kpi-value" style="color: #e11d48;">{{ number_format($metrics['total_expenses'] ?? 0) }} TZS</div>
+                <div class="kpi-sub">${{ number_format(($metrics['total_expenses'] ?? 0) / max(1, $fx_rate['rate'] ?? 2650), 2) }} USD</div>
+            </td>
+            <td class="kpi-box" style="border-left: 3px solid #d97706; width: 25%;">
+                <div class="kpi-label" style="color: #d97706;">Direct COGS</div>
+                <div class="kpi-value" style="color: #d97706;">{{ number_format($metrics['direct_cogs'] ?? 0) }} TZS</div>
+                <div class="kpi-sub">Gross Margin: {{ $metrics['gross_margin_pct'] ?? 0 }}%</div>
+            </td>
+            <td class="kpi-box" style="border-left: 3px solid #059669; width: 25%;">
+                <div class="kpi-label" style="color: #059669;">Net Profit</div>
+                <div class="kpi-value" style="color: #059669;">{{ number_format($metrics['net_profit'] ?? 0) }} TZS</div>
+                <div class="kpi-sub">Net Margin: {{ $metrics['net_margin_pct'] ?? 0 }}%</div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Monthly & Yearly Cashflow Statement -->
+    <div class="section-title">Monthly &amp; Annual Cashflow Statement</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 18%;">Month / Period</th>
+                <th class="text-right" style="width: 17%;">Inflow (Gross Revenue)</th>
+                <th class="text-right" style="width: 17%;">Outflow (OpEx)</th>
+                <th class="text-right" style="width: 16%;">Direct COGS</th>
+                <th class="text-right" style="width: 18%;">Net Cashflow</th>
+                <th class="text-center" style="width: 14%;">Net Margin</th>
+            </tr>
+        </thead>
+        <tbody>
+            @php
+                $totInflow = 0;
+                $totOutflow = 0;
+                $totCogs = 0;
+                $totNet = 0;
+            @endphp
+            @forelse($monthly_cashflow as $row)
+                @php
+                    $totInflow += $row['inflow'];
+                    $totOutflow += $row['outflow'];
+                    $totCogs += $row['direct_cogs'];
+                    $totNet += $row['net_cashflow'];
+                @endphp
+                <tr>
+                    <td><strong>{{ $row['month_name'] }}</strong></td>
+                    <td class="text-right" style="color: #2563eb; font-family: monospace;">{{ number_format($row['inflow']) }} TZS</td>
+                    <td class="text-right" style="color: #e11d48; font-family: monospace;">{{ number_format($row['outflow']) }} TZS</td>
+                    <td class="text-right" style="color: #d97706; font-family: monospace;">{{ number_format($row['direct_cogs']) }} TZS</td>
+                    <td class="text-right {{ $row['net_cashflow'] >= 0 ? 'badge-positive' : 'badge-negative' }}" style="font-family: monospace;">
+                        {{ number_format($row['net_cashflow']) }} TZS
+                    </td>
+                    <td class="text-center {{ $row['net_margin_pct'] >= 0 ? 'badge-positive' : 'badge-negative' }}">
+                        {{ $row['net_margin_pct'] }}%
+                    </td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="6" class="text-center" style="padding: 12px; color: #94a3b8;">No monthly cashflow records found for this period.</td>
+                </tr>
+            @endforelse
+            <tr class="total-row">
+                <td><strong>TOTAL / AGGREGATE</strong></td>
+                <td class="text-right" style="color: #2563eb; font-family: monospace;">{{ number_format($totInflow) }} TZS</td>
+                <td class="text-right" style="color: #e11d48; font-family: monospace;">{{ number_format($totOutflow) }} TZS</td>
+                <td class="text-right" style="color: #d97706; font-family: monospace;">{{ number_format($totCogs) }} TZS</td>
+                <td class="text-right {{ $totNet >= 0 ? 'badge-positive' : 'badge-negative' }}" style="font-family: monospace;">
+                    {{ number_format($totNet) }} TZS
+                </td>
+                <td class="text-center {{ $totInflow > 0 && ($totNet / $totInflow) >= 0 ? 'badge-positive' : 'badge-negative' }}">
+                    {{ $totInflow > 0 ? round(($totNet / $totInflow) * 100, 1) : 0 }}%
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Multi-Year Summary (if multiple years exist) -->
+    @if(count($yearly_cashflow ?? []) > 1)
+        <div class="section-title" style="margin-top: 14px;">Annual Multi-Year Cashflow Comparison</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th class="text-right">Annual Inflow</th>
+                    <th class="text-right">Annual Outflow</th>
+                    <th class="text-right">Direct COGS</th>
+                    <th class="text-right">Net Profit</th>
+                    <th class="text-center">Net Margin</th>
+                    <th class="text-center">Transactions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($yearly_cashflow as $yRow)
+                    <tr>
+                        <td><strong>{{ $yRow['year'] }}</strong></td>
+                        <td class="text-right" style="color: #2563eb; font-family: monospace;">{{ number_format($yRow['gross_revenue']) }} TZS</td>
+                        <td class="text-right" style="color: #e11d48; font-family: monospace;">{{ number_format($yRow['total_expenses']) }} TZS</td>
+                        <td class="text-right" style="color: #d97706; font-family: monospace;">{{ number_format($yRow['direct_cogs']) }} TZS</td>
+                        <td class="text-right {{ $yRow['net_profit'] >= 0 ? 'badge-positive' : 'badge-negative' }}" style="font-family: monospace;">
+                            {{ number_format($yRow['net_profit']) }} TZS
+                        </td>
+                        <td class="text-center {{ $yRow['net_margin_pct'] >= 0 ? 'badge-positive' : 'badge-negative' }}">
+                            {{ $yRow['net_margin_pct'] }}%
+                        </td>
+                        <td class="text-center">{{ $yRow['transactions_count'] }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
+    <!-- Category Breakdown Table -->
+    <div class="section-title" style="margin-top: 14px;">Revenue &amp; Cost Category Breakdown</div>
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="width: 49%; vertical-align: top; padding-right: 6px;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Inflow Stream</th>
+                            <th class="text-right">Amount (TZS)</th>
+                            <th class="text-right">Share</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $incLabels = [
+                                'pass_sales' => 'Pass Quota Sales',
+                                'sms_credits' => 'SMS Top-up Credits',
+                                'design_service' => 'Custom 4K Artwork',
+                                'subscription' => 'Enterprise Subscription',
+                                'other_income' => 'General / Other Income',
+                            ];
+                            $grossRev = max(1, $metrics['gross_revenue'] ?? 0);
+                        @endphp
+                        @foreach($income_by_category as $catKey => $catAmt)
+                            <tr>
+                                <td>{{ $incLabels[$catKey] ?? ucwords(str_replace('_', ' ', $catKey)) }}</td>
+                                <td class="text-right" style="font-family: monospace;">{{ number_format($catAmt) }} TZS</td>
+                                <td class="text-right">{{ round(($catAmt / $grossRev) * 100, 1) }}%</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </td>
+            <td style="width: 49%; vertical-align: top; padding-left: 6px;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Outflow Category</th>
+                            <th class="text-right">Amount (TZS)</th>
+                            <th class="text-right">Share</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $expLabels = [
+                                'carrier_sms' => 'Carrier SMS COGS',
+                                'whatsapp_api' => 'WhatsApp Cloud API',
+                                'server_infrastructure' => 'Server Infrastructure',
+                                'payment_fees' => 'Payment Gateway Fees',
+                                'operations' => 'Operations & Maintenance',
+                            ];
+                            $totExp = max(1, $metrics['total_expenses'] ?? 0);
+                        @endphp
+                        @foreach($expense_by_category as $catKey => $catAmt)
+                            <tr>
+                                <td>{{ $expLabels[$catKey] ?? ucwords(str_replace('_', ' ', $catKey)) }}</td>
+                                <td class="text-right" style="font-family: monospace;">{{ number_format($catAmt) }} TZS</td>
+                                <td class="text-right">{{ round(($catAmt / $totExp) * 100, 1) }}%</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Recent Itemized Transactions Audit -->
+    <div class="section-title" style="margin-top: 14px;">Recent Transaction Audit Trail (Sample {{ min(15, count($transactions)) }} of {{ count($transactions) }})</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 14%;">Transaction #</th>
+                <th style="width: 10%;">Type</th>
+                <th style="width: 28%;">Title / Organizer</th>
+                <th style="width: 12%;">Method</th>
+                <th style="width: 14%;">Date</th>
+                <th class="text-right" style="width: 14%;">Amount</th>
+                <th class="text-center" style="width: 8%;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse(array_slice($transactions->toArray(), 0, 15) as $tx)
+                <tr>
+                    <td style="font-family: monospace; font-size: 8px;">{{ $tx['transaction_number'] }}</td>
+                    <td><strong style="color: {{ $tx['type'] === 'income' ? '#2563eb' : '#e11d48' }};">{{ strtoupper($tx['type']) }}</strong></td>
+                    <td>
+                        <div><strong>{{ $tx['title'] }}</strong></div>
+                        <div style="font-size: 7.5px; color: #64748b;">{{ $tx['user']['name'] ?? ($tx['user']['company'] ?? 'System Direct') }}</div>
+                    </td>
+                    <td>{{ $tx['payment_method'] }}</td>
+                    <td>{{ date('Y-m-d', strtotime($tx['transaction_date'])) }}</td>
+                    <td class="text-right" style="font-family: monospace; font-weight: 700; color: {{ $tx['type'] === 'income' ? '#2563eb' : '#e11d48' }};">
+                        {{ number_format($tx['amount']) }} TZS
+                    </td>
+                    <td class="text-center">{{ strtoupper($tx['status']) }}</td>
+                </tr>
+            @empty
+                <tr>
+                    <td colspan="7" class="text-center" style="padding: 10px; color: #94a3b8;">No transaction records found.</td>
+                </tr>
+            @endforelse
+        </tbody>
+    </table>
+
+    <!-- Footer -->
+    <div class="footer">
+        Confidential Document &bull; Kardovo Platform Financial Analytics &bull; Generated on {{ date('Y-m-d H:i:s') }}
+    </div>
+
+</body>
+</html>

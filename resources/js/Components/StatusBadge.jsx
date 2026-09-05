@@ -4,36 +4,40 @@ import { CheckCircle2, Clock, XCircle, Send, CheckCheck, AlertCircle } from 'luc
 export default function StatusBadge({ status, type = 'general', className = '' }) {
     const s = (status || '').toLowerCase();
 
-    let style = 'bg-gray-100 text-gray-700 border-gray-200';
+    let style = 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 border-gray-200 dark:border-slate-700';
     let icon = null;
     let label = status;
 
-    if (s === 'delivered') {
-        style = 'bg-blue-50 text-blue-700 border-blue-200';
-        icon = <CheckCheck className="w-3 h-3 text-blue-600" />;
+    if (s === 'read') {
+        style = 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/50 font-semibold';
+        icon = <CheckCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />;
+        label = 'Read';
+    } else if (s === 'delivered') {
+        style = 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/50 font-semibold';
+        icon = <CheckCheck className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />;
         label = 'Delivered';
     } else if (s === 'sent') {
-        style = 'bg-slate-100 text-slate-700 border-slate-200';
-        icon = <Send className="w-3 h-3 text-slate-500" />;
+        style = 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/60 font-semibold';
+        icon = <Send className="w-3 h-3 text-slate-500 dark:text-slate-400 shrink-0" />;
         label = 'Sent';
-    } else if (s === 'attending' || s === 'will attend' || s === 'read' || s === 'granted' || s === 'active') {
-        style = 'bg-emerald-50 text-emerald-700 border-emerald-200 font-medium';
-        icon = <CheckCircle2 className="w-3 h-3 text-emerald-600" />;
-        label = s === 'attending' ? 'Will Attend' : (s === 'granted' ? 'Granted' : (s === 'active' ? 'Active' : 'Read'));
+    } else if (s === 'attending' || s === 'will attend' || s === 'granted' || s === 'active') {
+        style = 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50 font-semibold';
+        icon = <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />;
+        label = s === 'attending' ? 'Will Attend' : (s === 'granted' ? 'Granted' : 'Active');
     } else if (s === 'pending' || s === 'draft' || s === 'queued') {
-        style = 'bg-amber-50 text-amber-700 border-amber-200';
-        icon = <Clock className="w-3 h-3 text-amber-500" />;
+        style = 'bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800/50 font-semibold';
+        icon = <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />;
         label = s === 'pending' ? 'Pending' : (s === 'draft' ? 'Draft' : 'Queued');
     } else if (s === 'declined' || s === 'will not attend' || s === 'failed' || s === 'rejected' || s === 'cancelled') {
-        style = 'bg-red-50 text-red-700 border-red-200';
-        icon = <XCircle className="w-3 h-3 text-red-500" />;
-        label = s === 'declined' ? 'Will Not Attend' : (s === 'failed' ? 'Failed' : (s === 'rejected' ? 'Rejected' : 'Cancelled'));
+        style = 'bg-rose-50 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-800/50 font-semibold';
+        icon = <XCircle className="w-3 h-3 text-rose-600 dark:text-rose-400 shrink-0" />;
+        label = (s === 'declined' || s === 'will not attend') ? 'Will Not Attend' : (s === 'failed' ? 'Failed' : (s === 'rejected' ? 'Rejected' : 'Cancelled'));
     }
 
     return (
-        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${style} ${className}`}>
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs border whitespace-nowrap shrink-0 ${style} ${className}`}>
             {icon}
-            <span>{label}</span>
+            <span className="whitespace-nowrap">{label}</span>
         </span>
     );
 }

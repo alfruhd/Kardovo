@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Head, useForm, Link, router } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import Modal from '@/Components/Modal';
 import TextInput from '@/Components/TextInput';
@@ -7,41 +7,25 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { 
-    CircleDollarSign, 
     TrendingUp, 
     TrendingDown, 
     ArrowUpRight, 
     ArrowDownRight, 
-    DollarSign, 
     CreditCard, 
-    Calendar, 
-    Users, 
     Plus, 
     Download, 
-    Filter, 
     Search, 
     Trash2, 
-    Sparkles, 
     Layers, 
-    ShieldCheck, 
-    Server, 
-    MessageSquare, 
-    CheckCircle2, 
-    Clock, 
-    AlertTriangle, 
     RefreshCw, 
-    PieChart, 
     BarChart3, 
-    Wallet, 
-    Smartphone, 
-    Building2,
-    Eye,
-    Receipt,
-    Check,
-    X,
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight
+    X, 
+    ChevronDown, 
+    ChevronLeft, 
+    ChevronRight,
+    FileText,
+    FileSpreadsheet,
+    Calendar
 } from 'lucide-react';
 
 const CATEGORY_MAP = {
@@ -66,30 +50,86 @@ const CATEGORY_MAP = {
 
 export default function Finance({ 
     metrics = {}, 
+    fx_rate = {},
     income_by_category = {}, 
     expense_by_category = {}, 
     monthly_trend = [], 
+    yearly_cashflow = [],
+    monthly_cashflow = [],
+    available_years = [],
     transactions = [], 
     organizers = [], 
     events = [], 
     filters = {} 
 }) {
     const [period, setPeriod] = useState(filters.period || 'all');
+    const [selectedYear, setSelectedYear] = useState(filters.year || 'all');
     const [typeTab, setTypeTab] = useState(filters.type || 'all');
     const [categoryFilter, setCategoryFilter] = useState(filters.category || 'all');
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('income'); // 'income' | 'expense'
-    const [selectedTx, setSelectedTx] = useState(null);
+    const [fxModalOpen, setFxModalOpen] = useState(false);
+    const [isSyncingFx, setIsSyncingFx] = useState(false);
     const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
     const actionDropdownRef = useRef(null);
+    const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+    const exportDropdownRef = useRef(null);
 
-    // Close action dropdown on outside click
+    const activeFxRate = Number(fx_rate?.rate || 2650);
+
+    const fxForm = useForm({
+        rate: activeFxRate,
+    });
+
+    useEffect(() => {
+        if (filters.period) {
+            setPeriod(filters.period);
+        }
+    }, [filters.period]);
+
+    useEffect(() => {
+        if (filters.year) {
+            setSelectedYear(filters.year);
+        }
+    }, [filters.year]);
+
+    useEffect(() => {
+        if (fx_rate?.rate) {
+            fxForm.setData('rate', fx_rate.rate);
+        }
+    }, [fx_rate]);
+
+    const handleSyncLiveFx = () => {
+        setIsSyncingFx(true);
+        router.post(route('admin.finance.exchangeRate.refresh'), {}, {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsSyncingFx(false);
+                setFxModalOpen(false);
+            }
+        });
+    };
+
+    const handleSaveManualFx = (e) => {
+        e.preventDefault();
+        fxForm.post(route('admin.finance.exchangeRate.update'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setFxModalOpen(false);
+            }
+        });
+    };
+
+    // Close action and export dropdowns on outside click
     useEffect(() => {
         function handleClickOutside(event) {
             if (actionDropdownRef.current && !actionDropdownRef.current.contains(event.target)) {
                 setActionDropdownOpen(false);
+            }
+            if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target)) {
+                setExportDropdownOpen(false);
             }
         }
         document.addEventListener('mousedown', handleClickOutside);
@@ -135,6 +175,18 @@ export default function Finance({
         setPeriod(newPeriod);
         router.get(route('admin.finance'), {
             period: newPeriod,
+            year: selectedYear,
+            type: typeTab,
+            category: categoryFilter,
+            search: searchTerm,
+        }, { preserveState: true, preserveScroll: true, replace: true });
+    };
+
+    const handleYearChange = (newYear) => {
+        setSelectedYear(newYear);
+        router.get(route('admin.finance'), {
+            period: period,
+            year: newYear,
             type: typeTab,
             category: categoryFilter,
             search: searchTerm,
@@ -172,7 +224,7 @@ export default function Finance({
     };
 
     const formatUsd = (amountTzs) => {
-        const usdVal = Number(amountTzs || 0) / 2650;
+        const usdVal = Number(amountTzs || 0) / activeFxRate;
         return '$' + usdVal.toLocaleString('en-US', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
@@ -217,22 +269,77 @@ export default function Finance({
 
     return (
         <KardovoAppLayout
-            title="Financial Analytics & P&L"
+            title="Financial Analysis"
             headerActions={
                 <div className="flex items-center gap-2">
-                    <a
-                        href={route('admin.finance.export', {
-                            period: period,
-                            type: typeTab,
-                            category: categoryFilter,
-                            search: searchTerm,
-                        })}
+                    <button
+                        type="button"
+                        onClick={() => setFxModalOpen(true)}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] rounded-xl transition cursor-pointer"
-                        title="Export CSV Statement"
+                        title="Live USD/TZS Spot Exchange Rate"
                     >
-                        <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                        <span className="hidden sm:inline">Export</span>
+                        <RefreshCw className={`w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 ${isSyncingFx ? 'animate-spin' : ''}`} />
+                        <span className="font-mono">1 USD ≈ {Number(activeFxRate).toLocaleString()} TZS</span>
+                    </button>
+
+                    {/* PDF Report Export */}
+                    <a
+                        href={route('admin.finance.exportPdf', { period: period })}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/50 rounded-xl transition cursor-pointer shadow-2xs"
+                        title="Download Executive Financial Statement PDF"
+                    >
+                        <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                        <span className="hidden sm:inline">PDF Report</span>
                     </a>
+
+                    {/* CSV Export Dropdown */}
+                    <div className="relative" ref={exportDropdownRef}>
+                        <button
+                            type="button"
+                            onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] rounded-xl transition cursor-pointer"
+                            title="Export CSV Reports"
+                        >
+                            <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                            <span className="hidden sm:inline">Export CSV</span>
+                            <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${exportDropdownOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        {exportDropdownOpen && (
+                            <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-[#0C1729] rounded-2xl shadow-xl border border-slate-200 dark:border-white/[0.08] p-1.5 z-50 animate-fadeIn space-y-0.5">
+                                <a
+                                    href={route('admin.finance.export', {
+                                        period: period,
+                                        format: 'ledger',
+                                        type: typeTab,
+                                        category: categoryFilter,
+                                        search: searchTerm,
+                                    })}
+                                    onClick={() => setExportDropdownOpen(false)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                >
+                                    <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                    <div>
+                                        <div className="font-bold">Transaction Ledger (CSV)</div>
+                                        <div className="text-[10px] text-slate-400 font-normal">Filtered detailed entries</div>
+                                    </div>
+                                </a>
+                                <a
+                                    href={route('admin.finance.export', {
+                                        format: 'cashflow',
+                                    })}
+                                    onClick={() => setExportDropdownOpen(false)}
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                >
+                                    <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                    <div>
+                                        <div className="font-bold">Cashflow Statement (CSV)</div>
+                                        <div className="text-[10px] text-slate-400 font-normal">Month & annual summary matrix</div>
+                                    </div>
+                                </a>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Single Clean + Entry Dropdown */}
                     <div className="relative" ref={actionDropdownRef}>
@@ -276,7 +383,7 @@ export default function Finance({
                 </div>
             }
         >
-            <Head title="Financial Analytics & Revenue — Kardovo Admin" />
+            <Head title="Financial Analysis — Kardovo Admin" />
 
             <div className="max-w-7xl mx-auto space-y-6">
 
@@ -315,17 +422,17 @@ export default function Finance({
                     </div>
                 </div>
 
-                {/* ═══════════════ 2. FOUR HERO FINANCIAL KPI CARDS (DIFFERENTIATED & NEAT) ═══════════════ */}
+                {/* ═══════════════ 2. FOUR HERO FINANCIAL KPI CARDS (COLOR-CODED & MINIMALISTIC) ═══════════════ */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Card 1: Gross Revenue (Blue) */}
-                    <div className="h-full rounded-3xl p-5 bg-white dark:bg-[#0B172A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-blue-300 dark:hover:border-blue-800/60 transition duration-200 flex flex-col justify-between">
+                    <div className="h-full rounded-2xl p-5 bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:border-blue-300 dark:hover:border-blue-800/50 transition duration-200 flex flex-col justify-between">
                         <div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
-                                    Gross Revenue (Inflow)
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 truncate">
+                                    Gross Revenue
                                 </span>
-                                <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-200/60 dark:border-blue-800/40 shadow-2xs">
-                                    <ArrowUpRight className="w-4 h-4 stroke-[2.5]" />
+                                <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 border border-blue-200/50 dark:border-blue-800/40">
+                                    <ArrowUpRight className="w-3.5 h-3.5 stroke-[2.5]" />
                                 </div>
                             </div>
                             <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono mt-3 tracking-tight">
@@ -335,21 +442,21 @@ export default function Finance({
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">USD Equiv.</span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-mono font-bold text-[11px] border border-blue-200/60 dark:border-blue-800/40">
+                            <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-mono font-bold text-xs border border-blue-200/60 dark:border-blue-800/40">
                                 {formatUsd(metrics.gross_revenue)}
                             </span>
                         </div>
                     </div>
 
                     {/* Card 2: Operating Expenses (Rose) */}
-                    <div className="h-full rounded-3xl p-5 bg-white dark:bg-[#0B172A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-rose-300 dark:hover:border-rose-800/60 transition duration-200 flex flex-col justify-between">
+                    <div className="h-full rounded-2xl p-5 bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:border-rose-300 dark:hover:border-rose-800/50 transition duration-200 flex flex-col justify-between">
                         <div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
-                                    Operating Expenses (Outflow)
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 truncate">
+                                    Operating Expenses
                                 </span>
-                                <div className="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center border border-rose-200/60 dark:border-rose-800/40 shadow-2xs">
-                                    <ArrowDownRight className="w-4 h-4 stroke-[2.5]" />
+                                <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 border border-rose-200/50 dark:border-rose-800/40">
+                                    <ArrowDownRight className="w-3.5 h-3.5 stroke-[2.5]" />
                                 </div>
                             </div>
                             <div className="text-2xl font-black text-rose-600 dark:text-rose-400 font-mono mt-3 tracking-tight">
@@ -359,21 +466,21 @@ export default function Finance({
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">Direct Carrier COGS</span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-mono font-bold text-[11px] border border-rose-200/60 dark:border-rose-800/40">
+                            <span className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-mono font-bold text-xs border border-rose-200/60 dark:border-rose-800/40">
                                 {formatTzs(metrics.direct_cogs)}
                             </span>
                         </div>
                     </div>
 
                     {/* Card 3: Gross Profit (Amber) */}
-                    <div className="h-full rounded-3xl p-5 bg-white dark:bg-[#0B172A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-amber-300 dark:hover:border-amber-800/60 transition duration-200 flex flex-col justify-between">
+                    <div className="h-full rounded-2xl p-5 bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:border-amber-300 dark:hover:border-amber-800/50 transition duration-200 flex flex-col justify-between">
                         <div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
-                                    Gross Profit (Pre-OpEx)
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 truncate">
+                                    Gross Profit
                                 </span>
-                                <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-200/60 dark:border-amber-800/40 shadow-2xs">
-                                    <Layers className="w-4 h-4 stroke-[2.5]" />
+                                <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0 border border-amber-200/50 dark:border-amber-800/40">
+                                    <Layers className="w-3.5 h-3.5 stroke-[2.5]" />
                                 </div>
                             </div>
                             <div className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono mt-3 tracking-tight">
@@ -383,25 +490,25 @@ export default function Finance({
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">Gross Margin</span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-mono font-bold text-[11px] border border-amber-200/60 dark:border-amber-800/40">
+                            <span className="px-2 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-mono font-bold text-xs border border-amber-200/60 dark:border-amber-800/40">
                                 {metrics.gross_margin_pct}% Margin
                             </span>
                         </div>
                     </div>
 
                     {/* Card 4: Net Profit (Emerald) */}
-                    <div className="h-full rounded-3xl p-5 bg-white dark:bg-[#0B172A] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-emerald-300 dark:hover:border-emerald-800/60 transition duration-200 flex flex-col justify-between">
+                    <div className="h-full rounded-2xl p-5 bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:border-emerald-300 dark:hover:border-emerald-800/50 transition duration-200 flex flex-col justify-between">
                         <div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[10.5px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
-                                    Net Profit (Bottom Line)
+                            <div className="flex items-center justify-between gap-2">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 truncate">
+                                    Net Profit
                                 </span>
-                                <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200/60 dark:border-emerald-800/40 shadow-2xs">
-                                    <TrendingUp className="w-4 h-4 stroke-[2.5]" />
+                                <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-200/50 dark:border-emerald-800/40">
+                                    <TrendingUp className="w-3.5 h-3.5 stroke-[2.5]" />
                                 </div>
                             </div>
                             <div className={`text-2xl font-black font-mono mt-3 tracking-tight ${
-                                (metrics.net_profit || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                (metrics.net_profit || 0) < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'
                             }`}>
                                 {formatTzs(metrics.net_profit)}
                             </div>
@@ -409,7 +516,7 @@ export default function Finance({
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">Net Profit Margin</span>
-                            <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-[11px] border border-emerald-200/60 dark:border-emerald-800/40">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-xs border border-emerald-200/60 dark:border-emerald-800/40">
                                 {metrics.net_margin_pct}% Net
                             </span>
                         </div>
@@ -568,7 +675,176 @@ export default function Finance({
                     </div>
                 </div>
 
-                {/* ═══════════════ 4. FINANCIAL LEDGER TRANSACTIONS TABLE ═══════════════ */}
+                {/* ═══════════════ 4. MONTHLY & ANNUAL CASHFLOW STATEMENT MATRIX ═══════════════ */}
+                <div className="bg-white dark:bg-[#0B172A] rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden">
+                    {/* Header with Title & Year Toggle Tabs */}
+                    <div className="p-5 sm:p-6 border-b border-slate-200/80 dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
+                                    Monthly &amp; Annual Cashflow Statement
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                    Structured cashflow ledger for every month, operating margins, and yearly aggregate performance.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Year Filter Switcher */}
+                        <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.08]">
+                            <button
+                                type="button"
+                                onClick={() => handleYearChange('all')}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer ${
+                                    selectedYear === 'all'
+                                        ? 'bg-white dark:bg-cyan-600 text-slate-900 dark:text-white shadow-xs'
+                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                            >
+                                All Recorded Months
+                            </button>
+                            {available_years.map((yr) => (
+                                <button
+                                    key={yr}
+                                    type="button"
+                                    onClick={() => handleYearChange(String(yr))}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer ${
+                                        String(selectedYear) === String(yr)
+                                            ? 'bg-white dark:bg-cyan-600 text-slate-900 dark:text-white shadow-xs'
+                                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    }`}
+                                >
+                                    Year {yr}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Annual Comparison Overview (if multiple years or 'all' selected) */}
+                    {yearly_cashflow.length > 0 && (
+                        <div className="p-5 sm:p-6 bg-slate-50/50 dark:bg-white/[0.02] border-b border-slate-200/80 dark:border-white/[0.08]">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {yearly_cashflow.map((y) => (
+                                    <div 
+                                        key={y.year} 
+                                        className="p-4 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] shadow-2xs space-y-3"
+                                    >
+                                        {/* Header: Title & Margin */}
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200 font-display">
+                                                {y.year} Performance
+                                            </span>
+                                            <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-full ${
+                                                y.net_profit >= 0 
+                                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300' 
+                                                    : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300'
+                                            }`}>
+                                                {y.net_margin_pct}% Margin
+                                            </span>
+                                        </div>
+
+                                        {/* Simple Clean Rows: Inflow & Outflow */}
+                                        <div className="space-y-1.5 text-xs pt-1">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-500 dark:text-slate-400 font-medium">Inflow</span>
+                                                <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                                                    {formatTzs(y.gross_revenue)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-slate-500 dark:text-slate-400 font-medium">Outflow</span>
+                                                <span className="font-mono font-bold text-rose-600 dark:text-rose-400">
+                                                    {formatTzs(y.total_expenses)}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Net Profit Bottom Row */}
+                                        <div className="pt-2.5 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
+                                            <span className="font-bold text-slate-700 dark:text-slate-300">Net Profit</span>
+                                            <span className={`font-mono font-black text-sm ${
+                                                y.net_profit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                            }`}>
+                                                {y.net_profit >= 0 ? '+' : ''}{formatTzs(y.net_profit)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Month-by-Month Statement Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="border-b border-slate-200/80 dark:border-white/[0.08] bg-slate-50/75 dark:bg-white/[0.02] text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                    <th className="py-3.5 px-5">Month / Period</th>
+                                    <th className="py-3.5 px-4 text-right">Inflow (Gross Revenue)</th>
+                                    <th className="py-3.5 px-4 text-right">Outflow (OpEx)</th>
+                                    <th className="py-3.5 px-4 text-right">Direct COGS</th>
+                                    <th className="py-3.5 px-4 text-right">Net Cashflow</th>
+                                    <th className="py-3.5 px-4 text-center">Net Margin</th>
+                                    <th className="py-3.5 px-5 text-center">Volume</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/[0.04] text-xs">
+                                {monthly_cashflow.length === 0 ? (
+                                    <tr>
+                                        <td colSpan="7" className="py-12 text-center text-slate-400 dark:text-slate-500">
+                                            <Calendar className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" />
+                                            <p className="font-semibold text-xs">No monthly cashflow records available for this selection.</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    monthly_cashflow.map((row, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/80 dark:hover:bg-white/[0.02] transition">
+                                            <td className="py-3.5 px-5">
+                                                <div className="font-bold text-slate-900 dark:text-white font-mono">{row.month_name}</div>
+                                                <div className="text-[10.5px] text-slate-400">Year {row.year}</div>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right font-mono font-bold text-blue-600 dark:text-blue-400">
+                                                <div>+{formatTzs(row.inflow)}</div>
+                                                <div className="text-[10px] text-slate-400 font-normal">{formatUsd(row.inflow)}</div>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right font-mono font-bold text-rose-600 dark:text-rose-400">
+                                                <div>-{formatTzs(row.outflow)}</div>
+                                                <div className="text-[10px] text-slate-400 font-normal">{formatUsd(row.outflow)}</div>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right font-mono font-bold text-amber-600 dark:text-amber-400">
+                                                {formatTzs(row.direct_cogs)}
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right font-mono font-bold">
+                                                <span className={`inline-block px-2.5 py-1 rounded-lg border text-[11px] ${
+                                                    row.net_cashflow >= 0
+                                                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200/60 dark:border-emerald-800/40'
+                                                        : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200/60 dark:border-rose-800/40'
+                                                }`}>
+                                                    {row.net_cashflow >= 0 ? '+' : ''}{formatTzs(row.net_cashflow)}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-center">
+                                                <span className={`font-mono font-bold text-xs ${
+                                                    row.net_margin_pct >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                                                }`}>
+                                                    {row.net_margin_pct}%
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-5 text-center font-mono text-slate-500 dark:text-slate-400">
+                                                {row.transactions_count} {row.transactions_count === 1 ? 'tx' : 'txs'}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {/* ═══════════════ 5. FINANCIAL LEDGER TRANSACTIONS TABLE ═══════════════ */}
                 <div className="bg-white dark:bg-[#0B172A] rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden">
                     {/* Filter & Controls Header */}
                     <div className="p-5 sm:p-6 border-b border-slate-200/80 dark:border-white/[0.08] flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -1049,6 +1325,104 @@ export default function Finance({
                         </PrimaryButton>
                     </div>
                 </form>
+            </Modal>
+
+            {/* ═══════════════ FX RATE CONFIGURATION MODAL ═══════════════ */}
+            <Modal show={fxModalOpen} onClose={() => setFxModalOpen(false)} maxWidth="md">
+                <div className="p-6 space-y-5">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.08]">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-200/60 dark:border-cyan-800/40">
+                                <RefreshCw className={`w-4 h-4 ${isSyncingFx ? 'animate-spin' : ''}`} />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
+                                    USD / TZS Exchange Rate
+                                </h3>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                    Live spot rate synchronization &amp; conversion baseline
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setFxModalOpen(false)}
+                            className="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] flex items-center justify-center transition"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {/* Current Telemetry Card */}
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">Active Rate</span>
+                            <span className="font-mono font-black text-slate-900 dark:text-white text-base">
+                                1 USD = {Number(activeFxRate).toLocaleString()} TZS
+                            </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] pt-2 border-t border-slate-200/60 dark:border-white/[0.06]">
+                            <span className="text-slate-500 dark:text-slate-400">Rate Source</span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                {fx_rate?.source || 'Automated Spot Feed'}
+                            </span>
+                        </div>
+                        {fx_rate?.last_synced_at && (
+                            <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-slate-500 dark:text-slate-400">Last Synced</span>
+                                <span className="font-mono text-slate-600 dark:text-slate-400">
+                                    {new Date(fx_rate.last_synced_at).toLocaleString('en-GB', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                    })}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Action 1: Live Sync */}
+                    <div className="pt-1">
+                        <button
+                            type="button"
+                            onClick={handleSyncLiveFx}
+                            disabled={isSyncingFx}
+                            className="w-full py-2.5 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition active:scale-95 disabled:opacity-60 cursor-pointer"
+                        >
+                            <RefreshCw className={`w-3.5 h-3.5 ${isSyncingFx ? 'animate-spin' : ''}`} />
+                            <span>{isSyncingFx ? 'Syncing Live Spot Rates...' : 'Sync Live Market Rate Now'}</span>
+                        </button>
+                    </div>
+
+                    {/* Action 2: Manual Override */}
+                    <form onSubmit={handleSaveManualFx} className="pt-3 border-t border-slate-100 dark:border-white/[0.08] space-y-3">
+                        <div>
+                            <InputLabel value="Or Set Manual Custom Rate (TZS per 1 USD)" />
+                            <div className="mt-1 flex items-center gap-2">
+                                <TextInput
+                                    type="number"
+                                    step="0.01"
+                                    min="100"
+                                    max="100000"
+                                    value={fxForm.data.rate}
+                                    onChange={(e) => fxForm.setData('rate', e.target.value)}
+                                    className="block w-full text-xs font-mono font-bold"
+                                    placeholder="2650"
+                                    required
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={fxForm.processing}
+                                    className="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs whitespace-nowrap shadow-xs transition active:scale-95 disabled:opacity-60 cursor-pointer"
+                                >
+                                    Save Override
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </Modal>
         </KardovoAppLayout>
     );

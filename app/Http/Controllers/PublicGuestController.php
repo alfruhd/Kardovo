@@ -26,7 +26,7 @@ class PublicGuestController extends Controller
             'qr_token' => 'kdv_alfred_mashauri_29841872',
             'category' => 'Double Entry',
             'max_entries' => 2,
-            'allowance_label' => 'DOUBLE ENTRY • 2X',
+            'allowance_label' => 'Double Entry',
             'rsvp_status' => 'pending',
             'event_id' => $event?->id ?? 1,
         ];
@@ -103,18 +103,93 @@ class PublicGuestController extends Controller
             'rsvp_at' => now(),
         ]);
 
-        // Auto-reply log simulating WhatsApp closing loop
+        $event = $guest->event;
+        $eventDateStr = $event->event_date ? $event->event_date->format('D, j M Y') : 'Upcoming';
+        $autoReplyConfig = $event->rsvp_auto_reply_config ?? [];
+
+        if ($validated['status'] === 'attending') {
+            $customTemplate = !empty($autoReplyConfig['attending_text'])
+                ? $autoReplyConfig['attending_text']
+                : "Thank you {{guest_name}}! Your RSVP has been confirmed for {{event_title}}. We look forward to seeing you on {{event_date}}!";
+        } else {
+            $customTemplate = !empty($autoReplyConfig['declined_text'])
+                ? $autoReplyConfig['declined_text']
+                : "Thank you {{guest_name}} for letting us know. Your RSVP has been recorded: Will Not Attend.";
+        }
+
+        $confirmationText = str_ireplace(
+            [
+                '{{guest_name}}', '{guest_name}',
+                '{{event_title}}', '{event_title}',
+                '{{event_date}}', '{event_date}',
+                '{{venue}}', '{venue}',
+            ],
+            [
+                $guest->name, $guest->name,
+                $event->title, $event->title,
+                $eventDateStr, $eventDateStr,
+                $event->venue ?? '', $event->venue ?? '',
+            ],
+            $customTemplate
+        );
+
+        $cleanPhone = \App\Services\PhoneNormalizer::cleanForApi($guest->phone);
+
+        // If active Meta WhatsApp Cloud API credentials are configured, dispatch live confirmation to WhatsApp
+        $gateway = \App\Models\SystemSetting::get('whatsapp_gateway', []);
+        $accessToken = $gateway['access_token'] ?? '';
+        $phoneNumberId = $gateway['phone_number_id'] ?? '';
+        $apiVersion = $gateway['api_version'] ?? 'v20.0';
+        if (empty($apiVersion)) {
+            $apiVersion = 'v20.0';
+        }
+
+        $msgStatus = 'sent';
+        $deliveredAt = null;
+        $errorSuffix = '';
+
+        if (!empty($cleanPhone) && !empty($accessToken) && !str_starts_with($accessToken, 'EAAG...kdv_prod_token_live') && !empty($phoneNumberId)) {
+            try {
+                $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+                    ->withToken($accessToken)
+                    ->timeout(8)
+                    ->post("https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages", [
+                        'messaging_product' => 'whatsapp',
+                        'recipient_type' => 'individual',
+                        'to' => $cleanPhone,
+                        'type' => 'text',
+                        'text' => [
+                            'preview_url' => false,
+                            'body' => $confirmationText,
+                        ],
+                    ]);
+
+                if ($response->successful()) {
+                    $msgStatus = 'sent';
+                    $deliveredAt = now();
+                } else {
+                    $msgStatus = 'failed';
+                    $err = $response->json('error.message') ?? (!empty($response->body()) ? $response->body() : ('HTTP ' . $response->status()));
+                    $errorSuffix = " [Error: {$err}]";
+                    \Illuminate\Support\Facades\Log::warning("WhatsApp RSVP auto-reply failed for {$cleanPhone}: " . $response->body());
+                }
+            } catch (\Throwable $e) {
+                $msgStatus = 'failed';
+                $errorSuffix = " [Error: " . $e->getMessage() . "]";
+                \Illuminate\Support\Facades\Log::warning("WhatsApp RSVP web submission auto-reply notice for {$cleanPhone}: " . $e->getMessage());
+            }
+        }
+
+        // Record confirmation reply message in Kardovo audit logs with accurate status
         Message::create([
             'event_id' => $guest->event_id,
             'guest_id' => $guest->id,
             'channel' => 'whatsapp',
-            'recipient_phone' => $guest->phone,
-            'message_body' => $validated['status'] === 'attending'
-                ? "Thank you! Your RSVP has been recorded: Attending. See you at {$guest->event->title}!"
-                : "Thank you for letting us know. Your RSVP has been recorded: Will Not Attend.",
-            'status' => 'delivered',
+            'recipient_phone' => $cleanPhone ?: $guest->phone,
+            'message_body' => $confirmationText . $errorSuffix,
+            'status' => $msgStatus,
             'sent_at' => now(),
-            'delivered_at' => now(),
+            'delivered_at' => $deliveredAt,
         ]);
 
         return back()->with('success', $validated['status'] === 'attending'

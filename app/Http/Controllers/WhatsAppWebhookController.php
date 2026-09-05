@@ -20,97 +20,285 @@ class WhatsAppWebhookController extends Controller
         $gateway = SystemSetting::get('whatsapp_gateway', []);
         $configuredVerifyToken = $gateway['verify_token'] ?? 'kardovo_verify_token_2026';
 
-        $mode = $request->input('hub_mode', $request->input('hub.mode'));
-        $token = $request->input('hub_verify_token', $request->input('hub.verify_token'));
-        $challenge = $request->input('hub_challenge', $request->input('hub.challenge'));
+        $mode = $request->input('hub_mode', $request->input('hub.mode', $request->input('mode')));
+        $token = $request->input('hub_verify_token', $request->input('hub.verify_token', $request->input('token')));
+        $challenge = $request->input('hub_challenge', $request->input('hub.challenge', $request->input('challenge')));
 
         if ($mode === 'subscribe' && $token === $configuredVerifyToken) {
             return response($challenge, 200);
+        }
+
+        // Support plain ping check
+        if ($request->has('ping') || $request->has('check')) {
+            return response()->json(['status' => 'ok', 'message' => 'Kardovo Webhook Active']);
         }
 
         return response('Forbidden', 403);
     }
 
     /**
-     * Inbound WhatsApp Webhook Handler (POST request)
-     * Automatically handles 1-Tap RSVP Button Replies & text responses from guests.
+     * Inbound WhatsApp & SMS Webhook Handler (POST/GET request)
+     * Automatically handles 1-Tap RSVP Button Replies & text responses from guests across all gateways.
      */
     public function handle(Request $request)
     {
         $payload = $request->all();
-        Log::info('WhatsApp Webhook Inbound:', ['payload' => $payload]);
+        Log::info('Kardovo Inbound Webhook Received:', ['payload' => $payload, 'query' => $request->query()]);
 
-        // 1. Check for Meta Cloud API Format
-        $entry = $payload['entry'][0] ?? null;
-        $change = $entry['changes'][0]['value'] ?? null;
-        $messages = $change['messages'] ?? [];
+        // 1. Meta Cloud API WhatsApp Format (entry -> changes -> value -> messages / statuses)
+        $entries = $payload['entry'] ?? [];
+        if (is_array($entries) && !empty($entries)) {
+            foreach ($entries as $entry) {
+                $changes = $entry['changes'] ?? [];
+                if (!is_array($changes)) continue;
 
-        if (!empty($messages)) {
-            foreach ($messages as $msg) {
-                $fromPhone = $msg['from'] ?? '';
-                $msgType = $msg['type'] ?? '';
+                foreach ($changes as $changeObj) {
+                    $change = $changeObj['value'] ?? [];
+                    if (!is_array($change)) continue;
 
-                $replyText = '';
-                $isAttending = false;
-                $isDeclined = false;
+                    // 1a. Delivery Receipts / Status updates (sent, delivered, read, failed)
+                    $statuses = $change['statuses'] ?? [];
+                    if (!empty($statuses) && is_array($statuses)) {
+                        foreach ($statuses as $stat) {
+                            $recipientPhone = $stat['recipient_id'] ?? '';
+                            $statusType = strtolower($stat['status'] ?? ''); // 'sent', 'delivered', 'read', 'failed'
+                            $cleanPhone = PhoneNormalizer::cleanForApi($recipientPhone);
+                            $last9 = strlen($cleanPhone) >= 9 ? substr($cleanPhone, -9) : $cleanPhone;
 
-                if ($msgType === 'button' || $msgType === 'interactive') {
-                    $buttonPayload = $msg['button']['payload'] ?? $msg['interactive']['button_reply']['id'] ?? '';
-                    $buttonTitle = $msg['button']['text'] ?? $msg['interactive']['button_reply']['title'] ?? '';
-                    
-                    $normalizedButton = strtolower($buttonPayload . ' ' . $buttonTitle);
-                    if (str_contains($normalizedButton, 'attend') || str_contains($normalizedButton, 'will_attend') || str_contains($normalizedButton, 'yes') || str_contains($normalizedButton, 'ndio')) {
-                        $isAttending = true;
-                    } elseif (str_contains($normalizedButton, 'decline') || str_contains($normalizedButton, 'cannot') || str_contains($normalizedButton, 'no') || str_contains($normalizedButton, 'hapana')) {
-                        $isDeclined = true;
+                            if ($cleanPhone && in_array($statusType, ['sent', 'delivered', 'read', 'failed'])) {
+                                Log::info("WhatsApp Delivery Receipt Webhook: {$cleanPhone} => {$statusType}");
+
+                                $latestMsg = Message::where(function ($q) use ($cleanPhone, $recipientPhone, $last9) {
+                                    $q->where('recipient_phone', 'like', "%{$cleanPhone}%")
+                                      ->orWhere('recipient_phone', 'like', "%{$recipientPhone}%")
+                                      ->orWhere('recipient_phone', 'like', "%{$last9}%");
+                                })
+                                ->where('channel', 'whatsapp')
+                                ->latest()
+                                ->first();
+
+                                if ($latestMsg) {
+                                    $updateData = ['status' => $statusType];
+                                    if ($statusType === 'delivered' && !$latestMsg->delivered_at) {
+                                        $updateData['delivered_at'] = now();
+                                    }
+                                    if ($statusType === 'read' && !$latestMsg->read_at) {
+                                        $updateData['read_at'] = now();
+                                    }
+                                    $latestMsg->update($updateData);
+
+                                    if ($latestMsg->guest_id) {
+                                        Guest::where('id', $latestMsg->guest_id)->update([
+                                            'delivery_status' => $statusType,
+                                        ]);
+                                    }
+                                }
+
+                                // Directly update matching Guest records by phone for instant UI sync
+                                Guest::where(function ($q) use ($cleanPhone, $recipientPhone, $last9) {
+                                    $q->where('phone', 'like', "%{$cleanPhone}%")
+                                      ->orWhere('phone', 'like', "%{$recipientPhone}%")
+                                      ->orWhere('phone', 'like', "%{$last9}%");
+                                })->update([
+                                    'delivery_status' => $statusType,
+                                ]);
+                            }
+                        }
                     }
-                } elseif ($msgType === 'text') {
-                    $body = strtolower(trim($msg['text']['body'] ?? ''));
-                    if (in_array($body, ['1', 'yes', 'ndio', 'attend', 'will attend', 'i will attend', 'confirmed', 'accept'])) {
-                        $isAttending = true;
-                    } elseif (in_array($body, ['2', 'no', 'hapana', 'cannot attend', 'decline', 'declined', 'reject'])) {
-                        $isDeclined = true;
-                    }
-                }
 
-                if ($fromPhone && ($isAttending || $isDeclined)) {
-                    $this->processGuestRsvp($fromPhone, $isAttending);
+                    // 1b. Inbound Messages & RSVPs
+                    $messages = $change['messages'] ?? [];
+                    if (!empty($messages) && is_array($messages)) {
+                        foreach ($messages as $msg) {
+                            $this->processInboundMessageItem($msg);
+                        }
+                    }
                 }
             }
         }
 
-        // 2. Check for UltraMsg / NextSMS / Custom Webhook format
-        if (isset($payload['data']) && isset($payload['event_type'])) {
+        // 2. Direct Messages array at root (e.g. some webhooks or test payloads)
+        if (!empty($payload['messages']) && is_array($payload['messages'])) {
+            foreach ($payload['messages'] as $msg) {
+                $this->processInboundMessageItem($msg);
+            }
+        }
+
+        // 3. UltraMsg / Wasapi / Baileys format (data.from, data.body)
+        if (isset($payload['data']) && (isset($payload['data']['from']) || isset($payload['data']['body']))) {
             $data = $payload['data'];
             $fromPhone = $data['from'] ?? '';
-            $body = strtolower(trim($data['body'] ?? ''));
+            $body = $data['body'] ?? '';
+            $this->evaluateAndProcessRsvp($fromPhone, $body);
+        }
 
-            $isAttending = in_array($body, ['1', 'yes', 'ndio', 'attend', 'will attend', 'i will attend']);
-            $isDeclined = in_array($body, ['2', 'no', 'hapana', 'cannot attend', 'decline', 'declined']);
+        // 4. SMS Gateways (NextSMS, Beem, Twilio, AfricasTalking, Generic SMS)
+        // Check for common phone / message key combinations in request
+        $smsFrom = $payload['from'] ?? $payload['From'] ?? $payload['source_addr'] ?? $payload['sender'] ?? $payload['phone'] ?? $payload['mobile'] ?? $payload['msisdn'] ?? $request->query('from') ?? $request->query('phone') ?? '';
+        $smsBody = $payload['text'] ?? $payload['body'] ?? $payload['Body'] ?? $payload['message'] ?? $payload['content'] ?? $payload['msg'] ?? $payload['response'] ?? $payload['rsvp'] ?? $request->query('text') ?? $request->query('message') ?? '';
+        $smsPayload = $payload['button_payload'] ?? $payload['payload'] ?? $payload['ButtonPayload'] ?? $payload['id'] ?? '';
 
-            if ($fromPhone && ($isAttending || $isDeclined)) {
-                $this->processGuestRsvp($fromPhone, $isAttending);
+        if (!empty($smsFrom) && (!empty($smsBody) || !empty($smsPayload))) {
+            $this->evaluateAndProcessRsvp($smsFrom, $smsBody, $smsPayload);
+        }
+
+        return response()->json(['status' => 'success', 'timestamp' => now()->toIso8601String()]);
+    }
+
+    /**
+     * Dedicated SMS Webhook Endpoint (GET/POST)
+     */
+    public function handleSms(Request $request)
+    {
+        return $this->handle($request);
+    }
+
+    /**
+     * Helper to process an individual Meta-format message item
+     */
+    protected function processInboundMessageItem(array $msg): void
+    {
+        $fromPhone = $msg['from'] ?? '';
+        $msgType = $msg['type'] ?? '';
+
+        $buttonPayload = null;
+        $buttonTitle = '';
+
+        if ($msgType === 'interactive') {
+            $buttonPayload = $msg['interactive']['button_reply']['id'] ?? $msg['interactive']['list_reply']['id'] ?? '';
+            $buttonTitle = $msg['interactive']['button_reply']['title'] ?? $msg['interactive']['list_reply']['title'] ?? '';
+        } elseif ($msgType === 'button') {
+            $buttonPayload = $msg['button']['payload'] ?? '';
+            $buttonTitle = $msg['button']['text'] ?? '';
+        }
+
+        $bodyText = '';
+        if ($msgType === 'text') {
+            $bodyText = $msg['text']['body'] ?? '';
+        }
+
+        $combinedText = trim(($buttonTitle ?: '') . ' ' . ($bodyText ?: ''));
+        $this->evaluateAndProcessRsvp($fromPhone, $combinedText, $buttonPayload);
+    }
+
+    /**
+     * Evaluate incoming text/payload for RSVP intent and execute state change.
+     */
+    protected function evaluateAndProcessRsvp(string $fromPhone, string $rawText = '', ?string $buttonPayload = null): void
+    {
+        if (empty($fromPhone)) return;
+
+        $isAttending = false;
+        $isDeclined = false;
+
+        $normalizedPayload = strtolower(trim($buttonPayload ?: ''));
+        $cleanText = strtolower(trim(preg_replace('/[^\p{L}\p{N}\s_]/u', ' ', $rawText)));
+
+        // Check Button Payload
+        if (!empty($normalizedPayload)) {
+            if (
+                str_starts_with($normalizedPayload, 'rsvp_yes') || 
+                str_contains($normalizedPayload, 'rsvp_yes') || 
+                str_contains($normalizedPayload, 'attend') || 
+                str_contains($normalizedPayload, 'yes')
+            ) {
+                $isAttending = true;
+            } elseif (
+                str_starts_with($normalizedPayload, 'rsvp_no') || 
+                str_contains($normalizedPayload, 'rsvp_no') || 
+                str_contains($normalizedPayload, 'decline') || 
+                str_contains($normalizedPayload, 'cannot') || 
+                str_contains($normalizedPayload, 'no')
+            ) {
+                $isDeclined = true;
             }
         }
 
-        return response()->json(['status' => 'success']);
+        // Check Text Content (English & Swahili keywords)
+        if (!$isAttending && !$isDeclined && !empty($cleanText)) {
+            $attendingKeywords = [
+                'attend', 'attending', 'attends', 'confirmed', 'confirm', 'yes', 'ndio',
+                'nitahudhuria', 'nitaudhuria', 'nitafika', 'nitakuja', 'nitakuwepo',
+                'niko ndani', 'nipo', 'sawa', 'accept', 'will attend', 'i will attend',
+                '1', 'sure', 'tutaonana', 'naja'
+            ];
+
+            $declinedKeywords = [
+                'decline', 'declined', 'declines', 'cannot', 'cant', 'cannot attend',
+                'can t attend', 'no', 'hapana', 'sitahudhuria', 'sitaudhuria',
+                'sitafika', 'sitakuja', 'sitakuwepo', 'sitaweza', 'sorry', 'samahani',
+                '2', 'reject', 'kataa'
+            ];
+
+            foreach ($attendingKeywords as $keyword) {
+                if ($cleanText === $keyword || str_contains(" {$cleanText} ", " {$keyword} ")) {
+                    $isAttending = true;
+                    break;
+                }
+            }
+
+            if (!$isAttending) {
+                foreach ($declinedKeywords as $keyword) {
+                    if ($cleanText === $keyword || str_contains(" {$cleanText} ", " {$keyword} ")) {
+                        $isDeclined = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if ($isAttending || $isDeclined) {
+            $this->processGuestRsvp($fromPhone, $isAttending, $buttonPayload ?: null);
+        } else {
+            Log::info("Inbound message from {$fromPhone} did not match RSVP keywords: \"{$rawText}\" (Payload: \"{$buttonPayload}\")");
+        }
     }
 
     /**
      * Process RSVP state change and send automatic WhatsApp confirmation.
      */
-    protected function processGuestRsvp(string $rawPhone, bool $isAttending)
+    protected function processGuestRsvp(string $rawPhone, bool $isAttending, ?string $buttonPayload = null)
     {
         $cleanPhone = PhoneNormalizer::cleanForApi($rawPhone);
+        $guest = null;
 
-        // Find matching guest
-        $guest = Guest::where(function ($q) use ($cleanPhone, $rawPhone) {
-            $q->where('phone', 'like', "%{$cleanPhone}%")
-              ->orWhere('phone', 'like', "%{$rawPhone}%");
-        })->latest()->first();
+        if (!empty($buttonPayload) && str_starts_with($buttonPayload, 'rsvp_')) {
+            $parts = explode('_', $buttonPayload, 3);
+            if (count($parts) >= 3) {
+                $token = $parts[2];
+                $guest = Guest::where('qr_token', $token)
+                    ->orWhere('unique_code', $token)
+                    ->orWhere('card_number', $token)
+                    ->orWhere('id', $token)
+                    ->first();
+            }
+        }
 
         if (!$guest) {
-            Log::warning("WhatsApp RSVP received from unknown number: {$cleanPhone}");
+            $last9 = strlen($cleanPhone) >= 9 ? substr($cleanPhone, -9) : $cleanPhone;
+            $guest = Guest::where(function ($q) use ($cleanPhone, $rawPhone, $last9) {
+                $q->where('phone', 'like', "%{$cleanPhone}%")
+                  ->orWhere('phone', 'like', "%{$rawPhone}%")
+                  ->orWhere('phone', 'like', "%{$last9}%");
+            })->latest()->first();
+        }
+
+        // Fallback: match normalized phone or last 9 digits against candidate guests
+        if (!$guest && !empty($cleanPhone)) {
+            $last9 = strlen($cleanPhone) >= 9 ? substr($cleanPhone, -9) : $cleanPhone;
+            $candidates = Guest::latest()->take(500)->get();
+            foreach ($candidates as $c) {
+                $cClean = PhoneNormalizer::cleanForApi($c->phone);
+                $cLast9 = strlen($cClean) >= 9 ? substr($cClean, -9) : $cClean;
+                if ($cClean === $cleanPhone || $cLast9 === $last9) {
+                    $guest = $c;
+                    break;
+                }
+            }
+        }
+
+        if (!$guest) {
+            Log::warning("WhatsApp RSVP received from unknown number: {$cleanPhone} (Raw: {$rawPhone}, Payload: {$buttonPayload})");
             return;
         }
 
@@ -120,6 +308,7 @@ class WhatsAppWebhookController extends Controller
 
         $guest->update([
             'rsvp_status' => $newRsvpStatus,
+            'rsvp_at' => now(),
         ]);
 
         $autoReplyConfig = $event->rsvp_auto_reply_config ?? [];
@@ -157,27 +346,25 @@ class WhatsAppWebhookController extends Controller
             $customTemplate
         );
 
-        // Log confirmation reply message in Kardovo audit logs
-        Message::create([
-            'event_id' => $event->id,
-            'guest_id' => $guest->id,
-            'channel' => 'whatsapp',
-            'recipient_phone' => $cleanPhone,
-            'message_body' => $confirmationText,
-            'status' => 'delivered',
-            'sent_at' => now(),
-            'delivered_at' => now(),
-        ]);
-
         // If active Meta WhatsApp Cloud API credentials are configured, dispatch the live auto-reply
         $gateway = SystemSetting::get('whatsapp_gateway', []);
         $accessToken = $gateway['access_token'] ?? '';
         $phoneNumberId = $gateway['phone_number_id'] ?? '';
+        $apiVersion = $gateway['api_version'] ?? 'v20.0';
+        if (empty($apiVersion)) {
+            $apiVersion = 'v20.0';
+        }
+
+        $msgStatus = 'sent';
+        $deliveredAt = null;
+        $errorSuffix = '';
 
         if (!empty($accessToken) && !str_starts_with($accessToken, 'EAAG...kdv_prod_token_live') && !empty($phoneNumberId)) {
             try {
-                Http::withToken($accessToken)
-                    ->post("https://graph.facebook.com/v20.0/{$phoneNumberId}/messages", [
+                $response = Http::withoutVerifying()
+                    ->withToken($accessToken)
+                    ->timeout(8)
+                    ->post("https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages", [
                         'messaging_product' => 'whatsapp',
                         'recipient_type' => 'individual',
                         'to' => $cleanPhone,
@@ -187,9 +374,34 @@ class WhatsAppWebhookController extends Controller
                             'body' => $confirmationText,
                         ],
                     ]);
+
+                if ($response->successful()) {
+                    $msgStatus = 'sent';
+                    $deliveredAt = now();
+                    Log::info("WhatsApp auto-confirmation reply delivered successfully to {$cleanPhone}");
+                } else {
+                    $msgStatus = 'failed';
+                    $err = $response->json('error.message') ?? (!empty($response->body()) ? $response->body() : ('HTTP ' . $response->status()));
+                    $errorSuffix = " [Error: {$err}]";
+                    Log::warning("WhatsApp auto-confirmation reply failed for {$cleanPhone}: " . $response->body());
+                }
             } catch (\Throwable $e) {
+                $msgStatus = 'failed';
+                $errorSuffix = " [Error: " . $e->getMessage() . "]";
                 Log::error("Failed to send WhatsApp auto-confirmation reply: " . $e->getMessage());
             }
         }
+
+        // Log confirmation reply message in Kardovo audit logs with accurate status
+        Message::create([
+            'event_id' => $event->id,
+            'guest_id' => $guest->id,
+            'channel' => 'whatsapp',
+            'recipient_phone' => $cleanPhone,
+            'message_body' => $confirmationText . $errorSuffix,
+            'status' => $msgStatus,
+            'sent_at' => now(),
+            'delivered_at' => $deliveredAt,
+        ]);
     }
 }

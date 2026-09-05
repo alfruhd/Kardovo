@@ -87,12 +87,15 @@ class Guest extends Model
 
     public function getAllowanceLabelAttribute(): string
     {
+        if (!empty($this->category)) {
+            return $this->category;
+        }
         if ($this->max_entries === 1) {
-            return 'Single Entry • scan up to 1x';
+            return 'Single Entry';
         }
         if ($this->max_entries === 2) {
-            return 'Double Entry • scan up to 2x';
+            return 'Double Entry';
         }
-        return "{$this->category} • scan up to {$this->max_entries}x";
+        return "{$this->max_entries} Entries";
     }
 }

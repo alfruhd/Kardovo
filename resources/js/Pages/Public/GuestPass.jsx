@@ -33,11 +33,10 @@ export default function GuestPass({ guest, event, template, allTemplates = [], i
     const [isHovered, setIsHovered] = useState(false);
     const { theme, isDark, toggleTheme } = useTheme();
 
-    const isDemoMode = isDemo || (typeof window !== 'undefined' && (
-        window.location.pathname.includes('/demo') || 
+    const isDemoMode = Boolean(isDemo) || (typeof window !== 'undefined' && (
+        window.location.pathname === '/demo/pass' || 
         new URLSearchParams(window.location.search).get('demo') === '1' ||
-        guest?.qr_token === 'kdv_demo_pass_preview' ||
-        guest?.qr_token === 'kdv_alfred_mashauri_29841872'
+        guest?.qr_token === 'kdv_demo_pass_preview'
     ));
 
     const handleRsvp = (status) => {
@@ -325,7 +324,7 @@ export default function GuestPass({ guest, event, template, allTemplates = [], i
                     {/* ═══════════════════════════════════════════════════════════ */}
                     <div className="lg:col-span-6 flex flex-col items-center justify-center">
                         <div 
-                            className="w-full max-w-[400px] flex justify-center perspective-[1200px] select-none"
+                            className="w-full max-w-[440px] lg:max-w-[620px] flex justify-center perspective-[1200px] select-none"
                             onMouseMove={(e) => {
                                 setIsHovered(true);
                                 handleMouseMove(e);

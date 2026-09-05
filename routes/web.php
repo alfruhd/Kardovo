@@ -43,7 +43,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/events/{event}/guests/import', [GuestController::class, 'import'])->name('guests.import');
     Route::put('/events/{event}/guests/{guest}', [GuestController::class, 'update'])->name('guests.update');
     Route::delete('/events/{event}/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy');
+    Route::delete('/events/{event}/guests-clear', [GuestController::class, 'clearAll'])->name('guests.clearAll');
     Route::get('/events/{event}/guests-export', [GuestController::class, 'exportCsv'])->name('guests.export');
+    Route::get('/events/{event}/guests-export-pdf', [GuestController::class, 'exportPdf'])->name('guests.exportPdf');
     Route::get('/guests/sample-template', [GuestController::class, 'downloadSampleTemplate'])->name('guests.sampleTemplate');
 
     // Card Templates
@@ -58,6 +60,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/messaging/broadcast', [MessagingController::class, 'sendBroadcast'])->name('messaging.broadcast');
     Route::post('/guests/{guest}/send-message', [MessagingController::class, 'sendSingle'])->name('messaging.sendSingle');
     Route::patch('/messaging/events/{event}/template', [MessagingController::class, 'updateEventTemplate'])->name('messaging.updateEventTemplate');
+    Route::delete('/messaging/logs/{message}', [MessagingController::class, 'destroyLog'])->name('messaging.destroyLog');
 
     // Scanner App (Mobile / PWA View)
     Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');
@@ -66,6 +69,7 @@ Route::middleware(['auth'])->group(function () {
     // Admin Portal
     Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::post('/admin/gateway', [AdminController::class, 'updateGateway'])->name('admin.gateway');
+    Route::post('/admin/gateway/test', [AdminController::class, 'testGateway'])->name('admin.gateway.test');
     Route::post('/admin/customers', [AdminController::class, 'storeCustomer'])->name('admin.storeCustomer');
     Route::put('/admin/customers/{customer}', [AdminController::class, 'updateCustomer'])->name('admin.updateCustomer');
     Route::delete('/admin/customers/{customer}', [AdminController::class, 'destroyCustomer'])->name('admin.destroyCustomer');
@@ -75,12 +79,19 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/sub-admins', [AdminController::class, 'storeSubAdmin'])->name('admin.storeSubAdmin');
     Route::put('/admin/sub-admins/{subAdmin}', [AdminController::class, 'updateSubAdmin'])->name('admin.updateSubAdmin');
     Route::delete('/admin/sub-admins/{subAdmin}', [AdminController::class, 'destroySubAdmin'])->name('admin.destroySubAdmin');
+    // Scan Logs & Activity
+    Route::delete('/events/{event}/scan-logs/{scanLog}', [EventController::class, 'destroyScanLog'])->name('events.destroyScanLog');
+    Route::delete('/events/{event}/scan-logs', [EventController::class, 'clearScanLogs'])->name('events.clearScanLogs');
+    Route::delete('/admin/scan-logs/{scanLog}', [AdminController::class, 'destroyScanLog'])->name('admin.destroyScanLog');
+    Route::delete('/admin/scan-logs', [AdminController::class, 'clearScanLogs'])->name('admin.clearScanLogs');
 
-    // Admin Financial Analytics & Cashflow
     Route::get('/admin/finance', [FinanceController::class, 'index'])->name('admin.finance');
     Route::post('/admin/finance/transactions', [FinanceController::class, 'store'])->name('admin.finance.store');
     Route::delete('/admin/finance/transactions/{transaction}', [FinanceController::class, 'destroy'])->name('admin.finance.destroy');
     Route::get('/admin/finance/export', [FinanceController::class, 'export'])->name('admin.finance.export');
+    Route::get('/admin/finance/export-pdf', [FinanceController::class, 'exportPdf'])->name('admin.finance.exportPdf');
+    Route::post('/admin/finance/exchange-rate/refresh', [FinanceController::class, 'refreshExchangeRate'])->name('admin.finance.exchangeRate.refresh');
+    Route::post('/admin/finance/exchange-rate/update', [FinanceController::class, 'updateExchangeRate'])->name('admin.finance.exchangeRate.update');
 
     // User Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -108,6 +119,10 @@ Route::get('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->
 Route::post('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle'])->name('webhooks.whatsapp.handle');
 Route::get('/api/webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify']);
 Route::post('/api/webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle']);
+
+// SMS Gateway Webhooks (NextSMS, Beem, Twilio, AfricasTalking)
+Route::match(['get', 'post'], '/webhooks/sms', [WhatsAppWebhookController::class, 'handleSms'])->name('webhooks.sms');
+Route::match(['get', 'post'], '/api/webhooks/sms', [WhatsAppWebhookController::class, 'handleSms']);
 
 // Error 404 Route & Universal Fallback
 Route::get('/404', function () {

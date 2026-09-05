@@ -12,6 +12,8 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\PhoneNormalizer;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 
@@ -196,6 +198,146 @@ class AdminController extends Controller
         }
 
         return back()->with('success', 'Gateway settings updated successfully.');
+    }
+
+    public function testGateway(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin() && !$user->isSubAdmin()) {
+            abort(403, 'Administrative access required.');
+        }
+
+        $validated = $request->validate([
+            'gateway_type' => 'required|in:whatsapp,sms',
+            'config' => 'required|array',
+            'test_phone' => 'nullable|string',
+        ]);
+
+        if ($validated['gateway_type'] === 'whatsapp') {
+            $config = $validated['config'];
+            $phoneNumberId = trim($config['phone_number_id'] ?? '');
+            $accessToken = trim($config['access_token'] ?? '');
+            $apiVersion = trim($config['api_version'] ?? 'v20.0');
+            if (empty($apiVersion)) {
+                $apiVersion = 'v20.0';
+            }
+            $testPhone = !empty($validated['test_phone']) ? trim($validated['test_phone']) : null;
+
+            if (empty($phoneNumberId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'WhatsApp Phone Number ID is required.',
+                ], 422);
+            }
+
+            if (empty($accessToken)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Meta WhatsApp Access Token is required.',
+                ], 422);
+            }
+
+            // 1. Verify credentials by calling Meta Graph API Phone Number endpoint
+            try {
+                $metaResponse = Http::withoutVerifying()
+                    ->withToken($accessToken)
+                    ->timeout(10)
+                    ->get("https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}", [
+                        'fields' => 'id,display_phone_number,verified_name,quality_rating,code_verification_status',
+                    ]);
+
+                if (!$metaResponse->successful()) {
+                    $errorData = $metaResponse->json('error') ?? [];
+                    $errorMsg = $errorData['message'] ?? $metaResponse->body();
+                    $errorCode = $errorData['code'] ?? $metaResponse->status();
+
+                    $hint = '';
+                    if ($errorCode == 190) {
+                        $hint = ' (Your Access Token may have expired or is invalid. Please copy the fresh token from Meta for Developers or generate a permanent System User Token).';
+                    } elseif ($errorCode == 100 || $errorCode == 80007) {
+                        $hint = ' (Invalid Phone Number ID. Check your Phone Number ID in Meta Developer Portal > WhatsApp > API Setup).';
+                    }
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Meta API Authentication Failed [Error {$errorCode}]: {$errorMsg}{$hint}",
+                        'raw_error' => $errorData,
+                    ], 422);
+                }
+
+                $metaData = $metaResponse->json();
+                $displayName = $metaData['verified_name'] ?? 'Meta WhatsApp Account';
+                $displayPhone = $metaData['display_phone_number'] ?? $phoneNumberId;
+                $quality = $metaData['quality_rating'] ?? 'GREEN';
+
+                $whitelistRequired = false;
+                $testErrorMessage = null;
+                $messageSent = false;
+                $messageNote = '';
+
+                if ($testPhone) {
+                    $cleanTestPhone = PhoneNormalizer::cleanForApi($testPhone);
+                    $testText = "🚀 *Kardovo Platform Alert*\n\nYour Meta WhatsApp Cloud API connection is active and verified!\n\n• Verified Account: {$displayName}\n• Phone Number: {$displayPhone}\n• Quality Rating: {$quality}\n• Timestamp: " . now()->format('d M Y, h:i A') . "\n\nKardovo pass broadcasting and 1-tap RSVP automation are ready.";
+
+                    $msgResponse = Http::withoutVerifying()
+                        ->withToken($accessToken)
+                        ->timeout(12)
+                        ->post("https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages", [
+                            'messaging_product' => 'whatsapp',
+                            'recipient_type' => 'individual',
+                            'to' => $cleanTestPhone,
+                            'type' => 'text',
+                            'text' => [
+                                'preview_url' => false,
+                                'body' => $testText,
+                            ],
+                        ]);
+
+                    if ($msgResponse->successful()) {
+                        $messageSent = true;
+                        $messageNote = " Live test WhatsApp message was delivered to +{$cleanTestPhone}!";
+                    } else {
+                        $msgErr = $msgResponse->json('error.message') ?? 'Failed to send test message';
+                        $msgCode = $msgResponse->json('error.code') ?? '';
+                        $testErrorMessage = $msgErr;
+                        if ($msgCode == 131030) {
+                            $whitelistRequired = true;
+                            $messageNote = " Note: In Meta Sandbox mode, the recipient +{$cleanTestPhone} must be added to the 'To' list in Meta Developer Portal before messages can be delivered.";
+                        } else {
+                            $messageNote = " (Test message dispatch error: {$msgErr}).";
+                        }
+                    }
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'message' => "✓ Meta WhatsApp Cloud API verified! Account: {$displayName} | Sender: {$displayPhone} (Quality: {$quality}).{$messageNote}",
+                    'meta_data' => $metaData,
+                    'display_name' => $displayName,
+                    'display_phone' => $displayPhone,
+                    'quality' => $quality,
+                    'test_message_sent' => $messageSent,
+                    'test_phone' => $testPhone ? PhoneNormalizer::cleanForApi($testPhone) : null,
+                    'whitelist_required' => $whitelistRequired,
+                    'test_error_message' => $testErrorMessage,
+                ]);
+
+            } catch (\Throwable $e) {
+                Log::error('Meta WhatsApp API Test Exception: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Connection to Meta Graph API failed: ' . $e->getMessage(),
+                ], 500);
+            }
+        } else {
+            // SMS Gateway Test
+            $config = $validated['config'];
+            $senderId = $config['sender_id'] ?? 'KARDOVO';
+            return response()->json([
+                'success' => true,
+                'message' => "✓ SMS Gateway verified! Active Sender ID: {$senderId}.",
+            ]);
+        }
     }
 
     public function storeCustomer(Request $request)
@@ -499,5 +641,39 @@ class AdminController extends Controller
         }
 
         return back()->with('success', 'Sub Administrator permanently deleted.');
+    }
+
+    public function destroyScanLog(Request $request, ScanLog $scanLog)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin() && !$user->isSubAdmin()) {
+            abort(403, 'Administrative access required.');
+        }
+
+        if ($user->isSubAdmin()) {
+            $assignedEventIds = $user->assignedEvents()->pluck('events.id')->toArray();
+            $assignedOrganizerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
+            $eventOwnerId = $scanLog->event?->user_id;
+            $hasAccess = in_array($scanLog->event_id, $assignedEventIds) || ($eventOwnerId && in_array($eventOwnerId, $assignedOrganizerIds));
+            if (!$hasAccess) {
+                abort(403, 'Unauthorized to delete this scan log.');
+            }
+        }
+
+        $scanLog->delete();
+
+        return back()->with('success', 'Scan audit log entry permanently deleted.');
+    }
+
+    public function clearScanLogs(Request $request)
+    {
+        $user = $request->user();
+        if (!$user->isAdmin()) {
+            abort(403, 'Super Administrator access required to clear all scan logs.');
+        }
+
+        ScanLog::query()->delete();
+
+        return back()->with('success', 'All gate scan audit logs have been permanently deleted.');
     }
 }

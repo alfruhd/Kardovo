@@ -21,6 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (request()->isSecure() || request()->header('X-Forwarded-Proto') === 'https' || str_contains(request()->getHttpHost(), 'pinggy') || str_contains(request()->getHttpHost(), 'ngrok') || str_contains(request()->getHttpHost(), 'trycloudflare.com')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         Vite::prefetch(concurrency: 3);
 
         Password::defaults(function () {

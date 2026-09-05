@@ -87,3 +87,20 @@ test('Organizer can download sample Excel template', function () {
     $response->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 });
 
+test('Organizer can export guest list as CSV and PDF', function () {
+    $event = Event::first();
+    $organizer = $event->user;
+
+    // Test CSV Export
+    $csvResponse = $this->actingAs($organizer)->get(route('guests.export', $event->id));
+    $csvResponse->assertStatus(200);
+    expect($csvResponse->headers->get('content-type'))->toContain('text/csv');
+    expect($csvResponse->headers->get('content-disposition'))->toContain('kardovo_guests_');
+
+    // Test PDF Export
+    $pdfResponse = $this->actingAs($organizer)->get(route('guests.exportPdf', $event->id));
+    $pdfResponse->assertStatus(200);
+    expect($pdfResponse->headers->get('content-type'))->toBe('application/pdf');
+    expect($pdfResponse->headers->get('content-disposition'))->toContain('kardovo_guests_');
+});
+

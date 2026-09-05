@@ -1,39 +1,44 @@
 import React from 'react';
 
-export default function StatCard({ title, value, subtitle, icon: Icon, trend, color = 'blue' }) {
-    const colorClasses = {
-        blue: 'text-cyan-600 dark:text-cyan-400 bg-blue-50 dark:bg-cyan-950/40 border border-blue-200/60 dark:border-cyan-800/40',
-        green: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40',
-        amber: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/60 dark:border-amber-800/40',
-        navy: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.08]',
-    };
-
+export default function StatCard({ 
+    title, 
+    value, 
+    subtitle, 
+    icon: Icon, 
+    trend, 
+    className = '',
+    titleColor = 'text-slate-500 dark:text-slate-400',
+    iconColor = 'text-slate-600 dark:text-slate-300',
+    iconBg = 'bg-slate-100 dark:bg-white/[0.06] border-slate-200/60 dark:border-white/[0.06]',
+    valueColor = 'text-slate-900 dark:text-white',
+    hoverBorder = 'hover:border-slate-300 dark:hover:border-slate-700'
+}) {
     return (
-        <div className="bg-white dark:bg-[#0B1524] rounded-3xl border border-slate-200/90 dark:border-white/[0.08] p-5 shadow-card hover:shadow-card-hover transition-all duration-200 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <div className={`group rounded-2xl p-4 sm:p-5 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card ${hoverBorder} transition-all duration-200 flex flex-col justify-between ${className}`}>
+            <div className="flex items-center justify-between gap-2">
+                <span className={`text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider truncate ${titleColor}`}>
                     {title}
                 </span>
                 {Icon && (
-                    <div className={`p-2.5 rounded-2xl ${colorClasses[color] || colorClasses.blue}`}>
+                    <div className={`w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 transition-colors ${iconBg} ${iconColor}`}>
                         <Icon className="w-4 h-4" />
                     </div>
                 )}
             </div>
             
             <div className="mt-3">
-                <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight font-mono">
+                <div className={`text-2xl sm:text-3xl font-black tracking-tight font-mono ${valueColor}`}>
                     {typeof value === 'number' ? value.toLocaleString() : value}
                 </div>
                 {subtitle && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium flex items-center gap-1.5">
+                    <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 flex items-center gap-1.5 truncate">
                         {trend && (
                             <span className={trend > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'}>
                                 {trend > 0 ? `+${trend}%` : `${trend}%`}
                             </span>
                         )}
-                        <span>{subtitle}</span>
-                    </p>
+                        <span className="truncate">{subtitle}</span>
+                    </div>
                 )}
             </div>
         </div>

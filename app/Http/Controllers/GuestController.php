@@ -15,6 +15,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class GuestController extends Controller
 {
@@ -211,6 +212,30 @@ class GuestController extends Controller
         return back()->with('success', "Guest {$name} removed.");
     }
 
+    public function clearAll(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+            abort(403, 'Unauthorized to clear attendees for this event.');
+        }
+
+        if (!$user->isAdmin() && !$user->canImportGuests()) {
+            return back()->with('error', 'Guest management permissions are disabled for your account.');
+        }
+
+        $count = $event->guests()->count();
+        if ($count === 0) {
+            return back()->with('info', 'There are no guests to clear for this event.');
+        }
+
+        // Delete associated scan logs and messages for this event's guests
+        \App\Models\ScanLog::where('event_id', $event->id)->delete();
+        \App\Models\Message::where('event_id', $event->id)->delete();
+        $event->guests()->delete();
+
+        return back()->with('success', "All {$count} attendee(s) and their passes have been permanently cleared.");
+    }
+
     public function exportCsv(Request $request, Event $event)
     {
         $user = $request->user();
@@ -259,5 +284,29 @@ class GuestController extends Controller
         };
 
         return new StreamedResponse($callback, 200, $headers);
+    }
+
+    public function exportPdf(Request $request, Event $event)
+    {
+        $user = $request->user();
+        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+            abort(403);
+        }
+
+        if (!$user->isAdmin() && !$user->canExportData()) {
+            abort(403, 'Data export permissions are disabled for your organizer account. Please contact system administration.');
+        }
+
+        $guests = $event->guests()->orderBy('name')->get();
+        $event->load('user');
+
+        $pdf = Pdf::loadView('pdf.guest_list', [
+            'event' => $event,
+            'guests' => $guests,
+        ])->setPaper('a4', 'portrait');
+
+        $fileName = 'kardovo_guests_' . Str::slug($event->title) . '_' . date('Y-m-d') . '.pdf';
+
+        return $pdf->download($fileName);
     }
 }

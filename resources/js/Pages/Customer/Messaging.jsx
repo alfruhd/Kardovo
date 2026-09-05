@@ -41,7 +41,13 @@ import {
     Palette,
     Eye,
     RefreshCw,
-    CheckCircle2
+    CheckCircle2,
+    CheckSquare,
+    Square,
+    UserCheck,
+    AlertCircle,
+    AlertTriangle,
+    Trash2
 } from 'lucide-react';
 import GatewayConfigModal from '@/Components/GatewayConfigModal';
 
@@ -80,16 +86,29 @@ export default function Messaging({
     gateways = {},
     isAdmin = false
 }) {
-    const { auth } = usePage().props;
+    const { auth, flash, errors } = usePage().props;
     const user = auth?.user;
     const isSuperAdmin = user?.role === 'admin' || user?.is_admin || isAdmin;
-    const canBroadcast = isSuperAdmin || (user?.status !== 'suspended' && user?.effective_permissions?.can_send_broadcasts !== false);
+    const isSubAdmin = user?.role === 'sub_admin' || user?.is_sub_admin;
+    const canDeleteLogs = isSuperAdmin || isSubAdmin;
+    const canBroadcast = isSuperAdmin || isSubAdmin || (user?.status !== 'suspended' && user?.effective_permissions?.can_send_broadcasts !== false);
     const activeQuotas = quotas || user?.message_quotas;
 
     const [channel, setChannel] = useState('whatsapp');
     const [campaignType, setCampaignType] = useState('pass_invitation'); // 'pass_invitation' | 'pass_only' | 'text_only'
-    const [targetFilter, setTargetFilter] = useState('draft');
     const [customCaption, setCustomCaption] = useState(WHATSAPP_DEFAULT_TEMPLATE);
+    const [dispatchStatus, setDispatchStatus] = useState(null);
+    const [isDispatching, setIsDispatching] = useState(false);
+
+    useEffect(() => {
+        if (flash?.success) {
+            setDispatchStatus({ type: 'success', message: flash.success });
+        } else if (flash?.error) {
+            setDispatchStatus({ type: 'error', message: flash.error });
+        } else if (flash?.warning) {
+            setDispatchStatus({ type: 'warning', message: flash.warning });
+        }
+    }, [flash]);
     
     // Card Template Selection for Event & Pass Sending
     const initialTemplateId = selectedEvent?.card_template_id || selectedEvent?.card_template?.id || templates[0]?.id || '';
@@ -100,9 +119,23 @@ export default function Messaging({
         if (selectedEvent) {
             const tId = selectedEvent.card_template_id || selectedEvent.card_template?.id || templates[0]?.id || '';
             setSelectedTemplateId(tId);
-            broadcastForm.setData('card_template_id', tId);
         }
     }, [selectedEvent?.id]);
+
+    // Live background listener: Refresh message logs & recipient counts every 4 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (!isDispatching && typeof document !== 'undefined' && document.visibilityState === 'visible') {
+                router.reload({
+                    only: ['recentMessages', 'quotas', 'selectedEvent'],
+                    preserveScroll: true,
+                    preserveState: true,
+                });
+            }
+        }, 4000);
+
+        return () => clearInterval(interval);
+    }, [isDispatching]);
 
     const activeTemplate = useMemo(() => {
         return templates.find(t => String(t.id) === String(selectedTemplateId)) 
@@ -167,75 +200,105 @@ export default function Messaging({
         failed: allGuests.filter(g => g.delivery_status === 'failed').length,
     };
 
-    const filteredGuests = allGuests.filter((guest) => {
-        if (targetFilter === 'draft') return guest.delivery_status === 'draft';
-        if (targetFilter === 'failed') return guest.delivery_status === 'failed';
-        if (targetFilter === 'pending_rsvp') return guest.rsvp_status === 'pending';
-        return true;
+    const initialTargetFilter = filterCounts.draft > 0 ? 'draft' : 'all';
+    const [targetFilter, setTargetFilter] = useState(initialTargetFilter);
+
+    // Track selected guest IDs for granular individual dispatch
+    const [selectedGuestIds, setSelectedGuestIds] = useState(() => {
+        const drafts = allGuests.filter(g => g.delivery_status === 'draft').map(g => g.id);
+        return drafts.length > 0 ? drafts : allGuests.map(g => g.id);
     });
 
-    const searchedFilteredGuests = filteredGuests.filter((g) => {
-        if (!recipientSearch.trim()) return true;
-        const q = recipientSearch.toLowerCase();
-        return (
-            (g.name && g.name.toLowerCase().includes(q)) ||
-            (g.phone && g.phone.toLowerCase().includes(q)) ||
-            (g.category && g.category.toLowerCase().includes(q)) ||
-            (g.unique_code && g.unique_code.toLowerCase().includes(q)) ||
-            (g.card_number && g.card_number.toLowerCase().includes(q))
-        );
-    });
+    const filteredGuests = useMemo(() => {
+        if (targetFilter === 'draft') return allGuests.filter(g => g.delivery_status === 'draft');
+        if (targetFilter === 'failed') return allGuests.filter(g => g.delivery_status === 'failed');
+        if (targetFilter === 'pending_rsvp') return allGuests.filter(g => g.rsvp_status === 'pending');
+        if (targetFilter === 'custom') return allGuests.filter(g => selectedGuestIds.includes(g.id));
+        return allGuests;
+    }, [allGuests, targetFilter, selectedGuestIds]);
 
-    const broadcastForm = useForm({
-        event_id: selectedEvent?.id || events[0]?.id || '',
-        card_template_id: initialTemplateId,
-        channel: 'whatsapp',
-        campaign_type: 'pass_invitation',
-        target_filter: 'draft',
-        custom_caption: customCaption,
-        enable_auto_reply: enableAutoReply,
-        rsvp_attending_text: rsvpAttendingText,
-        rsvp_declined_text: rsvpDeclinedText,
-    });
+    // When targetFilter or selectedEvent changes, auto-select matching guests
+    useEffect(() => {
+        if (!selectedEvent) return;
+        const guests = selectedEvent.guests || [];
+        if (targetFilter === 'draft') {
+            const drafts = guests.filter(g => g.delivery_status === 'draft').map(g => g.id);
+            setSelectedGuestIds(drafts.length > 0 ? drafts : guests.map(g => g.id));
+        } else if (targetFilter === 'failed') {
+            setSelectedGuestIds(guests.filter(g => g.delivery_status === 'failed').map(g => g.id));
+        } else if (targetFilter === 'pending_rsvp') {
+            setSelectedGuestIds(guests.filter(g => g.rsvp_status === 'pending').map(g => g.id));
+        } else if (targetFilter === 'all') {
+            setSelectedGuestIds(guests.map(g => g.id));
+        }
+    }, [selectedEvent?.id, targetFilter]);
+
+    const toggleGuestSelection = (guestId) => {
+        setSelectedGuestIds(prev => {
+            if (prev.includes(guestId)) {
+                return prev.filter(id => id !== guestId);
+            } else {
+                return [...prev, guestId];
+            }
+        });
+    };
+
+    const handleSelectAllFiltered = () => {
+        const currentPool = targetFilter === 'custom' ? allGuests : filteredGuests;
+        const currentPoolIds = currentPool.map(g => g.id);
+        const allSelected = currentPoolIds.length > 0 && currentPoolIds.every(id => selectedGuestIds.includes(id));
+        if (allSelected) {
+            setSelectedGuestIds(prev => prev.filter(id => !currentPoolIds.includes(id)));
+        } else {
+            setSelectedGuestIds(prev => Array.from(new Set([...prev, ...currentPoolIds])));
+        }
+    };
+
+    const guestsToDisplay = targetFilter === 'custom' ? allGuests : filteredGuests;
+
+    const searchedFilteredGuests = useMemo(() => {
+        return guestsToDisplay.filter((g) => {
+            if (!recipientSearch.trim()) return true;
+            const q = recipientSearch.toLowerCase();
+            return (
+                (g.name && g.name.toLowerCase().includes(q)) ||
+                (g.phone && g.phone.toLowerCase().includes(q)) ||
+                (g.category && g.category.toLowerCase().includes(q)) ||
+                (g.unique_code && g.unique_code.toLowerCase().includes(q)) ||
+                (g.card_number && g.card_number.toLowerCase().includes(q))
+            );
+        });
+    }, [guestsToDisplay, recipientSearch]);
 
     const handleCampaignTypeChange = (newType) => {
         setCampaignType(newType);
-        broadcastForm.setData('campaign_type', newType);
         if (newType === 'text_only') {
             const defaultText = TEXT_ONLY_PRESETS[0].text;
             setCustomCaption(defaultText);
-            broadcastForm.setData('custom_caption', defaultText);
         } else if (newType === 'text_rsvp') {
             const defaultText = "Habari {{guest_name}}! You're cordially invited to {{event_title}} on {{event_date}} at {{venue}}. Please tap below to confirm your attendance:";
             setCustomCaption(defaultText);
-            broadcastForm.setData('custom_caption', defaultText);
         } else {
             const defaultPass = channel === 'sms' ? SMS_DEFAULT_TEMPLATE : WHATSAPP_DEFAULT_TEMPLATE;
             setCustomCaption(defaultPass);
-            broadcastForm.setData('custom_caption', defaultPass);
         }
     };
 
     const handleChannelChange = (newChannel) => {
         setChannel(newChannel);
-        broadcastForm.setData('channel', newChannel);
         if (newChannel === 'sms' && (customCaption === WHATSAPP_DEFAULT_TEMPLATE || !customCaption.trim())) {
             setCustomCaption(SMS_DEFAULT_TEMPLATE);
-            broadcastForm.setData('custom_caption', SMS_DEFAULT_TEMPLATE);
         } else if (newChannel === 'whatsapp' && (customCaption === SMS_DEFAULT_TEMPLATE || !customCaption.trim())) {
             setCustomCaption(WHATSAPP_DEFAULT_TEMPLATE);
-            broadcastForm.setData('custom_caption', WHATSAPP_DEFAULT_TEMPLATE);
         }
     };
 
     const handleSelectEvent = (eventId) => {
         router.get(route('messaging.index'), { event_id: eventId }, { preserveState: true });
-        broadcastForm.setData('event_id', eventId);
     };
 
     const handleSelectTemplate = (templateId) => {
         setSelectedTemplateId(templateId);
-        broadcastForm.setData('card_template_id', templateId);
     };
 
     const handleSaveTemplateToEvent = () => {
@@ -250,18 +313,79 @@ export default function Messaging({
     };
 
     const handleSendBroadcast = (e) => {
-        e.preventDefault();
-        broadcastForm.transform((data) => ({
-            ...data,
-            card_template_id: selectedTemplateId,
-        })).post(route('messaging.broadcast'), {
+        if (e && e.preventDefault) e.preventDefault();
+        if (isDispatching) return;
+
+        const activeEventId = selectedEvent?.id || events[0]?.id;
+        if (!activeEventId) {
+            setDispatchStatus({ 
+                type: 'error', 
+                message: 'No event selected. Please create or select an event first.' 
+            });
+            return;
+        }
+
+        let guestIdsToSend = [...selectedGuestIds];
+        if (guestIdsToSend.length === 0) {
+            if (filteredGuests.length > 0) {
+                guestIdsToSend = filteredGuests.map(g => g.id);
+                setSelectedGuestIds(guestIdsToSend);
+            } else if (allGuests.length > 0) {
+                guestIdsToSend = allGuests.map(g => g.id);
+                setSelectedGuestIds(guestIdsToSend);
+            } else {
+                setDispatchStatus({ 
+                    type: 'error', 
+                    message: 'No guests found in this event. Please add guests to your event before dispatching passes.' 
+                });
+                return;
+            }
+        }
+
+        setIsDispatching(true);
+        setDispatchStatus({ 
+            type: 'loading', 
+            message: `Dispatching ${guestIdsToSend.length} pass(es) via ${channel === 'whatsapp' ? 'Meta WhatsApp Cloud API' : 'SMS Gateway'}...` 
+        });
+
+        router.post(route('messaging.broadcast'), {
+            event_id: activeEventId,
+            card_template_id: selectedTemplateId || undefined,
+            channel: channel,
+            campaign_type: campaignType,
+            target_filter: targetFilter,
+            selected_guest_ids: guestIdsToSend,
+            custom_caption: customCaption,
+            enable_auto_reply: enableAutoReply,
+            rsvp_attending_text: rsvpAttendingText,
+            rsvp_declined_text: rsvpDeclinedText,
+        }, {
             preserveScroll: true,
+            onSuccess: (page) => {
+                const succ = page.props?.flash?.success || `Dispatched ${guestIdsToSend.length} campaign message(s) successfully!`;
+                setDispatchStatus({ type: 'success', message: succ });
+            },
+            onError: (errs) => {
+                const first = Object.values(errs)[0] || 'Dispatch error occurred. Please verify your gateway configuration and recipient numbers.';
+                setDispatchStatus({ type: 'error', message: first });
+            },
+            onFinish: () => {
+                setIsDispatching(false);
+            }
         });
     };
 
     const insertPlaceholder = (tag) => {
         setCustomCaption(prev => `${prev} {{${tag}}}`);
-        broadcastForm.setData('custom_caption', `${customCaption} {{${tag}}}`);
+    };
+
+    const handleDeleteLog = (msg) => {
+        const recipient = msg.guest?.name || msg.recipient_phone;
+        if (confirm(`Are you sure you want to delete the delivery log for "${recipient}" (${msg.channel.toUpperCase()})?`)) {
+            router.delete(route('messaging.destroyLog', msg.id), {
+                preserveScroll: true,
+            });
+        }
     };
 
     const sampleGuest = selectedEvent?.guests?.[0] || {
@@ -269,7 +393,7 @@ export default function Messaging({
         name: 'Neema Mbwana',
         phone: '+255 712 345 678',
         category: 'Double Entry',
-        allowance_label: 'DOUBLE ENTRY • 2X',
+        allowance_label: 'Double Entry',
         card_number: 'KDV-2026-004821',
         unique_code: '29841872',
         qr_token: 'kdv_neema_mbwana_29841872',
@@ -354,7 +478,7 @@ export default function Messaging({
                     <div className="flex items-center gap-2.5">
                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-xs font-medium text-slate-700 dark:text-slate-300">
                             <Users className="w-3.5 h-3.5 text-slate-400" />
-                            <span><strong>{filteredGuests.length}</strong> Target Recipients</span>
+                            <span><strong>{selectedGuestIds.length}</strong> Target Recipients</span>
                         </span>
                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                             <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -371,6 +495,52 @@ export default function Messaging({
                     {/* Left: Campaign Composer (7 cols) */}
                     <div className="lg:col-span-7 space-y-5">
                         
+                        {/* Live Dispatch Feedback Banner */}
+                        {dispatchStatus && (
+                            <div className={`p-4 rounded-2xl border flex items-start gap-3 transition shadow-xs ${
+                                dispatchStatus.type === 'loading'
+                                    ? 'bg-cyan-50 dark:bg-cyan-950/40 border-cyan-300 dark:border-cyan-800 text-cyan-900 dark:text-cyan-200'
+                                    : dispatchStatus.type === 'success'
+                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
+                                    : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200'
+                            }`}>
+                                {dispatchStatus.type === 'loading' ? (
+                                    <RefreshCw className="w-5 h-5 animate-spin text-cyan-600 dark:text-cyan-400 flex-shrink-0 mt-0.5" />
+                                ) : dispatchStatus.type === 'success' ? (
+                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                                ) : (
+                                    <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+                                )}
+                                <div className="flex-1">
+                                    <div className="text-xs font-bold leading-relaxed">{dispatchStatus.message}</div>
+                                </div>
+                                <button type="button" onClick={() => setDispatchStatus(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+
+                        {flash?.error && !dispatchStatus && (
+                            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 flex items-start gap-3 shadow-xs">
+                                <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
+                                <div className="text-xs font-bold leading-relaxed">{flash.error}</div>
+                            </div>
+                        )}
+
+                        {flash?.warning && !dispatchStatus && (
+                            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 flex items-start gap-3 shadow-xs">
+                                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                <div className="text-xs font-bold leading-relaxed">{flash.warning}</div>
+                            </div>
+                        )}
+
+                        {flash?.success && !dispatchStatus && (
+                            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 flex items-start gap-3 shadow-xs">
+                                <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                                <div className="text-xs font-bold leading-relaxed">{flash.success}</div>
+                            </div>
+                        )}
+
                         {/* ── CARD 1: Event & Delivery Setup ── */}
                         <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
                             
@@ -567,25 +737,23 @@ export default function Messaging({
                                     <span>Target Audience Segmentation</span>
                                 </label>
                                 <span className="text-[11px] font-mono text-slate-400">
-                                    {filteredGuests.length} matching
+                                    <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{selectedGuestIds.length}</strong> of {allGuests.length} selected
                                 </span>
                             </div>
 
-                            {/* Filter Buttons */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            {/* Filter & Segmentation Buttons */}
+                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                                 {[
                                     { id: 'draft', label: 'Unsent Drafts', count: filterCounts.draft },
                                     { id: 'all', label: 'All Guests', count: filterCounts.all },
                                     { id: 'pending_rsvp', label: 'Pending RSVP', count: filterCounts.pending_rsvp },
                                     { id: 'failed', label: 'Failed Retry', count: filterCounts.failed },
+                                    { id: 'custom', label: 'Custom Select', count: selectedGuestIds.length },
                                 ].map((opt) => (
                                     <button
                                         key={opt.id}
                                         type="button"
-                                        onClick={() => {
-                                            setTargetFilter(opt.id);
-                                            broadcastForm.setData('target_filter', opt.id);
-                                        }}
+                                        onClick={() => setTargetFilter(opt.id)}
                                         className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center cursor-pointer ${
                                             targetFilter === opt.id
                                                 ? 'bg-slate-900 text-white dark:bg-cyan-600 dark:text-white border-transparent dark:border-cyan-500 shadow-xs'
@@ -602,52 +770,81 @@ export default function Messaging({
                                 ))}
                             </div>
 
-                            {/* Inline Recipient Search & List */}
+                            {/* Inline Recipient Search & Interactive Checkbox List */}
                             <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/30 dark:bg-slate-950/30">
-                                <div className="p-2.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2">
-                                    <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-400">
-                                        Preview Recipients ({searchedFilteredGuests.length})
+                                <div className="p-2.5 bg-slate-100/70 dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={handleSelectAllFiltered}
+                                            className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 cursor-pointer"
+                                        >
+                                            <CheckSquare className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                            <span>
+                                                {searchedFilteredGuests.length > 0 && searchedFilteredGuests.every(g => selectedGuestIds.includes(g.id))
+                                                    ? 'Deselect All' 
+                                                    : `Select All (${searchedFilteredGuests.length})`
+                                                }
+                                            </span>
+                                        </button>
                                     </div>
-                                    <div className="relative">
-                                        <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                                    <div className="relative w-48 sm:w-64">
+                                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                                         <input
                                             type="text"
-                                            placeholder="Search guests..."
+                                            placeholder="Filter recipients..."
                                             value={recipientSearch}
                                             onChange={(e) => setRecipientSearch(e.target.value)}
-                                            className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-[10.5px] font-medium rounded-lg pl-7 pr-2.5 py-1 w-36 sm:w-44 outline-none focus:border-cyan-500"
+                                            className="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="max-h-40 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+                                <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-900">
                                     {searchedFilteredGuests.length === 0 ? (
-                                        <div className="p-4 text-center text-slate-400 text-[11px]">
-                                            No guests match the selected filter.
+                                        <div className="p-4 text-center text-xs text-slate-400">
+                                            No guests match the current filter or search criteria.
                                         </div>
                                     ) : (
-                                        searchedFilteredGuests.map((guest) => (
-                                            <div key={guest.id} className="p-2 px-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/40 transition">
-                                                <div className="truncate pr-2">
-                                                    <span className="font-semibold text-slate-900 dark:text-white text-[11.5px]">{guest.name}</span>
-                                                    <span className="text-[10px] text-slate-400 font-mono ml-2">{guest.phone}</span>
+                                        searchedFilteredGuests.map((guest) => {
+                                            const isSelected = selectedGuestIds.includes(guest.id);
+                                            return (
+                                                <div 
+                                                    key={guest.id}
+                                                    onClick={() => toggleGuestSelection(guest.id)}
+                                                    className={`p-2.5 flex items-center justify-between gap-3 text-xs transition cursor-pointer select-none ${
+                                                        isSelected 
+                                                            ? 'bg-cyan-50/60 dark:bg-cyan-950/30 text-slate-900 dark:text-white' 
+                                                            : 'hover:bg-slate-100/50 dark:hover:bg-slate-900/50 text-slate-600 dark:text-slate-400'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-2.5 min-w-0">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => {}} // Handled by row onClick
+                                                            className="rounded border-slate-300 dark:border-slate-700 text-cyan-600 focus:ring-cyan-500 cursor-pointer"
+                                                        />
+                                                        <div className="truncate">
+                                                            <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">
+                                                                {guest.name}
+                                                            </div>
+                                                            <div className="text-[10px] text-slate-500 font-mono">
+                                                                {guest.phone || 'No Phone'} • {guest.category || 'General'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <span className="text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                                            {guest.delivery_status || 'draft'}
+                                                        </span>
+                                                        <span className="text-[10px] font-mono text-slate-400">
+                                                            {guest.unique_code}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                                    <span className="text-[9px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                                                        {guest.delivery_status || 'draft'}
-                                                    </span>
-                                                    <span className={`text-[9px] font-medium px-2 py-0.5 rounded-md ${
-                                                        guest.rsvp_status === 'attending' 
-                                                            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300'
-                                                            : guest.rsvp_status === 'declined'
-                                                            ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'
-                                                            : 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300'
-                                                    }`}>
-                                                        {guest.rsvp_status === 'attending' ? 'Attending' : guest.rsvp_status === 'declined' ? 'Declined' : 'Pending'}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))
+                                            );
+                                        })
                                     )}
                                 </div>
                             </div>
@@ -667,10 +864,7 @@ export default function Messaging({
                                             <button
                                                 key={preset.id}
                                                 type="button"
-                                                onClick={() => {
-                                                    setCustomCaption(preset.text);
-                                                    broadcastForm.setData('custom_caption', preset.text);
-                                                }}
+                                                onClick={() => setCustomCaption(preset.text)}
                                                 className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10.5px] font-medium text-slate-700 dark:text-slate-300 transition cursor-pointer"
                                             >
                                                 {preset.title}
@@ -690,7 +884,6 @@ export default function Messaging({
                                         onClick={() => {
                                             const templ = channel === 'sms' ? SMS_DEFAULT_TEMPLATE : WHATSAPP_DEFAULT_TEMPLATE;
                                             setCustomCaption(templ);
-                                            broadcastForm.setData('custom_caption', templ);
                                         }}
                                         className="text-[10.5px] text-cyan-600 dark:text-cyan-400 hover:underline font-medium cursor-pointer"
                                     >
@@ -702,10 +895,7 @@ export default function Messaging({
                                     rows={3}
                                     className="block w-full border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl text-xs font-normal p-3 leading-relaxed focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition"
                                     value={customCaption}
-                                    onChange={(e) => {
-                                        setCustomCaption(e.target.value);
-                                        broadcastForm.setData('custom_caption', e.target.value);
-                                    }}
+                                    onChange={(e) => setCustomCaption(e.target.value)}
                                 />
 
                                 {/* Dynamic Tags Bar */}
@@ -747,10 +937,7 @@ export default function Messaging({
                                             <input
                                                 type="checkbox"
                                                 checked={enableAutoReply}
-                                                onChange={(e) => {
-                                                    setEnableAutoReply(e.target.checked);
-                                                    broadcastForm.setData('enable_auto_reply', e.target.checked);
-                                                }}
+                                                onChange={(e) => setEnableAutoReply(e.target.checked)}
                                                 className="sr-only peer"
                                             />
                                             <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500" />
@@ -766,10 +953,7 @@ export default function Messaging({
                                                 <input
                                                     type="text"
                                                     value={rsvpAttendingText}
-                                                    onChange={(e) => {
-                                                        setRsvpAttendingText(e.target.value);
-                                                        broadcastForm.setData('rsvp_attending_text', e.target.value);
-                                                    }}
+                                                    onChange={(e) => setRsvpAttendingText(e.target.value)}
                                                     className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
                                                 />
                                             </div>
@@ -780,10 +964,7 @@ export default function Messaging({
                                                 <input
                                                     type="text"
                                                     value={rsvpDeclinedText}
-                                                    onChange={(e) => {
-                                                        setRsvpDeclinedText(e.target.value);
-                                                        broadcastForm.setData('rsvp_declined_text', e.target.value);
-                                                    }}
+                                                    onChange={(e) => setRsvpDeclinedText(e.target.value)}
                                                     className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
                                                 />
                                             </div>
@@ -795,17 +976,31 @@ export default function Messaging({
                             {/* ── Dispatch Action Footer ── */}
                             <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                                    Targeting <strong>{filteredGuests.length}</strong> guests in <strong>{selectedEvent?.title}</strong>
+                                    Targeting <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{selectedGuestIds.length}</strong> selected guest(s) in <strong>{selectedEvent?.title}</strong>
                                 </div>
                                 {canBroadcast ? (
-                                    <PrimaryButton 
+                                    <button 
+                                        type="button"
                                         onClick={handleSendBroadcast}
-                                        disabled={broadcastForm.processing || filteredGuests.length === 0} 
-                                        className="bg-slate-900 hover:bg-black dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 gap-2 py-3 px-6 rounded-xl text-xs font-bold cursor-pointer active:scale-95 disabled:opacity-50"
+                                        disabled={isDispatching} 
+                                        className={`inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer shadow-md ${
+                                            isDispatching 
+                                                ? 'bg-slate-700 text-white opacity-80 cursor-wait'
+                                                : 'bg-slate-900 hover:bg-black dark:bg-cyan-500 dark:hover:bg-cyan-400 text-white dark:text-slate-950 hover:shadow-lg'
+                                        }`}
                                     >
-                                        <Send className="w-3.5 h-3.5" />
-                                        <span>Dispatch Campaign Now</span>
-                                    </PrimaryButton>
+                                        {isDispatching ? (
+                                            <>
+                                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-cyan-400 dark:text-slate-950" />
+                                                <span>Dispatching ({selectedGuestIds.length}) Passes...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="w-3.5 h-3.5" />
+                                                <span>Dispatch ({selectedGuestIds.length}) Campaign Now</span>
+                                            </>
+                                        )}
+                                    </button>
                                 ) : (
                                     <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
                                         Broadcast permissions restricted.
@@ -953,56 +1148,21 @@ export default function Messaging({
                                             ) : (
                                                 /* Pass Attachment Card (pass_invitation or pass_only) */
                                                 <div className="bg-[#1F2C34] rounded-xl rounded-tl-xs overflow-hidden border border-slate-700/60 shadow-md">
-                                                    {template?.image_path ? (
-                                                        <div 
-                                                            onClick={() => setShowPassModal(true)}
-                                                            className="relative cursor-pointer group select-none"
-                                                            style={{ aspectRatio: '1 / 0.82' }}
-                                                        >
-                                                            <img src={template.image_path} alt="Pass" className="w-full h-full object-cover" />
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/30" />
-                                                            
-                                                            <div className="absolute top-2 left-2 right-2 flex items-center justify-between">
-                                                                <span className="px-1.5 py-0.5 rounded-full bg-black/60 text-[7.5px] font-bold text-white uppercase">
-                                                                    {template.elements_config?.headline_text || template.headline || 'INVITATION PASS'}
-                                                                </span>
-                                                                <span className="px-1.5 py-0.5 rounded bg-emerald-500 text-[7.5px] font-black text-slate-950">
-                                                                    OFFICIAL PASS
-                                                                </span>
-                                                            </div>
-
-                                                            <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-2">
-                                                                <div className="font-serif italic text-white text-base leading-tight drop-shadow-md">
-                                                                    {template.elements_config?.couple_names || sampleEventTitle}
-                                                                </div>
-                                                                <div className="text-[7.5px] text-amber-200 uppercase font-bold mt-0.5">
-                                                                    {sampleDate}
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="absolute bottom-2 left-2 right-2 p-1 rounded-lg bg-black/75 backdrop-blur-xs flex items-center justify-between text-[8px] text-white">
-                                                                <span className="truncate font-semibold">{sampleGuestName}</span>
-                                                                <span className="text-amber-300 font-mono font-bold">{sampleGuest.allowance_label || '2X ENTRY'}</span>
-                                                            </div>
+                                                    <div 
+                                                        onClick={() => setShowPassModal(true)}
+                                                        className="relative cursor-pointer group select-none bg-black/40 p-2 sm:p-2.5 flex items-center justify-center transition hover:opacity-95 overflow-hidden"
+                                                        title="Click to view full invitation pass"
+                                                    >
+                                                        <div className="w-full flex justify-center pointer-events-none transform transition duration-200 group-hover:scale-[1.01]">
+                                                            <PersonalisedCard
+                                                                guest={sampleGuest}
+                                                                event={selectedEvent}
+                                                                template={template}
+                                                                interactive={false}
+                                                                className="w-full shadow-lg"
+                                                            />
                                                         </div>
-                                                    ) : (
-                                                        <div 
-                                                            onClick={() => setShowPassModal(true)}
-                                                            className="p-3 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border-b border-slate-700 cursor-pointer"
-                                                        >
-                                                            <div className="flex items-center justify-between text-[9px] text-slate-400">
-                                                                <span className="font-bold text-white">KARDOVO</span>
-                                                                <span className="text-cyan-400 font-semibold">VERIFIED PASS</span>
-                                                            </div>
-                                                            <div className="text-center my-2">
-                                                                <div className="text-[8px] uppercase tracking-wider text-cyan-400">{template?.headline || 'EXCLUSIVE PASS'}</div>
-                                                                <div className="text-xs font-bold text-white truncate mt-0.5">{sampleEventTitle}</div>
-                                                            </div>
-                                                            <div className="p-1 rounded bg-black/50 text-center text-[9px] text-slate-300">
-                                                                {sampleGuestName} • {sampleGuest.allowance_label || 'DOUBLE ENTRY • 2X'}
-                                                            </div>
-                                                        </div>
-                                                    )}
+                                                    </div>
 
                                                     <div className="p-2.5 text-[11px] text-slate-100 leading-relaxed whitespace-pre-line">
                                                         {formattedCaption}
@@ -1129,9 +1289,9 @@ export default function Messaging({
                     </div>
 
                     {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                            <thead className="bg-slate-50 dark:bg-slate-950/60 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
+                    <div className="overflow-x-auto overflow-y-auto max-h-[420px] sm:max-h-[480px] scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
+                        <table className="w-full text-left text-xs min-w-[680px]">
+                            <thead className="bg-slate-50/95 dark:bg-slate-950/95 text-slate-600 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 backdrop-blur-md shadow-2xs">
                                 <tr>
                                     <th className="py-3 px-4 w-12 text-center">#</th>
                                     <th className="py-3 px-4">Recipient</th>
@@ -1140,12 +1300,15 @@ export default function Messaging({
                                     <th className="py-3 px-4">Event</th>
                                     <th className="py-3 px-4">Status</th>
                                     <th className="py-3 px-5 text-right">Time</th>
+                                    {canDeleteLogs && (
+                                        <th className="py-3 px-4 text-center w-12 font-semibold">Action</th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                                 {filteredRecentLogs.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="py-8 text-center text-slate-400 text-xs">
+                                        <td colSpan={canDeleteLogs ? 8 : 7} className="py-8 text-center text-slate-400 text-xs">
                                             No logs match your filter criteria.
                                         </td>
                                     </tr>
@@ -1179,6 +1342,18 @@ export default function Messaging({
                                             <td className="py-3 px-5 text-right font-mono text-slate-400 text-[11px] whitespace-nowrap">
                                                 {new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                                             </td>
+                                            {canDeleteLogs && (
+                                                <td className="py-2.5 px-4 text-center whitespace-nowrap">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteLog(msg)}
+                                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition active:scale-95 cursor-pointer"
+                                                        title="Delete delivery log entry (Admin/Sub-Admin)"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))
                                 )}

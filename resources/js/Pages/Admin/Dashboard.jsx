@@ -522,6 +522,23 @@ export default function AdminDashboard({
         }
     };
 
+    const handleDeleteLog = (log) => {
+        const name = log.guest_name || 'Pass';
+        if (confirm(`Are you sure you want to delete the scan audit record for "${name}" (${log.status === 'granted' ? 'Admitted' : 'Rejected'})?`)) {
+            router.delete(route('admin.destroyScanLog', log.id), {
+                preserveScroll: true,
+            });
+        }
+    };
+
+    const handleClearAllLogs = () => {
+        if (confirm(`Are you sure you want to permanently delete ALL ${recentScanLogs.length} scan audit records?\n\nWARNING: This action cannot be undone.`)) {
+            router.delete(route('admin.clearScanLogs'), {
+                preserveScroll: true,
+            });
+        }
+    };
+
     return (
         <KardovoAppLayout
             title="Governance & Administration"
@@ -626,8 +643,8 @@ export default function AdminDashboard({
                             className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                         >
                             <div className="flex items-center justify-between">
-                                <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sub Admins</span>
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-slate-950 dark:group-hover:bg-cyan-400 dark:group-hover:text-slate-950 transition-colors">
+                                <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Sub Admins</span>
+                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                     <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                 </div>
                             </div>
@@ -644,8 +661,8 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Organisers</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-slate-950 dark:group-hover:bg-cyan-400 dark:group-hover:text-slate-950 transition-colors">
+                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Organisers</span>
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
@@ -661,8 +678,8 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Gate Staff</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-slate-950 dark:group-hover:bg-cyan-400 dark:group-hover:text-slate-950 transition-colors">
+                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Gate Staff</span>
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
@@ -678,8 +695,8 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Global Events</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-slate-950 dark:group-hover:bg-cyan-400 dark:group-hover:text-slate-950 transition-colors">
+                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Global Events</span>
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
@@ -695,8 +712,8 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Guest Passes</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-slate-950 dark:group-hover:bg-cyan-400 dark:group-hover:text-slate-950 transition-colors">
+                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Guest Passes</span>
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
@@ -712,8 +729,8 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Check-ins</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-slate-950 dark:group-hover:bg-cyan-400 dark:group-hover:text-slate-950 transition-colors">
+                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Check-ins</span>
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <CheckCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
@@ -729,8 +746,8 @@ export default function AdminDashboard({
                         className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                     >
                         <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Scan Audits</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] text-slate-600 dark:text-slate-300 flex items-center justify-center group-hover:bg-cyan-500 group-hover:text-slate-950 dark:group-hover:bg-cyan-400 dark:group-hover:text-slate-950 transition-colors">
+                            <span className="text-[9.5px] sm:text-[10px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Scan Audits</span>
+                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                             </div>
                         </div>
@@ -1077,7 +1094,7 @@ export default function AdminDashboard({
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 self-start sm:self-auto">
+                            <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                                 <div className="flex items-center bg-slate-100 dark:bg-white/[0.06] p-1 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08]">
                                     <button
                                         type="button"
@@ -1113,6 +1130,18 @@ export default function AdminDashboard({
                                         Rejected
                                     </button>
                                 </div>
+
+                                {recentScanLogs.length > 0 && isSuperAdmin && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearAllLogs}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200/80 dark:border-rose-800/60 transition active:scale-95 cursor-pointer shadow-2xs"
+                                        title="Delete all scan audit records"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <span>Clear All Logs</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -1125,12 +1154,13 @@ export default function AdminDashboard({
                                         <th className="py-3.5 px-4 font-extrabold text-left">Event Campaign</th>
                                         <th className="py-3.5 px-4 font-extrabold text-left">Gatekeeper &amp; Station</th>
                                         <th className="py-3.5 px-5 font-extrabold text-right">Timestamp</th>
+                                        <th className="py-3.5 px-4 font-extrabold text-center w-14">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] font-medium">
                                     {filteredLogs.length === 0 ? (
                                         <tr>
-                                            <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
+                                            <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
                                                 No scan audit logs found matching criteria.
                                             </td>
                                         </tr>
@@ -1172,6 +1202,16 @@ export default function AdminDashboard({
                                                 </td>
                                                 <td className="py-3.5 px-5 align-middle text-right font-mono text-slate-600 dark:text-slate-400 text-xs whitespace-nowrap">
                                                     {log.scanned_at}
+                                                </td>
+                                                <td className="py-3.5 px-4 align-middle text-center whitespace-nowrap">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteLog(log)}
+                                                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition active:scale-95 cursor-pointer"
+                                                        title={`Delete log for ${log.guest_name || 'Pass'}`}
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))
@@ -1567,14 +1607,15 @@ export default function AdminDashboard({
 
                 {/* TAB 5: MASTER CARD TEMPLATES */}
                 {activeTab === 'templates' && (
-                    <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
-                        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                    <Palette className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.02)] dark:shadow-card overflow-hidden transition-colors duration-300">
+                        {/* Header */}
+                        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex items-start sm:items-center gap-3.5">
+                                <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                    <Palette className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
+                                    <h3 className="text-base font-black text-slate-900 dark:text-white font-display tracking-tight">
                                         Master Card Templates &amp; Pass Artwork Library
                                     </h3>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -1585,17 +1626,18 @@ export default function AdminDashboard({
 
                             <Link
                                 href={route('templates.index')}
-                                className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer"
+                                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition active:scale-95 self-start sm:self-auto cursor-pointer"
                             >
                                 <Palette className="w-3.5 h-3.5" />
                                 <span>Open Design Studio</span>
                             </Link>
                         </div>
 
+                        {/* Minimalist Table */}
                         <div className="overflow-x-auto overflow-y-auto max-h-[520px] scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
                             <table className="w-full text-left text-xs">
                                 <thead>
-                                    <tr className="bg-slate-50/80 dark:bg-[#07111D]/80 text-[10.5px] uppercase font-extrabold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.08] font-mono tracking-wider">
+                                    <tr className="bg-slate-50/70 dark:bg-white/[0.02] text-[10.5px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-white/[0.08] font-mono tracking-wider">
                                         <th className="py-3.5 px-5">Template Preview &amp; Title</th>
                                         <th className="py-3.5 px-4">Engine Type</th>
                                         <th className="py-3.5 px-4">Owner / Global Scope</th>
@@ -1603,65 +1645,71 @@ export default function AdminDashboard({
                                         <th className="py-3.5 px-5 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] font-medium">
+                                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.05] font-medium">
                                     {globalTemplates.map((tpl) => {
                                         const isCustom = tpl.template_type === 'custom_art' && tpl.image_path;
 
                                         return (
                                             <tr key={tpl.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
-                                                <td className="py-3.5 px-5 flex items-center gap-3">
-                                                    {isCustom ? (
-                                                        <div className="w-12 h-16 rounded-xl bg-slate-900 border border-slate-200 dark:border-white/[0.08] overflow-hidden flex-shrink-0 relative shadow-sm">
-                                                            <img src={tpl.image_path} alt={tpl.name} className="w-full h-full object-cover" />
+                                                {/* 1. Preview & Title */}
+                                                <td className="py-3.5 px-5">
+                                                    <div className="flex items-center gap-3.5">
+                                                        {isCustom ? (
+                                                            <div className="w-11 h-15 rounded-xl bg-slate-900 border border-slate-200/80 dark:border-white/[0.1] overflow-hidden flex-shrink-0 relative shadow-2xs">
+                                                                <img src={tpl.image_path} alt={tpl.name} className="w-full h-full object-cover" />
+                                                            </div>
+                                                        ) : (
+                                                            <div 
+                                                                className="w-11 h-15 rounded-xl flex-shrink-0 flex items-center justify-center text-[9px] text-white font-mono font-bold shadow-2xs border border-slate-200/60 dark:border-white/[0.1]"
+                                                                style={{
+                                                                    background: `linear-gradient(135deg, ${tpl.brand_color_from || '#0A182E'} 0%, ${tpl.brand_color_to || '#050D1A'} 100%)`
+                                                                }}
+                                                            >
+                                                                PASS
+                                                            </div>
+                                                        )}
+                                                        <div className="min-w-0">
+                                                            <div className="font-bold text-slate-900 dark:text-white text-xs truncate">
+                                                                {tpl.name}
+                                                            </div>
                                                         </div>
-                                                    ) : (
-                                                        <div 
-                                                            className="w-12 h-16 rounded-xl flex-shrink-0 flex items-center justify-center text-[9px] text-white font-black shadow-sm border border-slate-200/40 dark:border-white/[0.08]"
-                                                            style={{
-                                                                background: `linear-gradient(135deg, ${tpl.brand_color_from} 0%, ${tpl.brand_color_to} 100%)`
-                                                            }}
-                                                        >
-                                                            PASS
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-1.5">
-                                                            <span>{tpl.name}</span>
-                                                            {isCustom && (
-                                                                <span className="text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
-                                                                    ★ Custom Art
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <span className="text-[10.5px] text-slate-400 font-mono">
-                                                            ID: #{tpl.id}
-                                                        </span>
                                                     </div>
                                                 </td>
+
+                                                {/* 2. Engine Type */}
                                                 <td className="py-3.5 px-4">
-                                                    <span className={`text-[10.5px] font-bold px-2.5 py-1 rounded-full ${
-                                                        isCustom 
-                                                            ? 'bg-purple-100 dark:bg-purple-950/60 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-800/50' 
-                                                            : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800/50'
-                                                    }`}>
-                                                        {isCustom ? 'Custom Art Overlay' : 'Standard Gradient'}
+                                                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium px-2.5 py-1 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08]">
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${isCustom ? 'bg-cyan-500' : 'bg-slate-400'}`} />
+                                                        <span>{isCustom ? 'Custom Art' : 'Standard Gradient'}</span>
                                                     </span>
                                                 </td>
-                                                <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300">
+
+                                                {/* 3. Owner / Scope */}
+                                                <td className="py-3.5 px-4">
                                                     {tpl.user ? (
-                                                        <span className="font-bold text-slate-900 dark:text-white">{tpl.user.name}</span>
+                                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 font-medium">
+                                                            {tpl.user.name}
+                                                        </span>
                                                     ) : (
-                                                        <span className="text-slate-400 font-medium italic">Global Platform Template</span>
+                                                        <span className="inline-flex items-center text-[10.5px] font-mono font-medium text-slate-500 dark:text-slate-400 bg-slate-100/60 dark:bg-white/[0.03] px-2 py-0.5 rounded-md border border-slate-200/50 dark:border-white/[0.05]">
+                                                            Global Platform Template
+                                                        </span>
                                                     )}
                                                 </td>
-                                                <td className="py-3.5 px-4 text-slate-800 dark:text-slate-200 font-bold">
-                                                    {tpl.headline}
+
+                                                {/* 4. Card Headline */}
+                                                <td className="py-3.5 px-4">
+                                                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 tracking-wide uppercase">
+                                                        {tpl.headline || '—'}
+                                                    </span>
                                                 </td>
+
+                                                {/* 5. Actions */}
                                                 <td className="py-3.5 px-5 text-right">
-                                                    <div className="flex items-center justify-end gap-1.5">
+                                                    <div className="flex items-center justify-end gap-1">
                                                         <Link
                                                             href={route('templates.index')}
-                                                            className="p-1.5 rounded-lg text-slate-500 hover:text-purple-600 dark:text-slate-400 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/50 transition cursor-pointer"
+                                                            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
                                                             title="Edit Template in Studio"
                                                         >
                                                             <Edit className="w-3.5 h-3.5" />
@@ -1673,7 +1721,7 @@ export default function AdminDashboard({
                                                                     router.delete(route('templates.destroy', tpl.id));
                                                                 }
                                                             }}
-                                                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition cursor-pointer"
+                                                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
                                                             title="Delete Template"
                                                         >
                                                             <Trash2 className="w-3.5 h-3.5" />
@@ -1721,26 +1769,26 @@ export default function AdminDashboard({
                             {/* WhatsApp Gateway Card */}
                             <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-5">
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-sm shadow-2xs">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-sm shadow-2xs shrink-0">
                                                 <Smartphone className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                             </div>
-                                            <div>
-                                                <h4 className="font-black text-base text-slate-900 dark:text-white">
+                                            <div className="min-w-0">
+                                                <h4 className="font-black text-base text-slate-900 dark:text-white truncate">
                                                     {gateways.whatsapp?.provider || 'Meta WhatsApp Cloud API'}
                                                 </h4>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                                                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate block">
                                                     Sender: {gateways.whatsapp?.sender_number || '+255 700 000 000'}
                                                 </span>
                                             </div>
                                         </div>
-                                        <span className={`text-[10.5px] font-extrabold px-3 py-1 rounded-full ${
+                                        <span className={`text-[10.5px] font-extrabold px-3 py-1 rounded-full whitespace-nowrap shrink-0 inline-flex items-center tracking-wide ${
                                             gateways.whatsapp?.status === 'Disabled' 
                                                 ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
                                                 : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60'
                                         }`}>
-                                            {gateways.whatsapp?.status || 'Operational'}
+                                            {gateways.whatsapp?.status || 'Connected (Operational)'}
                                         </span>
                                     </div>
 
@@ -1777,21 +1825,21 @@ export default function AdminDashboard({
                             {/* SMS Gateway Card */}
                             <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-5">
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-sm shadow-2xs">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-sm shadow-2xs shrink-0">
                                                 <MessageSquare className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
                                             </div>
-                                            <div>
-                                                <h4 className="font-black text-base text-slate-900 dark:text-white">
+                                            <div className="min-w-0">
+                                                <h4 className="font-black text-base text-slate-900 dark:text-white truncate">
                                                     {gateways.sms?.provider || 'NextSMS Tanzania'}
                                                 </h4>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+                                                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate block">
                                                     Sender ID: <strong className="text-slate-900 dark:text-white font-bold">{gateways.sms?.sender_id || 'KARDOVO'}</strong>
                                                 </span>
                                             </div>
                                         </div>
-                                        <span className={`text-[10.5px] font-extrabold px-3 py-1 rounded-full ${
+                                        <span className={`text-[10.5px] font-extrabold px-3 py-1 rounded-full whitespace-nowrap shrink-0 inline-flex items-center tracking-wide ${
                                             gateways.sms?.status === 'Disabled' 
                                                 ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
                                                 : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-cyan-300 border border-blue-300 dark:border-blue-800/60'

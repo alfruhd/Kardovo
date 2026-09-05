@@ -104,9 +104,24 @@ class CardTemplateController extends Controller
             $file = $request->file('image_file');
             $extension = $file->getClientOriginalExtension() ?: 'png';
             $fileName = 'custom_tpl_' . time() . '_' . uniqid() . '.' . $extension;
+            $destinationPath = $assetsDir . '/' . $fileName;
             $file->move($assetsDir, $fileName);
             $validated['image_path'] = '/template_assets/' . $fileName;
             $validated['template_type'] = 'custom_art';
+
+            // Auto-detect dimensions & aspect ratio
+            $elementsConfig = $validated['elements_config'] ?? [];
+            $imageInfo = @getimagesize($destinationPath);
+            if ($imageInfo && $imageInfo[0] > 0 && $imageInfo[1] > 0) {
+                $w = $imageInfo[0];
+                $h = $imageInfo[1];
+                $ratio = round($w / $h, 4);
+                $elementsConfig['image_width'] = $w;
+                $elementsConfig['image_height'] = $h;
+                $elementsConfig['aspect_ratio'] = (string)$ratio;
+                $elementsConfig['orientation'] = $w > $h ? 'landscape' : ($w === $h ? 'square' : 'portrait');
+            }
+            $validated['elements_config'] = $elementsConfig;
         }
 
         $validated['user_id'] = $user->id;
@@ -151,17 +166,37 @@ class CardTemplateController extends Controller
             'show_unique_code' => 'boolean',
             'footer_text' => 'nullable|string|max:255',
             'elements_config' => 'nullable|array',
-            'image_file' => 'nullable|image|max:10240',
+            'image_file' => 'nullable|file|mimes:jpeg,png,jpg,webp,svg,gif,bmp,avif|max:20480',
         ]);
 
         if ($request->hasFile('image_file')) {
+            $assetsDir = public_path('template_assets');
+            if (!file_exists($assetsDir)) {
+                mkdir($assetsDir, 0755, true);
+            }
             $file = $request->file('image_file');
-            $fileName = 'custom_tpl_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('template_assets'), $fileName);
+            $extension = $file->getClientOriginalExtension() ?: 'png';
+            $fileName = 'custom_tpl_' . time() . '_' . uniqid() . '.' . $extension;
+            $destinationPath = $assetsDir . '/' . $fileName;
+            $file->move($assetsDir, $fileName);
             $validated['image_path'] = '/template_assets/' . $fileName;
             if (($validated['template_type'] ?? '') !== 'gradient_card') {
                 $validated['template_type'] = 'custom_art';
             }
+
+            // Auto-detect dimensions & aspect ratio
+            $elementsConfig = $validated['elements_config'] ?? ($cardTemplate->elements_config ?? []);
+            $imageInfo = @getimagesize($destinationPath);
+            if ($imageInfo && $imageInfo[0] > 0 && $imageInfo[1] > 0) {
+                $w = $imageInfo[0];
+                $h = $imageInfo[1];
+                $ratio = round($w / $h, 4);
+                $elementsConfig['image_width'] = $w;
+                $elementsConfig['image_height'] = $h;
+                $elementsConfig['aspect_ratio'] = (string)$ratio;
+                $elementsConfig['orientation'] = $w > $h ? 'landscape' : ($w === $h ? 'square' : 'portrait');
+            }
+            $validated['elements_config'] = $elementsConfig;
         }
 
         // Security rule: If this is a global administrator template (user_id === null) and the current user is NOT admin:

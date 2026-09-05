@@ -27,7 +27,8 @@ import {
     Sun,
     Moon,
     CircleDollarSign,
-    TrendingUp
+    TrendingUp,
+    LayoutDashboard
 } from 'lucide-react';
 import KardovoLogo from '@/Components/KardovoLogo';
 import { useTheme } from '@/Hooks/useTheme';
@@ -133,6 +134,10 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
             setToast({ type: 'success', message: flash.success });
             const timer = setTimeout(() => setToast(null), 4000);
             return () => clearTimeout(timer);
+        } else if (flash?.warning) {
+            setToast({ type: 'warning', message: flash.warning });
+            const timer = setTimeout(() => setToast(null), 6000);
+            return () => clearTimeout(timer);
         } else if (flash?.error) {
             setToast({ type: 'error', message: flash.error });
             const timer = setTimeout(() => setToast(null), 5000);
@@ -161,6 +166,13 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
 
     const navItems = [
         {
+            name: 'Dashboard',
+            href: route('dashboard'),
+            icon: LayoutDashboard,
+            active: currentUrl === '/dashboard',
+            show: !isAdmin && !isScanner,
+        },
+        {
             name: 'Admin Portal',
             href: route('admin.dashboard'),
             icon: Shield,
@@ -168,17 +180,10 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
             show: isAdmin || isSubAdmin,
         },
         {
-            name: 'Financial Analytics',
-            href: route('admin.finance'),
-            icon: CircleDollarSign,
-            active: currentUrl.startsWith('/admin/finance'),
-            show: isAdmin,
-        },
-        {
             name: isAdmin ? 'All Events' : 'My Events',
             href: route('events.index'),
             icon: Calendar,
-            active: currentUrl === '/events' || currentUrl.startsWith('/events') || (!isAdmin && currentUrl === '/dashboard'),
+            active: currentUrl === '/events' || currentUrl.startsWith('/events'),
             show: !isScanner,
         },
         {
@@ -201,6 +206,13 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
             icon: QrCode,
             active: currentUrl.startsWith('/scanner'),
             show: isScanner || isAdmin || isSubAdmin || (!isSuspended && perms.can_manage_scanners !== false),
+        },
+        {
+            name: 'Financial Analysis',
+            href: route('admin.finance'),
+            icon: CircleDollarSign,
+            active: currentUrl.startsWith('/admin/finance'),
+            show: isAdmin,
         },
         {
             name: 'Account Profile',
@@ -614,11 +626,15 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         <div className={`p-4 rounded-2xl flex items-center justify-between border shadow-sm ${
                             toast.type === 'success' 
                                 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50' 
-                                : 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800/50'
+                                : toast.type === 'warning'
+                                    ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800/50'
+                                    : 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800/50'
                         }`}>
                             <div className="flex items-center gap-2.5">
                                 {toast.type === 'success' ? (
                                     <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                ) : toast.type === 'warning' ? (
+                                    <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                                 ) : (
                                     <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" />
                                 )}

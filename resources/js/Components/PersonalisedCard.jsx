@@ -46,6 +46,7 @@ export default function PersonalisedCard({
     const cardRef = useRef(null);
     const [qrDataUrl, setQrDataUrl] = useState('');
     const [isExporting, setIsExporting] = useState(false);
+    const [detectedImgRatio, setDetectedImgRatio] = useState(null);
 
     // Guest data with smart fallbacks
     const guestName = guest?.name || 'Alfred Mashauri';
@@ -60,15 +61,58 @@ export default function PersonalisedCard({
     const cardNumber = guest?.card_number || 'KDV-2026-004821';
     const uniqueCode = guest?.unique_code || '29841872';
     const qrToken = guest?.qr_token || 'kdv_alfred_mashauri_29841872';
-    const category = guest?.category || 'Double Entry';
     const maxEntries = guest?.max_entries || 2;
-    const allowanceLabel = guest?.allowance_label || (maxEntries > 1 ? `DOUBLE ENTRY • 2X` : 'SINGLE ENTRY ACCESS');
-    const categoryText = guest?.category || (maxEntries > 1 ? 'Double Entry' : 'Single Entry');
+    const cleanAllowance = guest?.category || (guest?.allowance_label && !guest.allowance_label.includes('scan up') && !guest.allowance_label.includes('•') ? guest.allowance_label : (maxEntries > 1 ? (maxEntries === 2 ? 'Double Entry' : `${maxEntries} Entries`) : 'Single Entry'));
+    const category = cleanAllowance;
+    const allowanceLabel = cleanAllowance.toUpperCase();
+    const categoryText = cleanAllowance.toUpperCase();
 
     // Template properties
     const templateType = template?.template_type || (template?.image_path && !template?.elements_config?.bg_mode ? 'custom_art' : 'gradient_card');
     const imagePath = template?.image_path || null;
     const elementsConfig = template?.elements_config || {};
+
+    // Dynamic Aspect Ratio & Dimensions (WYSIWYG 1:1 Auto Detection)
+    const configRatio = elementsConfig.aspect_ratio;
+    let computedRatioNum = null;
+    if (typeof configRatio === 'number') {
+        computedRatioNum = configRatio;
+    } else if (typeof configRatio === 'string' && configRatio.trim() !== '') {
+        if (configRatio.includes('/')) {
+            const parts = configRatio.split('/').map(n => parseFloat(n.trim()));
+            if (parts[0] && parts[1]) computedRatioNum = parts[0] / parts[1];
+        } else if (!isNaN(parseFloat(configRatio))) {
+            computedRatioNum = parseFloat(configRatio);
+        }
+    }
+
+    const isEngagement = elementsConfig?.theme === 'engagement_burgundy' || 
+        (imagePath && imagePath.includes('adel_laila')) ||
+        (template?.name && template.name.toLowerCase().includes('adel'));
+
+    const isZamroth = elementsConfig?.theme === 'wedding_gold' ||
+        (imagePath && imagePath.includes('zamroth_husna')) ||
+        (template?.name && template.name.toLowerCase().includes('zamroth'));
+
+    const isPredefinedCustomArt = isEngagement || isZamroth || template?.is_predefined === true || template?.user_id === null;
+
+    // Determine final aspect ratio (Priority: explicit config -> live measured image -> predefined template defaults -> 2:3)
+    const finalRatioNum = computedRatioNum || detectedImgRatio || (
+        isEngagement ? (800 / 1184) : (isZamroth ? (800 / 1200) : null)
+    );
+
+    const isLandscape = (finalRatioNum && finalRatioNum > 1.12) || elementsConfig.orientation === 'landscape';
+    const isSquare = (finalRatioNum && finalRatioNum >= 0.92 && finalRatioNum <= 1.12) || elementsConfig.orientation === 'square';
+
+    // Exact CSS aspect ratio value
+    const cardAspectRatio = finalRatioNum ? `${finalRatioNum}` : (isEngagement ? '800 / 1184' : '800 / 1200');
+
+    // Dynamic width bounds based on orientation
+    const cardMaxWidthClass = isLandscape 
+        ? 'w-full max-w-[580px] sm:max-w-[620px]' 
+        : isSquare 
+            ? 'w-full max-w-[440px]' 
+            : 'w-full max-w-[410px]';
 
     // Background Mode & Colors for Signature Pass
     const bgMode = elementsConfig.bg_mode || (template?.template_type === 'gradient_card' ? (elementsConfig.bg_solid_color ? 'solid' : 'gradient') : (imagePath ? 'image' : 'gradient'));
@@ -109,20 +153,7 @@ export default function PersonalisedCard({
         ? '1px solid rgba(255, 255, 255, 0.12)' 
         : '1px solid #E2E8F0';
 
-    // Check if this is the Adel & Laila Engagement Burgundy template
-    const isEngagement = elementsConfig?.theme === 'engagement_burgundy' || 
-        (imagePath && imagePath.includes('adel_laila')) ||
-        (template?.name && template.name.toLowerCase().includes('adel'));
-
-    const isZamroth = elementsConfig?.theme === 'wedding_gold' ||
-        (imagePath && imagePath.includes('zamroth_husna')) ||
-        (template?.name && template.name.toLowerCase().includes('zamroth'));
-
-    const isPredefinedCustomArt = isEngagement || isZamroth || template?.is_predefined === true || template?.user_id === null;
-
-    const _ignore = '' || 
-        (imagePath && imagePath.includes('adel_laila')) ||
-        (template?.name && template.name.toLowerCase().includes('adel'));
+    // Text & Container Palette depending on Light/Dark background
 
     // Custom art text fields
     const headlineText = elementsConfig.headline_text || template?.headline || (isEngagement ? 'Engagement Invitation' : 'WEDDING INVITATION');
@@ -227,6 +258,18 @@ export default function PersonalisedCard({
         plaqueWidth: 84,
         hide_badge_box: false
     };
+
+    const isCleanName = Boolean(
+        nameCfg.clean_text === true || nameCfg.clean_text === 'true' || nameCfg.clean_text === 1 || nameCfg.clean_text === '1' ||
+        nameCfg.hide_plaque_box === true || nameCfg.hide_plaque_box === 'true' || nameCfg.hide_plaque_box === 1 || nameCfg.hide_plaque_box === '1' ||
+        nameCfg.hide_name_box === true || nameCfg.hide_name_box === 'true' || nameCfg.hide_name_box === 1 || nameCfg.hide_name_box === '1'
+    );
+
+    const isCleanAllowance = Boolean(
+        allowanceCfg.clean_text === true || allowanceCfg.clean_text === 'true' || allowanceCfg.clean_text === 1 || allowanceCfg.clean_text === '1' ||
+        allowanceCfg.hide_badge_box === true || allowanceCfg.hide_badge_box === 'true' || allowanceCfg.hide_badge_box === 1 || allowanceCfg.hide_badge_box === '1'
+    );
+
     const cardNumCfg = elementsConfig.card_number || { 
         x: 50, 
         y: 96, 
@@ -404,17 +447,25 @@ export default function PersonalisedCard({
                     <div 
                         ref={cardRef}
                         id="kardovo-invitation-card"
-                        className="w-full max-w-[410px] rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 relative select-none bg-[#121212] group transition-all"
-                        style={{ aspectRatio: '1 / 1.48' }}
+                        className={`${cardMaxWidthClass} rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 relative select-none bg-[#121212] group transition-all`}
+                        style={{ aspectRatio: cardAspectRatio }}
                     >
-                        <img src={imagePath} alt="Invitation Template" className="w-full h-full object-cover pointer-events-none absolute inset-0" />
-                        <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/35 pointer-events-none" />
+                        <img 
+                            src={imagePath} 
+                            alt="Invitation Template" 
+                            onLoad={(e) => {
+                                if (e.target.naturalWidth && e.target.naturalHeight) {
+                                    setDetectedImgRatio(e.target.naturalWidth / e.target.naturalHeight);
+                                }
+                            }}
+                            className="w-full h-full object-cover pointer-events-none absolute inset-0" 
+                        />
 
                         {/* Top Headline / Badge */}
                         {template?.show_category_badge !== false && template?.show_headline !== false && elementsConfig.show_headline !== false && elementsConfig.show_category_badge !== false && (
                             isEngagement ? (
                                 <div 
-                                    className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-4 py-1 rounded-full bg-white/75 backdrop-blur-xs border border-[#7A1E28]/30 shadow-sm transition-all whitespace-nowrap z-20"
+                                    className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-4 py-1 rounded-full bg-white/90 border border-[#7A1E28]/30 shadow-sm transition-all whitespace-nowrap z-20"
                                     style={{
                                         left: `${badgeCfg.x || 50}%`, top: `${headlineYPos || badgeCfg.y || 5.2}%`,
                                         color: badgeCfg.color || '#7A1E28', fontSize: `${badgeCfg.fontSize || 12}px`,
@@ -428,7 +479,7 @@ export default function PersonalisedCard({
                                 </div>
                             ) : (
                                 <div 
-                                    className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-3.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs border border-white/20 shadow-md transition-all whitespace-nowrap z-20"
+                                    className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-3.5 py-0.5 rounded-full bg-black/60 border border-white/20 shadow-md transition-all whitespace-nowrap z-20"
                                     style={{
                                         left: `${badgeCfg.x || 50}%`, top: `${headlineYPos || badgeCfg.y || 5.5}%`,
                                         color: badgeCfg.color || '#FFFFFF', fontSize: `${badgeCfg.fontSize || 10.5}px`,
@@ -483,7 +534,7 @@ export default function PersonalisedCard({
                                             >
                                                 {dateMonth} {dateYear}
                                             </div>
-                                            <div className="inline-flex items-center justify-center gap-2.5 bg-white/75 backdrop-blur-[2px] px-3.5 py-1 rounded-sm border border-[#7A1E28]/20 shadow-xs">
+                                            <div className="inline-flex items-center justify-center gap-2.5 bg-white/95 px-3.5 py-1 rounded-sm border border-[#7A1E28]/20 shadow-xs">
                                                 <div className="flex flex-col items-center">
                                                     <span style={{ width: `${dateFontSize * 4.2}px`, height: '1px', backgroundColor: 'rgba(122, 30, 40, 0.6)', marginBottom: '2px' }} />
                                                     <span 
@@ -563,52 +614,117 @@ export default function PersonalisedCard({
                             <div 
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
                                 style={{ 
-                                    left: `${nameCfg.x || 50}%`, 
-                                    top: `${nameCfg.y || 71.5}%`, 
-                                    width: `${nameCfg.plaqueWidth || 84}%`,
+                                    left: `${nameCfg.x ?? 50}%`, 
+                                    top: `${nameCfg.y ?? 71.5}%`, 
+                                    width: isCleanName ? 'auto' : `${nameCfg.plaqueWidth ?? 84}%`,
                                 }}
                             >
-                                {isEngagement ? (
+                                {isCleanName ? (
                                     <div 
-                                        className="py-2 px-4 rounded-2xl backdrop-blur-xl shadow-2xl transition-all"
+                                        className="font-black uppercase truncate"
                                         style={{ 
-                                            background: 'rgba(255, 255, 255, 0.45)',
-                                            border: '1px solid rgba(255, 255, 255, 0.8)',
-                                            boxShadow: '0 10px 30px rgba(122, 30, 40, 0.12), inset 0 1px 2px rgba(255, 255, 255, 0.85)',
+                                            color: nameCfg.color && nameCfg.color !== '#FFFFFF' ? nameCfg.color : (isEngagement ? '#54101A' : '#FFFFFF'), 
+                                            fontSize: `${parseFloat(nameCfg.fontSize) || (isEngagement ? 18 : 22)}px`, 
+                                            fontFamily: nameCfg.fontFamily || 'Georgia, serif', 
+                                            fontWeight: nameCfg.fontWeight || '800',
+                                            textShadow: 'none',
+                                            letterSpacing: '0.04em'
                                         }}
                                     >
-                                        <div className="text-[7.5px] text-[#7A1E28]/90 uppercase tracking-[0.22em] font-black">INVITATION PASS ISSUED TO</div>
-                                        <div className="font-black font-serif tracking-wider uppercase mt-0.5 drop-shadow-xs truncate"
+                                        {guestName}
+                                    </div>
+                                ) : (
+                                    isEngagement ? (
+                                        <div 
+                                            className="py-2 px-4 rounded-2xl shadow-lg transition-all"
                                             style={{ 
-                                                color: nameCfg.color && nameCfg.color !== '#FFFFFF' ? nameCfg.color : '#54101A', 
-                                                fontSize: `${nameCfg.fontSize || 18}px`, 
-                                                fontFamily: nameCfg.fontFamily || 'Georgia, serif', 
-                                                fontWeight: nameCfg.fontWeight || '800' 
-                                            }}>
-                                            {guestName}
+                                                background: 'rgba(255, 255, 255, 0.88)',
+                                                border: '1px solid rgba(255, 255, 255, 0.95)',
+                                                boxShadow: '0 4px 20px rgba(122, 30, 40, 0.15)',
+                                            }}
+                                        >
+                                            <div className="text-[7.5px] text-[#7A1E28]/90 uppercase tracking-[0.22em] font-black">INVITATION PASS ISSUED TO</div>
+                                            <div className="font-black font-serif tracking-wider uppercase mt-0.5 drop-shadow-xs truncate"
+                                                style={{ 
+                                                    color: nameCfg.color && nameCfg.color !== '#FFFFFF' ? nameCfg.color : '#54101A', 
+                                                    fontSize: `${parseFloat(nameCfg.fontSize) || 18}px`, 
+                                                    fontFamily: nameCfg.fontFamily || 'Georgia, serif', 
+                                                    fontWeight: nameCfg.fontWeight || '800' 
+                                                }}>
+                                                {guestName}
+                                            </div>
                                         </div>
-                                        <div className="text-[8.5px] text-[#7A1E28] font-black tracking-widest uppercase mt-0.5">{allowanceLabel}</div>
+                                    ) : (
+                                        <div 
+                                            className="py-2.5 px-4 rounded-2xl shadow-xl transition-all"
+                                            style={{ 
+                                                background: 'rgba(0, 0, 0, 0.65)',
+                                                border: '1px solid rgba(255, 255, 255, 0.25)',
+                                                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
+                                            }}
+                                        >
+                                            <div className="text-[8px] text-white/80 uppercase tracking-[0.22em] font-bold">INVITATION PASS ISSUED TO</div>
+                                            <div className="font-black font-serif tracking-wider uppercase mt-0.5 drop-shadow-sm truncate"
+                                                style={{ 
+                                                    color: nameCfg.color || '#FFFFFF', 
+                                                    fontSize: `${parseFloat(nameCfg.fontSize) || 19}px`, 
+                                                    fontFamily: nameCfg.fontFamily || 'Georgia, serif', 
+                                                    fontWeight: nameCfg.fontWeight || '800' 
+                                                }}>
+                                                {guestName}
+                                            </div>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
+
+                        {/* Invitation Category / Allowance Badge */}
+                        {elementsConfig.show_allowance_badge !== false && (
+                            <div 
+                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
+                                style={{ 
+                                    left: `${allowanceCfg.x ?? 50}%`, 
+                                    top: `${allowanceCfg.y ?? 78.5}%`, 
+                                    width: isCleanAllowance ? 'auto' : (allowanceCfg.plaqueWidth ? `${allowanceCfg.plaqueWidth}%` : 'auto'),
+                                }}
+                            >
+                                {isCleanAllowance ? (
+                                    <div 
+                                        className="font-extrabold tracking-widest uppercase truncate"
+                                        style={{ 
+                                            color: allowanceCfg.color || (isEngagement ? '#7A1E28' : '#FDE68A'), 
+                                            fontSize: `${parseFloat(allowanceCfg.fontSize) || 10}px`,
+                                            fontFamily: allowanceCfg.fontFamily || 'sans-serif',
+                                            fontWeight: allowanceCfg.fontWeight || '800',
+                                            textShadow: 'none'
+                                        }}
+                                    >
+                                        {allowanceLabel || categoryText}
                                     </div>
                                 ) : (
                                     <div 
-                                        className="py-2.5 px-4 rounded-2xl backdrop-blur-xl shadow-2xl transition-all"
                                         style={{ 
-                                            background: 'rgba(0, 0, 0, 0.55)',
-                                            border: '1px solid rgba(255, 255, 255, 0.3)',
-                                            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.2)',
+                                            display: 'inline-flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            gap: '5px', 
+                                            padding: '4px 14px', 
+                                            borderRadius: '9999px', 
+                                            border: isEngagement ? '1px solid rgba(122, 30, 40, 0.35)' : '1px solid rgba(255, 255, 255, 0.25)', 
+                                            backgroundColor: allowanceCfg.boxBg || (isEngagement ? 'rgba(255, 255, 255, 0.92)' : 'rgba(0, 0, 0, 0.7)'), 
+                                            color: allowanceCfg.color || (isEngagement ? '#7A1E28' : '#FDE68A'), 
+                                            fontSize: `${parseFloat(allowanceCfg.fontSize) || 9}px`, 
+                                            fontFamily: allowanceCfg.fontFamily || 'sans-serif', 
+                                            fontWeight: allowanceCfg.fontWeight || '800', 
+                                            letterSpacing: '0.12em', 
+                                            textTransform: 'uppercase', 
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                                            width: allowanceCfg.plaqueWidth ? `${allowanceCfg.plaqueWidth}%` : 'auto'
                                         }}
                                     >
-                                        <div className="text-[8px] text-white/80 uppercase tracking-[0.22em] font-bold">INVITATION PASS ISSUED TO</div>
-                                        <div className="font-black font-serif tracking-wider uppercase mt-0.5 drop-shadow-sm truncate"
-                                            style={{ 
-                                                color: nameCfg.color || '#FFFFFF', 
-                                                fontSize: `${nameCfg.fontSize || 19}px`, 
-                                                fontFamily: nameCfg.fontFamily || 'Georgia, serif', 
-                                                fontWeight: nameCfg.fontWeight || '800' 
-                                            }}>
-                                            {guestName}
-                                        </div>
-                                        <div className="text-[9px] text-amber-300 font-extrabold tracking-widest uppercase mt-0.5">{allowanceLabel}</div>
+                                        <Ticket style={{ width: '11px', height: '11px' }} />
+                                        <span>{allowanceLabel || categoryText}</span>
                                     </div>
                                 )}
                             </div>
@@ -616,13 +732,13 @@ export default function PersonalisedCard({
 
                         {/* QR Code Pass */}
                         {template?.show_qr !== false && elementsConfig.show_qr !== false && (
-                            <div className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all drop-shadow-2xl z-20"
+                            <div className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all drop-shadow-md z-20"
                                 style={{ left: `${qrCfg.x || 50}%`, top: `${qrCfg.y || 85.5}%` }}>
-                                <div className="p-1 bg-white rounded-xl shadow-2xl inline-block border border-slate-200/80">
+                                <div className="inline-block bg-white rounded-md overflow-hidden">
                                     {qrDataUrl ? (
-                                        <img src={qrDataUrl} alt="QR Pass" style={{ width: `${parseFloat(qrCfg.size) || 72}px`, height: `${parseFloat(qrCfg.size) || 72}px` }} className="rounded-lg block" />
+                                        <img src={qrDataUrl} alt="QR Pass" style={{ width: `${parseFloat(qrCfg.size) || 72}px`, height: `${parseFloat(qrCfg.size) || 72}px` }} className="block" />
                                     ) : (
-                                        <div style={{ width: `${parseFloat(qrCfg.size) || 72}px`, height: `${parseFloat(qrCfg.size) || 72}px` }} className="bg-slate-200 animate-pulse rounded-lg" />
+                                        <div style={{ width: `${parseFloat(qrCfg.size) || 72}px`, height: `${parseFloat(qrCfg.size) || 72}px` }} className="bg-slate-200 animate-pulse" />
                                     )}
                                 </div>
                             </div>
@@ -641,16 +757,25 @@ export default function PersonalisedCard({
                     <div 
                         ref={cardRef}
                         id="kardovo-invitation-card"
-                        className="w-full max-w-[410px] rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 relative select-none bg-[#121212] group transition-all"
-                        style={{ aspectRatio: '1 / 1.48' }}
+                        className={`${cardMaxWidthClass} rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 relative select-none bg-[#121212] group transition-all`}
+                        style={{ aspectRatio: cardAspectRatio }}
                     >
                         {/* Background Artwork */}
-                        <img src={imagePath} alt="Invitation Template" className="w-full h-full object-cover pointer-events-none absolute inset-0" />
+                        <img 
+                            src={imagePath} 
+                            alt="Invitation Template" 
+                            onLoad={(e) => {
+                                if (e.target.naturalWidth && e.target.naturalHeight) {
+                                    setDetectedImgRatio(e.target.naturalWidth / e.target.naturalHeight);
+                                }
+                            }}
+                            className="w-full h-full object-cover pointer-events-none absolute inset-0" 
+                        />
 
                         {/* Top Headline Banner / Badge */}
-                        {template?.show_category_badge !== false && template?.show_headline !== false && elementsConfig.show_headline !== false && elementsConfig.show_category_badge !== false && (
+                        {template?.show_category_badge !== false && (elementsConfig.show_headline === true || elementsConfig.show_category_badge === true) && (
                             <div 
-                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-3.5 py-0.5 rounded-full bg-black/40 backdrop-blur-xs border border-white/20 shadow-md transition-all whitespace-nowrap z-20"
+                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-3.5 py-0.5 rounded-full bg-black/60 border border-white/20 shadow-md transition-all whitespace-nowrap z-20"
                                 style={{
                                     left: `${badgeCfg.x || 50}%`, 
                                     top: `${headlineYPos}%`,
@@ -666,8 +791,8 @@ export default function PersonalisedCard({
                             </div>
                         )}
 
-                        {/* Couple Names / Header Section */}
-                        {elementsConfig.show_couple_names !== false && elementsConfig.show_title !== false && coupleNames && (
+                        {/* Couple Names / Header Section (Only if explicitly enabled) */}
+                        {(elementsConfig.show_couple_names === true || elementsConfig.show_title === true) && coupleNames && (
                             <div className="absolute -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none px-4 z-10 space-y-0.5" style={{ left: '50%', top: `${coupleNamesY}%` }}>
                                 {subtitleText && (
                                     <div 
@@ -695,8 +820,8 @@ export default function PersonalisedCard({
                             </div>
                         )}
 
-                        {/* Date & Details Section */}
-                        {elementsConfig.show_date !== false && elementsConfig.show_date_details !== false && (
+                        {/* Date & Details Section (Only if explicitly enabled) */}
+                        {(elementsConfig.show_date === true || elementsConfig.show_date_details === true) && (
                             <div className="absolute -translate-x-1/2 -translate-y-1/2 w-full text-center pointer-events-none px-6 z-10 space-y-1" style={{ left: '50%', top: `${dateY}%` }}>
                                 <div className="font-bold uppercase tracking-[0.25em] drop-shadow-sm" style={{ fontSize: `${dateFontSize}px`, color: dateColor }}>{dateMonth}</div>
                                 <div className="flex items-center justify-center gap-3 uppercase font-extrabold tracking-widest drop-shadow-sm" style={{ fontSize: `${dateFontSize * 1.05}px`, color: dateColor }}>
@@ -706,11 +831,11 @@ export default function PersonalisedCard({
                                 </div>
                                 <div className="font-bold tracking-widest drop-shadow-sm" style={{ fontSize: `${dateFontSize}px`, color: dateColor }}>{dateYear}</div>
                                 
-                                {elementsConfig.show_quote !== false && invitationQuote && (
+                                {elementsConfig.show_quote === true && invitationQuote && (
                                     <p className="font-bold uppercase tracking-wider leading-relaxed drop-shadow-md px-1 pt-0.5" style={{ fontSize: `${quoteFontSize}px`, color: quoteColor }}>{invitationQuote}</p>
                                 )}
 
-                                {elementsConfig.show_venue !== false && (
+                                {elementsConfig.show_venue === true && (
                                     <div className="uppercase tracking-widest font-semibold pt-0.5 space-y-0.5" style={{ fontSize: `${customVenueFontSize}px`, color: customVenueColor }}>
                                         <div className="tracking-[0.2em] font-bold" style={{ color: dateNumColor }}>{venueName}</div>
                                         {venueSub && <div className="lowercase font-normal opacity-90" style={{ fontSize: `${customVenueFontSize * 0.9}px` }}>{venueSub}</div>}
@@ -728,10 +853,10 @@ export default function PersonalisedCard({
                                 style={{ 
                                     left: `${nameCfg.x ?? 50}%`, 
                                     top: `${nameCfg.y ?? 71.5}%`, 
-                                    width: nameCfg.hide_plaque_box ? 'auto' : `${nameCfg.plaqueWidth ?? 84}%`,
+                                    width: isCleanName ? 'auto' : `${nameCfg.plaqueWidth ?? 84}%`,
                                 }}
                             >
-                                {nameCfg.hide_plaque_box ? (
+                                {isCleanName ? (
                                     <div 
                                         className="font-black uppercase truncate"
                                         style={{ 
@@ -739,16 +864,17 @@ export default function PersonalisedCard({
                                             fontSize: `${parseFloat(nameCfg.fontSize) || 22}px`, 
                                             fontFamily: nameCfg.fontFamily || 'Georgia, serif', 
                                             fontWeight: nameCfg.fontWeight || '800',
-                                            textShadow: 'none'
+                                            textShadow: 'none',
+                                            letterSpacing: '0.04em'
                                         }}
                                     >
                                         {guestName}
                                     </div>
                                 ) : (
                                     <div 
-                                        className="py-2.5 px-4 rounded-2xl backdrop-blur-xl shadow-2xl transition-all"
+                                        className="py-2.5 px-4 rounded-2xl shadow-2xl transition-all"
                                         style={{ 
-                                            background: nameCfg.boxBg || 'rgba(0, 0, 0, 0.48)',
+                                            background: nameCfg.boxBg || 'rgba(0, 0, 0, 0.65)',
                                             border: '1px solid rgba(255, 255, 255, 0.25)',
                                             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.2)',
                                         }}
@@ -775,11 +901,11 @@ export default function PersonalisedCard({
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
                                 style={{ 
                                     left: `${allowanceCfg.x ?? 50}%`, 
-                                    top: `${allowanceCfg.y ?? 78.5}%`,
-                                    width: allowanceCfg.hide_badge_box ? 'auto' : (allowanceCfg.plaqueWidth ? `${allowanceCfg.plaqueWidth}%` : 'auto'),
+                                    top: `${allowanceCfg.y ?? 78.5}%`, 
+                                    width: isCleanAllowance ? 'auto' : (allowanceCfg.plaqueWidth ? `${allowanceCfg.plaqueWidth}%` : 'auto'),
                                 }}
                             >
-                                {allowanceCfg.hide_badge_box ? (
+                                {isCleanAllowance ? (
                                     <div 
                                         className="font-extrabold tracking-widest uppercase truncate"
                                         style={{ 
@@ -790,7 +916,7 @@ export default function PersonalisedCard({
                                             textShadow: 'none'
                                         }}
                                     >
-                                        {categoryText}
+                                        {allowanceLabel || categoryText}
                                     </div>
                                 ) : (
                                     <div 
@@ -803,10 +929,9 @@ export default function PersonalisedCard({
                                             borderRadius: '9999px', 
                                             border: '1px solid rgba(255, 255, 255, 0.3)', 
                                             backgroundColor: allowanceCfg.boxBg || 'rgba(0, 0, 0, 0.65)', 
-                                            backdropFilter: 'blur(4px)', 
                                             color: allowanceCfg.color || '#FDE68A', 
                                             fontSize: `${parseFloat(allowanceCfg.fontSize) || 9}px`, 
-                                            fontFamily: allowanceCfg.fontFamily || 'sans-serif',
+                                            fontFamily: allowanceCfg.fontFamily || 'sans-serif', 
                                             fontWeight: allowanceCfg.fontWeight || '800', 
                                             letterSpacing: '0.12em', 
                                             textTransform: 'uppercase', 
@@ -815,7 +940,7 @@ export default function PersonalisedCard({
                                         }}
                                     >
                                         <Ticket style={{ width: '11px', height: '11px' }} />
-                                        <span>{categoryText}</span>
+                                        <span>{allowanceLabel || categoryText}</span>
                                     </div>
                                 )}
                             </div>
@@ -824,14 +949,14 @@ export default function PersonalisedCard({
                         {/* 3. QR CODE PASS (Minimum size starting at 20px) */}
                         {template?.show_qr !== false && elementsConfig.show_qr !== false && (
                             <div 
-                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all drop-shadow-2xl z-20"
+                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all drop-shadow-md z-20"
                                 style={{ left: `${qrCfg.x ?? 50}%`, top: `${qrCfg.y ?? 86}%` }}
                             >
-                                <div className="p-1.5 bg-white rounded-xl shadow-2xl inline-block border border-slate-200/80">
+                                <div className="inline-block bg-white rounded-md overflow-hidden">
                                     {qrDataUrl ? (
-                                        <img src={qrDataUrl} alt="QR Pass" style={{ width: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px`, height: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px` }} className="rounded-lg block" />
+                                        <img src={qrDataUrl} alt="QR Pass" style={{ width: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px`, height: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px` }} className="block" />
                                     ) : (
-                                        <div style={{ width: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px`, height: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px` }} className="bg-slate-200 animate-pulse rounded-lg" />
+                                        <div style={{ width: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px`, height: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px` }} className="bg-slate-200 animate-pulse" />
                                     )}
                                 </div>
                             </div>
@@ -916,7 +1041,6 @@ export default function PersonalisedCard({
                             borderRadius: '24px',
                             padding: '20px 18px 16px 18px',
                             background: innerContainerBg,
-                            backdropFilter: 'blur(16px)',
                             boxShadow: isDarkBg ? '0 4px 30px rgba(0, 0, 0, 0.5)' : '0 4px 20px rgba(0, 0, 0, 0.03)',
                         }}
                     >
@@ -1174,19 +1298,34 @@ export default function PersonalisedCard({
 
             {/* Interactive Action Bar */}
             {interactive && (
-                <div className="mt-4 flex items-center justify-center gap-3 w-full max-w-[390px]">
-                    <button type="button" onClick={handleDownloadCanvas} disabled={isExporting}
-                        className="flex-1 py-2.5 px-4 rounded-xl bg-kardovo-navy hover:bg-slate-900 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition active:scale-95">
+                <div className={`mt-4 flex items-center justify-center gap-3 w-full ${isLandscape ? 'max-w-[580px] sm:max-w-[620px]' : (isSquare ? 'max-w-[440px]' : 'max-w-[410px]')}`}>
+                    <button 
+                        type="button" 
+                        onClick={handleDownloadCanvas} 
+                        disabled={isExporting}
+                        className="flex-1 py-2.5 px-4 rounded-2xl bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
                         {isExporting ? (
-                            <><Loader2 className="w-4 h-4 animate-spin text-kardovo-blue-light" /><span>Generating Pass...</span></>
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin text-cyan-300" />
+                                <span>Generating 4K Pass...</span>
+                            </>
                         ) : (
-                            <><Download className="w-4 h-4 text-kardovo-blue-light" /><span>Download Pass (PNG)</span></>
+                            <>
+                                <Download className="w-4 h-4 text-cyan-400" />
+                                <span>Download Pass (PNG)</span>
+                            </>
                         )}
                     </button>
-                    <button type="button" onClick={handlePrint}
-                        className="py-2.5 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition" title="Print Pass">
-                        <Printer className="w-4 h-4 text-slate-500" />
-                        <span>{isExporting ? "Printing..." : "Print"}</span>
+                    <button 
+                        type="button" 
+                        onClick={handlePrint} 
+                        disabled={isExporting}
+                        className="py-2.5 px-4 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-300 dark:border-white/15 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 shadow-sm hover:shadow transition active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed" 
+                        title="Print Pass"
+                    >
+                        <Printer className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                        <span>Print Pass</span>
                     </button>
                 </div>
             )}

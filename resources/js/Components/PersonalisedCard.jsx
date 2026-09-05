@@ -1313,16 +1313,7 @@ export default function PersonalisedCard({
 
             {/* Interactive Action Bar */}
             {interactive && (
-                <div className={`mt-4 flex flex-wrap items-center justify-center gap-2.5 w-full ${isLandscape ? 'max-w-[580px] sm:max-w-[620px]' : (isSquare ? 'max-w-[440px]' : 'max-w-[410px]')}`}>
-                    <button 
-                        type="button" 
-                        onClick={() => setIsFullscreen(true)}
-                        className="py-2.5 px-3.5 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
-                        title="View Full Card (Fullscreen Lightbox)"
-                    >
-                        <Maximize2 className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                        <span>Full Pass</span>
-                    </button>
+                <div className={`mt-4 flex items-center justify-center gap-3 w-full ${isLandscape ? 'max-w-[580px] sm:max-w-[620px]' : (isSquare ? 'max-w-[440px]' : 'max-w-[410px]')}`}>
                     <button 
                         type="button" 
                         onClick={handleDownloadCanvas} 
@@ -1345,11 +1336,11 @@ export default function PersonalisedCard({
                         type="button" 
                         onClick={handlePrint} 
                         disabled={isExporting}
-                        className="py-2.5 px-3.5 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-300 dark:border-white/15 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed" 
+                        className="py-2.5 px-4 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-300 dark:border-white/15 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 shadow-sm hover:shadow transition active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed" 
                         title="Print Pass"
                     >
                         <Printer className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                        <span className="hidden sm:inline">Print</span>
+                        <span>Print Pass</span>
                     </button>
                 </div>
             )}

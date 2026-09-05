@@ -859,28 +859,28 @@ export default function CardTemplates({
                                     </div>
                                 </div>
 
-                            {/* Sub-Tabs Bar (Clean Responsive Segmented Tab Dock - Fully Readable) */}
-                            <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08]">
-                                {/* 1: Layers & Elements */}
+                            {/* Sub-Tabs Bar (Clean Responsive Segmented Tab Grid - Perfectly Aligned) */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08]">
+                                {/* 1: Layers & Elements (Overview Tab - Spans both rows in Col 1 on sm+) */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("layers")}
-                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 whitespace-nowrap ${
+                                    className={`col-span-2 sm:col-span-1 sm:row-span-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex flex-row sm:flex-col items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "layers"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
                                     }`}
                                     title="Layers & Elements"
                                 >
-                                    <Layers className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "layers" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
+                                    <Layers className={`w-4 h-4 flex-shrink-0 ${inspectorTab === "layers" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     <span>Layers &amp; Elements</span>
                                 </button>
 
-                                {/* 2: Content & Text */}
+                                {/* 2: Content & Text (Col 2, Row 1) */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("content")}
-                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 whitespace-nowrap ${
+                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "content"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
@@ -891,11 +891,11 @@ export default function CardTemplates({
                                     <span>Content &amp; Text</span>
                                 </button>
 
-                                {/* 3: Artwork Asset / Palette & Style */}
+                                {/* 3: Artwork Asset / Palette & Style (Col 3, Row 1) */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab(isCustomArt ? "artwork" : "palette")}
-                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 whitespace-nowrap ${
+                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         (inspectorTab === "artwork" || inspectorTab === "palette")
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
@@ -910,11 +910,11 @@ export default function CardTemplates({
                                     <span>{isCustomArt ? "Artwork Asset" : "Palette & Style"}</span>
                                 </button>
 
-                                {/* 4: Guest Plaque */}
+                                {/* 4: Guest Plaque (Col 4, Row 1) */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("plaque")}
-                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 whitespace-nowrap ${
+                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "plaque"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
@@ -925,26 +925,11 @@ export default function CardTemplates({
                                     <span>Guest Plaque</span>
                                 </button>
 
-                                {/* 5: Allowance Badge / Verified Badge */}
-                                <button
-                                    type="button"
-                                    onClick={() => setInspectorTab(isCustomArt ? "category" : "badge")}
-                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 whitespace-nowrap ${
-                                        (inspectorTab === "badge" || inspectorTab === "category")
-                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
-                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
-                                    }`}
-                                    title={isCustomArt ? "Allowance Badge" : "Verified Badge"}
-                                >
-                                    <ShieldCheck className={`w-3.5 h-3.5 flex-shrink-0 ${(inspectorTab === "badge" || inspectorTab === "category") ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>{isCustomArt ? "Allowance Badge" : "Verified Badge"}</span>
-                                </button>
-
-                                {/* 6: QR Code */}
+                                {/* 5: QR Code (Col 2, Row 2 - EXACTLY BELOW Content & Text) */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("qr")}
-                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 whitespace-nowrap ${
+                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "qr"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
@@ -955,11 +940,11 @@ export default function CardTemplates({
                                     <span>QR Code</span>
                                 </button>
 
-                                {/* 7: Security Code */}
+                                {/* 6: Security Code (Col 3, Row 2 - EXACTLY BELOW Artwork Asset) */}
                                 <button
                                     type="button"
                                     onClick={() => setInspectorTab("security")}
-                                    className={`px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 whitespace-nowrap ${
+                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "security"
                                             ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
@@ -968,6 +953,21 @@ export default function CardTemplates({
                                 >
                                     <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "security" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
                                     <span>Security Code</span>
+                                </button>
+
+                                {/* 7: Allowance Badge / Verified Badge (Col 4, Row 2 - EXACTLY BELOW Guest Plaque) */}
+                                <button
+                                    type="button"
+                                    onClick={() => setInspectorTab(isCustomArt ? "category" : "badge")}
+                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
+                                        (inspectorTab === "badge" || inspectorTab === "category")
+                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
+                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
+                                    }`}
+                                    title={isCustomArt ? "Allowance Badge" : "Verified Badge"}
+                                >
+                                    <ShieldCheck className={`w-3.5 h-3.5 flex-shrink-0 ${(inspectorTab === "badge" || inspectorTab === "category") ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
+                                    <span>{isCustomArt ? "Allowance Badge" : "Verified Badge"}</span>
                                 </button>
                             </div>
                         </div>

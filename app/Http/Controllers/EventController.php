@@ -122,7 +122,7 @@ class EventController extends Controller
             $guestsQuery->where('category', $categoryFilter);
         }
 
-        $guests = $guestsQuery->paginate(20)->withQueryString();
+        $guests = $guestsQuery->paginate(10)->withQueryString();
 
         // Calculate event metrics for Stat Cards (matching Figure 4.1 in UI/UX spec)
         $totalGuests = $event->guests()->count();

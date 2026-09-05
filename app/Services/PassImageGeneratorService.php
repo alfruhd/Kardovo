@@ -385,9 +385,10 @@ class PassImageGeneratorService
             }
 
             // 5. Allowance Badge (Positioned at ~78.5%)
+            $allowBottom = 0;
             if ($showAllowance) {
                 $allowCfg = $cfg['allowance_badge'] ?? [];
-                $allowYPercent = (float) ($allowCfg['y'] ?? 78.5);
+                $allowYPercent = (float) ($allowCfg['y'] ?? ($ratioNum <= 0.62 ? 77.0 : 78.5));
                 $allowXPercent = (float) ($allowCfg['x'] ?? 50.0);
                 $allowY = (int) round(($allowYPercent / 100) * $h);
                 $allowCenterX = (int) round(($allowXPercent / 100) * $w);
@@ -404,6 +405,7 @@ class PassImageGeneratorService
                     $allowBoxW = (int) min($w - 40, round(160 * $fontScale));
                     $allowBoxH = (int) round(28 * $fontScale);
                     $allowBoxX = (int) ($allowCenterX - ($allowBoxW / 2));
+                    $allowBottom = $allowY + (int)($allowBoxH / 2);
                     
                     if ($isEngagement) {
                         $boxBg = imagecolorallocatealpha($im, 255, 255, 255, 30);
@@ -416,19 +418,27 @@ class PassImageGeneratorService
                     self::drawSmoothPill($im, $allowBoxX, (int)($allowY - ($allowBoxH / 2)), $allowBoxW, $allowBoxH, $boxBg, $boxBorder);
                     self::drawSpacedText($im, $allowSize, (int)($allowY + ($allowBoxH * 0.2)), $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $fontScale));
                 } else {
-                    self::drawSpacedText($im, $allowSize, $allowY, $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $fontScale));
+                    $allowBottom = $allowY + (int)(10 * $fontScale);
+                    self::drawSpacedTextWithShadow($im, $allowSize, $allowY, $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $fontScale));
                 }
             }
 
-            // 6. QR Code Pass (Positioned at ~87.0%)
+            // 6. QR Code Pass (Positioned safely above code and footer)
+            $qrBottom = 0;
             if ($showQr) {
                 $qrCfg = $cfg['qr_code'] ?? [];
-                $qrYPercent = (float) ($qrCfg['y'] ?? 87.0);
-                $qrXPercent = (float) ($qrCfg['x'] ?? 50.0);
-                $qrY = (int) round(($qrYPercent / 100) * $h);
-                $qrX = (int) round(($qrXPercent / 100) * $w);
                 $rawQrSize = (float) ($qrCfg['size'] ?? 72);
                 $qrSize = (int) round($rawQrSize * $fontScale);
+                $qrYPercent = (float) ($qrCfg['y'] ?? ($ratioNum <= 0.62 ? 84.5 : 86.5));
+                if ($ratioNum <= 0.62 && $qrYPercent > 86.0) {
+                    $qrYPercent = 84.5;
+                }
+                $qrXPercent = (float) ($qrCfg['x'] ?? 50.0);
+                $qrY = (int) round(($qrYPercent / 100) * $h);
+                if ($allowBottom > 0 && ($qrY - ($qrSize / 2)) < ($allowBottom + (int)(12 * $fontScale))) {
+                    $qrY = $allowBottom + (int)($qrSize / 2) + (int)(14 * $fontScale);
+                }
+                $qrX = (int) round(($qrXPercent / 100) * $w);
 
                 $darkColorHex = $qrCfg['darkColor'] ?? ($isEngagement ? '#6B1D2F' : '#111827');
                 list($dr, $dg, $db) = self::hexToRgb($darkColorHex);
@@ -440,22 +450,35 @@ class PassImageGeneratorService
                     $qrH = imagesy($qrIm);
                     $drawX = (int) ($qrX - ($qrW / 2));
                     $drawY = (int) ($qrY - ($qrH / 2));
+                    $qrBottom = $drawY + $qrH;
 
                     imagecopy($im, $qrIm, $drawX, $drawY, 0, 0, $qrW, $qrH);
                     imagedestroy($qrIm);
                 }
             }
 
-            // 7. Security Verification Code (Positioned at ~96.0%)
+            // 7. Security Verification Code (Positioned safely within canvas bounds and below QR)
             if ($showCode) {
                 $codeCfg = $cfg['card_number'] ?? [];
-                $codeYPercent = (float) ($codeCfg['y'] ?? 96.0);
+                $defaultCodeY = ($ratioNum <= 0.62) ? 94.0 : 95.0;
+                $codeYPercent = (float) ($codeCfg['y'] ?? $defaultCodeY);
+                if ($codeYPercent > 95.0) {
+                    $codeYPercent = 94.5;
+                }
                 $codeXPercent = (float) ($codeCfg['x'] ?? 50.0);
                 $codeY = (int) round(($codeYPercent / 100) * $h);
+                // Guarantee code is below the QR code with adequate padding
+                if ($qrBottom > 0 && $codeY < ($qrBottom + (int)(16 * $fontScale))) {
+                    $codeY = $qrBottom + (int)(22 * $fontScale);
+                }
+                // Guarantee code stays within canvas bounds
+                if ($codeY > ($h - (int)(14 * $fontScale))) {
+                    $codeY = $h - (int)(18 * $fontScale);
+                }
                 $codeSize = (float) ($codeCfg['fontSize'] ?? 10) * $fontScale;
                 $codeColor = self::hexToGdColor($im, $codeCfg['color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
                 $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-' . $guest->id);
-                self::drawSpacedText($im, $codeSize, $codeY, $codeColor, $fontArialBold, $codeText, $w, (int) max(2, 4 * $fontScale));
+                self::drawSpacedTextWithShadow($im, $codeSize, $codeY, $codeColor, $fontArialBold, $codeText, $w, (int) max(2, 4 * $fontScale));
             }
 
         } else {
@@ -527,7 +550,7 @@ class PassImageGeneratorService
             self::drawSmoothPill($im, $allowPillX, $allowPillY, $allowPillW, $allowPillH, $allowPillBg, $cyanBorder);
             self::drawSpacedText($im, 8.5 * $fontScale, $allowPillY + (int)(18 * $fontScale), $cyan, $fontArialBold, mb_strtoupper($allowanceText), $w, (int)(2 * $fontScale));
 
-            // 5. QR Code (Positioned at 78% of height)
+            // 5. QR Code (Positioned safely above code and footer)
             $scanUrl = rtrim($baseUrl ?: url('/'), '/') . '/card/' . $token;
             $qrSize = (int) round(120 * $fontScale);
             $qrIm = QRCodeGenerator::renderToGdImage($scanUrl, $qrSize, 2, 15, 23, 42);
@@ -535,26 +558,27 @@ class PassImageGeneratorService
                 $qrW = imagesx($qrIm);
                 $qrH = imagesy($qrIm);
                 $qrX = (int) (($w - $qrW) / 2);
-                $qrY = (int) round(0.78 * $h);
+                $qrY = (int) round(0.73 * $h);
 
                 imagecopy($im, $qrIm, $qrX, $qrY, 0, 0, $qrW, $qrH);
                 imagedestroy($qrIm);
             }
 
-            // 6. Unique Code
-            self::drawSpacedText($im, 8 * $fontScale, (int) round(0.91 * $h), $graySub, $fontArialBold, 'GATE VERIFICATION CODE', $w, (int)(3 * $fontScale));
+            // 6. Unique Code (Positioned safely)
+            self::drawSpacedText($im, 8 * $fontScale, (int) round(0.87 * $h), $graySub, $fontArialBold, 'GATE VERIFICATION CODE', $w, (int)(3 * $fontScale));
             $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-' . $guest->id);
-            self::drawSpacedText($im, 16 * $fontScale, (int) round(0.94 * $h), $white, $fontArialBold, $codeText, $w, (int)(4 * $fontScale));
+            self::drawSpacedText($im, 16 * $fontScale, (int) round(0.90 * $h), $white, $fontArialBold, $codeText, $w, (int)(4 * $fontScale));
 
-            // Footer line & text
-            $footerLineY = (int) round(0.97 * $h);
+            // 7. Footer line & text (Always securely within canvas bounds)
+            $footerTextY = $h - (int)(18 * $fontScale);
+            $footerLineY = $footerTextY - (int)(18 * $fontScale);
             imageline($im, (int)(32 * $fontScale), $footerLineY, $w - (int)(32 * $fontScale), $footerLineY, $dividerColor);
             $cardNumber = $guest->card_number ?: ('KDV-' . $guest->id);
-            imagettftext($im, 8.5 * $fontScale, 0, (int)(36 * $fontScale), $footerLineY + (int)(24 * $fontScale), $graySub, $fontArial, $cardNumber);
+            imagettftext($im, 8.5 * $fontScale, 0, (int)(36 * $fontScale), $footerTextY, $graySub, $fontArial, $cardNumber);
             $footerR = 'Secured & verified by KARDOVO';
             $bboxR = imagettfbbox(8.5 * $fontScale, 0, $fontArial, $footerR);
             $rw = abs($bboxR[2] - $bboxR[0]);
-            imagettftext($im, 8.5 * $fontScale, 0, $w - (int)(36 * $fontScale) - $rw, $footerLineY + (int)(24 * $fontScale), $graySub, $fontArial, $footerR);
+            imagettftext($im, 8.5 * $fontScale, 0, $w - (int)(36 * $fontScale) - $rw, $footerTextY, $graySub, $fontArial, $footerR);
         }
 
         imagejpeg($im, $outputPath, 95);
@@ -637,6 +661,40 @@ class PassImageGeneratorService
         $totalW -= $extraSpacing;
 
         $curX = (int) (($canvasWidth - $totalW) / 2);
+        foreach ($chars as $i => $ch) {
+            imagettftext($im, $size, 0, $curX, $y, $color, $fontFile, $ch);
+            $curX += $charWidths[$i] + $extraSpacing;
+        }
+    }
+
+    private static function drawSpacedTextWithShadow(\GdImage $im, float $size, int $y, int $color, string $fontFile, string $text, int $canvasWidth, int $extraSpacing = 2): void
+    {
+        if (!file_exists($fontFile)) {
+            self::drawCenteredTextWithShadow($im, $size, 0, $y, $color, $fontFile, $text, $canvasWidth);
+            return;
+        }
+
+        $chars = preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY);
+        $totalW = 0;
+        $charWidths = [];
+
+        foreach ($chars as $ch) {
+            $box = imagettfbbox($size, 0, $fontFile, $ch);
+            $cw = abs($box[2] - $box[0]);
+            $charWidths[] = $cw;
+            $totalW += $cw + $extraSpacing;
+        }
+        $totalW -= $extraSpacing;
+
+        $curX = (int) (($canvasWidth - $totalW) / 2);
+        $shadow = imagecolorallocatealpha($im, 0, 0, 0, 60);
+
+        $sx = $curX + 2;
+        foreach ($chars as $i => $ch) {
+            imagettftext($im, $size, 0, $sx, $y + 2, $shadow, $fontFile, $ch);
+            $sx += $charWidths[$i] + $extraSpacing;
+        }
+
         foreach ($chars as $i => $ch) {
             imagettftext($im, $size, 0, $curX, $y, $color, $fontFile, $ch);
             $curX += $charWidths[$i] + $extraSpacing;

@@ -19,7 +19,11 @@ import {
     Star,
     Award,
     Loader2,
-    Check
+    Check,
+    Maximize2,
+    Minimize2,
+    X,
+    Eye
 } from 'lucide-react';
 
 // Helper to determine if a hex color is dark
@@ -47,6 +51,7 @@ export default function PersonalisedCard({
     const [qrDataUrl, setQrDataUrl] = useState('');
     const [isExporting, setIsExporting] = useState(false);
     const [detectedImgRatio, setDetectedImgRatio] = useState(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
     // Guest data with smart fallbacks
     const guestName = guest?.name || 'Alfred Mashauri';
@@ -298,6 +303,16 @@ export default function PersonalisedCard({
 
         return () => { isMounted = false; };
     }, [qrToken, cardNumber, qrCfg.darkColor, qrCfg.size, isEngagement]);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && isFullscreen) {
+                setIsFullscreen(false);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isFullscreen]);
 
     const handlePrint = async () => {
         const cardNode = cardRef.current || document.getElementById("kardovo-invitation-card");
@@ -1298,7 +1313,16 @@ export default function PersonalisedCard({
 
             {/* Interactive Action Bar */}
             {interactive && (
-                <div className={`mt-4 flex items-center justify-center gap-3 w-full ${isLandscape ? 'max-w-[580px] sm:max-w-[620px]' : (isSquare ? 'max-w-[440px]' : 'max-w-[410px]')}`}>
+                <div className={`mt-4 flex flex-wrap items-center justify-center gap-2.5 w-full ${isLandscape ? 'max-w-[580px] sm:max-w-[620px]' : (isSquare ? 'max-w-[440px]' : 'max-w-[410px]')}`}>
+                    <button 
+                        type="button" 
+                        onClick={() => setIsFullscreen(true)}
+                        className="py-2.5 px-3.5 rounded-2xl bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/60 hover:bg-cyan-100 dark:hover:bg-cyan-900/60 text-cyan-700 dark:text-cyan-300 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+                        title="View Full Card (Fullscreen Lightbox)"
+                    >
+                        <Maximize2 className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                        <span>Full Pass</span>
+                    </button>
                     <button 
                         type="button" 
                         onClick={handleDownloadCanvas} 
@@ -1321,12 +1345,73 @@ export default function PersonalisedCard({
                         type="button" 
                         onClick={handlePrint} 
                         disabled={isExporting}
-                        className="py-2.5 px-4 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-300 dark:border-white/15 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 shadow-sm hover:shadow transition active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed" 
+                        className="py-2.5 px-3.5 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-300 dark:border-white/15 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm hover:shadow transition active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed" 
                         title="Print Pass"
                     >
                         <Printer className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                        <span>Print Pass</span>
+                        <span className="hidden sm:inline">Print</span>
                     </button>
+                </div>
+            )}
+
+            {/* ═══════════ FULLSCREEN LIGHTBOX MODAL ═══════════ */}
+            {isFullscreen && (
+                <div 
+                    className="fixed inset-0 z-[99999] bg-slate-950/95 backdrop-blur-2xl flex flex-col items-center justify-between p-3 sm:p-6 overflow-y-auto animate-fadeIn select-none"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget) setIsFullscreen(false);
+                    }}
+                >
+                    {/* Top Bar */}
+                    <div className="w-full max-w-2xl flex items-center justify-between py-2 px-1 z-10">
+                        <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 font-mono text-[10.5px] font-bold uppercase tracking-wider">
+                                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                                <span>Full Verified Pass</span>
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={handleDownloadCanvas}
+                                disabled={isExporting}
+                                className="px-3.5 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                <span>Download</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsFullscreen(false)}
+                                className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition active:scale-95 cursor-pointer"
+                                title="Close Fullscreen (Esc)"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Modal Pass Content - Scaled to fit screen height perfectly */}
+                    <div className="flex-1 flex items-center justify-center my-auto py-2 w-full max-w-full">
+                        <div 
+                            className="transition-transform duration-300 drop-shadow-[0_25px_50px_rgba(0,0,0,0.8)] max-h-[82vh] flex items-center justify-center"
+                            style={{ maxHeight: '82vh' }}
+                        >
+                            <PersonalisedCard
+                                guest={guest}
+                                event={event}
+                                template={template}
+                                interactive={false}
+                                className="transform-gpu origin-center scale-[0.85] sm:scale-100 max-h-[82vh]"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Bottom Indicator */}
+                    <div className="w-full max-w-md text-center py-2 text-slate-400 text-xs flex items-center justify-center gap-2 font-mono">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Show QR code to gate scanner for instant check-in</span>
+                    </div>
                 </div>
             )}
         </div>

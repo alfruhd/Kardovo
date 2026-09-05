@@ -40,19 +40,21 @@ class PassImageGeneratorService
         $isEngagement = $isPredefinedAdel || (($template?->is_predefined ?? false) && ($cfg['theme'] ?? '') === 'engagement_burgundy');
         $isZamroth = $isPredefinedZamroth || (($template?->is_predefined ?? false) && in_array(($cfg['theme'] ?? ''), ['wedding_romantic', 'wedding_gold']));
 
-        // ── 0. Dynamic Aspect Ratio & Dimensions Calculation ──
+        // ── 1. Determine Aspect Ratio Number (Width / Height) ──
         $ratioNum = null;
         $configRatio = $cfg['aspect_ratio'] ?? null;
         if (is_numeric($configRatio) && (float)$configRatio > 0) {
             $ratioNum = (float)$configRatio;
         } elseif (is_string($configRatio) && trim($configRatio) !== '') {
-            if (str_contains($configRatio, '/')) {
-                $parts = array_map('trim', explode('/', $configRatio));
+            $cleaned = trim($configRatio);
+            if (str_contains($cleaned, '/') || str_contains($cleaned, ':')) {
+                $delimiter = str_contains($cleaned, '/') ? '/' : ':';
+                $parts = array_map('trim', explode($delimiter, $cleaned));
                 if (isset($parts[0], $parts[1]) && is_numeric($parts[0]) && is_numeric($parts[1]) && (float)$parts[1] > 0) {
                     $ratioNum = (float)$parts[0] / (float)$parts[1];
                 }
-            } elseif (is_numeric(trim($configRatio))) {
-                $ratioNum = (float)trim($configRatio);
+            } elseif (is_numeric($cleaned)) {
+                $ratioNum = (float)$cleaned;
             }
         }
 
@@ -69,34 +71,67 @@ class PassImageGeneratorService
         if (!$ratioNum || $ratioNum <= 0) {
             $orientation = $cfg['orientation'] ?? 'portrait';
             if ($orientation === 'landscape') {
-                $ratioNum = 1200 / 800; // 1.5
+                $ratioNum = 16 / 9; // 1.7778
             } elseif ($orientation === 'square') {
                 $ratioNum = 1.0;
             } elseif ($isEngagement) {
                 $ratioNum = 800 / 1184; // ~0.6757
             } else {
-                $ratioNum = 800 / 1200; // 0.6667
+                $ratioNum = 800 / 1200; // 0.6667 (2:3)
             }
         }
 
-        // Calculate dynamic $w and $h based on calculated $ratioNum
+        // ── 2. Resolution Tiering (Full HD 1080p, 2K QHD, 4K UHD) ──
+        $resTier = strtolower($cfg['resolution_tier'] ?? '1080p');
+
         if ($ratioNum >= 1.15) {
-            // Landscape (e.g. 1.5 for 3:2, 1.777 for 16:9)
-            $w = 900;
-            $h = (int) round($w / $ratioNum);
+            // Landscape Mode (16:9, 3:2, 4:3)
+            if ($resTier === '4k') {
+                $h = 2160;
+                $w = (int) round($h * $ratioNum);
+            } elseif ($resTier === '2k') {
+                $h = 1440;
+                $w = (int) round($h * $ratioNum);
+            } else {
+                // Full HD 1080p: 1920x1080 for 16:9, 1920x1280 for 3:2
+                $h = 1080;
+                $w = (int) round($h * $ratioNum);
+            }
         } elseif ($ratioNum >= 0.9 && $ratioNum < 1.15) {
-            // Square (1:1)
-            $w = 750;
-            $h = (int) round($w / $ratioNum);
+            // Square Mode (1:1)
+            if ($resTier === '4k') {
+                $w = 2160;
+                $h = 2160;
+            } elseif ($resTier === '2k') {
+                $w = 1440;
+                $h = 1440;
+            } else {
+                // Full HD 1080p: 1080x1080
+                $w = 1080;
+                $h = 1080;
+            }
         } else {
-            // Portrait (e.g. 2:3, 9:16)
-            $w = 600;
-            $h = (int) round($w / $ratioNum);
+            // Portrait Mode (9:16, 2:3, 3:4)
+            if ($resTier === '4k') {
+                $w = 2160;
+                $h = (int) round($w / $ratioNum);
+            } elseif ($resTier === '2k') {
+                $w = 1440;
+                $h = (int) round($w / $ratioNum);
+            } else {
+                // Full HD 1080p: 1080x1920 for 9:16 story, 1080x1620 for 2:3
+                $w = 1080;
+                $h = (int) round($w / $ratioNum);
+            }
         }
 
         // Ensure minimum dimensions
         $w = max(400, $w);
         $h = max(400, $h);
+
+        // Reference width in the Studio inspector is 410px
+        $baseW = 410.0;
+        $fontScale = $w / $baseW;
 
         $im = imagecreatetruecolor($w, $h);
         imagealphablending($im, true);
@@ -119,8 +154,10 @@ class PassImageGeneratorService
         $goldDark = imagecolorallocate($im, 245, 158, 11); // amber-500
         $grayText = imagecolorallocate($im, 226, 232, 240); // slate-200
         $graySub = imagecolorallocate($im, 203, 213, 225); // slate-300
+        $burgundy = imagecolorallocate($im, 122, 30, 40); // #7A1E28
+        $burgundyDark = imagecolorallocate($im, 84, 16, 26); // #54101A
 
-        // 1. Draw Background Image or Gradient
+        // ── 3. Draw Background Artwork or Gradient ──
         $hasCustomArt = false;
         if ($bgPath && file_exists($bgPath)) {
             $ext = strtolower(pathinfo($bgPath, PATHINFO_EXTENSION));
@@ -151,281 +188,11 @@ class PassImageGeneratorService
             }
         }
 
-        $burgundy = imagecolorallocate($im, 122, 30, 40); // #7A1E28
-        $burgundyDark = imagecolorallocate($im, 84, 16, 26); // #54101A
+        $templateType = $template?->template_type ?: ($hasCustomArt ? 'custom_art' : 'gradient_card');
 
-        if ($isEngagement) {
+        if ($templateType === 'custom_art' || $hasCustomArt) {
             // ══════════════════════════════════════════════════════════════
-            // THEME: ADEL & LAILA (Burgundy & Rose Gold on Light Cream)
-            // ══════════════════════════════════════════════════════════════
-
-            // 1. Top Badge Pill: "Engagement Invitation"
-            $badgeText = $cfg['headline_text'] ?? 'Engagement Invitation';
-            $badgeW = 270;
-            $badgeH = 32;
-            $badgeX = (int) (($w - $badgeW) / 2);
-            $badgeY = 32;
-            
-            $pillBg = imagecolorallocatealpha($im, 255, 255, 255, 30); // 75% white
-            $pillBorder = imagecolorallocatealpha($im, 122, 30, 40, 75); // burgundy border
-            self::drawSmoothPill($im, $badgeX, $badgeY, $badgeW, $badgeH, $pillBg, $pillBorder);
-            self::drawCenteredText($im, 12, 0, $badgeY + 22, $burgundy, $fontGeorgiaItalic, $badgeText, $w);
-
-            // 2. Subtitle: "We invite your pleasure to come to our Engagement Party of"
-            $subtitle = $cfg['subtitle_text'] ?? 'We invite your pleasure to come to our Engagement Party of';
-            self::drawCenteredText($im, 9.5, 0, 96, $burgundy, $fontGeorgia, $subtitle, $w);
-
-            // 3. Couple Names: "Adel & Laila"
-            $coupleNames = $cfg['couple_names'] ?? 'Adel & Laila';
-            self::drawCenteredText($im, 40, 0, 154, $burgundy, $fontGeorgiaItalic, $coupleNames, $w);
-
-            // 4. Date Month & Year: "APRIL 2026"
-            $dateMonth = $cfg['date_month'] ?? 'APRIL';
-            $dateYear = $cfg['date_year'] ?? '2026';
-            self::drawSpacedText($im, 10.5, 204, $burgundy, $fontArialBold, "{$dateMonth} {$dateYear}", $w, 4);
-
-            // 5. Date Day Row Pill: "FRIDAY   26   8:30 PM"
-            $dateDayName = $cfg['date_day_name'] ?? 'FRIDAY';
-            $dateDayNum = $cfg['date_day_num'] ?? '26';
-            $dateTime = $cfg['date_time'] ?? '8:30 PM';
-
-            $dateBoxW = 260;
-            $dateBoxH = 44;
-            $dateBoxX = (int) (($w - $dateBoxW) / 2);
-            $dateBoxY = 220;
-            $dateBoxBg = imagecolorallocatealpha($im, 255, 255, 255, 35);
-            $dateBoxBorder = imagecolorallocatealpha($im, 122, 30, 40, 85);
-            self::drawSmoothPill($im, $dateBoxX, $dateBoxY, $dateBoxW, $dateBoxH, $dateBoxBg, $dateBoxBorder);
-
-            // Inner Day Elements
-            $boxL = imagettfbbox(10, 0, $fontArialBold, $dateDayName);
-            $wL = abs($boxL[2] - $boxL[0]);
-            $boxM = imagettfbbox(22, 0, $fontGeorgiaItalic, $dateDayNum);
-            $wM = abs($boxM[2] - $boxM[0]);
-            $boxR = imagettfbbox(10, 0, $fontArialBold, $dateTime);
-            $wR = abs($boxR[2] - $boxR[0]);
-
-            $gap = 18;
-            $totalRowW = $wL + $gap + $wM + $gap + $wR;
-            $curX = (int) (($w - $totalRowW) / 2);
-
-            imagettftext($im, 10, 0, $curX, 248, $burgundy, $fontArialBold, $dateDayName);
-            $curX += $wL + $gap;
-            imagettftext($im, 22, 0, $curX, 252, $burgundy, $fontGeorgiaItalic, $dateDayNum);
-            $curX += $wM + $gap;
-            imagettftext($im, 10, 0, $curX, 248, $burgundy, $fontArialBold, $dateTime);
-
-            // 6. Quote & Venue
-            $quote = $cfg['invitation_quote'] ?? 'CELEBRATING LOVE & PROMISE';
-            self::drawSpacedText($im, 8.5, 290, $burgundy, $fontArialBold, $quote, $w, 2);
-
-            $venueName = $cfg['venue_name'] ?? 'DAR ES SALAAM SERENA HOTEL';
-            $venueSub = $cfg['venue_sub'] ?? 'tanzania';
-            $venueDate = $cfg['venue_date'] ?? '26.04.2026';
-            $saveDate = $cfg['save_the_date'] ?? 'SAVE THE DATE';
-
-            self::drawSpacedText($im, 9.5, 314, $burgundy, $fontArialBold, $venueName, $w, 3);
-            self::drawCenteredText($im, 8.5, 0, 330, $burgundy, $fontArial, $venueSub, $w);
-            self::drawSpacedText($im, 8.5, 346, $burgundy, $fontArialBold, $venueDate, $w, 2);
-            self::drawSpacedText($im, 9, 366, $burgundy, $fontArialBold, $saveDate, $w, 4);
-
-            // 7. Guest Plaque (Light Translucent Glass with Burgundy Border or Clean Text)
-            $nameCfg = $cfg['guest_name'] ?? [];
-            $hideNameBox = !empty($nameCfg['hide_plaque_box']) || !empty($nameCfg['hide_name_box']) || !empty($nameCfg['clean_text']) ||
-                           (isset($nameCfg['clean_text']) && in_array($nameCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
-                           (isset($nameCfg['hide_plaque_box']) && in_array($nameCfg['hide_plaque_box'], [true, 1, '1', 'true'], true));
-            $plaqueW = 440;
-            $plaqueH = 70;
-            $plaqueX = (int) (($w - $plaqueW) / 2);
-            $nameYPercent = (float) ($nameCfg['y'] ?? 67.1);
-            $plaqueY = isset($nameCfg['y']) ? (int) (($nameYPercent / 100) * $h) : 596;
-
-            $guestName = mb_strtoupper($guest->name ?: 'VALUED GUEST');
-            $nameSize = (float) ($nameCfg['fontSize'] ?? 20);
-            if (mb_strlen($guestName) > 20) $nameSize = max(12, $nameSize * 0.85);
-            if (mb_strlen($guestName) > 28) $nameSize = max(10, $nameSize * 0.7);
-
-            if (!$hideNameBox) {
-                $plaqueBg = imagecolorallocatealpha($im, 255, 255, 255, 20); // 85% white glass
-                $plaqueBorder = imagecolorallocatealpha($im, 122, 30, 40, 75);
-                self::drawSmoothPill($im, $plaqueX, $plaqueY, $plaqueW, $plaqueH, $plaqueBg, $plaqueBorder);
-                self::drawSpacedText($im, 8, $plaqueY + 22, $burgundy, $fontArialBold, 'INVITATION PASS ISSUED TO', $w, 3);
-                self::drawCenteredText($im, $nameSize, 0, $plaqueY + 52, $burgundyDark, $fontGeorgiaBold, $guestName, $w);
-            } else {
-                self::drawCenteredText($im, $nameSize, 0, $plaqueY + 30, $burgundyDark, $fontGeorgiaBold, $guestName, $w);
-            }
-
-            // 8. Allowance Badge (Clean pill in translucent white with Burgundy text or Clean Text)
-            $allowCfg = $cfg['allowance_badge'] ?? [];
-            $hideAllowanceBox = !empty($allowCfg['hide_badge_box']) || !empty($allowCfg['clean_text']) ||
-                                (isset($allowCfg['clean_text']) && in_array($allowCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
-                                (isset($allowCfg['hide_badge_box']) && in_array($allowCfg['hide_badge_box'], [true, 1, '1', 'true'], true));
-            $maxEntries = $guest->max_entries ?: 1;
-            $allowanceText = $guest->category ? mb_strtoupper($guest->category) : ($maxEntries > 1 ? 'DOUBLE ENTRY' : 'SINGLE ENTRY');
-            $allowYPercent = (float) ($allowCfg['y'] ?? 76.5);
-            $allowBoxY = isset($allowCfg['y']) ? (int) (($allowYPercent / 100) * $h) : 680;
-            $allowSize = (float) ($allowCfg['fontSize'] ?? 8.5);
-
-            if (!$hideAllowanceBox) {
-                $allowBoxW = 160;
-                $allowBoxH = 26;
-                $allowBoxX = (int) (($w - $allowBoxW) / 2);
-                self::drawSmoothPill($im, $allowBoxX, $allowBoxY, $allowBoxW, $allowBoxH, $pillBg, $pillBorder);
-                self::drawSpacedText($im, $allowSize, $allowBoxY + 17, $burgundy, $fontArialBold, $allowanceText, $w, 2);
-            } else {
-                self::drawSpacedText($im, $allowSize, $allowBoxY + 17, $burgundy, $fontArialBold, $allowanceText, $w, 2);
-            }
-
-            // 9. QR Code (Burgundy QR with clean built-in margin, zero pill border)
-            $scanUrl = rtrim($baseUrl ?: url('/'), '/') . '/card/' . $token;
-            $qrIm = QRCodeGenerator::renderToGdImage($scanUrl, 114, 2, 0x6B, 0x1D, 0x2F);
-            if ($qrIm) {
-                $qrW = imagesx($qrIm);
-                $qrH = imagesy($qrIm);
-                $qrX = (int) (($w - $qrW) / 2);
-                $qrY = 718;
-
-                imagecopy($im, $qrIm, $qrX, $qrY, 0, 0, $qrW, $qrH);
-                imagedestroy($qrIm);
-            }
-
-            // 10. Unique Verification Code in Burgundy with a subtle pill
-            $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-' . $guest->id);
-            $codeBoxW = 180;
-            $codeBoxH = 24;
-            $codeBoxX = (int) (($w - $codeBoxW) / 2);
-            $codeBoxY = 852;
-            self::drawSmoothPill($im, $codeBoxX, $codeBoxY, $codeBoxW, $codeBoxH, $pillBg, $pillBorder);
-            self::drawSpacedText($im, 10, $codeBoxY + 16, $burgundy, $fontArialBold, $codeText, $w, 4);
-
-        } elseif ($isZamroth) {
-            // ══════════════════════════════════════════════════════════════
-            // THEME: ZAMROTH & HUSNA (Romantic Gold on Dark Wedding Photo)
-            // ══════════════════════════════════════════════════════════════
-
-            // 1. Top Badge Pill: "WEDDING INVITATION"
-            $badgeText = $cfg['headline_text'] ?? ($template?->headline ?: 'WEDDING INVITATION');
-            $badgeW = 250;
-            $badgeH = 28;
-            $badgeX = (int) (($w - $badgeW) / 2);
-            $badgeY = 32;
-            
-            $pillBg = imagecolorallocatealpha($im, 0, 0, 0, 75);
-            $pillBorder = imagecolorallocatealpha($im, 255, 255, 255, 80);
-            self::drawSmoothPill($im, $badgeX, $badgeY, $badgeW, $badgeH, $pillBg, $pillBorder);
-            self::drawSpacedText($im, 9.5, $badgeY + 19, $white, $fontArialBold, mb_strtoupper($badgeText), $w, 3);
-
-            // 2. Couple Names: "Zamroth & Husna"
-            $coupleText = $cfg['couple_names'] ?? 'Zamroth & Husna';
-            self::drawCenteredTextWithShadow($im, 38, 0, 126, $white, $fontGeorgiaItalic, $coupleText, $w);
-
-            // 3. Date Month: "JANUARY"
-            $dateMonth = $cfg['date_month'] ?? 'JANUARY';
-            self::drawSpacedText($im, 10.5, 368, $white, $fontArialBold, $dateMonth, $w, 4);
-
-            // 4. Day Row: "SUNDAY   4   AT 11:00 AM"
-            $dateDayName = $cfg['date_day_name'] ?? 'SUNDAY';
-            $dateDayNum = $cfg['date_day_num'] ?? '4';
-            $dateTime = $cfg['date_time'] ?? 'AT 11:00 AM';
-
-            $boxL = imagettfbbox(11, 0, $fontArialBold, $dateDayName);
-            $wL = abs($boxL[2] - $boxL[0]);
-            $boxM = imagettfbbox(20, 0, $fontGeorgiaItalic, $dateDayNum);
-            $wM = abs($boxM[2] - $boxM[0]);
-            $boxR = imagettfbbox(11, 0, $fontArialBold, $dateTime);
-            $wR = abs($boxR[2] - $boxR[0]);
-
-            $gap = 16;
-            $totalRowW = $wL + $gap + $wM + $gap + $wR;
-            $curX = (int) (($w - $totalRowW) / 2);
-            
-            imagettftext($im, 11, 0, $curX, 398, $white, $fontArialBold, $dateDayName);
-            $curX += $wL + $gap;
-            imagettftext($im, 20, 0, $curX, 400, $gold, $fontGeorgiaItalic, $dateDayNum);
-            $curX += $wM + $gap;
-            imagettftext($im, 11, 0, $curX, 398, $white, $fontArialBold, $dateTime);
-
-            // 5. Date Year: "2026"
-            $dateYear = $cfg['date_year'] ?? '2026';
-            self::drawSpacedText($im, 11, 428, $white, $fontArialBold, $dateYear, $w, 4);
-
-            // 6. Quote & Venue Lockup
-            $quote = $cfg['invitation_quote'] ?? 'WE INVITE YOU TO WITNESS THE BEGINNING OF OUR FOREVER, TOGETHER WITH OUR FAMILIES.';
-            $quoteLines = self::wrapText($quote, 44);
-            $quoteY = 454;
-            foreach ($quoteLines as $qLine) {
-                self::drawCenteredText($im, 8.5, 0, $quoteY, $white, $fontArialBold, $qLine, $w);
-                $quoteY += 16;
-            }
-
-            $venueName = $cfg['venue_name'] ?? 'ANGKORBAN';
-            $venueSub = $cfg['venue_sub'] ?? 'kongmeah, kampongcham';
-            $venueDate = $cfg['venue_date'] ?? '04.01.2026';
-            $saveDate = $cfg['save_the_date'] ?? 'SAVE THE DATE';
-
-            self::drawSpacedText($im, 9.5, $quoteY + 12, $gold, $fontArialBold, $venueName, $w, 3);
-            self::drawCenteredText($im, 8.5, 0, $quoteY + 28, $graySub, $fontArial, $venueSub, $w);
-            self::drawSpacedText($im, 8.5, $quoteY + 44, $graySub, $fontArialBold, $venueDate, $w, 2);
-            self::drawSpacedText($im, 9, $quoteY + 62, $white, $fontArialBold, $saveDate, $w, 4);
-
-            // 7. Guest Plaque (Dark Frosted Glass or Clean Text)
-            $nameCfg = $cfg['guest_name'] ?? [];
-            $hideNameBox = !empty($nameCfg['hide_plaque_box']) || !empty($nameCfg['hide_name_box']) || !empty($nameCfg['clean_text']) ||
-                           (isset($nameCfg['clean_text']) && in_array($nameCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
-                           (isset($nameCfg['hide_plaque_box']) && in_array($nameCfg['hide_plaque_box'], [true, 1, '1', 'true'], true));
-            $plaqueW = 440;
-            $plaqueH = 70;
-            $plaqueX = (int) (($w - $plaqueW) / 2);
-            $nameYPercent = (float) ($nameCfg['y'] ?? 67.5);
-            $plaqueY = isset($nameCfg['y']) ? (int) (($nameYPercent / 100) * $h) : 600;
-
-            $guestName = mb_strtoupper($guest->name ?: 'VALUED GUEST');
-            $nameSize = (float) ($nameCfg['fontSize'] ?? 21);
-            if (mb_strlen($guestName) > 20) $nameSize = max(12, $nameSize * 0.85);
-            if (mb_strlen($guestName) > 28) $nameSize = max(10, $nameSize * 0.7);
-
-            if (!$hideNameBox) {
-                $plaqueBg = imagecolorallocatealpha($im, 0, 0, 0, 60);
-                $plaqueBorder = imagecolorallocatealpha($im, 255, 255, 255, 80);
-                self::drawSmoothPill($im, $plaqueX, $plaqueY, $plaqueW, $plaqueH, $plaqueBg, $plaqueBorder);
-                self::drawSpacedText($im, 8.5, $plaqueY + 22, imagecolorallocate($im, 226, 232, 240), $fontArialBold, 'INVITATION PASS ISSUED TO', $w, 3);
-                self::drawCenteredText($im, $nameSize, 0, $plaqueY + 52, $white, $fontGeorgiaBold, $guestName, $w);
-            } else {
-                self::drawCenteredText($im, $nameSize, 0, $plaqueY + 30, $white, $fontGeorgiaBold, $guestName, $w);
-            }
-
-            // 8. Allowance Badge in Gold or Clean Text
-            $allowCfg = $cfg['allowance_badge'] ?? [];
-            $hideAllowanceBox = !empty($allowCfg['hide_badge_box']) || !empty($allowCfg['clean_text']) ||
-                                (isset($allowCfg['clean_text']) && in_array($allowCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
-                                (isset($allowCfg['hide_badge_box']) && in_array($allowCfg['hide_badge_box'], [true, 1, '1', 'true'], true));
-            $maxEntries = $guest->max_entries ?: 1;
-            $allowanceText = $guest->category ? mb_strtoupper($guest->category) : ($maxEntries > 1 ? 'DOUBLE ENTRY' : 'SINGLE ENTRY');
-            $allowYPercent = (float) ($allowCfg['y'] ?? 78.3);
-            $allowY = isset($allowCfg['y']) ? (int) (($allowYPercent / 100) * $h) : 696;
-            $allowSize = (float) ($allowCfg['fontSize'] ?? 9.5);
-            self::drawSpacedText($im, $allowSize, $allowY, $gold, $fontArialBold, $allowanceText, $w, 3);
-
-            // 9. QR Code (Clean High Contrast QR, zero pill border)
-            $scanUrl = rtrim($baseUrl ?: url('/'), '/') . '/card/' . $token;
-            $qrIm = QRCodeGenerator::renderToGdImage($scanUrl, 114, 2, 0x18, 0x15, 0x12);
-            if ($qrIm) {
-                $qrW = imagesx($qrIm);
-                $qrH = imagesy($qrIm);
-                $qrX = (int) (($w - $qrW) / 2);
-                $qrY = 716;
-
-                imagecopy($im, $qrIm, $qrX, $qrY, 0, 0, $qrW, $qrH);
-                imagedestroy($qrIm);
-            }
-
-            // 10. Unique Verification Code in White Monospace
-            $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-' . $guest->id);
-            self::drawSpacedText($im, 10.5, 862, $white, $fontArialBold, $codeText, $w, 4);
-
-        } elseif ($hasCustomArt) {
-            // ══════════════════════════════════════════════════════════════
-            // THEME: DYNAMIC CUSTOM / IMPORTED ARTWORK TEMPLATES (e.g. adhd)
+            // DYNAMIC CUSTOM ARTWORK PASS (Exact WYSIWYG Percentage Layout)
             // ══════════════════════════════════════════════════════════════
             $showHeadline = !empty($cfg['show_headline']) || !empty($cfg['show_category_badge']);
             $showCoupleNames = !empty($cfg['show_couple_names']) || !empty($cfg['show_title']);
@@ -437,165 +204,233 @@ class PassImageGeneratorService
             $showQr = ($template?->show_qr !== false && ($cfg['show_qr'] ?? true));
             $showCode = ($template?->show_unique_code !== false && ($cfg['show_unique_code'] ?? true));
 
-            // 1. Headline / Top Tag Pill
-            if ($showHeadline) {
-                $badgeText = $cfg['headline_text'] ?? ($template?->headline ?: "YOU'RE INVITED");
-                $badgeYPercent = (float) ($cfg['headline_y'] ?? $cfg['category_badge']['y'] ?? 5.5);
-                $badgeY = (int) (($badgeYPercent / 100) * $h);
-                $badgeW = 240;
-                $badgeH = 28;
-                $badgeX = (int) (($w - $badgeW) / 2);
-                $pillBg = imagecolorallocatealpha($im, 0, 0, 0, 75);
-                $pillBorder = imagecolorallocatealpha($im, 255, 255, 255, 80);
-                self::drawSmoothPill($im, $badgeX, $badgeY, $badgeW, $badgeH, $pillBg, $pillBorder);
-                $badgeColor = self::hexToGdColor($im, $cfg['category_badge']['color'] ?? '#FFFFFF');
-                self::drawSpacedText($im, 9.5, $badgeY + 19, $badgeColor, $fontArialBold, mb_strtoupper($badgeText), $w, 3);
+            // In predefined templates, default layers to active
+            if ($isEngagement || $isZamroth) {
+                $showHeadline = ($template?->show_category_badge !== false);
+                $showCoupleNames = true;
+                $showDate = true;
+                $showQuote = ($cfg['show_quote'] ?? true);
+                $showVenue = ($cfg['show_venue'] ?? true);
             }
 
-            // 2. Couple Names
-            if ($showCoupleNames && !empty($cfg['couple_names'])) {
-                $coupleText = $cfg['couple_names'];
+            // 1. Top Headline / Badge Pill
+            if ($showHeadline) {
+                $badgeText = $cfg['headline_text'] ?? ($template?->headline ?: ($isEngagement ? 'Engagement Invitation' : "WEDDING INVITATION"));
+                $badgeYPercent = (float) ($cfg['headline_y'] ?? $cfg['category_badge']['y'] ?? 5.5);
+                $badgeY = (int) round(($badgeYPercent / 100) * $h);
+                $badgeW = (int) round(min($w - 40, 250 * $fontScale));
+                $badgeH = (int) round(30 * $fontScale);
+                $badgeX = (int) (($w - $badgeW) / 2);
+                $badgeFontSize = (float) ($cfg['category_badge']['fontSize'] ?? 10.5) * $fontScale;
+                
+                if ($isEngagement) {
+                    $pillBg = imagecolorallocatealpha($im, 255, 255, 255, 30);
+                    $pillBorder = imagecolorallocatealpha($im, 122, 30, 40, 75);
+                    self::drawSmoothPill($im, $badgeX, (int)($badgeY - ($badgeH / 2)), $badgeW, $badgeH, $pillBg, $pillBorder);
+                    self::drawCenteredText($im, $badgeFontSize, 0, (int)($badgeY + ($badgeH * 0.18)), $burgundy, $fontGeorgiaItalic, $badgeText, $w);
+                } else {
+                    $pillBg = imagecolorallocatealpha($im, 0, 0, 0, 75);
+                    $pillBorder = imagecolorallocatealpha($im, 255, 255, 255, 80);
+                    self::drawSmoothPill($im, $badgeX, (int)($badgeY - ($badgeH / 2)), $badgeW, $badgeH, $pillBg, $pillBorder);
+                    $badgeColor = self::hexToGdColor($im, $cfg['category_badge']['color'] ?? '#FFFFFF');
+                    self::drawSpacedText($im, $badgeFontSize, (int)($badgeY + ($badgeH * 0.18)), $badgeColor, $fontArialBold, mb_strtoupper($badgeText), $w, (int) max(2, 3 * $fontScale));
+                }
+            }
+
+            // 2. Couple Names / Header Title
+            if ($showCoupleNames) {
+                $coupleText = $cfg['couple_names'] ?? ($isEngagement ? 'Adel & Laila' : 'Zamroth & Husna');
                 $namesYPercent = (float) ($cfg['couple_names_y'] ?? 13.5);
-                $namesY = (int) (($namesYPercent / 100) * $h);
-                $namesSize = (float) ($cfg['couple_names_size'] ?? 36);
-                $namesColor = self::hexToGdColor($im, $cfg['couple_names_color'] ?? '#FFFFFF');
+                $namesY = (int) round(($namesYPercent / 100) * $h);
+                $namesSize = (float) ($cfg['couple_names_size'] ?? 40) * $fontScale;
+                $namesColor = self::hexToGdColor($im, $cfg['couple_names_color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
+
+                if (!empty($cfg['subtitle_text']) && ($isEngagement || !empty($cfg['show_subtitle']))) {
+                    $subText = $cfg['subtitle_text'];
+                    $subSize = (float) ($cfg['subtitle_size'] ?? 9.5) * $fontScale;
+                    $subColor = self::hexToGdColor($im, $cfg['subtitle_color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
+                    self::drawCenteredText($im, $subSize, 0, (int)($namesY - (36 * $fontScale)), $subColor, $fontGeorgia, $subText, $w);
+                }
+
                 self::drawCenteredTextWithShadow($im, $namesSize, 0, $namesY, $namesColor, $fontGeorgiaItalic, $coupleText, $w);
             }
 
-            // 3. Date & Schedule Lockup
+            // 3. Date & Schedule Details (Organized in one clean vertical sequence starting at date_y)
             if ($showDate) {
-                $dateYPercent = (float) ($cfg['date_y'] ?? 51.5);
-                $dateY = (int) (($dateYPercent / 100) * $h);
-                $dateSize = (float) ($cfg['date_size'] ?? 10.5);
-                $dateColor = self::hexToGdColor($im, $cfg['date_color'] ?? '#FFFFFF');
-                $dateNumColor = self::hexToGdColor($im, $cfg['date_num_color'] ?? '#FDE047');
+                $dateYPercent = (float) ($cfg['date_y'] ?? 46.0);
+                $dateY = (int) round(($dateYPercent / 100) * $h);
+                $dateSize = (float) ($cfg['date_size'] ?? 10.5) * $fontScale;
+                $dateColor = self::hexToGdColor($im, $cfg['date_color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
+                $dateNumColor = self::hexToGdColor($im, $cfg['date_num_color'] ?? ($isEngagement ? '#7A1E28' : '#FDE047'));
 
-                if (!empty($cfg['date_month'])) {
-                    self::drawSpacedText($im, $dateSize, $dateY, $dateColor, $fontArialBold, mb_strtoupper($cfg['date_month']), $w, 4);
+                $dateMonth = $cfg['date_month'] ?? ($isEngagement ? 'APRIL' : 'JANUARY');
+                $dateDayName = $cfg['date_day_name'] ?? ($isEngagement ? 'FRIDAY' : 'SUNDAY');
+                $dateDayNum = $cfg['date_day_num'] ?? ($isEngagement ? '26' : '4');
+                $dateTime = $cfg['date_time'] ?? ($isEngagement ? '8:30 PM' : 'AT 10:00 AM');
+                $dateYear = $cfg['date_year'] ?? '2026';
+
+                // Month
+                self::drawSpacedText($im, $dateSize, $dateY, $dateColor, $fontArialBold, mb_strtoupper($dateMonth), $w, (int) max(2, 4 * $fontScale));
+
+                // Day Row
+                $boxL = imagettfbbox($dateSize * 1.05, 0, $fontArialBold, $dateDayName);
+                $wL = abs($boxL[2] - $boxL[0]);
+                $boxM = imagettfbbox($dateSize * 1.8, 0, $fontGeorgiaItalic, $dateDayNum);
+                $wM = abs($boxM[2] - $boxM[0]);
+                $boxR = imagettfbbox($dateSize * 1.05, 0, $fontArialBold, $dateTime);
+                $wR = abs($boxR[2] - $boxR[0]);
+
+                $gap = (int) round(14 * $fontScale);
+                $totalRowW = $wL + $gap + $wM + $gap + $wR;
+                $curX = (int) (($w - $totalRowW) / 2);
+                $dayRowY = (int) ($dateY + (24 * $fontScale));
+
+                if ($isEngagement) {
+                    $dateBoxW = (int) min($w - 40, $totalRowW + (36 * $fontScale));
+                    $dateBoxH = (int) round(40 * $fontScale);
+                    $dateBoxX = (int) (($w - $dateBoxW) / 2);
+                    $dateBoxBg = imagecolorallocatealpha($im, 255, 255, 255, 35);
+                    $dateBoxBorder = imagecolorallocatealpha($im, 122, 30, 40, 85);
+                    self::drawSmoothPill($im, $dateBoxX, (int)($dayRowY - (26 * $fontScale)), $dateBoxW, $dateBoxH, $dateBoxBg, $dateBoxBorder);
                 }
 
-                $dateDayName = $cfg['date_day_name'] ?? '';
-                $dateDayNum = $cfg['date_day_num'] ?? '';
-                $dateTime = $cfg['date_time'] ?? '';
+                imagettftext($im, $dateSize * 1.05, 0, $curX, $dayRowY, $dateColor, $fontArialBold, $dateDayName);
+                $curX += $wL + $gap;
+                imagettftext($im, $dateSize * 1.8, 0, $curX, (int)($dayRowY + (2 * $fontScale)), $dateNumColor, $fontGeorgiaItalic, $dateDayNum);
+                $curX += $wM + $gap;
+                imagettftext($im, $dateSize * 1.05, 0, $curX, $dayRowY, $dateColor, $fontArialBold, $dateTime);
 
-                if ($dateDayName || $dateDayNum || $dateTime) {
-                    $boxL = imagettfbbox($dateSize, 0, $fontArialBold, $dateDayName);
-                    $wL = abs($boxL[2] - $boxL[0]);
-                    $boxM = imagettfbbox($dateSize * 1.8, 0, $fontGeorgiaItalic, $dateDayNum);
-                    $wM = abs($boxM[2] - $boxM[0]);
-                    $boxR = imagettfbbox($dateSize, 0, $fontArialBold, $dateTime);
-                    $wR = abs($boxR[2] - $boxR[0]);
+                // Year
+                $curBlockY = (int) ($dateY + (48 * $fontScale));
+                self::drawSpacedText($im, $dateSize, $curBlockY, $dateColor, $fontArialBold, $dateYear, $w, (int) max(2, 4 * $fontScale));
 
-                    $gap = 14;
-                    $totalRowW = $wL + $gap + $wM + $gap + $wR;
-                    $curX = (int) (($w - $totalRowW) / 2);
+                // Quote
+                if ($showQuote) {
+                    $quote = $cfg['invitation_quote'] ?? ($isEngagement ? 'CELEBRATING LOVE & PROMISE' : 'WE INVITE YOU TO WITNESS THE BEGINNING OF OUR FOREVER, TOGETHER WITH OUR FAMILIES.');
+                    $quoteSize = (float) ($cfg['quote_size'] ?? 8.5) * $fontScale;
+                    $quoteColor = self::hexToGdColor($im, $cfg['quote_color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
+                    $quoteLines = self::wrapText($quote, (int) max(26, 38 * ($w / 1080)));
+                    $curBlockY += (int) (22 * $fontScale);
+                    $lineSpacing = (int) max(12, 16 * $fontScale);
+                    foreach ($quoteLines as $qLine) {
+                        self::drawCenteredText($im, $quoteSize, 0, $curBlockY, $quoteColor, $fontArialBold, $qLine, $w);
+                        $curBlockY += $lineSpacing;
+                    }
+                }
+
+                // Venue
+                if ($showVenue) {
+                    $venueName = $cfg['venue_name'] ?? ($isEngagement ? 'DAR ES SALAAM SERENA HOTEL' : 'ANGKORBAN');
+                    $venueSub = $cfg['venue_sub'] ?? ($isEngagement ? 'tanzania' : 'kongmeah, kampongcham');
+                    $venueDate = $cfg['venue_date'] ?? ($isEngagement ? '26.04.2026' : '04.01.2026');
+                    $saveDate = $cfg['save_the_date'] ?? 'SAVE THE DATE';
+                    $venueColor = self::hexToGdColor($im, $cfg['custom_venue_color'] ?? ($isEngagement ? '#7A1E28' : '#FDE047'));
                     
-                    if ($dateDayName) imagettftext($im, $dateSize, 0, $curX, $dateY + 28, $dateColor, $fontArialBold, $dateDayName);
-                    $curX += $wL + $gap;
-                    if ($dateDayNum) imagettftext($im, $dateSize * 1.8, 0, $curX, $dateY + 30, $dateNumColor, $fontGeorgiaItalic, $dateDayNum);
-                    $curX += $wM + $gap;
-                    if ($dateTime) imagettftext($im, $dateSize, 0, $curX, $dateY + 28, $dateColor, $fontArialBold, $dateTime);
-                }
-
-                if (!empty($cfg['date_year'])) {
-                    self::drawSpacedText($im, $dateSize, $dateY + 54, $dateColor, $fontArialBold, $cfg['date_year'], $w, 4);
-                }
-            }
-
-            // 4. Quote
-            if ($showQuote && !empty($cfg['invitation_quote'])) {
-                $quote = $cfg['invitation_quote'];
-                $quoteSize = (float) ($cfg['quote_size'] ?? 8.5);
-                $quoteColor = self::hexToGdColor($im, $cfg['quote_color'] ?? '#FFFFFF');
-                $quoteLines = self::wrapText($quote, 44);
-                $quoteYPercent = (float) ($cfg['quote_y'] ?? 66.4);
-                $qy = (int) (($quoteYPercent / 100) * $h);
-                $lineSpacing = (int) max(14, 16 * ($h / 888));
-                foreach ($quoteLines as $qLine) {
-                    self::drawCenteredText($im, $quoteSize, 0, $qy, $quoteColor, $fontArialBold, $qLine, $w);
-                    $qy += $lineSpacing;
+                    $curBlockY += (int) (14 * $fontScale);
+                    self::drawSpacedText($im, 9.0 * $fontScale, $curBlockY, $venueColor, $fontArialBold, mb_strtoupper($venueName), $w, (int) max(2, 3 * $fontScale));
+                    if ($venueSub) {
+                        $curBlockY += (int) (14 * $fontScale);
+                        self::drawCenteredText($im, 8.0 * $fontScale, 0, $curBlockY, $graySub, $fontArial, $venueSub, $w);
+                    }
+                    if ($venueDate) {
+                        $curBlockY += (int) (14 * $fontScale);
+                        self::drawSpacedText($im, 8.0 * $fontScale, $curBlockY, $graySub, $fontArialBold, $venueDate, $w, (int) max(1, 2 * $fontScale));
+                    }
+                    if ($saveDate) {
+                        $curBlockY += (int) (16 * $fontScale);
+                        self::drawSpacedText($im, 8.5 * $fontScale, $curBlockY, $white, $fontArialBold, mb_strtoupper($saveDate), $w, (int) max(2, 4 * $fontScale));
+                    }
                 }
             }
 
-            // 5. Venue
-            if ($showVenue && !empty($cfg['venue_name'])) {
-                $venueName = $cfg['venue_name'];
-                $venueColor = self::hexToGdColor($im, $cfg['custom_venue_color'] ?? '#FDE047');
-                $venueYPercent = (float) ($cfg['venue_y'] ?? 71.5);
-                $venueY = (int) (($venueYPercent / 100) * $h);
-                self::drawSpacedText($im, 9.5, $venueY, $venueColor, $fontArialBold, $venueName, $w, 3);
-            }
-
-            // 6. Guest Plaque
+            // 4. Guest Plaque (Clean Typography or Glass Plaque at ~71.5%)
             if ($showGuestName) {
                 $nameCfg = $cfg['guest_name'] ?? [];
                 $nameYPercent = (float) ($nameCfg['y'] ?? 71.5);
-                $nameXPercent = (float) ($nameCfg['x'] ?? 50);
-                $plaqueY = (int) (($nameYPercent / 100) * $h);
-                $plaqueCenterX = (int) (($nameXPercent / 100) * $w);
-                $nameSize = (float) ($nameCfg['fontSize'] ?? 20);
-                $nameColor = self::hexToGdColor($im, $nameCfg['color'] ?? '#FFFFFF');
+                $nameXPercent = (float) ($nameCfg['x'] ?? 50.0);
+                $plaqueY = (int) round(($nameYPercent / 100) * $h);
+                $plaqueCenterX = (int) round(($nameXPercent / 100) * $w);
+                $nameSize = (float) ($nameCfg['fontSize'] ?? ($isEngagement ? 18 : 22)) * $fontScale;
+                $nameColor = self::hexToGdColor($im, $nameCfg['color'] ?? ($isEngagement ? '#54101A' : '#FFFFFF'));
+
                 $hideBox = !empty($nameCfg['hide_plaque_box']) || !empty($nameCfg['hide_name_box']) || !empty($nameCfg['clean_text']) ||
                            (isset($nameCfg['clean_text']) && in_array($nameCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
                            (isset($nameCfg['hide_plaque_box']) && in_array($nameCfg['hide_plaque_box'], [true, 1, '1', 'true'], true)) ||
                            (isset($nameCfg['hide_name_box']) && in_array($nameCfg['hide_name_box'], [true, 1, '1', 'true'], true));
-                $guestName = mb_strtoupper($guest->name ?: 'VALUED GUEST');
 
-                if (mb_strlen($guestName) > 20) $nameSize = max(12, $nameSize * 0.85);
-                if (mb_strlen($guestName) > 28) $nameSize = max(10, $nameSize * 0.7);
+                $guestName = mb_strtoupper($guest->name ?: 'VALUED GUEST');
+                if (mb_strlen($guestName) > 20) $nameSize = max(12 * $fontScale, $nameSize * 0.85);
+                if (mb_strlen($guestName) > 28) $nameSize = max(10 * $fontScale, $nameSize * 0.7);
 
                 if (!$hideBox) {
-                    $plaqueW = (int) ((($nameCfg['plaqueWidth'] ?? 84) / 100) * $w);
-                    $plaqueH = (int) max(50, 68 * ($h / 888));
+                    $plaqueW = (int) round(((($nameCfg['plaqueWidth'] ?? 84) / 100) * $w));
+                    $plaqueH = (int) round(68 * $fontScale);
                     $plaqueX = (int) ($plaqueCenterX - ($plaqueW / 2));
-                    $plaqueBg = imagecolorallocatealpha($im, 0, 0, 0, 60);
-                    $plaqueBorder = imagecolorallocatealpha($im, 255, 255, 255, 75);
+                    
+                    if ($isEngagement) {
+                        $plaqueBg = imagecolorallocatealpha($im, 255, 255, 255, 20);
+                        $plaqueBorder = imagecolorallocatealpha($im, 122, 30, 40, 75);
+                    } else {
+                        $plaqueBg = imagecolorallocatealpha($im, 0, 0, 0, 60);
+                        $plaqueBorder = imagecolorallocatealpha($im, 255, 255, 255, 75);
+                    }
+
                     self::drawSmoothPill($im, $plaqueX, (int)($plaqueY - ($plaqueH / 2)), $plaqueW, $plaqueH, $plaqueBg, $plaqueBorder);
-                    self::drawCenteredText($im, $nameSize, 0, (int)($plaqueY + 6), $nameColor, $fontGeorgiaBold, $guestName, $w);
+                    self::drawSpacedText($im, 8 * $fontScale, (int)($plaqueY - ($plaqueH * 0.15)), $isEngagement ? $burgundy : $graySub, $fontArialBold, 'INVITATION PASS ISSUED TO', $w, (int) max(2, 3 * $fontScale));
+                    self::drawCenteredText($im, $nameSize, 0, (int)($plaqueY + ($plaqueH * 0.28)), $isEngagement ? $burgundyDark : $nameColor, $fontGeorgiaBold, $guestName, $w);
                 } else {
-                    // Pure clean typography directly at the specified coordinate
-                    self::drawCenteredText($im, $nameSize, 0, $plaqueY, $nameColor, $fontGeorgiaBold, $guestName, $w);
+                    // Pure clean typography directly at the specified percentage coordinate
+                    self::drawCenteredText($im, $nameSize, 0, $plaqueY, $isEngagement ? $burgundyDark : $nameColor, $fontGeorgiaBold, $guestName, $w);
                 }
             }
 
-            // 7. Allowance Badge
+            // 5. Allowance Badge (Positioned at ~78.5%)
             if ($showAllowance) {
                 $allowCfg = $cfg['allowance_badge'] ?? [];
                 $allowYPercent = (float) ($allowCfg['y'] ?? 78.5);
-                $allowXPercent = (float) ($allowCfg['x'] ?? 50);
-                $allowY = (int) (($allowYPercent / 100) * $h);
-                $allowCenterX = (int) (($allowXPercent / 100) * $w);
-                $allowSize = (float) ($allowCfg['fontSize'] ?? 9.5);
-                $allowColor = self::hexToGdColor($im, $allowCfg['color'] ?? '#FDE047');
+                $allowXPercent = (float) ($allowCfg['x'] ?? 50.0);
+                $allowY = (int) round(($allowYPercent / 100) * $h);
+                $allowCenterX = (int) round(($allowXPercent / 100) * $w);
+                $allowSize = (float) ($allowCfg['fontSize'] ?? 9.5) * $fontScale;
+                $allowColor = self::hexToGdColor($im, $allowCfg['color'] ?? ($isEngagement ? '#7A1E28' : '#FDE047'));
                 $maxEntries = $guest->max_entries ?: 1;
                 $allowanceText = $guest->category ? mb_strtoupper($guest->category) : ($maxEntries > 1 ? 'DOUBLE ENTRY' : 'SINGLE ENTRY');
+
                 $hideBadgeBox = !empty($allowCfg['hide_badge_box']) || !empty($allowCfg['clean_text']) ||
                                 (isset($allowCfg['clean_text']) && in_array($allowCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
                                 (isset($allowCfg['hide_badge_box']) && in_array($allowCfg['hide_badge_box'], [true, 1, '1', 'true'], true));
 
                 if (!$hideBadgeBox) {
-                    $allowBoxW = (int) min($w - 40, 160);
-                    $allowBoxH = 26;
+                    $allowBoxW = (int) min($w - 40, round(160 * $fontScale));
+                    $allowBoxH = (int) round(28 * $fontScale);
                     $allowBoxX = (int) ($allowCenterX - ($allowBoxW / 2));
-                    $boxBg = imagecolorallocatealpha($im, 0, 0, 0, 65);
-                    $boxBorder = imagecolorallocatealpha($im, 255, 255, 255, 60);
-                    self::drawSmoothPill($im, $allowBoxX, $allowY - 13, $allowBoxW, $allowBoxH, $boxBg, $boxBorder);
-                    self::drawSpacedText($im, $allowSize, $allowY + 4, $allowColor, $fontArialBold, $allowanceText, $w, 2);
+                    
+                    if ($isEngagement) {
+                        $boxBg = imagecolorallocatealpha($im, 255, 255, 255, 30);
+                        $boxBorder = imagecolorallocatealpha($im, 122, 30, 40, 75);
+                    } else {
+                        $boxBg = imagecolorallocatealpha($im, 0, 0, 0, 65);
+                        $boxBorder = imagecolorallocatealpha($im, 255, 255, 255, 60);
+                    }
+
+                    self::drawSmoothPill($im, $allowBoxX, (int)($allowY - ($allowBoxH / 2)), $allowBoxW, $allowBoxH, $boxBg, $boxBorder);
+                    self::drawSpacedText($im, $allowSize, (int)($allowY + ($allowBoxH * 0.2)), $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $fontScale));
                 } else {
-                    // Pure clean typography directly at the specified coordinate
-                    self::drawSpacedText($im, $allowSize, $allowY, $allowColor, $fontArialBold, $allowanceText, $w, 2);
+                    self::drawSpacedText($im, $allowSize, $allowY, $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $fontScale));
                 }
             }
 
-            // 8. QR Code (Clean Direct QR with Built-in Margin, zero pill border)
+            // 6. QR Code Pass (Positioned at ~87.0%)
             if ($showQr) {
                 $qrCfg = $cfg['qr_code'] ?? [];
-                $qrYPercent = (float) ($qrCfg['y'] ?? 85.5);
-                $qrXPercent = (float) ($qrCfg['x'] ?? 50);
-                $qrY = (int) (($qrYPercent / 100) * $h);
-                $qrX = (int) (($qrXPercent / 100) * $w);
-                $qrSize = (int) ($qrCfg['size'] ?? min(120, (int)(88 * ($w / 600))));
-                $darkColorHex = $qrCfg['darkColor'] ?? '#111827';
+                $qrYPercent = (float) ($qrCfg['y'] ?? 87.0);
+                $qrXPercent = (float) ($qrCfg['x'] ?? 50.0);
+                $qrY = (int) round(($qrYPercent / 100) * $h);
+                $qrX = (int) round(($qrXPercent / 100) * $w);
+                $rawQrSize = (float) ($qrCfg['size'] ?? 72);
+                $qrSize = (int) round($rawQrSize * $fontScale);
+
+                $darkColorHex = $qrCfg['darkColor'] ?? ($isEngagement ? '#6B1D2F' : '#111827');
                 list($dr, $dg, $db) = self::hexToRgb($darkColorHex);
 
                 $scanUrl = rtrim($baseUrl ?: url('/'), '/') . '/card/' . $token;
@@ -611,24 +446,22 @@ class PassImageGeneratorService
                 }
             }
 
-            // 9. Security Code
+            // 7. Security Verification Code (Positioned at ~96.0%)
             if ($showCode) {
                 $codeCfg = $cfg['card_number'] ?? [];
-                $codeYPercent = (float) ($codeCfg['y'] ?? 96);
-                $codeXPercent = (float) ($codeCfg['x'] ?? 50);
-                $codeY = (int) (($codeYPercent / 100) * $h);
-                $codeSize = (float) ($codeCfg['fontSize'] ?? 10);
-                $codeColor = self::hexToGdColor($im, $codeCfg['color'] ?? '#FFFFFF');
+                $codeYPercent = (float) ($codeCfg['y'] ?? 96.0);
+                $codeXPercent = (float) ($codeCfg['x'] ?? 50.0);
+                $codeY = (int) round(($codeYPercent / 100) * $h);
+                $codeSize = (float) ($codeCfg['fontSize'] ?? 10) * $fontScale;
+                $codeColor = self::hexToGdColor($im, $codeCfg['color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
                 $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-' . $guest->id);
-                self::drawSpacedText($im, $codeSize, $codeY, $codeColor, $fontArialBold, $codeText, $w, 4);
+                self::drawSpacedText($im, $codeSize, $codeY, $codeColor, $fontArialBold, $codeText, $w, (int) max(2, 4 * $fontScale));
             }
+
         } else {
             // ══════════════════════════════════════════════════════════════
             // THEME: KARDOVO SIGNATURE PASS (Gradient Background)
             // ══════════════════════════════════════════════════════════════
-            $scaleY = $h / 888;
-            $scaleX = $w / 600;
-
             $cyan = imagecolorallocate($im, 0, 163, 255); // #00A3FF
             $cyanBorder = imagecolorallocatealpha($im, 0, 136, 221, 75);
             $eventTitle = $event?->title ?: 'Exclusive Invitation Pass';
@@ -636,91 +469,92 @@ class PassImageGeneratorService
             $headline = $template?->headline ?: 'EXCLUSIVE INVITATION PASS';
 
             // 1. Logo & Top Verified Pass Pill
-            self::drawSpacedText($im, 14, (int)(52 * $scaleY), $white, $fontArialBold, 'KARDOVO', (int)(200 * $scaleX), 3);
-            self::drawSpacedText($im, 7.5, (int)(68 * $scaleY), $graySub, $fontArialBold, 'ACCESS & INVITATION', (int)(200 * $scaleX), 2);
+            self::drawSpacedText($im, 14 * $fontScale, (int)(60 * $fontScale), $white, $fontArialBold, 'KARDOVO', (int)(200 * $fontScale), (int)(3 * $fontScale));
+            self::drawSpacedText($im, 7.5 * $fontScale, (int)(78 * $fontScale), $graySub, $fontArialBold, 'ACCESS & INVITATION', (int)(200 * $fontScale), (int)(2 * $fontScale));
 
-            $badgeW = (int)(150 * $scaleX);
-            $badgeH = (int)(28 * $scaleY);
-            $badgeX = $w - $badgeW - 32;
-            $badgeY = (int)(42 * $scaleY);
+            $badgeW = (int)(150 * $fontScale);
+            $badgeH = (int)(32 * $fontScale);
+            $badgeX = $w - $badgeW - (int)(32 * $fontScale);
+            $badgeY = (int)(50 * $fontScale);
             $badgeBg = imagecolorallocatealpha($im, 0, 30, 60, 70);
             self::drawSmoothPill($im, $badgeX, $badgeY, $badgeW, $badgeH, $badgeBg, $cyanBorder);
-            imagettftext($im, 8.5, 0, $badgeX + 16, $badgeY + (int)(18 * $scaleY), $cyan, $fontArialBold, 'VERIFIED PASS');
+            imagettftext($im, 8.5 * $fontScale, 0, $badgeX + (int)(16 * $fontScale), $badgeY + (int)(20 * $fontScale), $cyan, $fontArialBold, 'VERIFIED PASS');
 
             // Header line
             $dividerColor = imagecolorallocatealpha($im, 26, 42, 62, 50);
-            imageline($im, 32, (int)(90 * $scaleY), $w - 32, (int)(90 * $scaleY), $dividerColor);
+            imageline($im, (int)(32 * $fontScale), (int)(100 * $fontScale), $w - (int)(32 * $fontScale), (int)(100 * $fontScale), $dividerColor);
 
             // 2. Headline & Event Title
-            self::drawSpacedText($im, 10, (int)(130 * $scaleY), $cyan, $fontArialBold, mb_strtoupper($headline), $w, 2);
-            $eventLines = self::wrapText($eventTitle, (int)(28 * ($w / 600)));
-            $ey = (int)(168 * $scaleY);
+            self::drawSpacedText($im, 10 * $fontScale, (int)(140 * $fontScale), $cyan, $fontArialBold, mb_strtoupper($headline), $w, (int)(2 * $fontScale));
+            $eventLines = self::wrapText($eventTitle, (int) max(24, 30 * ($w / 1080)));
+            $ey = (int)(180 * $fontScale);
             foreach ($eventLines as $eLine) {
-                self::drawCenteredText($im, 20, 0, $ey, $white, $fontArialBold, $eLine, $w);
-                $ey += (int)(28 * $scaleY);
+                self::drawCenteredText($im, 20 * $fontScale, 0, $ey, $white, $fontArialBold, $eLine, $w);
+                $ey += (int)(32 * $fontScale);
             }
 
             // 3. Date Pill
-            $datePillW = (int) min($w - 40, 320 * $scaleX);
-            $datePillH = (int)(34 * $scaleY);
+            $datePillW = (int) min($w - 40, 320 * $fontScale);
+            $datePillH = (int)(36 * $fontScale);
             $datePillX = (int) (($w - $datePillW) / 2);
-            $datePillY = $ey + (int)(10 * $scaleY);
+            $datePillY = $ey + (int)(12 * $fontScale);
             $datePillBg = imagecolorallocatealpha($im, 20, 32, 46, 60);
             self::drawSmoothPill($im, $datePillX, $datePillY, $datePillW, $datePillH, $datePillBg, $dividerColor);
-            self::drawCenteredText($im, 10, 0, $datePillY + (int)(22 * $scaleY), $graySub, $fontArialBold, $eventDateStr, $w);
+            self::drawCenteredText($im, 10 * $fontScale, 0, $datePillY + (int)(24 * $fontScale), $graySub, $fontArialBold, $eventDateStr, $w);
 
             // 4. Guest Plaque
-            $plaqueW = (int) min($w - 32, 480 * $scaleX);
-            $plaqueH = (int)(110 * $scaleY);
+            $plaqueW = (int) min($w - 40, 480 * $fontScale);
+            $plaqueH = (int)(120 * $fontScale);
             $plaqueX = (int) (($w - $plaqueW) / 2);
-            $plaqueY = $datePillY + (int)(54 * $scaleY);
+            $plaqueY = $datePillY + (int)(60 * $fontScale);
             $plaqueBg = imagecolorallocatealpha($im, 7, 13, 24, 40);
             self::drawSmoothPill($im, $plaqueX, $plaqueY, $plaqueW, $plaqueH, $plaqueBg, $dividerColor);
 
-            self::drawSpacedText($im, 8.5, $plaqueY + (int)(26 * $scaleY), $cyan, $fontArialBold, 'INVITATION PASS ISSUED TO', $w, 3);
+            self::drawSpacedText($im, 8.5 * $fontScale, $plaqueY + (int)(30 * $fontScale), $cyan, $fontArialBold, 'INVITATION PASS ISSUED TO', $w, (int)(3 * $fontScale));
             
             $guestName = mb_strtoupper($guest->name ?: 'VALUED GUEST');
-            $nameSize = 22;
-            if (mb_strlen($guestName) > 20) $nameSize = 16;
-            if (mb_strlen($guestName) > 28) $nameSize = 13;
-            self::drawCenteredText($im, $nameSize, 0, $plaqueY + (int)(62 * $scaleY), $white, $fontGeorgiaBold, $guestName, $w);
+            $nameSize = 22 * $fontScale;
+            if (mb_strlen($guestName) > 20) $nameSize = 16 * $fontScale;
+            if (mb_strlen($guestName) > 28) $nameSize = 13 * $fontScale;
+            self::drawCenteredText($im, $nameSize, 0, $plaqueY + (int)(70 * $fontScale), $white, $fontGeorgiaBold, $guestName, $w);
 
             $allowanceText = $guest->allowance_label ?: ($guest->max_entries > 1 ? 'DOUBLE ENTRY' : 'SINGLE ENTRY');
-            $allowPillW = (int)(160 * $scaleX);
-            $allowPillH = (int)(24 * $scaleY);
+            $allowPillW = (int)(160 * $fontScale);
+            $allowPillH = (int)(26 * $fontScale);
             $allowPillX = (int) (($w - $allowPillW) / 2);
-            $allowPillY = $plaqueY + (int)(74 * $scaleY);
+            $allowPillY = $plaqueY + (int)(84 * $fontScale);
             $allowPillBg = imagecolorallocatealpha($im, 10, 22, 38, 50);
             self::drawSmoothPill($im, $allowPillX, $allowPillY, $allowPillW, $allowPillH, $allowPillBg, $cyanBorder);
-            self::drawSpacedText($im, 8.5, $allowPillY + (int)(16 * $scaleY), $cyan, $fontArialBold, mb_strtoupper($allowanceText), $w, 2);
+            self::drawSpacedText($im, 8.5 * $fontScale, $allowPillY + (int)(18 * $fontScale), $cyan, $fontArialBold, mb_strtoupper($allowanceText), $w, (int)(2 * $fontScale));
 
-            // 5. QR Code (Clean Direct QR, zero pill border)
+            // 5. QR Code (Positioned at 78% of height)
             $scanUrl = rtrim($baseUrl ?: url('/'), '/') . '/card/' . $token;
-            $qrSize = (int) min(160, 140 * min($scaleX, $scaleY));
+            $qrSize = (int) round(120 * $fontScale);
             $qrIm = QRCodeGenerator::renderToGdImage($scanUrl, $qrSize, 2, 15, 23, 42);
             if ($qrIm) {
                 $qrW = imagesx($qrIm);
                 $qrH = imagesy($qrIm);
                 $qrX = (int) (($w - $qrW) / 2);
-                $qrY = (int)(570 * $scaleY);
+                $qrY = (int) round(0.78 * $h);
 
                 imagecopy($im, $qrIm, $qrX, $qrY, 0, 0, $qrW, $qrH);
                 imagedestroy($qrIm);
             }
 
             // 6. Unique Code
-            self::drawSpacedText($im, 8, (int)(760 * $scaleY), $graySub, $fontArialBold, 'GATE VERIFICATION CODE', $w, 3);
+            self::drawSpacedText($im, 8 * $fontScale, (int) round(0.91 * $h), $graySub, $fontArialBold, 'GATE VERIFICATION CODE', $w, (int)(3 * $fontScale));
             $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-' . $guest->id);
-            self::drawSpacedText($im, 16, (int)(790 * $scaleY), $white, $fontArialBold, $codeText, $w, 4);
+            self::drawSpacedText($im, 16 * $fontScale, (int) round(0.94 * $h), $white, $fontArialBold, $codeText, $w, (int)(4 * $fontScale));
 
             // Footer line & text
-            imageline($im, 32, (int)(830 * $scaleY), $w - 32, (int)(830 * $scaleY), $dividerColor);
+            $footerLineY = (int) round(0.97 * $h);
+            imageline($im, (int)(32 * $fontScale), $footerLineY, $w - (int)(32 * $fontScale), $footerLineY, $dividerColor);
             $cardNumber = $guest->card_number ?: ('KDV-' . $guest->id);
-            imagettftext($im, 8.5, 0, 36, (int)(856 * $scaleY), $graySub, $fontArial, $cardNumber);
+            imagettftext($im, 8.5 * $fontScale, 0, (int)(36 * $fontScale), $footerLineY + (int)(24 * $fontScale), $graySub, $fontArial, $cardNumber);
             $footerR = 'Secured & verified by KARDOVO';
-            $bboxR = imagettfbbox(8.5, 0, $fontArial, $footerR);
+            $bboxR = imagettfbbox(8.5 * $fontScale, 0, $fontArial, $footerR);
             $rw = abs($bboxR[2] - $bboxR[0]);
-            imagettftext($im, 8.5, 0, $w - 36 - $rw, (int)(856 * $scaleY), $graySub, $fontArial, $footerR);
+            imagettftext($im, 8.5 * $fontScale, 0, $w - (int)(36 * $fontScale) - $rw, $footerLineY + (int)(24 * $fontScale), $graySub, $fontArial, $footerR);
         }
 
         imagejpeg($im, $outputPath, 95);
@@ -776,7 +610,7 @@ class PassImageGeneratorService
             $textWidth = abs($bbox[2] - $bbox[0]);
             $x = (int) (($canvasWidth - $textWidth) / 2);
             $shadow = imagecolorallocatealpha($im, 0, 0, 0, 60);
-            imagettftext($im, $size, $angle, $x + 1, $y + 2, $shadow, $fontFile, $text);
+            imagettftext($im, $size, $angle, $x + 2, $y + 3, $shadow, $fontFile, $text);
             imagettftext($im, $size, $angle, $x, $y, $color, $fontFile, $text);
         } else {
             self::drawCenteredText($im, $size, $angle, $y, $color, $fontFile, $text, $canvasWidth);

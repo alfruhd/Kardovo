@@ -422,7 +422,8 @@ export default function EventDashboard({
                         value={stats?.total_guests || 0}
                         subtitle="Invited attendees"
                         icon={Users}
-                        titleColor="text-cyan-600 dark:text-cyan-400"
+                        titleColor="text-slate-900 dark:text-white"
+                        subtitleColor="text-cyan-600 dark:text-cyan-400 font-semibold"
                         iconColor="text-cyan-600 dark:text-cyan-400"
                         iconBg="bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500/20"
                         hoverBorder="hover:border-cyan-500/40 dark:hover:border-cyan-500/40"
@@ -432,7 +433,8 @@ export default function EventDashboard({
                         value={stats?.messages_sent || 0}
                         subtitle={`${stats?.messages_sent || 0} dispatched passes`}
                         icon={Send}
-                        titleColor="text-cyan-600 dark:text-cyan-400"
+                        titleColor="text-slate-900 dark:text-white"
+                        subtitleColor="text-cyan-600 dark:text-cyan-400 font-semibold"
                         iconColor="text-cyan-600 dark:text-cyan-400"
                         iconBg="bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500/20"
                         hoverBorder="hover:border-cyan-500/40 dark:hover:border-cyan-500/40"
@@ -442,7 +444,8 @@ export default function EventDashboard({
                         value={stats?.will_attend || 0}
                         subtitle={`${stats?.attendance_percent || 0}% response rate`}
                         icon={CheckCircle2}
-                        titleColor="text-cyan-600 dark:text-cyan-400"
+                        titleColor="text-slate-900 dark:text-white"
+                        subtitleColor="text-cyan-600 dark:text-cyan-400 font-semibold"
                         iconColor="text-cyan-600 dark:text-cyan-400"
                         iconBg="bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500/20"
                         hoverBorder="hover:border-cyan-500/40 dark:hover:border-cyan-500/40"
@@ -452,7 +455,8 @@ export default function EventDashboard({
                         value={stats?.live_checkins || 0}
                         subtitle="Live gate check-ins"
                         icon={QrCode}
-                        titleColor="text-cyan-600 dark:text-cyan-400"
+                        titleColor="text-slate-900 dark:text-white"
+                        subtitleColor="text-cyan-600 dark:text-cyan-400 font-semibold"
                         iconColor="text-cyan-600 dark:text-cyan-400"
                         iconBg="bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500/20"
                         hoverBorder="hover:border-cyan-500/40 dark:hover:border-cyan-500/40"

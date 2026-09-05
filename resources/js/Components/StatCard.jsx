@@ -7,16 +7,17 @@ export default function StatCard({
     icon: Icon, 
     trend, 
     className = '',
-    titleColor = 'text-slate-500 dark:text-slate-400',
-    iconColor = 'text-slate-600 dark:text-slate-300',
-    iconBg = 'bg-slate-100 dark:bg-white/[0.06] border-slate-200/60 dark:border-white/[0.06]',
+    titleColor = 'text-slate-900 dark:text-white',
+    subtitleColor = 'text-cyan-600 dark:text-cyan-400 font-semibold',
+    iconColor = 'text-cyan-600 dark:text-cyan-400',
+    iconBg = 'bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20',
     valueColor = 'text-slate-900 dark:text-white',
-    hoverBorder = 'hover:border-slate-300 dark:hover:border-slate-700'
+    hoverBorder = 'hover:border-cyan-500/40 dark:hover:border-cyan-500/40'
 }) {
     return (
         <div className={`group rounded-2xl p-4 sm:p-5 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card ${hoverBorder} transition-all duration-200 flex flex-col justify-between ${className}`}>
             <div className="flex items-center justify-between gap-2">
-                <span className={`text-[10.5px] sm:text-[11px] font-bold uppercase tracking-wider truncate ${titleColor}`}>
+                <span className={`text-[10.5px] sm:text-[11px] font-extrabold uppercase tracking-wider truncate ${titleColor}`}>
                     {title}
                 </span>
                 {Icon && (
@@ -31,7 +32,7 @@ export default function StatCard({
                     {typeof value === 'number' ? value.toLocaleString() : value}
                 </div>
                 {subtitle && (
-                    <div className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-1 flex items-center gap-1.5 truncate">
+                    <div className={`text-[11px] sm:text-xs mt-1 flex items-center gap-1.5 truncate ${subtitleColor}`}>
                         {trend && (
                             <span className={trend > 0 ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-slate-500'}>
                                 {trend > 0 ? `+${trend}%` : `${trend}%`}

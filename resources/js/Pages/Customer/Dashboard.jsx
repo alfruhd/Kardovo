@@ -173,77 +173,77 @@ export default function CustomerDashboard({
                     {/* Total Events */}
                     <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Events</span>
+                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Events</span>
                             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Calendar className="w-4 h-4" />
                             </div>
                         </div>
                         <div className="mt-3">
                             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{overviewStats.total_events || 0}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">{overviewStats.active_events || 0} active</div>
+                            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-1">{overviewStats.active_events || 0} active</div>
                         </div>
                     </div>
 
                     {/* Total Guests */}
                     <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Guests</span>
+                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Guests</span>
                             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Users className="w-4 h-4" />
                             </div>
                         </div>
                         <div className="mt-3">
                             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(overviewStats.total_guests || 0).toLocaleString()}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">Invited guests</div>
+                            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-1">Invited guests</div>
                         </div>
                     </div>
 
                     {/* Confirmed RSVPs */}
                     <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Attending</span>
+                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Attending</span>
                             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <CheckCircle2 className="w-4 h-4" />
                             </div>
                         </div>
                         <div className="mt-3">
                             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(overviewStats.total_will_attend || 0).toLocaleString()}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">{overviewStats.overall_attendance_rate || 0}% confirmed</div>
+                            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-1">{overviewStats.overall_attendance_rate || 0}% confirmed</div>
                         </div>
                     </div>
 
                     {/* Admitted at Gate */}
                     <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Checked In</span>
+                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Checked In</span>
                             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <CheckCheck className="w-4 h-4" />
                             </div>
                         </div>
                         <div className="mt-3">
                             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(overviewStats.total_checkins || 0).toLocaleString()}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">Gate entries</div>
+                            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-1">Gate entries</div>
                         </div>
                     </div>
 
                     {/* Passes Dispatched */}
                     <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Passes Sent</span>
+                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Passes Sent</span>
                             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Send className="w-4 h-4" />
                             </div>
                         </div>
                         <div className="mt-3">
                             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(overviewStats.total_messages || 0).toLocaleString()}</div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">Dispatched</div>
+                            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-1">Dispatched</div>
                         </div>
                     </div>
 
                     {/* Message Quota */}
                     <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between">
                         <div className="flex items-center justify-between">
-                            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400">Quota</span>
+                            <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Quota</span>
                             <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
                                 <Zap className="w-4 h-4" />
                             </div>
@@ -252,7 +252,7 @@ export default function CustomerDashboard({
                             <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
                                 {isUnrestrictedQuota ? '∞' : (quota.whatsapp_remaining ?? '1,000')}
                             </div>
-                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1">
+                            <div className="text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-1">
                                 {isUnrestrictedQuota ? 'Unlimited balance' : `${quota.whatsapp_used || 0} sent`}
                             </div>
                         </div>

@@ -98,18 +98,7 @@ export default function Messaging({
     const [channel, setChannel] = useState('whatsapp');
     const [campaignType, setCampaignType] = useState('pass_invitation'); // 'pass_invitation' | 'pass_only' | 'text_only'
     const [customCaption, setCustomCaption] = useState(WHATSAPP_DEFAULT_TEMPLATE);
-    const [dispatchStatus, setDispatchStatus] = useState(null);
     const [isDispatching, setIsDispatching] = useState(false);
-
-    useEffect(() => {
-        if (flash?.success) {
-            setDispatchStatus({ type: 'success', message: flash.success });
-        } else if (flash?.error) {
-            setDispatchStatus({ type: 'error', message: flash.error });
-        } else if (flash?.warning) {
-            setDispatchStatus({ type: 'warning', message: flash.warning });
-        }
-    }, [flash]);
     
     // Card Template Selection for Event & Pass Sending
     const initialTemplateId = selectedEvent?.card_template_id || selectedEvent?.card_template?.id || templates[0]?.id || '';
@@ -344,10 +333,6 @@ export default function Messaging({
         }
 
         setIsDispatching(true);
-        setDispatchStatus({ 
-            type: 'loading', 
-            message: `Dispatching ${guestIdsToSend.length} pass(es) via ${channel === 'whatsapp' ? 'Meta WhatsApp Cloud API' : 'SMS Gateway'}...` 
-        });
 
         router.post(route('messaging.broadcast'), {
             event_id: activeEventId,
@@ -362,14 +347,6 @@ export default function Messaging({
             rsvp_declined_text: rsvpDeclinedText,
         }, {
             preserveScroll: true,
-            onSuccess: (page) => {
-                const succ = page.props?.flash?.success || `Dispatched ${guestIdsToSend.length} campaign message(s) successfully!`;
-                setDispatchStatus({ type: 'success', message: succ });
-            },
-            onError: (errs) => {
-                const first = Object.values(errs)[0] || 'Dispatch error occurred. Please verify your gateway configuration and recipient numbers.';
-                setDispatchStatus({ type: 'error', message: first });
-            },
             onFinish: () => {
                 setIsDispatching(false);
             }
@@ -496,30 +473,7 @@ export default function Messaging({
                     {/* Left: Campaign Composer (7 cols) */}
                     <div className="lg:col-span-7 space-y-5">
                         
-                        {/* Live Dispatch Feedback Banner */}
-                        {dispatchStatus && (
-                            <div className={`p-4 rounded-2xl border flex items-start gap-3 transition shadow-xs ${
-                                dispatchStatus.type === 'loading'
-                                    ? 'bg-cyan-50 dark:bg-cyan-950/40 border-cyan-300 dark:border-cyan-800 text-cyan-900 dark:text-cyan-200'
-                                    : dispatchStatus.type === 'success'
-                                    ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200'
-                                    : 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800 text-rose-900 dark:text-rose-200'
-                            }`}>
-                                {dispatchStatus.type === 'loading' ? (
-                                    <RefreshCw className="w-5 h-5 animate-spin text-cyan-600 dark:text-cyan-400 flex-shrink-0 mt-0.5" />
-                                ) : dispatchStatus.type === 'success' ? (
-                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                                ) : (
-                                    <AlertCircle className="w-5 h-5 text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
-                                )}
-                                <div className="flex-1">
-                                    <div className="text-xs font-bold leading-relaxed">{dispatchStatus.message}</div>
-                                </div>
-                                <button type="button" onClick={() => setDispatchStatus(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
+
 
 
 

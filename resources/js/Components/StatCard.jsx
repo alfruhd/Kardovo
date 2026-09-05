@@ -12,7 +12,7 @@ export default function StatCard({
     iconColor = 'text-cyan-600 dark:text-cyan-400',
     iconBg = 'bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20',
     valueColor = 'text-slate-900 dark:text-white',
-    hoverBorder = 'hover:border-cyan-500/40 dark:hover:border-cyan-500/40'
+    hoverBorder = 'hover:border-slate-300 dark:hover:border-slate-700'
 }) {
     return (
         <div className={`group rounded-2xl p-4 sm:p-5 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card ${hoverBorder} transition-all duration-200 flex flex-col justify-between ${className}`}>

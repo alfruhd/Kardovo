@@ -42,8 +42,8 @@ class GuestImportService
 
                     foreach ($rawRows as $row) {
                         // Filter out completely empty arrays/rows
-                        if (!empty(array_filter($row, fn($val) => $val !== null && trim((string)$val) !== ''))) {
-                            $rows[] = array_map(fn($cell) => trim((string)$cell), $row);
+                        if (! empty(array_filter($row, fn ($val) => $val !== null && trim((string) $val) !== ''))) {
+                            $rows[] = array_map(fn ($cell) => trim((string) $cell), $row);
                         }
                     }
                 } catch (\Throwable $e) {
@@ -52,21 +52,23 @@ class GuestImportService
                         $lines = file($realPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
                         foreach ($lines as $line) {
                             $trimmed = trim($line);
-                            if (!empty($trimmed)) {
+                            if (! empty($trimmed)) {
                                 $rows[] = str_getcsv($trimmed);
                             }
                         }
                     } else {
-                        $errors[] = "Failed to parse Excel spreadsheet: " . $e->getMessage();
+                        $errors[] = 'Failed to parse Excel spreadsheet: '.$e->getMessage();
+
                         return ['imported' => 0, 'skipped' => 0, 'errors' => $errors, 'guests' => []];
                     }
                 }
             } else {
-                $errors[] = "Unsupported file format. Please upload an Excel spreadsheet (.xlsx, .xls) or CSV file.";
+                $errors[] = 'Unsupported file format. Please upload an Excel spreadsheet (.xlsx, .xls) or CSV file.';
+
                 return ['imported' => 0, 'skipped' => 0, 'errors' => $errors, 'guests' => []];
             }
-        } elseif (!empty(trim((string)$rawText))) {
-            $lines = explode("\n", (string)$rawText);
+        } elseif (! empty(trim((string) $rawText))) {
+            $lines = explode("\n", (string) $rawText);
             foreach ($lines as $line) {
                 $trimmed = trim($line);
                 if (empty($trimmed)) {
@@ -82,13 +84,14 @@ class GuestImportService
         }
 
         if (empty($rows)) {
-            $errors[] = "No valid data rows found in the uploaded file or text.";
+            $errors[] = 'No valid data rows found in the uploaded file or text.';
+
             return ['imported' => 0, 'skipped' => 0, 'errors' => $errors, 'guests' => []];
         }
 
         // Detect header mapping
         $headerMap = $this->detectHeaderColumns($rows[0]);
-        $hasHeader = !empty($headerMap['is_header']);
+        $hasHeader = ! empty($headerMap['is_header']);
 
         if ($hasHeader) {
             array_shift($rows); // Remove header row from insertion queue
@@ -106,16 +109,17 @@ class GuestImportService
             $emailIdx = $headerMap['email'] ?? 4;
             $notesIdx = $headerMap['notes'] ?? 5;
 
-            $name = trim((string)($row[$nameIdx] ?? ''));
-            $rawPhone = trim((string)($row[$phoneIdx] ?? ''));
-            $category = trim((string)($row[$categoryIdx] ?? ''));
-            $maxEntriesRaw = trim((string)($row[$maxEntriesIdx] ?? ''));
-            $email = trim((string)($row[$emailIdx] ?? ''));
-            $notes = trim((string)($row[$notesIdx] ?? ''));
+            $name = trim((string) ($row[$nameIdx] ?? ''));
+            $rawPhone = trim((string) ($row[$phoneIdx] ?? ''));
+            $category = trim((string) ($row[$categoryIdx] ?? ''));
+            $maxEntriesRaw = trim((string) ($row[$maxEntriesIdx] ?? ''));
+            $email = trim((string) ($row[$emailIdx] ?? ''));
+            $notes = trim((string) ($row[$notesIdx] ?? ''));
 
             // Acceptance Condition 1: Name must not be empty
             if (empty($name)) {
                 $skipped++;
+
                 continue;
             }
 
@@ -124,15 +128,15 @@ class GuestImportService
                 $category = $defaultCategory;
             }
 
-            if (!empty($maxEntriesRaw) && is_numeric($maxEntriesRaw)) {
-                $maxEntries = max(1, min(20, (int)$maxEntriesRaw));
+            if (! empty($maxEntriesRaw) && is_numeric($maxEntriesRaw)) {
+                $maxEntries = max(1, min(20, (int) $maxEntriesRaw));
             } else {
                 $maxEntries = str_contains(strtolower($category), 'double') ? 2 : $defaultMaxEntries;
             }
 
             // Acceptance Condition 3: Phone number normalization (No +, no spaces, leading 0 to 255)
             if (empty($rawPhone)) {
-                $phone = '2557' . rand(10, 89) . rand(100, 999) . rand(100, 999);
+                $phone = '2557'.rand(10, 89).rand(100, 999).rand(100, 999);
             } else {
                 $phone = PhoneNormalizer::cleanForApi($rawPhone);
             }
@@ -140,13 +144,13 @@ class GuestImportService
             $guest = $event->guests()->create([
                 'name' => $name,
                 'phone' => $phone,
-                'email' => !empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null,
+                'email' => ! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null,
                 'category' => $category,
                 'max_entries' => $maxEntries,
                 'entries_used' => 0,
                 'delivery_status' => 'draft',
                 'rsvp_status' => 'pending',
-                'notes' => !empty($notes) ? $notes : null,
+                'notes' => ! empty($notes) ? $notes : null,
             ]);
 
             $createdGuests[] = $guest;
@@ -164,7 +168,7 @@ class GuestImportService
     /**
      * Detect column indices based on header titles.
      *
-     * @param array<string> $firstRow
+     * @param  array<string>  $firstRow
      * @return array<string, int|bool>
      */
     private function detectHeaderColumns(array $firstRow): array
@@ -182,7 +186,7 @@ class GuestImportService
         $matchedHeaders = 0;
 
         foreach ($firstRow as $idx => $cell) {
-            $val = strtolower(trim((string)$cell));
+            $val = strtolower(trim((string) $cell));
 
             if (preg_match('/^(guest\s*name|full\s*name|name|attendee|jina)$/i', $val)) {
                 $map['name'] = $idx;
@@ -212,4 +216,3 @@ class GuestImportService
         return $map;
     }
 }
-

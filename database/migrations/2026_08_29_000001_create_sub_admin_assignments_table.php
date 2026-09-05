@@ -11,15 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create("sub_admin_assignments", function (Blueprint $table) {
+        Schema::create('sub_admin_assignments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId("sub_admin_id")->constrained("users")->cascadeOnDelete();
-            $table->foreignId("customer_id")->nullable()->constrained("users")->cascadeOnDelete();
-            $table->foreignId("event_id")->nullable()->constrained("events")->cascadeOnDelete();
+            $table->foreignId('sub_admin_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignId('customer_id')->nullable()->constrained('users')->cascadeOnDelete();
+            $table->foreignId('event_id')->nullable()->constrained('events')->cascadeOnDelete();
             $table->timestamps();
 
-            $table->index(["sub_admin_id", "customer_id"]);
-            $table->index(["sub_admin_id", "event_id"]);
+            $table->index(['sub_admin_id', 'customer_id']);
+            $table->index(['sub_admin_id', 'event_id']);
         });
     }
 
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists("sub_admin_assignments");
+        Schema::dropIfExists('sub_admin_assignments');
     }
 };

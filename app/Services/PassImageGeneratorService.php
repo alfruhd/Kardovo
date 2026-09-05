@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\Guest;
-use App\Models\Event;
 use App\Models\CardTemplate;
+use App\Models\Event;
+use App\Models\Guest;
 
 class PassImageGeneratorService
 {
@@ -14,19 +14,19 @@ class PassImageGeneratorService
         $template = $template ?: ($event?->cardTemplate ?: CardTemplate::first());
 
         $outputDir = public_path('generated_passes');
-        if (!file_exists($outputDir)) {
+        if (! file_exists($outputDir)) {
             mkdir($outputDir, 0755, true);
         }
 
-        $token = $guest->qr_token ?: $guest->unique_code ?: ('guest_' . $guest->id);
-        $fileName = 'pass_' . $token . '_' . time() . '.jpg';
-        $outputPath = $outputDir . '/' . $fileName;
+        $token = $guest->qr_token ?: $guest->unique_code ?: ('guest_'.$guest->id);
+        $fileName = 'pass_'.$token.'_'.time().'.jpg';
+        $outputPath = $outputDir.'/'.$fileName;
 
         // Clean up old pass files for this guest
-        foreach (glob($outputDir . '/pass_' . $token . '_*.jpg') as $oldFile) {
+        foreach (glob($outputDir.'/pass_'.$token.'_*.jpg') as $oldFile) {
             @unlink($oldFile);
         }
-        foreach (glob($outputDir . '/pass_' . $token . '.jpg') as $oldFile) {
+        foreach (glob($outputDir.'/pass_'.$token.'.jpg') as $oldFile) {
             @unlink($oldFile);
         }
 
@@ -43,32 +43,32 @@ class PassImageGeneratorService
         // ── 1. Determine Aspect Ratio Number (Width / Height) ──
         $ratioNum = null;
         $configRatio = $cfg['aspect_ratio'] ?? null;
-        if (is_numeric($configRatio) && (float)$configRatio > 0) {
-            $ratioNum = (float)$configRatio;
+        if (is_numeric($configRatio) && (float) $configRatio > 0) {
+            $ratioNum = (float) $configRatio;
         } elseif (is_string($configRatio) && trim($configRatio) !== '') {
             $cleaned = trim($configRatio);
             if (str_contains($cleaned, '/') || str_contains($cleaned, ':')) {
                 $delimiter = str_contains($cleaned, '/') ? '/' : ':';
                 $parts = array_map('trim', explode($delimiter, $cleaned));
-                if (isset($parts[0], $parts[1]) && is_numeric($parts[0]) && is_numeric($parts[1]) && (float)$parts[1] > 0) {
-                    $ratioNum = (float)$parts[0] / (float)$parts[1];
+                if (isset($parts[0], $parts[1]) && is_numeric($parts[0]) && is_numeric($parts[1]) && (float) $parts[1] > 0) {
+                    $ratioNum = (float) $parts[0] / (float) $parts[1];
                 }
             } elseif (is_numeric($cleaned)) {
-                $ratioNum = (float)$cleaned;
+                $ratioNum = (float) $cleaned;
             }
         }
 
         // Check if artwork file exists to read native aspect ratio if not explicitly specified
-        $bgPath = ($template && !empty($template->image_path)) ? public_path(ltrim($template->image_path, '/')) : null;
-        if (!$ratioNum && $bgPath && file_exists($bgPath)) {
+        $bgPath = ($template && ! empty($template->image_path)) ? public_path(ltrim($template->image_path, '/')) : null;
+        if (! $ratioNum && $bgPath && file_exists($bgPath)) {
             $imgInfo = @getimagesize($bgPath);
             if ($imgInfo && $imgInfo[0] > 0 && $imgInfo[1] > 0) {
-                $ratioNum = (float)($imgInfo[0] / $imgInfo[1]);
+                $ratioNum = (float) ($imgInfo[0] / $imgInfo[1]);
             }
         }
 
         // Fallback to orientation / template defaults
-        if (!$ratioNum || $ratioNum <= 0) {
+        if (! $ratioNum || $ratioNum <= 0) {
             $orientation = $cfg['orientation'] ?? 'portrait';
             if ($orientation === 'landscape') {
                 $ratioNum = 16 / 9; // 1.7778
@@ -139,14 +139,20 @@ class PassImageGeneratorService
 
         $fontGeorgia = '/System/Library/Fonts/Supplemental/Georgia.ttf';
         $fontGeorgiaBold = '/System/Library/Fonts/Supplemental/Georgia Bold.ttf';
-        if (!file_exists($fontGeorgiaBold)) $fontGeorgiaBold = $fontGeorgia;
+        if (! file_exists($fontGeorgiaBold)) {
+            $fontGeorgiaBold = $fontGeorgia;
+        }
 
         $fontGeorgiaItalic = '/System/Library/Fonts/Supplemental/Georgia Italic.ttf';
-        if (!file_exists($fontGeorgiaItalic)) $fontGeorgiaItalic = $fontGeorgia;
+        if (! file_exists($fontGeorgiaItalic)) {
+            $fontGeorgiaItalic = $fontGeorgia;
+        }
 
         $fontArial = '/System/Library/Fonts/Supplemental/Arial.ttf';
         $fontArialBold = '/System/Library/Fonts/Supplemental/Arial Bold.ttf';
-        if (!file_exists($fontArialBold)) $fontArialBold = $fontArial;
+        if (! file_exists($fontArialBold)) {
+            $fontArialBold = $fontArial;
+        }
 
         $white = imagecolorallocate($im, 255, 255, 255);
         $black = imagecolorallocate($im, 10, 15, 25);
@@ -177,7 +183,7 @@ class PassImageGeneratorService
             }
         }
 
-        if (!$hasCustomArt) {
+        if (! $hasCustomArt) {
             for ($y = 0; $y < $h; $y++) {
                 $ratio = $y / $h;
                 $r = (int) (13 * (1 - $ratio) + 7 * $ratio);
@@ -194,11 +200,11 @@ class PassImageGeneratorService
             // ══════════════════════════════════════════════════════════════
             // DYNAMIC CUSTOM ARTWORK PASS (Exact WYSIWYG Percentage Layout)
             // ══════════════════════════════════════════════════════════════
-            $showHeadline = !empty($cfg['show_headline']) || !empty($cfg['show_category_badge']);
-            $showCoupleNames = !empty($cfg['show_couple_names']) || !empty($cfg['show_title']);
-            $showDate = !empty($cfg['show_date']) || !empty($cfg['show_date_details']);
-            $showQuote = !empty($cfg['show_quote']);
-            $showVenue = !empty($cfg['show_venue']);
+            $showHeadline = ! empty($cfg['show_headline']) || ! empty($cfg['show_category_badge']);
+            $showCoupleNames = ! empty($cfg['show_couple_names']) || ! empty($cfg['show_title']);
+            $showDate = ! empty($cfg['show_date']) || ! empty($cfg['show_date_details']);
+            $showQuote = ! empty($cfg['show_quote']);
+            $showVenue = ! empty($cfg['show_venue']);
             $showGuestName = ($cfg['show_guest_name'] ?? true);
             $showAllowance = ($cfg['show_allowance_badge'] ?? true);
             $showQr = ($template?->show_qr !== false && ($cfg['show_qr'] ?? true));
@@ -215,25 +221,25 @@ class PassImageGeneratorService
 
             // 1. Top Headline / Badge Pill
             if ($showHeadline) {
-                $badgeText = $cfg['headline_text'] ?? ($template?->headline ?: ($isEngagement ? 'Engagement Invitation' : "WEDDING INVITATION"));
+                $badgeText = $cfg['headline_text'] ?? ($template?->headline ?: ($isEngagement ? 'Engagement Invitation' : 'WEDDING INVITATION'));
                 $badgeYPercent = (float) ($cfg['headline_y'] ?? $cfg['category_badge']['y'] ?? 5.5);
                 $badgeY = (int) round(($badgeYPercent / 100) * $h);
                 $badgeW = (int) round(min($w - 40, 250 * $fontScale));
                 $badgeH = (int) round(30 * $fontScale);
                 $badgeX = (int) (($w - $badgeW) / 2);
                 $badgeFontSize = (float) ($cfg['category_badge']['fontSize'] ?? 10.5) * $fontScale;
-                
+
                 if ($isEngagement) {
                     $pillBg = imagecolorallocatealpha($im, 255, 255, 255, 30);
                     $pillBorder = imagecolorallocatealpha($im, 122, 30, 40, 75);
-                    self::drawSmoothPill($im, $badgeX, (int)($badgeY - ($badgeH / 2)), $badgeW, $badgeH, $pillBg, $pillBorder);
-                    self::drawCenteredText($im, $badgeFontSize, 0, (int)($badgeY + ($badgeH * 0.18)), $burgundy, $fontGeorgiaItalic, $badgeText, $w);
+                    self::drawSmoothPill($im, $badgeX, (int) ($badgeY - ($badgeH / 2)), $badgeW, $badgeH, $pillBg, $pillBorder);
+                    self::drawCenteredText($im, $badgeFontSize, 0, (int) ($badgeY + ($badgeH * 0.18)), $burgundy, $fontGeorgiaItalic, $badgeText, $w);
                 } else {
                     $pillBg = imagecolorallocatealpha($im, 0, 0, 0, 75);
                     $pillBorder = imagecolorallocatealpha($im, 255, 255, 255, 80);
-                    self::drawSmoothPill($im, $badgeX, (int)($badgeY - ($badgeH / 2)), $badgeW, $badgeH, $pillBg, $pillBorder);
+                    self::drawSmoothPill($im, $badgeX, (int) ($badgeY - ($badgeH / 2)), $badgeW, $badgeH, $pillBg, $pillBorder);
                     $badgeColor = self::hexToGdColor($im, $cfg['category_badge']['color'] ?? '#FFFFFF');
-                    self::drawSpacedText($im, $badgeFontSize, (int)($badgeY + ($badgeH * 0.18)), $badgeColor, $fontArialBold, mb_strtoupper($badgeText), $w, (int) max(2, 3 * $fontScale));
+                    self::drawSpacedText($im, $badgeFontSize, (int) ($badgeY + ($badgeH * 0.18)), $badgeColor, $fontArialBold, mb_strtoupper($badgeText), $w, (int) max(2, 3 * $fontScale));
                 }
             }
 
@@ -245,11 +251,11 @@ class PassImageGeneratorService
                 $namesSize = (float) ($cfg['couple_names_size'] ?? ($isEngagement ? 44 : 40)) * $fontScale;
                 $namesColor = self::hexToGdColor($im, $cfg['couple_names_color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
 
-                if (!empty($cfg['subtitle_text']) && ($isEngagement || !empty($cfg['show_subtitle']))) {
+                if (! empty($cfg['subtitle_text']) && ($isEngagement || ! empty($cfg['show_subtitle']))) {
                     $subText = $cfg['subtitle_text'];
                     $subSize = (float) ($cfg['subtitle_size'] ?? 9.5) * $fontScale;
                     $subColor = self::hexToGdColor($im, $cfg['subtitle_color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
-                    self::drawCenteredText($im, $subSize, 0, (int)($namesY - (36 * $fontScale)), $subColor, $fontGeorgia, $subText, $w);
+                    self::drawCenteredText($im, $subSize, 0, (int) ($namesY - (36 * $fontScale)), $subColor, $fontGeorgia, $subText, $w);
                 }
 
                 self::drawCenteredTextWithShadow($im, $namesSize, 0, $namesY, $namesColor, $fontGeorgiaItalic, $coupleText, $w);
@@ -273,7 +279,7 @@ class PassImageGeneratorService
                 $quote = $cfg['invitation_quote'] ?? ($isEngagement ? 'CELEBRATING LOVE & PROMISE' : 'WE INVITE YOU TO WITNESS THE BEGINNING OF OUR FOREVER, TOGETHER WITH OUR FAMILIES.');
                 $quoteSize = (float) ($cfg['quote_size'] ?? 8.5) * $fontScale;
                 $quoteColor = self::hexToGdColor($im, $cfg['quote_color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
-                $quoteLines = ($showQuote && !empty($quote)) ? self::wrapText($quote, (int) max(26, 42 * ($w / 1080))) : [];
+                $quoteLines = ($showQuote && ! empty($quote)) ? self::wrapText($quote, (int) max(26, 42 * ($w / 1080))) : [];
 
                 // Venue details preparation
                 $venueName = $cfg['venue_name'] ?? ($isEngagement ? 'DAR ES SALAAM SERENA HOTEL' : 'ANGKORBAN');
@@ -288,14 +294,22 @@ class PassImageGeneratorService
                 $dayRowH = (int) (26 * $fontScale);
                 $yearH = (int) (18 * $fontScale);
                 $quoteH = count($quoteLines) * (int) (14 * $fontScale);
-                if (count($quoteLines) > 0) $quoteH += (int) (8 * $fontScale); // padding top
-                
+                if (count($quoteLines) > 0) {
+                    $quoteH += (int) (8 * $fontScale);
+                } // padding top
+
                 $venueH = 0;
                 if ($showVenue) {
                     $venueH += (int) (16 * $fontScale); // venueName
-                    if (!empty($venueSub)) $venueH += (int) (13 * $fontScale);
-                    if (!empty($venueDate)) $venueH += (int) (13 * $fontScale);
-                    if (!empty($saveDate)) $venueH += (int) (15 * $fontScale);
+                    if (! empty($venueSub)) {
+                        $venueH += (int) (13 * $fontScale);
+                    }
+                    if (! empty($venueDate)) {
+                        $venueH += (int) (13 * $fontScale);
+                    }
+                    if (! empty($saveDate)) {
+                        $venueH += (int) (15 * $fontScale);
+                    }
                     $venueH += (int) (8 * $fontScale); // padding top
                 }
 
@@ -324,12 +338,12 @@ class PassImageGeneratorService
                     $dateBoxX = (int) (($w - $dateBoxW) / 2);
                     $dateBoxBg = imagecolorallocatealpha($im, 255, 255, 255, 35);
                     $dateBoxBorder = imagecolorallocatealpha($im, 122, 30, 40, 85);
-                    self::drawSmoothPill($im, $dateBoxX, (int)($curBlockY - ($dateBoxH * 0.7)), $dateBoxW, $dateBoxH, $dateBoxBg, $dateBoxBorder);
+                    self::drawSmoothPill($im, $dateBoxX, (int) ($curBlockY - ($dateBoxH * 0.7)), $dateBoxW, $dateBoxH, $dateBoxBg, $dateBoxBorder);
                 }
 
                 imagettftext($im, $dateSize * 1.05, 0, $curX, $curBlockY, $dateColor, $fontArialBold, $dateDayName);
                 $curX += $wL + $gap;
-                imagettftext($im, $dateSize * 1.8, 0, $curX, (int)($curBlockY + (2 * $fontScale)), $dateNumColor, $fontGeorgiaItalic, $dateDayNum);
+                imagettftext($im, $dateSize * 1.8, 0, $curX, (int) ($curBlockY + (2 * $fontScale)), $dateNumColor, $fontGeorgiaItalic, $dateDayNum);
                 $curX += $wM + $gap;
                 imagettftext($im, $dateSize * 1.05, 0, $curX, $curBlockY, $dateColor, $fontArialBold, $dateTime);
 
@@ -373,20 +387,24 @@ class PassImageGeneratorService
                 $nameXPercent = (float) ($nameCfg['x'] ?? 50.0);
                 $plaqueY = (int) round(($nameYPercent / 100) * $h);
                 $plaqueCenterX = (int) round(($nameXPercent / 100) * $w);
-                
+
                 // Read font size directly from saved configuration
-                $configuredFontSize = !empty($nameCfg['fontSize']) ? (float) $nameCfg['fontSize'] : ($isEngagement ? 18.0 : 20.0);
+                $configuredFontSize = ! empty($nameCfg['fontSize']) ? (float) $nameCfg['fontSize'] : ($isEngagement ? 18.0 : 20.0);
                 $nameSize = $configuredFontSize * $fontScale;
                 $nameColor = self::hexToGdColor($im, $nameCfg['color'] ?? ($isEngagement ? '#54101A' : '#FFFFFF'));
 
-                $hideBox = !empty($nameCfg['hide_plaque_box']) || !empty($nameCfg['hide_name_box']) || !empty($nameCfg['clean_text']) ||
+                $hideBox = ! empty($nameCfg['hide_plaque_box']) || ! empty($nameCfg['hide_name_box']) || ! empty($nameCfg['clean_text']) ||
                            (isset($nameCfg['clean_text']) && in_array($nameCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
                            (isset($nameCfg['hide_plaque_box']) && in_array($nameCfg['hide_plaque_box'], [true, 1, '1', 'true'], true)) ||
                            (isset($nameCfg['hide_name_box']) && in_array($nameCfg['hide_name_box'], [true, 1, '1', 'true'], true));
 
                 $guestName = mb_strtoupper($guest->name ?: 'VALUED GUEST');
-                if (mb_strlen($guestName) > 22) $nameSize = max(9 * $fontScale, $nameSize * 0.85);
-                if (mb_strlen($guestName) > 30) $nameSize = max(8 * $fontScale, $nameSize * 0.7);
+                if (mb_strlen($guestName) > 22) {
+                    $nameSize = max(9 * $fontScale, $nameSize * 0.85);
+                }
+                if (mb_strlen($guestName) > 30) {
+                    $nameSize = max(8 * $fontScale, $nameSize * 0.7);
+                }
 
                 // Select font family according to config
                 $chosenFont = $fontGeorgiaBold;
@@ -397,16 +415,16 @@ class PassImageGeneratorService
                     $chosenFont = $fontGeorgiaBold;
                 }
 
-                if (!$hideBox) {
+                if (! $hideBox) {
                     $plaqueWPercent = isset($nameCfg['plaqueWidth']) ? (float) $nameCfg['plaqueWidth'] : 84.0;
                     $plaqueW = (int) round(($plaqueWPercent / 100) * $w);
-                    
+
                     // Dynamic plaque height adapting to font size (matching CSS py-2.5 px-4)
                     $headerLabelSize = (float) max(6.5 * $fontScale, 7.5 * $fontScale);
                     $plaqueH = (int) round(($nameSize * 1.35) + ($headerLabelSize * 1.4) + (20 * $fontScale));
                     $plaqueX = (int) ($plaqueCenterX - ($plaqueW / 2));
                     $plaqueTop = (int) ($plaqueY - ($plaqueH / 2));
-                    
+
                     if ($isEngagement) {
                         $plaqueBg = imagecolorallocatealpha($im, 255, 255, 255, 20);
                         $plaqueBorder = imagecolorallocatealpha($im, 122, 30, 40, 75);
@@ -416,7 +434,7 @@ class PassImageGeneratorService
                     }
 
                     self::drawSmoothPill($im, $plaqueX, $plaqueTop, $plaqueW, $plaqueH, $plaqueBg, $plaqueBorder);
-                    
+
                     $headerY = (int) ($plaqueTop + ($headerLabelSize * 1.2) + (8 * $fontScale));
                     $nameDrawY = (int) ($headerY + ($nameSize * 1.05) + (4 * $fontScale));
 
@@ -441,11 +459,11 @@ class PassImageGeneratorService
                 $maxEntries = $guest->max_entries ?: 1;
                 $allowanceText = $guest->category ? mb_strtoupper($guest->category) : ($maxEntries > 1 ? 'DOUBLE ENTRY' : 'SINGLE ENTRY');
 
-                $hideBadgeBox = !empty($allowCfg['hide_badge_box']) || !empty($allowCfg['clean_text']) ||
+                $hideBadgeBox = ! empty($allowCfg['hide_badge_box']) || ! empty($allowCfg['clean_text']) ||
                                 (isset($allowCfg['clean_text']) && in_array($allowCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
                                 (isset($allowCfg['hide_badge_box']) && in_array($allowCfg['hide_badge_box'], [true, 1, '1', 'true'], true));
 
-                if (!$hideBadgeBox) {
+                if (! $hideBadgeBox) {
                     $boxWPercent = isset($allowCfg['plaqueWidth']) && $allowCfg['plaqueWidth'] ? (float) $allowCfg['plaqueWidth'] : null;
                     if ($boxWPercent) {
                         $allowBoxW = (int) round(($boxWPercent / 100) * $w);
@@ -456,8 +474,8 @@ class PassImageGeneratorService
                     }
                     $allowBoxH = (int) round(($allowSize * 1.5) + (14 * $fontScale));
                     $allowBoxX = (int) ($allowCenterX - ($allowBoxW / 2));
-                    $allowBottom = $allowY + (int)($allowBoxH / 2);
-                    
+                    $allowBottom = $allowY + (int) ($allowBoxH / 2);
+
                     if ($isEngagement) {
                         $boxBg = imagecolorallocatealpha($im, 255, 255, 255, 30);
                         $boxBorder = imagecolorallocatealpha($im, 122, 30, 40, 75);
@@ -466,10 +484,10 @@ class PassImageGeneratorService
                         $boxBorder = imagecolorallocatealpha($im, 255, 255, 255, 60);
                     }
 
-                    self::drawSmoothPill($im, $allowBoxX, (int)($allowY - ($allowBoxH / 2)), $allowBoxW, $allowBoxH, $boxBg, $boxBorder);
-                    self::drawSpacedText($im, $allowSize, (int)($allowY + ($allowSize * 0.35)), $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $fontScale));
+                    self::drawSmoothPill($im, $allowBoxX, (int) ($allowY - ($allowBoxH / 2)), $allowBoxW, $allowBoxH, $boxBg, $boxBorder);
+                    self::drawSpacedText($im, $allowSize, (int) ($allowY + ($allowSize * 0.35)), $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $fontScale));
                 } else {
-                    $allowBottom = $allowY + (int)(10 * $fontScale);
+                    $allowBottom = $allowY + (int) (10 * $fontScale);
                     self::drawSpacedTextWithShadow($im, $allowSize, $allowY, $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $fontScale));
                 }
             }
@@ -483,17 +501,17 @@ class PassImageGeneratorService
                 $qrYPercent = (float) ($qrCfg['y'] ?? ($ratioNum <= 0.62 ? 84.5 : 86.5));
                 $qrXPercent = (float) ($qrCfg['x'] ?? 50.0);
                 $qrY = (int) round(($qrYPercent / 100) * $h);
-                
+
                 // Keep collision avoidance if elements get too close
-                if ($allowBottom > 0 && ($qrY - ($qrSize / 2)) < ($allowBottom + (int)(8 * $fontScale))) {
-                    $qrY = $allowBottom + (int)($qrSize / 2) + (int)(10 * $fontScale);
+                if ($allowBottom > 0 && ($qrY - ($qrSize / 2)) < ($allowBottom + (int) (8 * $fontScale))) {
+                    $qrY = $allowBottom + (int) ($qrSize / 2) + (int) (10 * $fontScale);
                 }
                 $qrX = (int) round(($qrXPercent / 100) * $w);
 
                 $darkColorHex = $qrCfg['darkColor'] ?? ($isEngagement ? '#6B1D2F' : '#111827');
-                list($dr, $dg, $db) = self::hexToRgb($darkColorHex);
+                [$dr, $dg, $db] = self::hexToRgb($darkColorHex);
 
-                $scanUrl = rtrim($baseUrl ?: url('/'), '/') . '/card/' . $token;
+                $scanUrl = rtrim($baseUrl ?: url('/'), '/').'/card/'.$token;
                 $qrIm = QRCodeGenerator::renderToGdImage($scanUrl, $qrSize, 2, $dr, $dg, $db);
                 if ($qrIm) {
                     $qrW = imagesx($qrIm);
@@ -514,16 +532,16 @@ class PassImageGeneratorService
                 $codeYPercent = (float) ($codeCfg['y'] ?? $defaultCodeY);
                 $codeXPercent = (float) ($codeCfg['x'] ?? 50.0);
                 $codeY = (int) round(($codeYPercent / 100) * $h);
-                
-                if ($qrBottom > 0 && $codeY < ($qrBottom + (int)(14 * $fontScale))) {
-                    $codeY = $qrBottom + (int)(18 * $fontScale);
+
+                if ($qrBottom > 0 && $codeY < ($qrBottom + (int) (14 * $fontScale))) {
+                    $codeY = $qrBottom + (int) (18 * $fontScale);
                 }
-                if ($codeY > ($h - (int)(12 * $fontScale))) {
-                    $codeY = $h - (int)(16 * $fontScale);
+                if ($codeY > ($h - (int) (12 * $fontScale))) {
+                    $codeY = $h - (int) (16 * $fontScale);
                 }
                 $codeSize = (float) ($codeCfg['fontSize'] ?? 10) * $fontScale;
                 $codeColor = self::hexToGdColor($im, $codeCfg['color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
-                $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-' . $guest->id);
+                $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-'.$guest->id);
                 self::drawSpacedTextWithShadow($im, $codeSize, $codeY, $codeColor, $fontArialBold, $codeText, $w, (int) max(2, 4 * $fontScale));
             }
 
@@ -538,66 +556,70 @@ class PassImageGeneratorService
             $headline = $template?->headline ?: 'EXCLUSIVE INVITATION PASS';
 
             // 1. Logo & Top Verified Pass Pill
-            self::drawSpacedText($im, 14 * $fontScale, (int)(60 * $fontScale), $white, $fontArialBold, 'KARDOVO', (int)(200 * $fontScale), (int)(3 * $fontScale));
-            self::drawSpacedText($im, 7.5 * $fontScale, (int)(78 * $fontScale), $graySub, $fontArialBold, 'ACCESS & INVITATION', (int)(200 * $fontScale), (int)(2 * $fontScale));
+            self::drawSpacedText($im, 14 * $fontScale, (int) (60 * $fontScale), $white, $fontArialBold, 'KARDOVO', (int) (200 * $fontScale), (int) (3 * $fontScale));
+            self::drawSpacedText($im, 7.5 * $fontScale, (int) (78 * $fontScale), $graySub, $fontArialBold, 'ACCESS & INVITATION', (int) (200 * $fontScale), (int) (2 * $fontScale));
 
-            $badgeW = (int)(150 * $fontScale);
-            $badgeH = (int)(32 * $fontScale);
-            $badgeX = $w - $badgeW - (int)(32 * $fontScale);
-            $badgeY = (int)(50 * $fontScale);
+            $badgeW = (int) (150 * $fontScale);
+            $badgeH = (int) (32 * $fontScale);
+            $badgeX = $w - $badgeW - (int) (32 * $fontScale);
+            $badgeY = (int) (50 * $fontScale);
             $badgeBg = imagecolorallocatealpha($im, 0, 30, 60, 70);
             self::drawSmoothPill($im, $badgeX, $badgeY, $badgeW, $badgeH, $badgeBg, $cyanBorder);
-            imagettftext($im, 8.5 * $fontScale, 0, $badgeX + (int)(16 * $fontScale), $badgeY + (int)(20 * $fontScale), $cyan, $fontArialBold, 'VERIFIED PASS');
+            imagettftext($im, 8.5 * $fontScale, 0, $badgeX + (int) (16 * $fontScale), $badgeY + (int) (20 * $fontScale), $cyan, $fontArialBold, 'VERIFIED PASS');
 
             // Header line
             $dividerColor = imagecolorallocatealpha($im, 26, 42, 62, 50);
-            imageline($im, (int)(32 * $fontScale), (int)(100 * $fontScale), $w - (int)(32 * $fontScale), (int)(100 * $fontScale), $dividerColor);
+            imageline($im, (int) (32 * $fontScale), (int) (100 * $fontScale), $w - (int) (32 * $fontScale), (int) (100 * $fontScale), $dividerColor);
 
             // 2. Headline & Event Title
-            self::drawSpacedText($im, 10 * $fontScale, (int)(140 * $fontScale), $cyan, $fontArialBold, mb_strtoupper($headline), $w, (int)(2 * $fontScale));
+            self::drawSpacedText($im, 10 * $fontScale, (int) (140 * $fontScale), $cyan, $fontArialBold, mb_strtoupper($headline), $w, (int) (2 * $fontScale));
             $eventLines = self::wrapText($eventTitle, (int) max(24, 30 * ($w / 1080)));
-            $ey = (int)(180 * $fontScale);
+            $ey = (int) (180 * $fontScale);
             foreach ($eventLines as $eLine) {
                 self::drawCenteredText($im, 20 * $fontScale, 0, $ey, $white, $fontArialBold, $eLine, $w);
-                $ey += (int)(32 * $fontScale);
+                $ey += (int) (32 * $fontScale);
             }
 
             // 3. Date Pill
             $datePillW = (int) min($w - 40, 320 * $fontScale);
-            $datePillH = (int)(36 * $fontScale);
+            $datePillH = (int) (36 * $fontScale);
             $datePillX = (int) (($w - $datePillW) / 2);
-            $datePillY = $ey + (int)(12 * $fontScale);
+            $datePillY = $ey + (int) (12 * $fontScale);
             $datePillBg = imagecolorallocatealpha($im, 20, 32, 46, 60);
             self::drawSmoothPill($im, $datePillX, $datePillY, $datePillW, $datePillH, $datePillBg, $dividerColor);
-            self::drawCenteredText($im, 10 * $fontScale, 0, $datePillY + (int)(24 * $fontScale), $graySub, $fontArialBold, $eventDateStr, $w);
+            self::drawCenteredText($im, 10 * $fontScale, 0, $datePillY + (int) (24 * $fontScale), $graySub, $fontArialBold, $eventDateStr, $w);
 
             // 4. Guest Plaque
             $plaqueW = (int) min($w - 40, 480 * $fontScale);
-            $plaqueH = (int)(120 * $fontScale);
+            $plaqueH = (int) (120 * $fontScale);
             $plaqueX = (int) (($w - $plaqueW) / 2);
-            $plaqueY = $datePillY + (int)(60 * $fontScale);
+            $plaqueY = $datePillY + (int) (60 * $fontScale);
             $plaqueBg = imagecolorallocatealpha($im, 7, 13, 24, 40);
             self::drawSmoothPill($im, $plaqueX, $plaqueY, $plaqueW, $plaqueH, $plaqueBg, $dividerColor);
 
-            self::drawSpacedText($im, 8.5 * $fontScale, $plaqueY + (int)(30 * $fontScale), $cyan, $fontArialBold, 'INVITATION PASS ISSUED TO', $w, (int)(3 * $fontScale));
-            
+            self::drawSpacedText($im, 8.5 * $fontScale, $plaqueY + (int) (30 * $fontScale), $cyan, $fontArialBold, 'INVITATION PASS ISSUED TO', $w, (int) (3 * $fontScale));
+
             $guestName = mb_strtoupper($guest->name ?: 'VALUED GUEST');
             $nameSize = 22 * $fontScale;
-            if (mb_strlen($guestName) > 20) $nameSize = 16 * $fontScale;
-            if (mb_strlen($guestName) > 28) $nameSize = 13 * $fontScale;
-            self::drawCenteredText($im, $nameSize, 0, $plaqueY + (int)(70 * $fontScale), $white, $fontGeorgiaBold, $guestName, $w);
+            if (mb_strlen($guestName) > 20) {
+                $nameSize = 16 * $fontScale;
+            }
+            if (mb_strlen($guestName) > 28) {
+                $nameSize = 13 * $fontScale;
+            }
+            self::drawCenteredText($im, $nameSize, 0, $plaqueY + (int) (70 * $fontScale), $white, $fontGeorgiaBold, $guestName, $w);
 
             $allowanceText = $guest->allowance_label ?: ($guest->max_entries > 1 ? 'DOUBLE ENTRY' : 'SINGLE ENTRY');
-            $allowPillW = (int)(160 * $fontScale);
-            $allowPillH = (int)(26 * $fontScale);
+            $allowPillW = (int) (160 * $fontScale);
+            $allowPillH = (int) (26 * $fontScale);
             $allowPillX = (int) (($w - $allowPillW) / 2);
-            $allowPillY = $plaqueY + (int)(84 * $fontScale);
+            $allowPillY = $plaqueY + (int) (84 * $fontScale);
             $allowPillBg = imagecolorallocatealpha($im, 10, 22, 38, 50);
             self::drawSmoothPill($im, $allowPillX, $allowPillY, $allowPillW, $allowPillH, $allowPillBg, $cyanBorder);
-            self::drawSpacedText($im, 8.5 * $fontScale, $allowPillY + (int)(18 * $fontScale), $cyan, $fontArialBold, mb_strtoupper($allowanceText), $w, (int)(2 * $fontScale));
+            self::drawSpacedText($im, 8.5 * $fontScale, $allowPillY + (int) (18 * $fontScale), $cyan, $fontArialBold, mb_strtoupper($allowanceText), $w, (int) (2 * $fontScale));
 
             // 5. QR Code (Positioned safely above code and footer)
-            $scanUrl = rtrim($baseUrl ?: url('/'), '/') . '/card/' . $token;
+            $scanUrl = rtrim($baseUrl ?: url('/'), '/').'/card/'.$token;
             $qrSize = (int) round(120 * $fontScale);
             $qrIm = QRCodeGenerator::renderToGdImage($scanUrl, $qrSize, 2, 15, 23, 42);
             if ($qrIm) {
@@ -611,33 +633,33 @@ class PassImageGeneratorService
             }
 
             // 6. Unique Code (Positioned safely)
-            self::drawSpacedText($im, 8 * $fontScale, (int) round(0.87 * $h), $graySub, $fontArialBold, 'GATE VERIFICATION CODE', $w, (int)(3 * $fontScale));
-            $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-' . $guest->id);
-            self::drawSpacedText($im, 16 * $fontScale, (int) round(0.90 * $h), $white, $fontArialBold, $codeText, $w, (int)(4 * $fontScale));
+            self::drawSpacedText($im, 8 * $fontScale, (int) round(0.87 * $h), $graySub, $fontArialBold, 'GATE VERIFICATION CODE', $w, (int) (3 * $fontScale));
+            $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-'.$guest->id);
+            self::drawSpacedText($im, 16 * $fontScale, (int) round(0.90 * $h), $white, $fontArialBold, $codeText, $w, (int) (4 * $fontScale));
 
             // 7. Footer line & text (Always securely within canvas bounds)
-            $footerTextY = $h - (int)(18 * $fontScale);
-            $footerLineY = $footerTextY - (int)(18 * $fontScale);
-            imageline($im, (int)(32 * $fontScale), $footerLineY, $w - (int)(32 * $fontScale), $footerLineY, $dividerColor);
-            $cardNumber = $guest->card_number ?: ('KDV-' . $guest->id);
-            imagettftext($im, 8.5 * $fontScale, 0, (int)(36 * $fontScale), $footerTextY, $graySub, $fontArial, $cardNumber);
+            $footerTextY = $h - (int) (18 * $fontScale);
+            $footerLineY = $footerTextY - (int) (18 * $fontScale);
+            imageline($im, (int) (32 * $fontScale), $footerLineY, $w - (int) (32 * $fontScale), $footerLineY, $dividerColor);
+            $cardNumber = $guest->card_number ?: ('KDV-'.$guest->id);
+            imagettftext($im, 8.5 * $fontScale, 0, (int) (36 * $fontScale), $footerTextY, $graySub, $fontArial, $cardNumber);
             $footerR = 'Secured & verified by KARDOVO';
             $bboxR = imagettfbbox(8.5 * $fontScale, 0, $fontArial, $footerR);
             $rw = abs($bboxR[2] - $bboxR[0]);
-            imagettftext($im, 8.5 * $fontScale, 0, $w - (int)(36 * $fontScale) - $rw, $footerTextY, $graySub, $fontArial, $footerR);
+            imagettftext($im, 8.5 * $fontScale, 0, $w - (int) (36 * $fontScale) - $rw, $footerTextY, $graySub, $fontArial, $footerR);
         }
 
         imagejpeg($im, $outputPath, 95);
         imagedestroy($im);
 
-        return '/generated_passes/' . $fileName;
+        return '/generated_passes/'.$fileName;
     }
 
     private static function hexToRgb(string $hex): array
     {
         $hex = ltrim($hex, '#');
         if (strlen($hex) === 3) {
-            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
         }
         if (strlen($hex) === 6) {
             return [
@@ -646,15 +668,17 @@ class PassImageGeneratorService
                 hexdec(substr($hex, 4, 2)),
             ];
         }
+
         return [255, 255, 255];
     }
 
     private static function hexToGdColor(\GdImage $im, string $hex, int $alpha = 0): int
     {
-        list($r, $g, $b) = self::hexToRgb($hex);
+        [$r, $g, $b] = self::hexToRgb($hex);
         if ($alpha > 0) {
             return imagecolorallocatealpha($im, $r, $g, $b, $alpha);
         }
+
         return imagecolorallocate($im, $r, $g, $b);
     }
 
@@ -689,8 +713,9 @@ class PassImageGeneratorService
 
     private static function drawSpacedText(\GdImage $im, float $size, int $y, int $color, string $fontFile, string $text, int $canvasWidth, int $extraSpacing = 2): void
     {
-        if (!file_exists($fontFile)) {
+        if (! file_exists($fontFile)) {
             self::drawCenteredText($im, $size, 0, $y, $color, $fontFile, $text, $canvasWidth);
+
             return;
         }
 
@@ -715,8 +740,9 @@ class PassImageGeneratorService
 
     private static function drawSpacedTextWithShadow(\GdImage $im, float $size, int $y, int $color, string $fontFile, string $text, int $canvasWidth, int $extraSpacing = 2): void
     {
-        if (!file_exists($fontFile)) {
+        if (! file_exists($fontFile)) {
             self::drawCenteredTextWithShadow($im, $size, 0, $y, $color, $fontFile, $text, $canvasWidth);
+
             return;
         }
 
@@ -757,7 +783,7 @@ class PassImageGeneratorService
         imagefilledrectangle($layer, 0, 0, $w, $h, $transparent);
 
         imagealphablending($layer, true);
-        
+
         // Fill body
         imagefilledrectangle($layer, $radius, 0, $w - $radius - 1, $h - 1, $fillColor);
         imagefilledarc($layer, $radius, $radius, $radius * 2, $h, 90, 270, $fillColor, IMG_ARC_PIE);
@@ -782,14 +808,18 @@ class PassImageGeneratorService
         $currentLine = '';
 
         foreach ($words as $word) {
-            if (mb_strlen($currentLine . ' ' . $word) <= $maxChars) {
-                $currentLine = $currentLine ? ($currentLine . ' ' . $word) : $word;
+            if (mb_strlen($currentLine.' '.$word) <= $maxChars) {
+                $currentLine = $currentLine ? ($currentLine.' '.$word) : $word;
             } else {
-                if ($currentLine) $lines[] = $currentLine;
+                if ($currentLine) {
+                    $lines[] = $currentLine;
+                }
                 $currentLine = $word;
             }
         }
-        if ($currentLine) $lines[] = $currentLine;
+        if ($currentLine) {
+            $lines[] = $currentLine;
+        }
 
         return $lines;
     }

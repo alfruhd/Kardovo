@@ -2,15 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
+use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Message;
-use App\Models\CardTemplate;
 use App\Models\SystemSetting;
-use App\Services\PhoneNormalizer;
 use App\Services\PassImageGeneratorService;
+use App\Services\PhoneNormalizer;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -22,14 +21,14 @@ class MessagingController extends Controller
         $user = $request->user();
 
         // Enforce broadcast messaging permission for organizers
-        if ($user && !$user->isAdmin() && !$user->isSubAdmin() && !$user->isScanner()) {
-            if (!$user->canSendBroadcasts() || $user->status === 'suspended') {
+        if ($user && ! $user->isAdmin() && ! $user->isSubAdmin() && ! $user->isScanner()) {
+            if (! $user->canSendBroadcasts() || $user->status === 'suspended') {
                 return redirect()->route('dashboard')->with('error', 'Access Restricted: Your organizer account is not permitted to access Broadcast Messaging. Contact platform administration.');
             }
         }
 
         $eventsQuery = Event::withCount(['guests', 'messages'])->with(['user']);
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             $eventsQuery->where('user_id', $user->id);
         }
         $events = $eventsQuery->latest('event_date')->get();
@@ -39,14 +38,14 @@ class MessagingController extends Controller
 
         if ($selectedEventId) {
             $selectedEventQuery = Event::with(['cardTemplate', 'guests', 'user']);
-            if (!$user->isAdmin()) {
+            if (! $user->isAdmin()) {
                 $selectedEventQuery->where('user_id', $user->id);
             }
             $selectedEvent = $selectedEventQuery->find($selectedEventId) ?: ($events->first() ? Event::with(['cardTemplate', 'guests', 'user'])->find($events->first()->id) : null);
         }
 
         $messagesQuery = Message::with(['guest', 'event', 'event.user'])->latest();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             $messagesQuery->whereHas('event', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
@@ -76,7 +75,7 @@ class MessagingController extends Controller
             'status' => 'Active',
         ]);
 
-        $templatesQuery = \App\Models\CardTemplate::query();
+        $templatesQuery = CardTemplate::query();
         if ($user) {
             $templatesQuery->where(function ($q) use ($user) {
                 $q->whereNull('user_id')->orWhere('user_id', $user->id);
@@ -85,7 +84,7 @@ class MessagingController extends Controller
             $templatesQuery->whereNull('user_id');
         }
         $templates = $templatesQuery
-            ->orderByRaw("CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id ASC")
+            ->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id ASC')
             ->get();
 
         return Inertia::render('Customer/Messaging', [
@@ -105,7 +104,7 @@ class MessagingController extends Controller
     public function updateEventTemplate(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403, 'Unauthorized to modify this event.');
         }
 
@@ -122,7 +121,7 @@ class MessagingController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->isAdmin() && !$user->canSendBroadcasts()) {
+        if (! $user->isAdmin() && ! $user->canSendBroadcasts()) {
             return back()->with('error', 'Campaign broadcasting & message dispatch permissions are disabled for your organizer account. Please contact system administration.');
         }
 
@@ -141,11 +140,11 @@ class MessagingController extends Controller
         ]);
 
         $event = Event::findOrFail($validated['event_id']);
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403);
         }
 
-        if (!empty($validated['card_template_id']) && $event->card_template_id != $validated['card_template_id']) {
+        if (! empty($validated['card_template_id']) && $event->card_template_id != $validated['card_template_id']) {
             $event->update(['card_template_id' => $validated['card_template_id']]);
         }
 
@@ -164,13 +163,13 @@ class MessagingController extends Controller
 
         $guestsQuery = $event->guests();
 
-        if ($validated['target_filter'] === 'custom' || (!empty($validated['selected_guest_ids']) && $validated['target_filter'] !== 'all' && $validated['target_filter'] !== 'draft' && $validated['target_filter'] !== 'failed' && $validated['target_filter'] !== 'pending_rsvp')) {
+        if ($validated['target_filter'] === 'custom' || (! empty($validated['selected_guest_ids']) && $validated['target_filter'] !== 'all' && $validated['target_filter'] !== 'draft' && $validated['target_filter'] !== 'failed' && $validated['target_filter'] !== 'pending_rsvp')) {
             $selectedIds = $validated['selected_guest_ids'] ?? [];
             if (empty($selectedIds)) {
                 return back()->with('error', 'Please select at least one individual recipient from the guest list.');
             }
             $guestsQuery->whereIn('id', $selectedIds);
-        } elseif (!empty($validated['selected_guest_ids'])) {
+        } elseif (! empty($validated['selected_guest_ids'])) {
             // When specific individuals are selected within a filter
             $guestsQuery->whereIn('id', $validated['selected_guest_ids']);
         } elseif ($validated['target_filter'] === 'draft') {
@@ -192,15 +191,17 @@ class MessagingController extends Controller
         $eventOwner = $event->user ?: $user;
 
         // Enforce Quota Limits for WhatsApp & SMS
-        if ($channel === 'whatsapp' && !$eventOwner->canSendWhatsApp($recipientCount)) {
+        if ($channel === 'whatsapp' && ! $eventOwner->canSendWhatsApp($recipientCount)) {
             $quota = $eventOwner->getMessageQuotaStats();
             $rem = $quota['whatsapp_remaining'] ?? 0;
+
             return back()->with('error', "WhatsApp Dispatch Quota Exceeded! You are attempting to dispatch {$recipientCount} messages, but your account only has {$rem} WhatsApp message(s) remaining out of {$eventOwner->max_whatsapp_limit}. Please contact platform administration to upgrade your quota.");
         }
 
-        if ($channel === 'sms' && !$eventOwner->canSendSms($recipientCount)) {
+        if ($channel === 'sms' && ! $eventOwner->canSendSms($recipientCount)) {
             $quota = $eventOwner->getMessageQuotaStats();
             $rem = $quota['sms_remaining'] ?? 0;
+
             return back()->with('error', "SMS Dispatch Quota Exceeded! You are attempting to dispatch {$recipientCount} SMS messages, but your account only has {$rem} SMS remaining out of {$eventOwner->max_sms_limit}. Please contact platform administration to upgrade your quota.");
         }
 
@@ -213,37 +214,37 @@ class MessagingController extends Controller
         $baseUrl = $request->getSchemeAndHttpHost();
         if (str_contains($baseUrl, '127.0.0.1') || str_contains($baseUrl, 'localhost')) {
             $gw = SystemSetting::get('whatsapp_gateway', []);
-            if (!empty($gw['webhook_url'])) {
+            if (! empty($gw['webhook_url'])) {
                 $parsed = parse_url($gw['webhook_url']);
-                if (!empty($parsed['scheme']) && !empty($parsed['host']) && !str_contains($parsed['host'], 'localhost') && !str_contains($parsed['host'], '127.0.0.1')) {
-                    $port = !empty($parsed['port']) ? ':' . $parsed['port'] : '';
-                    $baseUrl = $parsed['scheme'] . '://' . $parsed['host'] . $port;
+                if (! empty($parsed['scheme']) && ! empty($parsed['host']) && ! str_contains($parsed['host'], 'localhost') && ! str_contains($parsed['host'], '127.0.0.1')) {
+                    $port = ! empty($parsed['port']) ? ':'.$parsed['port'] : '';
+                    $baseUrl = $parsed['scheme'].'://'.$parsed['host'].$port;
                 }
             }
         }
 
-        $activeTemplate = !empty($validated['card_template_id']) 
-            ? CardTemplate::find($validated['card_template_id']) 
+        $activeTemplate = ! empty($validated['card_template_id'])
+            ? CardTemplate::find($validated['card_template_id'])
             : ($event->cardTemplate ?: CardTemplate::first());
 
         foreach ($guests as $guest) {
-            $passUrl = rtrim($baseUrl, '/') . '/card/' . $guest->qr_token;
+            $passUrl = rtrim($baseUrl, '/').'/card/'.$guest->qr_token;
 
-            if (!empty($validated['custom_caption'])) {
+            if (! empty($validated['custom_caption'])) {
                 $caption = str_ireplace(
                     [
                         '{{guest_name}}', '{guest_name}',
                         '{{event_title}}', '{event_title}',
                         '{{event_date}}', '{event_date}',
                         '{{venue}}', '{venue}',
-                        '{{pass_code}}', '{pass_code}'
+                        '{{pass_code}}', '{pass_code}',
                     ],
                     [
                         $guest->name, $guest->name,
                         $event->title, $event->title,
                         $eventDateStr, $eventDateStr,
                         $event->venue ?? '', $event->venue ?? '',
-                        $guest->unique_code ?? '', $guest->unique_code ?? ''
+                        $guest->unique_code ?? '', $guest->unique_code ?? '',
                     ],
                     $validated['custom_caption']
                 );
@@ -275,8 +276,8 @@ class MessagingController extends Controller
             $status = $isSuccess ? 'sent' : 'failed';
             $recordedBody = $bodyToSend;
 
-            if (!$isSuccess && !empty($sendResult['error_message'])) {
-                $recordedBody .= " [Error: " . $sendResult['error_message'] . "]";
+            if (! $isSuccess && ! empty($sendResult['error_message'])) {
+                $recordedBody .= ' [Error: '.$sendResult['error_message'].']';
                 $failedErrors[] = "{$guest->name}: {$sendResult['error_message']}";
                 $failedCount++;
             } else {
@@ -305,6 +306,7 @@ class MessagingController extends Controller
             return back()->with('warning', "Dispatched {$sentCount} {$channel} {$typeLabel} messages. ({$failedCount} failed. Check Delivery Logs or Meta developer settings for recipient whitelisting).");
         } elseif ($failedCount > 0 && $sentCount === 0) {
             $firstErr = $failedErrors[0] ?? 'Provider API Error';
+
             return back()->with('error', "WhatsApp dispatch failed: {$firstErr}. Please verify WhatsApp Gateway credentials in Settings.");
         }
 
@@ -314,24 +316,26 @@ class MessagingController extends Controller
     public function sendSingle(Request $request, Guest $guest)
     {
         $user = $request->user();
-        if ($guest->event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($guest->event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403);
         }
 
-        if (!$user->isAdmin() && !$user->canSendBroadcasts()) {
+        if (! $user->isAdmin() && ! $user->canSendBroadcasts()) {
             return back()->with('error', 'Single message dispatch permission is disabled for your organizer account. Please contact system administration.');
         }
 
         $channel = $request->input('channel', 'whatsapp');
         $eventOwner = $guest->event->user ?: $user;
 
-        if ($channel === 'whatsapp' && !$eventOwner->canSendWhatsApp(1)) {
+        if ($channel === 'whatsapp' && ! $eventOwner->canSendWhatsApp(1)) {
             $quota = $eventOwner->getMessageQuotaStats();
+
             return back()->with('error', "WhatsApp dispatch quota reached ({$eventOwner->max_whatsapp_limit} messages limit). Contact administration to increase quota.");
         }
 
-        if ($channel === 'sms' && !$eventOwner->canSendSms(1)) {
+        if ($channel === 'sms' && ! $eventOwner->canSendSms(1)) {
             $quota = $eventOwner->getMessageQuotaStats();
+
             return back()->with('error', "SMS dispatch quota reached ({$eventOwner->max_sms_limit} SMS limit). Contact administration to increase quota.");
         }
 
@@ -339,18 +343,18 @@ class MessagingController extends Controller
         $baseUrl = $request->getSchemeAndHttpHost();
         if (str_contains($baseUrl, '127.0.0.1') || str_contains($baseUrl, 'localhost')) {
             $gw = SystemSetting::get('whatsapp_gateway', []);
-            if (!empty($gw['webhook_url'])) {
+            if (! empty($gw['webhook_url'])) {
                 $parsed = parse_url($gw['webhook_url']);
-                if (!empty($parsed['scheme']) && !empty($parsed['host']) && !str_contains($parsed['host'], 'localhost') && !str_contains($parsed['host'], '127.0.0.1')) {
-                    $port = !empty($parsed['port']) ? ':' . $parsed['port'] : '';
-                    $baseUrl = $parsed['scheme'] . '://' . $parsed['host'] . $port;
+                if (! empty($parsed['scheme']) && ! empty($parsed['host']) && ! str_contains($parsed['host'], 'localhost') && ! str_contains($parsed['host'], '127.0.0.1')) {
+                    $port = ! empty($parsed['port']) ? ':'.$parsed['port'] : '';
+                    $baseUrl = $parsed['scheme'].'://'.$parsed['host'].$port;
                 }
             }
         }
 
         $customText = $request->input('message_text');
-        
-        if (!empty($customText)) {
+
+        if (! empty($customText)) {
             $caption = $customText;
         } else {
             $caption = "Hi {$guest->name}! You're invited to {$guest->event->title}. Tap below to confirm attendance.";
@@ -372,8 +376,8 @@ class MessagingController extends Controller
         $status = $isSuccess ? 'sent' : 'failed';
         $recordedBody = $bodyToSend;
 
-        if (!$isSuccess && !empty($sendResult['error_message'])) {
-            $recordedBody .= " [Error: " . $sendResult['error_message'] . "]";
+        if (! $isSuccess && ! empty($sendResult['error_message'])) {
+            $recordedBody .= ' [Error: '.$sendResult['error_message'].']';
         }
 
         Message::create([
@@ -391,8 +395,8 @@ class MessagingController extends Controller
             'delivery_status' => $status,
         ]);
 
-        if (!$isSuccess) {
-            return back()->with('error', "WhatsApp dispatch to {$guest->name} failed: " . ($sendResult['error_message'] ?? 'Meta API error'));
+        if (! $isSuccess) {
+            return back()->with('error', "WhatsApp dispatch to {$guest->name} failed: ".($sendResult['error_message'] ?? 'Meta API error'));
         }
 
         return back()->with('success', "Message dispatched to {$guest->name} via {$channel}!");
@@ -402,14 +406,13 @@ class MessagingController extends Controller
      * Meta WhatsApp Cloud API Outbound Dispatcher
      */
     protected function sendMetaWhatsAppMessage(
-        string $toPhone, 
-        string $messageBody, 
-        ?Guest $guest = null, 
+        string $toPhone,
+        string $messageBody,
+        ?Guest $guest = null,
         string $campaignType = 'pass_invitation',
         ?CardTemplate $template = null,
         ?string $baseUrl = null
-    ): array
-    {
+    ): array {
         $gateway = SystemSetting::get('whatsapp_gateway', []);
         $accessToken = trim($gateway['access_token'] ?? '');
         $phoneNumberId = trim($gateway['phone_number_id'] ?? '');
@@ -420,17 +423,17 @@ class MessagingController extends Controller
 
         $cleanPhone = PhoneNormalizer::cleanForApi($toPhone);
 
-        $isLiveConfigured = !empty($accessToken) && 
-                            !empty($phoneNumberId) && 
-                            !str_starts_with($accessToken, 'EAAG...kdv_prod_token_live') &&
-                            !str_starts_with($accessToken, 'EAAGkdv_prod_access_token_live');
+        $isLiveConfigured = ! empty($accessToken) &&
+                            ! empty($phoneNumberId) &&
+                            ! str_starts_with($accessToken, 'EAAG...kdv_prod_token_live') &&
+                            ! str_starts_with($accessToken, 'EAAGkdv_prod_access_token_live');
 
-        if (!$isLiveConfigured) {
+        if (! $isLiveConfigured) {
             // In local/simulated sandbox without credentials, record successful simulated dispatch
             return [
                 'success' => true,
                 'simulated' => true,
-                'message_id' => 'sim_' . uniqid(),
+                'message_id' => 'sim_'.uniqid(),
             ];
         }
 
@@ -442,20 +445,20 @@ class MessagingController extends Controller
             if (in_array($campaignType, ['pass_invitation', 'pass_only']) && $guest) {
                 try {
                     $passRelPath = PassImageGeneratorService::generate($guest, $template, $baseUrl);
-                    if (!empty($baseUrl) && !str_contains($baseUrl, '127.0.0.1') && !str_contains($baseUrl, 'localhost')) {
-                        $cardImageUrl = rtrim($baseUrl, '/') . '/' . ltrim($passRelPath, '/');
+                    if (! empty($baseUrl) && ! str_contains($baseUrl, '127.0.0.1') && ! str_contains($baseUrl, 'localhost')) {
+                        $cardImageUrl = rtrim($baseUrl, '/').'/'.ltrim($passRelPath, '/');
                     }
                 } catch (\Throwable $e) {
-                    Log::warning("Personalized pass generator notice for {$cleanPhone}: " . $e->getMessage());
+                    Log::warning("Personalized pass generator notice for {$cleanPhone}: ".$e->getMessage());
                 }
             }
 
-            if (!$cardImageUrl && in_array($campaignType, ['pass_invitation', 'pass_only']) && $template && !empty($template->image_path)) {
+            if (! $cardImageUrl && in_array($campaignType, ['pass_invitation', 'pass_only']) && $template && ! empty($template->image_path)) {
                 $imgPath = $template->image_path;
                 if (str_starts_with($imgPath, 'http://') || str_starts_with($imgPath, 'https://')) {
                     $cardImageUrl = $imgPath;
-                } elseif (!empty($baseUrl) && !str_contains($baseUrl, '127.0.0.1') && !str_contains($baseUrl, 'localhost')) {
-                    $cardImageUrl = rtrim($baseUrl, '/') . '/' . ltrim($imgPath, '/');
+                } elseif (! empty($baseUrl) && ! str_contains($baseUrl, '127.0.0.1') && ! str_contains($baseUrl, 'localhost')) {
+                    $cardImageUrl = rtrim($baseUrl, '/').'/'.ltrim($imgPath, '/');
                 }
             }
 
@@ -477,14 +480,14 @@ class MessagingController extends Controller
                             [
                                 'type' => 'reply',
                                 'reply' => [
-                                    'id' => 'rsvp_yes_' . $token,
+                                    'id' => 'rsvp_yes_'.$token,
                                     'title' => '✅ Attending',
                                 ],
                             ],
                             [
                                 'type' => 'reply',
                                 'reply' => [
-                                    'id' => 'rsvp_no_' . $token,
+                                    'id' => 'rsvp_no_'.$token,
                                     'title' => '❌ Decline',
                                 ],
                             ],
@@ -513,7 +516,8 @@ class MessagingController extends Controller
                     ]);
 
                 if ($response->successful()) {
-                    $msgId = $response->json('messages.0.id') ?? ('wamid.' . uniqid());
+                    $msgId = $response->json('messages.0.id') ?? ('wamid.'.uniqid());
+
                     return [
                         'success' => true,
                         'simulated' => false,
@@ -536,7 +540,8 @@ class MessagingController extends Controller
                         ]);
 
                     if ($responseRetry->successful()) {
-                        $msgId = $responseRetry->json('messages.0.id') ?? ('wamid.' . uniqid());
+                        $msgId = $responseRetry->json('messages.0.id') ?? ('wamid.'.uniqid());
+
                         return [
                             'success' => true,
                             'simulated' => false,
@@ -546,7 +551,7 @@ class MessagingController extends Controller
                 }
 
                 // If interactive call returns error (e.g. template policy restriction in Meta Sandbox), fallback to standard text message
-                Log::info("Interactive WhatsApp button dispatch not accepted by provider, falling back to standard text for {$cleanPhone}: " . $response->body());
+                Log::info("Interactive WhatsApp button dispatch not accepted by provider, falling back to standard text for {$cleanPhone}: ".$response->body());
             }
 
             // If pass_only with image
@@ -568,7 +573,8 @@ class MessagingController extends Controller
                     ->post($endpoint, $imagePayload);
 
                 if ($response->successful()) {
-                    $msgId = $response->json('messages.0.id') ?? ('wamid.' . uniqid());
+                    $msgId = $response->json('messages.0.id') ?? ('wamid.'.uniqid());
+
                     return [
                         'success' => true,
                         'simulated' => false,
@@ -579,9 +585,9 @@ class MessagingController extends Controller
 
             // Standard Text Message Payload (Fallback with direct RSVP & Pass link)
             $textToSend = $messageBody;
-            if ($guest && !str_contains($textToSend, '/card/')) {
+            if ($guest && ! str_contains($textToSend, '/card/')) {
                 $token = $guest->qr_token ?? $guest->unique_code ?? $guest->id;
-                $pUrl = rtrim($baseUrl, '/') . '/card/' . $token;
+                $pUrl = rtrim($baseUrl, '/').'/card/'.$token;
                 $textToSend .= "\n\n🎟️ *Digital Pass & RSVP:* {$pUrl}\n_Reply *1* (Attending) or *2* (Decline)_";
             }
 
@@ -602,7 +608,8 @@ class MessagingController extends Controller
                 ->post($endpoint, $payload);
 
             if ($response->successful()) {
-                $msgId = $response->json('messages.0.id') ?? ('wamid.' . uniqid());
+                $msgId = $response->json('messages.0.id') ?? ('wamid.'.uniqid());
+
                 return [
                     'success' => true,
                     'simulated' => false,
@@ -611,11 +618,11 @@ class MessagingController extends Controller
             }
 
             $errorData = $response->json('error') ?? [];
-            $errMsg = !empty($errorData['message']) ? $errorData['message'] : (!empty($response->body()) ? trim($response->body()) : ('HTTP ' . $response->status()));
+            $errMsg = ! empty($errorData['message']) ? $errorData['message'] : (! empty($response->body()) ? trim($response->body()) : ('HTTP '.$response->status()));
             $errCode = $errorData['code'] ?? null;
 
             if ($errCode === 190 || str_contains(strtolower($errMsg), 'access token') || str_contains(strtolower($errMsg), 'authentication')) {
-                $errMsg = "Meta Access Token Expired (Code 190). Please copy a fresh token from Meta for Developers > WhatsApp > API Setup and paste it into Gateways Settings.";
+                $errMsg = 'Meta Access Token Expired (Code 190). Please copy a fresh token from Meta for Developers > WhatsApp > API Setup and paste it into Gateways Settings.';
             }
 
             Log::warning("WhatsApp dispatch failed for {$cleanPhone}: [Code {$errCode}] {$errMsg}", ['error' => $errorData]);
@@ -627,7 +634,8 @@ class MessagingController extends Controller
                 'error_code' => $errCode,
             ];
         } catch (\Throwable $e) {
-            Log::error("WhatsApp dispatch exception for {$cleanPhone}: " . $e->getMessage());
+            Log::error("WhatsApp dispatch exception for {$cleanPhone}: ".$e->getMessage());
+
             return [
                 'success' => false,
                 'simulated' => false,
@@ -640,12 +648,12 @@ class MessagingController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             abort(401);
         }
 
         // Only Admin and Sub-Admin can delete delivery logs
-        if (!$user->isAdmin() && !$user->isSubAdmin()) {
+        if (! $user->isAdmin() && ! $user->isSubAdmin()) {
             abort(403, 'Unauthorized. Only platform administrators and sub-administrators can delete broadcast delivery logs.');
         }
 
@@ -657,7 +665,7 @@ class MessagingController extends Controller
             $event = $message->event;
             if ($event) {
                 $hasAccess = in_array($event->id, $assignedEventIds) || in_array($event->user_id, $assignedCustomerIds);
-                if (!$hasAccess) {
+                if (! $hasAccess) {
                     abort(403, 'Unauthorized. You can only delete logs for your assigned events or organizers.');
                 }
             }
@@ -673,14 +681,14 @@ class MessagingController extends Controller
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             abort(401);
         }
 
         $eventId = $request->input('event_id');
         $query = Message::query();
 
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             if ($user->isSubAdmin()) {
                 $assignedCustomerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
                 $assignedEventIds = $user->assignedEvents()->pluck('events.id')->toArray();

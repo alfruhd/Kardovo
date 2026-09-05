@@ -37,32 +37,32 @@ class ProfileController extends Controller
             unset($validated['max_whatsapp_limit'], $validated['max_sms_limit'], $validated['max_events_limit']);
         } else {
             if (array_key_exists('max_whatsapp_limit', $validated)) {
-                $validated['max_whatsapp_limit'] = ($validated['max_whatsapp_limit'] !== '' && !is_null($validated['max_whatsapp_limit'])) ? (int) $validated['max_whatsapp_limit'] : null;
+                $validated['max_whatsapp_limit'] = ($validated['max_whatsapp_limit'] !== '' && ! is_null($validated['max_whatsapp_limit'])) ? (int) $validated['max_whatsapp_limit'] : null;
             }
 
             if (array_key_exists('max_sms_limit', $validated)) {
-                $validated['max_sms_limit'] = ($validated['max_sms_limit'] !== '' && !is_null($validated['max_sms_limit'])) ? (int) $validated['max_sms_limit'] : null;
+                $validated['max_sms_limit'] = ($validated['max_sms_limit'] !== '' && ! is_null($validated['max_sms_limit'])) ? (int) $validated['max_sms_limit'] : null;
             }
 
             if (array_key_exists('max_events_limit', $validated)) {
-                $validated['max_events_limit'] = ($validated['max_events_limit'] !== '' && !is_null($validated['max_events_limit'])) ? (int) $validated['max_events_limit'] : null;
+                $validated['max_events_limit'] = ($validated['max_events_limit'] !== '' && ! is_null($validated['max_events_limit'])) ? (int) $validated['max_events_limit'] : null;
             }
         }
 
         if ($request->hasFile('avatar_file')) {
             $file = $request->file('avatar_file');
             $destination = public_path('avatars');
-            if (!file_exists($destination)) {
+            if (! file_exists($destination)) {
                 mkdir($destination, 0755, true);
             }
-            $fileName = 'avatar_' . $request->user()->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $fileName = 'avatar_'.$request->user()->id.'_'.time().'.'.$file->getClientOriginalExtension();
             $file->move($destination, $fileName);
-            $validated['avatar'] = '/avatars/' . $fileName;
+            $validated['avatar'] = '/avatars/'.$fileName;
         } elseif ($request->boolean('remove_avatar')) {
             $validated['avatar'] = null;
         }
 
-        if (!empty($validated['phone'])) {
+        if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
         }
 

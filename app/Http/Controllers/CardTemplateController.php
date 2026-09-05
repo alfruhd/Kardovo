@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
 use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class CardTemplateController extends Controller
@@ -16,12 +15,12 @@ class CardTemplateController extends Controller
         $user = $request->user();
 
         // Enforce template customization permission for organizers
-        if ($user && !$user->isAdmin() && !$user->isSubAdmin() && !$user->isScanner()) {
-            if (!$user->canCustomizeTemplates() || $user->status === 'suspended') {
+        if ($user && ! $user->isAdmin() && ! $user->isSubAdmin() && ! $user->isScanner()) {
+            if (! $user->canCustomizeTemplates() || $user->status === 'suspended') {
                 return redirect()->route('dashboard')->with('error', 'Access Restricted: Your organizer account is not permitted to customize card templates. Contact platform administration.');
             }
         }
-        
+
         $templatesQuery = CardTemplate::query();
         if ($user && $user->isAdmin()) {
             // System Administrator only sees global master templates and admin templates (no customer private templates)
@@ -36,7 +35,7 @@ class CardTemplateController extends Controller
         } else {
             $templatesQuery->whereNull('user_id');
         }
-        
+
         $templates = $templatesQuery
             ->orderByRaw("CASE WHEN template_type = 'gradient_card' THEN 0 ELSE 1 END, id ASC")
             ->get();
@@ -53,7 +52,7 @@ class CardTemplateController extends Controller
         if ($request->filled('template_id')) {
             $selectedTemplate = $templates->firstWhere('id', (int) $request->template_id);
         }
-        if (!$selectedTemplate) {
+        if (! $selectedTemplate) {
             $selectedTemplate = $templates->first();
         }
 
@@ -72,11 +71,11 @@ class CardTemplateController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(401);
         }
 
-        if (!$user->isAdmin() && !$user->canCustomizeTemplates()) {
+        if (! $user->isAdmin() && ! $user->canCustomizeTemplates()) {
             return back()->with('error', 'Card template studio & customization permissions are disabled for your organizer account. Please contact system administration.');
         }
 
@@ -98,15 +97,15 @@ class CardTemplateController extends Controller
 
         if ($request->hasFile('image_file')) {
             $assetsDir = public_path('template_assets');
-            if (!file_exists($assetsDir)) {
+            if (! file_exists($assetsDir)) {
                 mkdir($assetsDir, 0755, true);
             }
             $file = $request->file('image_file');
             $extension = $file->getClientOriginalExtension() ?: 'png';
-            $fileName = 'custom_tpl_' . time() . '_' . uniqid() . '.' . $extension;
-            $destinationPath = $assetsDir . '/' . $fileName;
+            $fileName = 'custom_tpl_'.time().'_'.uniqid().'.'.$extension;
+            $destinationPath = $assetsDir.'/'.$fileName;
             $file->move($assetsDir, $fileName);
-            $validated['image_path'] = '/template_assets/' . $fileName;
+            $validated['image_path'] = '/template_assets/'.$fileName;
             $validated['template_type'] = 'custom_art';
 
             // Auto-detect dimensions & aspect ratio
@@ -118,7 +117,7 @@ class CardTemplateController extends Controller
                 $ratio = round($w / $h, 4);
                 $elementsConfig['image_width'] = $w;
                 $elementsConfig['image_height'] = $h;
-                $elementsConfig['aspect_ratio'] = (string)$ratio;
+                $elementsConfig['aspect_ratio'] = (string) $ratio;
                 $elementsConfig['orientation'] = $w > $h ? 'landscape' : ($w === $h ? 'square' : 'portrait');
             }
             $validated['elements_config'] = $elementsConfig;
@@ -140,16 +139,16 @@ class CardTemplateController extends Controller
     public function update(Request $request, CardTemplate $cardTemplate)
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(401);
         }
 
         // If this is another user's personal template, forbid
-        if ($cardTemplate->user_id && $cardTemplate->user_id !== $user->id && !$user->isAdmin()) {
+        if ($cardTemplate->user_id && $cardTemplate->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403, 'Unauthorized to modify this template.');
         }
 
-        if (!$user->isAdmin() && !$user->canCustomizeTemplates()) {
+        if (! $user->isAdmin() && ! $user->canCustomizeTemplates()) {
             return back()->with('error', 'Card template studio & customization permissions are disabled for your organizer account. Please contact system administration.');
         }
 
@@ -171,15 +170,15 @@ class CardTemplateController extends Controller
 
         if ($request->hasFile('image_file')) {
             $assetsDir = public_path('template_assets');
-            if (!file_exists($assetsDir)) {
+            if (! file_exists($assetsDir)) {
                 mkdir($assetsDir, 0755, true);
             }
             $file = $request->file('image_file');
             $extension = $file->getClientOriginalExtension() ?: 'png';
-            $fileName = 'custom_tpl_' . time() . '_' . uniqid() . '.' . $extension;
-            $destinationPath = $assetsDir . '/' . $fileName;
+            $fileName = 'custom_tpl_'.time().'_'.uniqid().'.'.$extension;
+            $destinationPath = $assetsDir.'/'.$fileName;
             $file->move($assetsDir, $fileName);
-            $validated['image_path'] = '/template_assets/' . $fileName;
+            $validated['image_path'] = '/template_assets/'.$fileName;
             if (($validated['template_type'] ?? '') !== 'gradient_card') {
                 $validated['template_type'] = 'custom_art';
             }
@@ -193,7 +192,7 @@ class CardTemplateController extends Controller
                 $ratio = round($w / $h, 4);
                 $elementsConfig['image_width'] = $w;
                 $elementsConfig['image_height'] = $h;
-                $elementsConfig['aspect_ratio'] = (string)$ratio;
+                $elementsConfig['aspect_ratio'] = (string) $ratio;
                 $elementsConfig['orientation'] = $w > $h ? 'landscape' : ($w === $h ? 'square' : 'portrait');
             }
             $validated['elements_config'] = $elementsConfig;
@@ -201,7 +200,7 @@ class CardTemplateController extends Controller
 
         // Security rule: If this is a global administrator template (user_id === null) and the current user is NOT admin:
         // Do NOT overwrite the system administrator master template! Instead, fork into a customer personal copy.
-        if (is_null($cardTemplate->user_id) && !$user->isAdmin()) {
+        if (is_null($cardTemplate->user_id) && ! $user->isAdmin()) {
             $validated['user_id'] = $user->id;
             $customerCopy = CardTemplate::create($validated);
 
@@ -217,16 +216,16 @@ class CardTemplateController extends Controller
     public function destroy(Request $request, CardTemplate $cardTemplate)
     {
         $user = $request->user();
-        if (!$user) {
+        if (! $user) {
             abort(401);
         }
 
         // Only admin can delete global system templates (user_id === null)
-        if (is_null($cardTemplate->user_id) && !$user->isAdmin()) {
+        if (is_null($cardTemplate->user_id) && ! $user->isAdmin()) {
             abort(403, 'Only System Administrators can delete default system templates.');
         }
 
-        if ($cardTemplate->user_id && $cardTemplate->user_id !== $user->id && !$user->isAdmin()) {
+        if ($cardTemplate->user_id && $cardTemplate->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403, 'Unauthorized to delete this card template.');
         }
 

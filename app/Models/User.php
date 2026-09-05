@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
 use Illuminate\Support\Facades\Hash;
 
 #[Fillable(['name', 'email', 'password', 'two_factor_enabled', 'two_factor_code', 'two_factor_expires_at', 'role', 'permissions', 'status', 'max_events_limit', 'max_whatsapp_limit', 'max_sms_limit', 'suspension_reason', 'phone', 'company', 'avatar', 'gate_label', 'customer_id'])]
@@ -43,7 +42,7 @@ class User extends Authenticatable
      */
     public function generateTwoFactorCode(): string
     {
-        $code = sprintf("%06d", random_int(100000, 999999));
+        $code = sprintf('%06d', random_int(100000, 999999));
 
         $this->forceFill([
             'two_factor_code' => Hash::make($code),
@@ -58,7 +57,7 @@ class User extends Authenticatable
      */
     public function verifyTwoFactorCode(string $code): bool
     {
-        if (!$this->two_factor_code || !$this->two_factor_expires_at) {
+        if (! $this->two_factor_code || ! $this->two_factor_expires_at) {
             return false;
         }
 
@@ -158,6 +157,7 @@ class User extends Authenticatable
         if (is_string($custom)) {
             $custom = json_decode($custom, true) ?: [];
         }
+
         return array_merge(self::defaultPermissions(), $custom);
     }
 
@@ -172,7 +172,8 @@ class User extends Authenticatable
         }
 
         $effective = $this->effective_permissions;
-        return !empty($effective[$permission]);
+
+        return ! empty($effective[$permission]);
     }
 
     public function canCreateEvents(): bool
@@ -233,6 +234,7 @@ class User extends Authenticatable
             return true;
         }
         $used = $this->whatsappSentCount();
+
         return ($used + $quantity) <= $this->max_whatsapp_limit;
     }
 
@@ -245,6 +247,7 @@ class User extends Authenticatable
             return true;
         }
         $used = $this->smsSentCount();
+
         return ($used + $quantity) <= $this->max_sms_limit;
     }
 

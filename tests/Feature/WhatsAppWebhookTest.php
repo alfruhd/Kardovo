@@ -2,12 +2,15 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
+use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Message;
+use App\Models\SystemSetting;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
 
 class WhatsAppWebhookTest extends TestCase
 {
@@ -93,8 +96,8 @@ class WhatsAppWebhookTest extends TestCase
 
     public function test_admin_can_test_whatsapp_gateway_connection()
     {
-        \Illuminate\Support\Facades\Http::fake([
-            'https://graph.facebook.com/v20.0/108492019482910*' => \Illuminate\Support\Facades\Http::response([
+        Http::fake([
+            'https://graph.facebook.com/v20.0/108492019482910*' => Http::response([
                 'id' => '108492019482910',
                 'display_phone_number' => '+1 555-0100',
                 'verified_name' => 'Kardovo Access Systems',
@@ -122,8 +125,8 @@ class WhatsAppWebhookTest extends TestCase
 
     public function test_admin_test_gateway_handles_meta_api_failure()
     {
-        \Illuminate\Support\Facades\Http::fake([
-            'https://graph.facebook.com/v20.0/invalid_phone_id*' => \Illuminate\Support\Facades\Http::response([
+        Http::fake([
+            'https://graph.facebook.com/v20.0/invalid_phone_id*' => Http::response([
                 'error' => [
                     'message' => 'Invalid OAuth access token.',
                     'code' => 190,
@@ -198,13 +201,13 @@ class WhatsAppWebhookTest extends TestCase
                                         'recipient_id' => '255767749919',
                                         'status' => 'delivered',
                                         'timestamp' => '1725439200',
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/webhooks/whatsapp', $payload);
@@ -225,7 +228,7 @@ class WhatsAppWebhookTest extends TestCase
     public function test_broadcast_uses_public_webhook_base_url_and_updates_event_template()
     {
         $user = User::factory()->create(['role' => 'customer']);
-        $template = \App\Models\CardTemplate::create([
+        $template = CardTemplate::create([
             'user_id' => $user->id,
             'name' => 'Custom Art Luxury Pass',
             'template_type' => 'custom_art',
@@ -254,7 +257,7 @@ class WhatsAppWebhookTest extends TestCase
             'rsvp_status' => 'pending',
         ]);
 
-        \App\Models\SystemSetting::set('whatsapp_gateway', [
+        SystemSetting::set('whatsapp_gateway', [
             'webhook_url' => 'https://62c20482554209.lhr.life/api/webhooks/whatsapp',
         ]);
 
@@ -319,15 +322,15 @@ class WhatsAppWebhookTest extends TestCase
                                             'button_reply' => [
                                                 'id' => 'rsvp_yes_kdv_token_interactive_rsvp',
                                                 'title' => '✅ Attending',
-                                            ]
-                                        ]
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                            ],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $response = $this->postJson('/api/webhooks/whatsapp', $payload);
@@ -424,13 +427,13 @@ class WhatsAppWebhookTest extends TestCase
                                         'recipient_id' => '255765444333',
                                         'status' => 'delivered',
                                         'timestamp' => time(),
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $response = $this->postJson('/webhooks/whatsapp', $deliveredPayload);
@@ -453,13 +456,13 @@ class WhatsAppWebhookTest extends TestCase
                                         'recipient_id' => '255765444333',
                                         'status' => 'read',
                                         'timestamp' => time(),
-                                    ]
-                                ]
-                            ]
-                        ]
-                    ]
-                ]
-            ]
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
         ];
 
         $response = $this->postJson('/webhooks/whatsapp', $readPayload);

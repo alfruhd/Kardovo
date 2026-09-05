@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
-use App\Models\Event;
 use App\Models\CardTemplate;
-use App\Models\Guest;
+use App\Models\Event;
 use App\Models\ScanLog;
+use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class EventController extends Controller
@@ -43,7 +41,7 @@ class EventController extends Controller
             ]);
 
         // If not system administrator, restrict to the user's own events
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             $eventsQuery->where('user_id', $user->id);
         }
 
@@ -57,6 +55,7 @@ class EventController extends Controller
 
                 $event->response_rate = $responseRate;
                 $event->attendance_rate = $attendanceRate;
+
                 return $event;
             });
 
@@ -68,12 +67,12 @@ class EventController extends Controller
         ];
 
         $templates = CardTemplate::where(function ($q) use ($user) {
-            if (!$user->isAdmin()) {
+            if (! $user->isAdmin()) {
                 $q->where('user_id', $user->id)->orWhereNull('user_id');
             }
         })->get();
 
-        $organizers = $user->isAdmin() ? \App\Models\User::whereIn('role', ['customer', 'admin'])->get(['id', 'name', 'email']) : [];
+        $organizers = $user->isAdmin() ? User::whereIn('role', ['customer', 'admin'])->get(['id', 'name', 'email']) : [];
 
         return Inertia::render('Customer/MyEvents', [
             'events' => $events,
@@ -87,7 +86,7 @@ class EventController extends Controller
     public function show(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403, 'Unauthorized access to this event.');
         }
 
@@ -104,9 +103,9 @@ class EventController extends Controller
         if ($search) {
             $guestsQuery->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('card_number', 'like', "%{$search}%")
-                  ->orWhere('unique_code', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('card_number', 'like', "%{$search}%")
+                    ->orWhere('unique_code', 'like', "%{$search}%");
             });
         }
 
@@ -164,8 +163,8 @@ class EventController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->isAdmin()) {
-            if (!$user->canCreateEvents()) {
+        if (! $user->isAdmin()) {
+            if (! $user->canCreateEvents()) {
                 return back()->with('error', 'Event creation permission is disabled for your organizer account. Please contact system administration.');
             }
             if ($user->max_events_limit && $user->events()->count() >= $user->max_events_limit) {
@@ -201,8 +200,8 @@ class EventController extends Controller
 
         $validated = $request->validate($rules, $messages);
 
-        $validated['user_id'] = ($user->isAdmin() && !empty($validated['user_id'])) 
-            ? $validated['user_id'] 
+        $validated['user_id'] = ($user->isAdmin() && ! empty($validated['user_id']))
+            ? $validated['user_id']
             : $user->id;
         $validated['status'] = 'active';
 
@@ -214,7 +213,7 @@ class EventController extends Controller
     public function update(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403, 'Unauthorized to edit this event.');
         }
 
@@ -259,7 +258,7 @@ class EventController extends Controller
     public function destroy(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403, 'Unauthorized to delete this event.');
         }
 
@@ -268,8 +267,9 @@ class EventController extends Controller
         $event->delete();
 
         $referer = $request->header('Referer', '');
-        if (str_contains($referer, '/events/' . $eventId)) {
+        if (str_contains($referer, '/events/'.$eventId)) {
             $targetRoute = $user->isAdmin() ? 'admin.dashboard' : 'dashboard';
+
             return redirect()->route($targetRoute)->with('success', "Event '{$eventTitle}' deleted successfully.");
         }
 
@@ -279,7 +279,7 @@ class EventController extends Controller
     public function destroyScanLog(Request $request, Event $event, ScanLog $scanLog)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin() && !$user->isSubAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin() && ! $user->isSubAdmin()) {
             abort(403, 'Unauthorized to delete this scan log.');
         }
 
@@ -295,7 +295,7 @@ class EventController extends Controller
     public function clearScanLogs(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin() && !$user->isSubAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin() && ! $user->isSubAdmin()) {
             abort(403, 'Unauthorized to clear gate activity logs.');
         }
 

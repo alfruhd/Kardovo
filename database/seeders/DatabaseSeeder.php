@@ -2,14 +2,12 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\Event;
 use App\Models\CardTemplate;
-use App\Models\Guest;
-use App\Models\ScanLog;
+use App\Models\Event;
 use App\Models\Message;
+use App\Models\ScanLog;
 use App\Models\SystemSetting;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -78,7 +76,7 @@ class DatabaseSeeder extends Seeder
             'user_id' => null, // Global Official Template
             'name' => 'Kardovo Signature Pass (Midnight Dark Blue)',
             'template_type' => 'gradient_card',
-            'headline' => "EXCLUSIVE INVITATION PASS",
+            'headline' => 'EXCLUSIVE INVITATION PASS',
             'brand_color_from' => '#0A1128',
             'brand_color_to' => '#008EE8',
             'font_family' => 'Inter',
@@ -108,7 +106,7 @@ class DatabaseSeeder extends Seeder
                     'fontSize' => 28,
                     'color' => '#FFFFFF',
                     'fontFamily' => 'monospace',
-                ]
+                ],
             ],
         ]);
 
@@ -117,7 +115,7 @@ class DatabaseSeeder extends Seeder
             'name' => 'Zamroth & Husna Romantic Wedding Pass',
             'template_type' => 'custom_art',
             'image_path' => '/template_assets/zamroth_husna_wedding.jpg',
-            'headline' => "WEDDING INVITATION",
+            'headline' => 'WEDDING INVITATION',
             'brand_color_from' => '#1F2421',
             'brand_color_to' => '#D4AF37',
             'font_family' => 'Georgia, serif',
@@ -175,7 +173,7 @@ class DatabaseSeeder extends Seeder
                     'fontSize' => 10,
                     'color' => '#FFFFFF',
                     'fontFamily' => 'monospace',
-                ]
+                ],
             ],
         ]);
 
@@ -196,7 +194,7 @@ class DatabaseSeeder extends Seeder
                 'theme' => 'engagement_burgundy',
                 'headline_text' => 'Engagement Invitation',
                 'subtitle_text' => 'We invite your pleasure to come to our Engagement Party of',
-                'couple_names' => "Adel & Laila",
+                'couple_names' => 'Adel & Laila',
                 'couple_names_size' => 44,
                 'couple_names_y' => 22.5,
                 'date_month' => 'APRIL',
@@ -241,7 +239,7 @@ class DatabaseSeeder extends Seeder
                     'fontSize' => 9.5,
                     'color' => '#7A1E28',
                     'fontFamily' => 'monospace',
-                ]
+                ],
             ],
         ]);
 
@@ -436,8 +434,8 @@ class DatabaseSeeder extends Seeder
         // Add additional guests for IFM Alumni Night
         for ($i = 1; $i <= 15; $i++) {
             $eventAlumni->guests()->create([
-                'name' => "Alumni Guest {$i} (" . ['Eng.', 'Adv.', 'Prof.', 'CPA', 'Mr.', 'Ms.'][array_rand(['Eng.', 'Adv.', 'Prof.', 'CPA', 'Mr.', 'Ms.'])] . ' ' . Str::random(5) . ')',
-                'phone' => '+255 7' . rand(10, 89) . ' ' . rand(100, 999) . ' ' . rand(100, 999),
+                'name' => "Alumni Guest {$i} (".['Eng.', 'Adv.', 'Prof.', 'CPA', 'Mr.', 'Ms.'][array_rand(['Eng.', 'Adv.', 'Prof.', 'CPA', 'Mr.', 'Ms.'])].' '.Str::random(5).')',
+                'phone' => '+255 7'.rand(10, 89).' '.rand(100, 999).' '.rand(100, 999),
                 'category' => $i % 3 === 0 ? 'Double Entry' : 'Single Entry',
                 'max_entries' => $i % 3 === 0 ? 2 : 1,
                 'entries_used' => $i % 4 === 0 ? 1 : 0,

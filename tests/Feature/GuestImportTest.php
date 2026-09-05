@@ -1,8 +1,8 @@
 <?php
 
-use App\Models\User;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\User;
 use App\Services\GuestImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -17,11 +17,11 @@ beforeEach(function () {
 
 test('GuestImportService imports from raw text under acceptance conditions', function () {
     $event = Event::first();
-    $service = new GuestImportService();
+    $service = new GuestImportService;
 
-    $rawText = "Guest Name, Phone, Category, Max Entries, Email, Notes\n" .
-        "John Doe, +255 754 111 222, VIP Pass, 2, john@example.com, Table 1\n" .
-        "Jane Smith, 0712 345 678, Single Entry, 1, jane@example.com, \n" .
+    $rawText = "Guest Name, Phone, Category, Max Entries, Email, Notes\n".
+        "John Doe, +255 754 111 222, VIP Pass, 2, john@example.com, Table 1\n".
+        "Jane Smith, 0712 345 678, Single Entry, 1, jane@example.com, \n".
         ", +255 700 000 000, Double Entry, 2, , \n"; // Blank name row (should be skipped)
 
     $result = $service->import($event, null, $rawText);
@@ -42,10 +42,10 @@ test('GuestImportService imports from raw text under acceptance conditions', fun
 
 test('GuestImportService imports valid Excel .xlsx spreadsheet file', function () {
     $event = Event::first();
-    $service = new GuestImportService();
+    $service = new GuestImportService;
 
     // Create a mock .xlsx spreadsheet in memory/temp
-    $spreadsheet = new Spreadsheet();
+    $spreadsheet = new Spreadsheet;
     $sheet = $spreadsheet->getActiveSheet();
     $sheet->fromArray([
         ['Full Name', 'Mobile Number', 'Pass Category', 'Allowance', 'Email Address', 'Remarks'],
@@ -53,7 +53,7 @@ test('GuestImportService imports valid Excel .xlsx spreadsheet file', function (
         ['Kyle Reese', '0765 999 888', 'Double Entry', 2, 'kyle@future.com', 'Table 4'],
     ]);
 
-    $tempFile = tempnam(sys_get_temp_dir(), 'test_excel_') . '.xlsx';
+    $tempFile = tempnam(sys_get_temp_dir(), 'test_excel_').'.xlsx';
     $writer = new Xlsx($spreadsheet);
     $writer->save($tempFile);
 
@@ -103,4 +103,3 @@ test('Organizer can export guest list as CSV and PDF', function () {
     expect($pdfResponse->headers->get('content-type'))->toBe('application/pdf');
     expect($pdfResponse->headers->get('content-disposition'))->toContain('kardovo_guests_');
 });
-

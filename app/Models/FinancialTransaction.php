@@ -42,6 +42,6 @@ class FinancialTransaction extends Model
      */
     public static function generateTransactionNumber(): string
     {
-        return 'TRX-' . date('Y') . '-' . strtoupper(substr(uniqid(), -6));
+        return 'TRX-'.date('Y').'-'.strtoupper(substr(uniqid(), -6));
     }
 }

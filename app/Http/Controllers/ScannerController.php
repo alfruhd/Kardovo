@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\ScanLog;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class ScannerController extends Controller
@@ -17,8 +17,8 @@ class ScannerController extends Controller
         $user = $request->user();
 
         // Enforce gate scanner permission for customer / organizer accounts
-        if (!$user->isAdmin() && !$user->isSubAdmin() && !$user->isScanner()) {
-            if (!$user->canManageScanners() || $user->status === 'suspended') {
+        if (! $user->isAdmin() && ! $user->isSubAdmin() && ! $user->isScanner()) {
+            if (! $user->canManageScanners() || $user->status === 'suspended') {
                 return redirect()->route('dashboard')->with('error', 'Access Restricted: Your organizer account is not permitted to access the Gate Scanner. Contact platform administration.');
             }
         }
@@ -87,8 +87,8 @@ class ScannerController extends Controller
     {
         $user = $request->user();
 
-        if (!$user->isAdmin() && !$user->isSubAdmin() && !$user->isScanner()) {
-            if (!$user->canManageScanners() || $user->status === 'suspended') {
+        if (! $user->isAdmin() && ! $user->isSubAdmin() && ! $user->isScanner()) {
+            if (! $user->canManageScanners() || $user->status === 'suspended') {
                 return response()->json([
                     'status' => 'rejected',
                     'reason' => 'Access Restricted: Your organizer account is not permitted to operate the gate scanner.',
@@ -129,8 +129,8 @@ class ScannerController extends Controller
         $suffix4 = strlen($digitsOnly) >= 4 ? substr($digitsOnly, -4) : null;
 
         // Reusable matching query closure
-        $matchGuestClosure = function ($q) use ($trimmed, $upper, $lower, $alphanumeric, $digitsOnly, $suffix6, $suffix4) {
-            $q->where(function ($sub) use ($trimmed, $upper, $lower, $alphanumeric, $digitsOnly, $suffix6, $suffix4) {
+        $matchGuestClosure = function ($q) use ($trimmed, $upper, $lower, $alphanumeric, $digitsOnly, $suffix6) {
+            $q->where(function ($sub) use ($trimmed, $upper, $lower, $alphanumeric, $digitsOnly, $suffix6) {
                 // 1. Exact and case-insensitive matches on unique_code, card_number, qr_token
                 $sub->where('unique_code', $trimmed)
                     ->orWhere('card_number', $trimmed)
@@ -141,27 +141,27 @@ class ScannerController extends Controller
                     ->orWhere('qr_token', $upper);
 
                 // 2. Alphanumeric matches (ignoring dashes, spaces, underscores)
-                if (!empty($alphanumeric)) {
+                if (! empty($alphanumeric)) {
                     $sub->orWhereRaw("REPLACE(REPLACE(REPLACE(UPPER(card_number), '-', ''), ' ', ''), '_', '') = ?", [strtoupper($alphanumeric)])
                         ->orWhereRaw("REPLACE(REPLACE(REPLACE(UPPER(unique_code), '-', ''), ' ', ''), '_', '') = ?", [strtoupper($alphanumeric)])
                         ->orWhereRaw("REPLACE(REPLACE(REPLACE(LOWER(qr_token), '-', ''), ' ', ''), '_', '') = ?", [strtolower($alphanumeric)]);
                 }
 
                 // 3. Digits / suffix matches on card number or unique code
-                if (!empty($digitsOnly)) {
+                if (! empty($digitsOnly)) {
                     if (strlen($digitsOnly) >= 6) {
                         $sub->orWhere('unique_code', $digitsOnly)
-                            ->orWhere('card_number', 'LIKE', '%' . $digitsOnly);
+                            ->orWhere('card_number', 'LIKE', '%'.$digitsOnly);
                     }
                     if ($suffix6) {
-                        $sub->orWhere('card_number', 'LIKE', '%' . $suffix6);
+                        $sub->orWhere('card_number', 'LIKE', '%'.$suffix6);
                     }
                     if (strlen($digitsOnly) >= 8) {
-                        $sub->orWhere('unique_code', 'LIKE', '%' . $digitsOnly);
+                        $sub->orWhere('unique_code', 'LIKE', '%'.$digitsOnly);
                     }
                     // 4. Phone number matching (if staff searches by attendee phone)
                     if (strlen($digitsOnly) >= 7) {
-                        $sub->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, '+', ''), ' ', ''), '-', '') LIKE ?", ['%' . $digitsOnly]);
+                        $sub->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, '+', ''), ' ', ''), '-', '') LIKE ?", ['%'.$digitsOnly]);
                     }
                 }
             });
@@ -176,13 +176,13 @@ class ScannerController extends Controller
                 ->first();
 
             // 2. If not found in current event, search across all events
-            if (!$guest) {
+            if (! $guest) {
                 $guestOther = Guest::with('event')
                     ->tap($matchGuestClosure)
                     ->lockForUpdate()
                     ->first();
 
-                if (!$guestOther) {
+                if (! $guestOther) {
                     $rejectionReason = 'Invalid or unrecognised pass / code';
 
                     ScanLog::create([
@@ -206,7 +206,7 @@ class ScannerController extends Controller
                 }
 
                 // If autoSwitch is not requested, alert the user with the other event's details
-                if (!$autoSwitch) {
+                if (! $autoSwitch) {
                     $otherEventTitle = $guestOther->event?->title ?? 'Another Event';
                     $rejectionReason = "Pass is for '{$otherEventTitle}'";
 
@@ -250,8 +250,8 @@ class ScannerController extends Controller
             // 3. Check entry allowance
             if ($guest->entries_used >= $guest->max_entries) {
                 $lastScan = $guest->scanLogs()->latest()->first();
-                $lastScanInfo = $lastScan 
-                    ? "at {$lastScan->scanned_at->format('h:i A')} by {$lastScan->scanner_name} ({$lastScan->gate_label})" 
+                $lastScanInfo = $lastScan
+                    ? "at {$lastScan->scanned_at->format('h:i A')} by {$lastScan->scanner_name} ({$lastScan->gate_label})"
                     : 'earlier';
 
                 ScanLog::create([

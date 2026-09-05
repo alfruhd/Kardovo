@@ -2,11 +2,12 @@
 
 namespace Tests\Feature;
 
-use Tests\TestCase;
-use App\Models\User;
 use App\Models\FinancialTransaction;
+use App\Models\User;
+use App\Services\ExchangeRateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\TestCase;
 
 class FinanceTest extends TestCase
 {
@@ -134,7 +135,7 @@ class FinanceTest extends TestCase
         $response->assertRedirect();
         $response->assertSessionHas('success');
 
-        $rateData = \App\Services\ExchangeRateService::getRateData();
+        $rateData = ExchangeRateService::getRateData();
         $this->assertEquals(2680.50, $rateData['rate']);
         $this->assertTrue($rateData['is_manual']);
 

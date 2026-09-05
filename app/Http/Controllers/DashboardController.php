@@ -2,14 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
-use App\Models\Event;
 use App\Models\CardTemplate;
+use App\Models\Event;
 use App\Models\Guest;
 use App\Models\ScanLog;
-use App\Models\User;
-use App\Models\SystemSetting;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -57,6 +54,7 @@ class DashboardController extends Controller
 
                 $event->response_rate = $responseRate;
                 $event->attendance_rate = $attendanceRate;
+
                 return $event;
             });
 

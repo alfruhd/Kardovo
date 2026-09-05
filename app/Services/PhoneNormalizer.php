@@ -35,7 +35,7 @@ class PhoneNormalizer
 
         // 3. If phone starts with local leading 0 (e.g. 07XXXXXXXX or 06XXXXXXXX), prepend country code
         if (str_starts_with($digits, '0')) {
-            $digits = $defaultCountryCode . substr($digits, 1);
+            $digits = $defaultCountryCode.substr($digits, 1);
         }
 
         return $digits;
@@ -53,10 +53,9 @@ class PhoneNormalizer
 
         // If Tanzanian 12-digit number (255XXXXXXXXX)
         if (str_starts_with($clean, '255') && strlen($clean) === 12) {
-            return '+255 ' . substr($clean, 3, 3) . ' ' . substr($clean, 6, 3) . ' ' . substr($clean, 9, 3);
+            return '+255 '.substr($clean, 3, 3).' '.substr($clean, 6, 3).' '.substr($clean, 9, 3);
         }
 
-        return '+' . $clean;
+        return '+'.$clean;
     }
 }
-

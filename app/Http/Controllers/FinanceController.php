@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\Event;
 use App\Models\FinancialTransaction;
 use App\Models\User;
-use App\Models\Event;
-use Inertia\Inertia;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Services\ExchangeRateService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FinanceController extends Controller
 {
     public function index(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403, 'Financial administration access required.');
         }
 
@@ -134,7 +135,7 @@ class FinanceController extends Controller
 
         // Compute Monthly Cashflow for every month
         $monthlyCashflow = [];
-        $targetYears = ($selectedYear !== 'all' && in_array((int)$selectedYear, $availableYears)) ? [(int)$selectedYear] : $availableYears;
+        $targetYears = ($selectedYear !== 'all' && in_array((int) $selectedYear, $availableYears)) ? [(int) $selectedYear] : $availableYears;
 
         foreach ($targetYears as $yr) {
             for ($m = 12; $m >= 1; $m--) {
@@ -178,18 +179,18 @@ class FinanceController extends Controller
             $query->where('category', $categoryFilter);
         }
 
-        if (!empty($search)) {
+        if (! empty($search)) {
             $s = strtolower($search);
             $query->where(function ($q) use ($s) {
                 $q->where('transaction_number', 'like', "%{$s}%")
-                  ->orWhere('title', 'like', "%{$s}%")
-                  ->orWhere('reference', 'like', "%{$s}%")
-                  ->orWhere('payment_method', 'like', "%{$s}%")
-                  ->orWhereHas('user', function ($uq) use ($s) {
-                      $uq->where('name', 'like', "%{$s}%")
-                         ->orWhere('email', 'like', "%{$s}%")
-                         ->orWhere('company', 'like', "%{$s}%");
-                  });
+                    ->orWhere('title', 'like', "%{$s}%")
+                    ->orWhere('reference', 'like', "%{$s}%")
+                    ->orWhere('payment_method', 'like', "%{$s}%")
+                    ->orWhereHas('user', function ($uq) use ($s) {
+                        $uq->where('name', 'like', "%{$s}%")
+                            ->orWhere('email', 'like', "%{$s}%")
+                            ->orWhere('company', 'like', "%{$s}%");
+                    });
             });
         }
 
@@ -197,7 +198,7 @@ class FinanceController extends Controller
 
         $organizers = User::where('role', 'customer')->select('id', 'name', 'email', 'company')->get();
         $events = Event::select('id', 'title', 'user_id')->get();
-        $fxData = \App\Services\ExchangeRateService::getRateData();
+        $fxData = ExchangeRateService::getRateData();
 
         return Inertia::render('Admin/Finance', [
             'metrics' => [
@@ -235,19 +236,19 @@ class FinanceController extends Controller
     public function refreshExchangeRate(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
-        $rateData = \App\Services\ExchangeRateService::resetToLive();
+        $rateData = ExchangeRateService::resetToLive();
 
-        return back()->with('success', "USD/TZS exchange rate successfully synced to " . number_format($rateData['rate'], 2) . " TZS (" . $rateData['source'] . ").");
+        return back()->with('success', 'USD/TZS exchange rate successfully synced to '.number_format($rateData['rate'], 2).' TZS ('.$rateData['source'].').');
     }
 
     public function updateExchangeRate(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -255,15 +256,15 @@ class FinanceController extends Controller
             'rate' => 'required|numeric|min:100|max:100000',
         ]);
 
-        $rateData = \App\Services\ExchangeRateService::setManualRate((float) $validated['rate']);
+        $rateData = ExchangeRateService::setManualRate((float) $validated['rate']);
 
-        return back()->with('success', "USD/TZS exchange rate manually updated to " . number_format($rateData['rate'], 2) . " TZS.");
+        return back()->with('success', 'USD/TZS exchange rate manually updated to '.number_format($rateData['rate'], 2).' TZS.');
     }
 
     public function store(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -287,13 +288,13 @@ class FinanceController extends Controller
 
         FinancialTransaction::create($validated);
 
-        return back()->with('success', 'Financial record (' . $validated['transaction_number'] . ') successfully saved to ledger.');
+        return back()->with('success', 'Financial record ('.$validated['transaction_number'].') successfully saved to ledger.');
     }
 
     public function destroy(Request $request, FinancialTransaction $transaction)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -306,7 +307,7 @@ class FinanceController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -319,7 +320,7 @@ class FinanceController extends Controller
         if ($exportFormat === 'cashflow') {
             // Export Monthly Cashflow Statement CSV
             $allTxDates = FinancialTransaction::pluck('transaction_date');
-            $availableYears = $allTxDates->map(fn($d) => $d ? Carbon::parse($d)->year : now()->year)->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
+            $availableYears = $allTxDates->map(fn ($d) => $d ? Carbon::parse($d)->year : now()->year)->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
 
             $cashflowRows = [];
             foreach ($availableYears as $yr) {
@@ -329,7 +330,9 @@ class FinanceController extends Controller
                         ->where('status', 'completed')
                         ->get();
 
-                    if ($mTxs->isEmpty()) continue;
+                    if ($mTxs->isEmpty()) {
+                        continue;
+                    }
 
                     $inflow = (float) $mTxs->where('type', 'income')->sum('amount');
                     $outflow = (float) $mTxs->where('type', 'expense')->sum('amount');
@@ -345,13 +348,13 @@ class FinanceController extends Controller
                         'outflow' => $outflow,
                         'cogs' => $cogs,
                         'net_cashflow' => $net,
-                        'net_margin_pct' => $margin . '%',
+                        'net_margin_pct' => $margin.'%',
                         'transactions' => $mTxs->count(),
                     ];
                 }
             }
 
-            $filename = "Kardovo_Cashflow_Statement_" . date('Y-m-d') . ".csv";
+            $filename = 'Kardovo_Cashflow_Statement_'.date('Y-m-d').'.csv';
             $headers = [
                 'Content-Type' => 'text/csv',
                 'Content-Disposition' => "attachment; filename=\"{$filename}\"",
@@ -368,7 +371,7 @@ class FinanceController extends Controller
                     'Direct COGS (TZS)',
                     'Net Cashflow (TZS)',
                     'Net Margin (%)',
-                    'Transactions Count'
+                    'Transactions Count',
                 ]);
 
                 foreach ($cashflowRows as $row) {
@@ -407,25 +410,25 @@ class FinanceController extends Controller
             $query->where('category', $categoryFilter);
         }
 
-        if (!empty($search)) {
+        if (! empty($search)) {
             $s = strtolower($search);
             $query->where(function ($q) use ($s) {
                 $q->where('transaction_number', 'like', "%{$s}%")
-                  ->orWhere('title', 'like', "%{$s}%")
-                  ->orWhere('reference', 'like', "%{$s}%")
-                  ->orWhere('payment_method', 'like', "%{$s}%")
-                  ->orWhereHas('user', function ($uq) use ($s) {
-                      $uq->where('name', 'like', "%{$s}%")
-                         ->orWhere('email', 'like', "%{$s}%")
-                         ->orWhere('company', 'like', "%{$s}%");
-                  });
+                    ->orWhere('title', 'like', "%{$s}%")
+                    ->orWhere('reference', 'like', "%{$s}%")
+                    ->orWhere('payment_method', 'like', "%{$s}%")
+                    ->orWhereHas('user', function ($uq) use ($s) {
+                        $uq->where('name', 'like', "%{$s}%")
+                            ->orWhere('email', 'like', "%{$s}%")
+                            ->orWhere('company', 'like', "%{$s}%");
+                    });
             });
         }
 
         $transactions = $query->orderBy('transaction_date', 'desc')->get();
 
         $typeSuffix = $typeFilter !== 'all' ? "_{$typeFilter}" : '';
-        $filename = "Kardovo_Financial_Ledger{$typeSuffix}_" . date('Y-m-d') . ".csv";
+        $filename = "Kardovo_Financial_Ledger{$typeSuffix}_".date('Y-m-d').'.csv';
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -473,7 +476,7 @@ class FinanceController extends Controller
     public function exportPdf(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -516,7 +519,7 @@ class FinanceController extends Controller
 
         // Monthly cashflow for PDF
         $allTxDates = FinancialTransaction::pluck('transaction_date');
-        $availableYears = $allTxDates->map(fn($d) => $d ? Carbon::parse($d)->year : now()->year)->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
+        $availableYears = $allTxDates->map(fn ($d) => $d ? Carbon::parse($d)->year : now()->year)->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
 
         $monthlyCashflow = [];
         $yearlyCashflow = [];
@@ -547,7 +550,9 @@ class FinanceController extends Controller
                     ->where('status', 'completed')
                     ->get();
 
-                if ($mTxs->isEmpty()) continue;
+                if ($mTxs->isEmpty()) {
+                    continue;
+                }
 
                 $mInflow = (float) $mTxs->where('type', 'income')->sum('amount');
                 $mOutflow = (float) $mTxs->where('type', 'expense')->sum('amount');
@@ -568,7 +573,7 @@ class FinanceController extends Controller
             }
         }
 
-        $fxData = \App\Services\ExchangeRateService::getRateData();
+        $fxData = ExchangeRateService::getRateData();
 
         $pdf = Pdf::loadView('pdf.financial_report', [
             'period' => $period,
@@ -590,9 +595,8 @@ class FinanceController extends Controller
             'generated_by' => $user->name,
         ])->setPaper('a4', 'portrait');
 
-        $filename = "Kardovo_Financial_Statement_{$period}_" . date('Y-m-d') . ".pdf";
+        $filename = "Kardovo_Financial_Statement_{$period}_".date('Y-m-d').'.pdf';
 
         return $pdf->download($filename);
     }
 }
-

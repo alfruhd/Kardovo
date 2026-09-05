@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
+use App\Notifications\TwoFactorCodeNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,9 +41,9 @@ class AuthenticatedSessionController extends Controller
             $code = $user->generateTwoFactorCode();
 
             try {
-                $user->notify(new \App\Notifications\TwoFactorCodeNotification($code));
+                $user->notify(new TwoFactorCodeNotification($code));
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning("Failed to send 2FA email to {$user->email}: " . $e->getMessage());
+                Log::warning("Failed to send 2FA email to {$user->email}: ".$e->getMessage());
             }
 
             Auth::guard('web')->logout();
@@ -76,38 +79,38 @@ class AuthenticatedSessionController extends Controller
      */
     public function switchUser(Request $request): RedirectResponse
     {
-        $role = $request->input("role", "customer");
-        $email = $request->input("email");
+        $role = $request->input('role', 'customer');
+        $email = $request->input('email');
 
         $user = null;
         if ($email) {
-            $user = \App\Models\User::where("email", $email)->first();
+            $user = User::where('email', $email)->first();
         }
-        if (!$user && $role === "admin") {
-            $user = \App\Models\User::where("role", "admin")->first();
-        } elseif (!$user && $role === "sub_admin") {
-            $user = \App\Models\User::where("role", "sub_admin")->first();
-        } elseif (!$user && $role === "customer") {
-            $user = \App\Models\User::where("role", "customer")->first();
-        } elseif (!$user && $role === "scanner") {
-            $user = \App\Models\User::where("role", "scanner")->first();
+        if (! $user && $role === 'admin') {
+            $user = User::where('role', 'admin')->first();
+        } elseif (! $user && $role === 'sub_admin') {
+            $user = User::where('role', 'sub_admin')->first();
+        } elseif (! $user && $role === 'customer') {
+            $user = User::where('role', 'customer')->first();
+        } elseif (! $user && $role === 'scanner') {
+            $user = User::where('role', 'scanner')->first();
         }
 
         if ($user) {
             Auth::login($user);
             $request->session()->regenerate();
-            $request->session()->forget("url.intended");
+            $request->session()->forget('url.intended');
 
             if ($user->isAdmin()) {
-                return redirect()->route("admin.dashboard");
+                return redirect()->route('admin.dashboard');
             } elseif ($user->isScanner()) {
-                return redirect()->route("scanner.index");
+                return redirect()->route('scanner.index');
             } else {
-                return redirect()->route("dashboard");
+                return redirect()->route('dashboard');
             }
         }
 
-        return redirect()->route("login");
+        return redirect()->route('login');
     }
 
     public function destroy(Request $request): \Symfony\Component\HttpFoundation\Response

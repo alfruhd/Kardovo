@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Event;
-use App\Models\Guest;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,7 +34,7 @@ class DeliveryLogDeletionTest extends TestCase
     public function test_sub_admin_can_delete_delivery_log_for_assigned_event(): void
     {
         $subAdmin = User::where('role', 'sub_admin')->first();
-        if (!$subAdmin) {
+        if (! $subAdmin) {
             $subAdmin = User::factory()->create(['role' => 'sub_admin']);
         }
 

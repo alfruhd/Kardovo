@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
 use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
@@ -11,6 +9,7 @@ use App\Models\ScanLog;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\PhoneNormalizer;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -22,7 +21,7 @@ class AdminController extends Controller
     public function dashboard(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin() && !$user->isSubAdmin()) {
+        if (! $user->isAdmin() && ! $user->isSubAdmin()) {
             abort(403, 'Administrative access required.');
         }
 
@@ -37,6 +36,7 @@ class AdminController extends Controller
                 ->map(function ($c) {
                     $c->effective_permissions = $c->effective_permissions;
                     $c->message_quotas = $c->getMessageQuotaStats();
+
                     return $c;
                 });
 
@@ -74,6 +74,7 @@ class AdminController extends Controller
                 ->map(function ($c) {
                     $c->effective_permissions = $c->effective_permissions;
                     $c->message_quotas = $c->getMessageQuotaStats();
+
                     return $c;
                 });
 
@@ -103,8 +104,8 @@ class AdminController extends Controller
         }
 
         $globalTemplates = CardTemplate::where(function ($q) use ($user) {
-                $q->whereNull('user_id')->orWhere('user_id', $user->id);
-            })
+            $q->whereNull('user_id')->orWhere('user_id', $user->id);
+        })
             ->with('user')
             ->orderByRaw("CASE WHEN template_type = 'custom_art' THEN 0 ELSE 1 END, id ASC")
             ->get();
@@ -182,7 +183,7 @@ class AdminController extends Controller
     public function updateGateway(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -203,7 +204,7 @@ class AdminController extends Controller
     public function testGateway(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin() && !$user->isSubAdmin()) {
+        if (! $user->isAdmin() && ! $user->isSubAdmin()) {
             abort(403, 'Administrative access required.');
         }
 
@@ -221,7 +222,7 @@ class AdminController extends Controller
             if (empty($apiVersion)) {
                 $apiVersion = 'v20.0';
             }
-            $testPhone = !empty($validated['test_phone']) ? trim($validated['test_phone']) : null;
+            $testPhone = ! empty($validated['test_phone']) ? trim($validated['test_phone']) : null;
 
             if (empty($phoneNumberId)) {
                 return response()->json([
@@ -246,7 +247,7 @@ class AdminController extends Controller
                         'fields' => 'id,display_phone_number,verified_name,quality_rating,code_verification_status',
                     ]);
 
-                if (!$metaResponse->successful()) {
+                if (! $metaResponse->successful()) {
                     $errorData = $metaResponse->json('error') ?? [];
                     $errorMsg = $errorData['message'] ?? $metaResponse->body();
                     $errorCode = $errorData['code'] ?? $metaResponse->status();
@@ -277,7 +278,7 @@ class AdminController extends Controller
 
                 if ($testPhone) {
                     $cleanTestPhone = PhoneNormalizer::cleanForApi($testPhone);
-                    $testText = "🚀 *Kardovo Platform Alert*\n\nYour Meta WhatsApp Cloud API connection is active and verified!\n\n• Verified Account: {$displayName}\n• Phone Number: {$displayPhone}\n• Quality Rating: {$quality}\n• Timestamp: " . now()->format('d M Y, h:i A') . "\n\nKardovo pass broadcasting and 1-tap RSVP automation are ready.";
+                    $testText = "🚀 *Kardovo Platform Alert*\n\nYour Meta WhatsApp Cloud API connection is active and verified!\n\n• Verified Account: {$displayName}\n• Phone Number: {$displayPhone}\n• Quality Rating: {$quality}\n• Timestamp: ".now()->format('d M Y, h:i A')."\n\nKardovo pass broadcasting and 1-tap RSVP automation are ready.";
 
                     $msgResponse = Http::withoutVerifying()
                         ->withToken($accessToken)
@@ -323,16 +324,18 @@ class AdminController extends Controller
                 ]);
 
             } catch (\Throwable $e) {
-                Log::error('Meta WhatsApp API Test Exception: ' . $e->getMessage());
+                Log::error('Meta WhatsApp API Test Exception: '.$e->getMessage());
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Connection to Meta Graph API failed: ' . $e->getMessage(),
+                    'message' => 'Connection to Meta Graph API failed: '.$e->getMessage(),
                 ], 500);
             }
         } else {
             // SMS Gateway Test
             $config = $validated['config'];
             $senderId = $config['sender_id'] ?? 'KARDOVO';
+
             return response()->json([
                 'success' => true,
                 'message' => "✓ SMS Gateway verified! Active Sender ID: {$senderId}.",
@@ -343,7 +346,7 @@ class AdminController extends Controller
     public function storeCustomer(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -365,7 +368,7 @@ class AdminController extends Controller
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
         ]);
 
-        if (!empty($validated['phone'])) {
+        if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
         }
 
@@ -385,13 +388,13 @@ class AdminController extends Controller
     public function updateCustomer(Request $request, User $customer)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403, 'Admin access required.');
         }
 
         $validated = $request->validate([
             'name' => 'required|string|min:2|max:255',
-            'email' => 'required|email|unique:users,email,' . $customer->id,
+            'email' => 'required|email|unique:users,email,'.$customer->id,
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'company' => 'nullable|string|max:255',
             'password' => ['nullable', 'string', Password::defaults()],
@@ -407,7 +410,7 @@ class AdminController extends Controller
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
         ]);
 
-        if (!empty($validated['phone'])) {
+        if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
         }
 
@@ -422,18 +425,18 @@ class AdminController extends Controller
         }
 
         if (array_key_exists('max_whatsapp_limit', $validated)) {
-            $validated['max_whatsapp_limit'] = ($validated['max_whatsapp_limit'] !== '' && !is_null($validated['max_whatsapp_limit'])) ? (int) $validated['max_whatsapp_limit'] : null;
+            $validated['max_whatsapp_limit'] = ($validated['max_whatsapp_limit'] !== '' && ! is_null($validated['max_whatsapp_limit'])) ? (int) $validated['max_whatsapp_limit'] : null;
         }
 
         if (array_key_exists('max_sms_limit', $validated)) {
-            $validated['max_sms_limit'] = ($validated['max_sms_limit'] !== '' && !is_null($validated['max_sms_limit'])) ? (int) $validated['max_sms_limit'] : null;
+            $validated['max_sms_limit'] = ($validated['max_sms_limit'] !== '' && ! is_null($validated['max_sms_limit'])) ? (int) $validated['max_sms_limit'] : null;
         }
 
         if (array_key_exists('max_events_limit', $validated)) {
-            $validated['max_events_limit'] = ($validated['max_events_limit'] !== '' && !is_null($validated['max_events_limit'])) ? (int) $validated['max_events_limit'] : null;
+            $validated['max_events_limit'] = ($validated['max_events_limit'] !== '' && ! is_null($validated['max_events_limit'])) ? (int) $validated['max_events_limit'] : null;
         }
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
@@ -447,7 +450,7 @@ class AdminController extends Controller
     public function destroyCustomer(Request $request, User $customer)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403, 'Admin access required.');
         }
 
@@ -464,7 +467,7 @@ class AdminController extends Controller
     public function storeScanner(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -481,7 +484,7 @@ class AdminController extends Controller
             'gate_label.required' => 'Gate label is required.',
         ]);
 
-        if (!empty($validated['phone'])) {
+        if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
         }
 
@@ -496,13 +499,13 @@ class AdminController extends Controller
     public function updateScanner(Request $request, User $scanner)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
         $validated = $request->validate([
             'name' => 'required|string|min:2|max:255',
-            'email' => 'required|email|unique:users,email,' . $scanner->id,
+            'email' => 'required|email|unique:users,email,'.$scanner->id,
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'gate_label' => 'required|string|max:255',
             'customer_id' => 'nullable|exists:users,id',
@@ -513,11 +516,11 @@ class AdminController extends Controller
             'gate_label.required' => 'Gate label is required.',
         ]);
 
-        if (!empty($validated['phone'])) {
+        if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
         }
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
         } else {
             unset($validated['password']);
@@ -531,7 +534,7 @@ class AdminController extends Controller
     public function destroyScanner(Request $request, User $scanner)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403);
         }
 
@@ -544,7 +547,7 @@ class AdminController extends Controller
     public function storeSubAdmin(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403, 'Super Administrator access required.');
         }
 
@@ -562,7 +565,7 @@ class AdminController extends Controller
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
         ]);
 
-        if (!empty($validated['phone'])) {
+        if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
         }
 
@@ -574,10 +577,10 @@ class AdminController extends Controller
             'role' => 'sub_admin',
         ]);
 
-        if (!empty($validated['organizer_ids'])) {
+        if (! empty($validated['organizer_ids'])) {
             $subAdmin->assignedOrganizers()->sync($validated['organizer_ids']);
         }
-        if (!empty($validated['event_ids'])) {
+        if (! empty($validated['event_ids'])) {
             $subAdmin->assignedEvents()->sync($validated['event_ids']);
         }
 
@@ -587,13 +590,13 @@ class AdminController extends Controller
     public function updateSubAdmin(Request $request, User $subAdmin)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403, 'Super Administrator access required.');
         }
 
         $validated = $request->validate([
             'name' => 'required|string|min:2|max:255',
-            'email' => 'required|email|unique:users,email,' . $subAdmin->id,
+            'email' => 'required|email|unique:users,email,'.$subAdmin->id,
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
             'password' => ['nullable', 'string', Password::defaults()],
             'organizer_ids' => 'nullable|array',
@@ -605,7 +608,7 @@ class AdminController extends Controller
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
         ]);
 
-        if (!empty($validated['phone'])) {
+        if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
         }
 
@@ -615,7 +618,7 @@ class AdminController extends Controller
             'phone' => $validated['phone'] ?? null,
         ];
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $data['password'] = Hash::make($validated['password']);
         }
 
@@ -630,7 +633,7 @@ class AdminController extends Controller
     public function destroySubAdmin(Request $request, User $subAdmin)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403, 'Super Administrator access required.');
         }
 
@@ -646,7 +649,7 @@ class AdminController extends Controller
     public function destroyScanLog(Request $request, ScanLog $scanLog)
     {
         $user = $request->user();
-        if (!$user->isAdmin() && !$user->isSubAdmin()) {
+        if (! $user->isAdmin() && ! $user->isSubAdmin()) {
             abort(403, 'Administrative access required.');
         }
 
@@ -655,7 +658,7 @@ class AdminController extends Controller
             $assignedOrganizerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
             $eventOwnerId = $scanLog->event?->user_id;
             $hasAccess = in_array($scanLog->event_id, $assignedEventIds) || ($eventOwnerId && in_array($eventOwnerId, $assignedOrganizerIds));
-            if (!$hasAccess) {
+            if (! $hasAccess) {
                 abort(403, 'Unauthorized to delete this scan log.');
             }
         }
@@ -668,7 +671,7 @@ class AdminController extends Controller
     public function clearScanLogs(Request $request)
     {
         $user = $request->user();
-        if (!$user->isAdmin()) {
+        if (! $user->isAdmin()) {
             abort(403, 'Super Administrator access required to clear all scan logs.');
         }
 

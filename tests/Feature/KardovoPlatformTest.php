@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
-use App\Models\ScanLog;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class KardovoPlatformTest extends TestCase
@@ -155,7 +157,7 @@ class KardovoPlatformTest extends TestCase
     public function test_admin_and_customer_can_delete_template(): void
     {
         $admin = User::where('role', 'admin')->first();
-        $template = \App\Models\CardTemplate::first();
+        $template = CardTemplate::first();
 
         $response = $this->actingAs($admin)->delete(route('templates.destroy', $template->id));
 
@@ -231,7 +233,7 @@ class KardovoPlatformTest extends TestCase
         $event = Event::where('user_id', $customer->id)->first();
 
         // Create a custom template for this customer
-        $customTemplate = \App\Models\CardTemplate::create([
+        $customTemplate = CardTemplate::create([
             'user_id' => $customer->id,
             'name' => 'My VIP Custom Gold Pass',
             'template_type' => 'custom_art',
@@ -258,8 +260,8 @@ class KardovoPlatformTest extends TestCase
     public function test_customer_can_upload_and_create_custom_artwork_template(): void
     {
         $customer = User::where('role', 'customer')->first();
-        \Illuminate\Support\Facades\Storage::fake('public');
-        $file = \Illuminate\Http\UploadedFile::fake()->image('wedding_flyer.png', 800, 1200);
+        Storage::fake('public');
+        $file = UploadedFile::fake()->image('wedding_flyer.png', 800, 1200);
 
         $response = $this->actingAs($customer)->post(route('templates.store'), [
             'name' => 'Royal Purple Custom Artwork',
@@ -286,5 +288,3 @@ class KardovoPlatformTest extends TestCase
         ]);
     }
 }
-
-

@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 class ExchangeRateService
 {
     const CACHE_KEY = 'kardovo_fx_usd_tzs_data';
+
     const DEFAULT_RATE = 2650.0;
 
     /**
@@ -61,11 +62,12 @@ class ExchangeRateService
                     ];
 
                     Cache::forever(self::CACHE_KEY, $payload);
+
                     return $payload;
                 }
             }
         } catch (\Throwable $e) {
-            Log::info('Exchange rate live sync notice: ' . $e->getMessage());
+            Log::info('Exchange rate live sync notice: '.$e->getMessage());
         }
 
         return null;
@@ -102,4 +104,3 @@ class ExchangeRateService
         return self::getRateData();
     }
 }
-

@@ -2,31 +2,31 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Message;
-use App\Services\PhoneNormalizer;
+use App\Models\ScanLog;
 use App\Services\GuestImportService;
-use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\StreamedResponse;
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use App\Services\PhoneNormalizer;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GuestController extends Controller
 {
     public function store(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403);
         }
 
-        if (!$user->isAdmin() && !$user->canImportGuests()) {
+        if (! $user->isAdmin() && ! $user->canImportGuests()) {
             return back()->with('error', 'Guest management permissions are disabled for your organizer account. Please contact administration.');
         }
 
@@ -54,11 +54,11 @@ class GuestController extends Controller
     public function import(Request $request, Event $event, GuestImportService $importService)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403);
         }
 
-        if (!$user->isAdmin() && !$user->canImportGuests()) {
+        if (! $user->isAdmin() && ! $user->canImportGuests()) {
             return back()->with('error', 'Bulk guest importing permission is disabled for your organizer account. Please contact administration.');
         }
 
@@ -80,12 +80,12 @@ class GuestController extends Controller
             $defaultMaxEntries
         );
 
-        if (!empty($result['errors'])) {
+        if (! empty($result['errors'])) {
             return back()->with('error', implode(' ', $result['errors']));
         }
 
         if ($result['imported'] === 0) {
-            return back()->with('error', "No valid guests could be imported. Please ensure your Excel/CSV file or text includes a Guest Name in each row.");
+            return back()->with('error', 'No valid guests could be imported. Please ensure your Excel/CSV file or text includes a Guest Name in each row.');
         }
 
         $msg = "Successfully imported {$result['imported']} attendee(s) into {$event->title}!";
@@ -130,7 +130,7 @@ class GuestController extends Controller
         }
 
         // Generate .xlsx spreadsheet via PhpSpreadsheet
-        $spreadsheet = new Spreadsheet();
+        $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Guest Import Template');
 
@@ -171,7 +171,7 @@ class GuestController extends Controller
     public function update(Request $request, Event $event, Guest $guest)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403);
         }
 
@@ -202,7 +202,7 @@ class GuestController extends Controller
     public function destroy(Request $request, Event $event, Guest $guest)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403);
         }
 
@@ -215,11 +215,11 @@ class GuestController extends Controller
     public function clearAll(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403, 'Unauthorized to clear attendees for this event.');
         }
 
-        if (!$user->isAdmin() && !$user->canImportGuests()) {
+        if (! $user->isAdmin() && ! $user->canImportGuests()) {
             return back()->with('error', 'Guest management permissions are disabled for your account.');
         }
 
@@ -229,8 +229,8 @@ class GuestController extends Controller
         }
 
         // Delete associated scan logs and messages for this event's guests
-        \App\Models\ScanLog::where('event_id', $event->id)->delete();
-        \App\Models\Message::where('event_id', $event->id)->delete();
+        ScanLog::where('event_id', $event->id)->delete();
+        Message::where('event_id', $event->id)->delete();
         $event->guests()->delete();
 
         return back()->with('success', "All {$count} attendee(s) and their passes have been permanently cleared.");
@@ -239,16 +239,16 @@ class GuestController extends Controller
     public function exportCsv(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403);
         }
 
-        if (!$user->isAdmin() && !$user->canExportData()) {
+        if (! $user->isAdmin() && ! $user->canExportData()) {
             abort(403, 'Data export permissions are disabled for your organizer account. Please contact system administration.');
         }
 
         $guests = $event->guests()->orderBy('name')->get();
-        $fileName = 'kardovo_guests_' . Str::slug($event->title) . '_' . date('Y-m-d') . '.csv';
+        $fileName = 'kardovo_guests_'.Str::slug($event->title).'_'.date('Y-m-d').'.csv';
 
         $headers = [
             'Content-type' => 'text/csv',
@@ -289,11 +289,11 @@ class GuestController extends Controller
     public function exportPdf(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && !$user->isAdmin()) {
+        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
             abort(403);
         }
 
-        if (!$user->isAdmin() && !$user->canExportData()) {
+        if (! $user->isAdmin() && ! $user->canExportData()) {
             abort(403, 'Data export permissions are disabled for your organizer account. Please contact system administration.');
         }
 
@@ -305,7 +305,7 @@ class GuestController extends Controller
             'guests' => $guests,
         ])->setPaper('a4', 'portrait');
 
-        $fileName = 'kardovo_guests_' . Str::slug($event->title) . '_' . date('Y-m-d') . '.pdf';
+        $fileName = 'kardovo_guests_'.Str::slug($event->title).'_'.date('Y-m-d').'.pdf';
 
         return $pdf->download($fileName);
     }

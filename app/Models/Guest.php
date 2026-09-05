@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use App\Services\PhoneNormalizer;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class Guest extends Model
@@ -42,14 +42,14 @@ class Guest extends Model
     protected static function booted()
     {
         static::saving(function ($guest) {
-            if (!empty($guest->phone)) {
+            if (! empty($guest->phone)) {
                 $guest->phone = PhoneNormalizer::cleanForApi($guest->phone);
             }
         });
 
         static::creating(function ($guest) {
             if (empty($guest->card_number)) {
-                $guest->card_number = 'KDV-' . date('Y') . '-' . str_pad(mt_rand(1000, 999999), 6, '0', STR_PAD_LEFT);
+                $guest->card_number = 'KDV-'.date('Y').'-'.str_pad(mt_rand(1000, 999999), 6, '0', STR_PAD_LEFT);
             }
             if (empty($guest->unique_code)) {
                 $guest->unique_code = (string) mt_rand(10000000, 99999999);
@@ -87,7 +87,7 @@ class Guest extends Model
 
     public function getAllowanceLabelAttribute(): string
     {
-        if (!empty($this->category)) {
+        if (! empty($this->category)) {
             return $this->category;
         }
         if ($this->max_entries === 1) {
@@ -96,6 +96,7 @@ class Guest extends Model
         if ($this->max_entries === 2) {
             return 'Double Entry';
         }
+
         return "{$this->max_entries} Entries";
     }
 }

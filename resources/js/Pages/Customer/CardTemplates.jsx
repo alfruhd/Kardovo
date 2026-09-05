@@ -1033,7 +1033,6 @@ export default function CardTemplates({
                                         </span>
                                     </div>
 
-                                    {/* 1. Quick Presets Bar */}
                                     <div className="p-4 sm:p-4.5 bg-gradient-to-br from-slate-50 to-slate-100/70 dark:from-white/[0.04] dark:to-white/[0.01] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3 shadow-xs">
                                         <div className="flex items-center justify-between">
                                             <div className="text-xs font-bold text-slate-900 dark:text-white">

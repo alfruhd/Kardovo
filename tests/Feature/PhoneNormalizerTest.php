@@ -1,10 +1,10 @@
 <?php
 
-use App\Services\PhoneNormalizer;
-use App\Models\User;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Message;
+use App\Models\User;
+use App\Services\PhoneNormalizer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -16,7 +16,7 @@ beforeEach(function () {
 test('PhoneNormalizer strips plus signs, spaces, hyphens, and formats for API', function () {
     // 1. With plus sign and spaces
     expect(PhoneNormalizer::cleanForApi('+255 712 345 678'))->toBe('255712345678');
-    
+
     // 2. With local leading zero
     expect(PhoneNormalizer::cleanForApi('0712 345 678'))->toBe('255712345678');
     expect(PhoneNormalizer::cleanForApi('0754123456'))->toBe('255754123456');
@@ -78,4 +78,3 @@ test('MessagingController sendBroadcast saves sanitized phone without plus or sp
     expect($message->recipient_phone)->not->toContain('+');
     expect($message->recipient_phone)->not->toContain(' ');
 });
-

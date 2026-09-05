@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
 use App\Models\Guest;
 use App\Models\Message;
 use App\Models\SystemSetting;
 use App\Services\PhoneNormalizer;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class WhatsAppWebhookController extends Controller
 {
@@ -47,18 +47,22 @@ class WhatsAppWebhookController extends Controller
 
         // 1. Meta Cloud API WhatsApp Format (entry -> changes -> value -> messages / statuses)
         $entries = $payload['entry'] ?? [];
-        if (is_array($entries) && !empty($entries)) {
+        if (is_array($entries) && ! empty($entries)) {
             foreach ($entries as $entry) {
                 $changes = $entry['changes'] ?? [];
-                if (!is_array($changes)) continue;
+                if (! is_array($changes)) {
+                    continue;
+                }
 
                 foreach ($changes as $changeObj) {
                     $change = $changeObj['value'] ?? [];
-                    if (!is_array($change)) continue;
+                    if (! is_array($change)) {
+                        continue;
+                    }
 
                     // 1a. Delivery Receipts / Status updates (sent, delivered, read, failed)
                     $statuses = $change['statuses'] ?? [];
-                    if (!empty($statuses) && is_array($statuses)) {
+                    if (! empty($statuses) && is_array($statuses)) {
                         foreach ($statuses as $stat) {
                             $recipientPhone = $stat['recipient_id'] ?? '';
                             $statusType = strtolower($stat['status'] ?? ''); // 'sent', 'delivered', 'read', 'failed'
@@ -70,19 +74,19 @@ class WhatsAppWebhookController extends Controller
 
                                 $latestMsg = Message::where(function ($q) use ($cleanPhone, $recipientPhone, $last9) {
                                     $q->where('recipient_phone', 'like', "%{$cleanPhone}%")
-                                      ->orWhere('recipient_phone', 'like', "%{$recipientPhone}%")
-                                      ->orWhere('recipient_phone', 'like', "%{$last9}%");
+                                        ->orWhere('recipient_phone', 'like', "%{$recipientPhone}%")
+                                        ->orWhere('recipient_phone', 'like', "%{$last9}%");
                                 })
-                                ->where('channel', 'whatsapp')
-                                ->latest()
-                                ->first();
+                                    ->where('channel', 'whatsapp')
+                                    ->latest()
+                                    ->first();
 
                                 if ($latestMsg) {
                                     $updateData = ['status' => $statusType];
-                                    if ($statusType === 'delivered' && !$latestMsg->delivered_at) {
+                                    if ($statusType === 'delivered' && ! $latestMsg->delivered_at) {
                                         $updateData['delivered_at'] = now();
                                     }
-                                    if ($statusType === 'read' && !$latestMsg->read_at) {
+                                    if ($statusType === 'read' && ! $latestMsg->read_at) {
                                         $updateData['read_at'] = now();
                                     }
                                     $latestMsg->update($updateData);
@@ -97,8 +101,8 @@ class WhatsAppWebhookController extends Controller
                                 // Directly update matching Guest records by phone for instant UI sync
                                 Guest::where(function ($q) use ($cleanPhone, $recipientPhone, $last9) {
                                     $q->where('phone', 'like', "%{$cleanPhone}%")
-                                      ->orWhere('phone', 'like', "%{$recipientPhone}%")
-                                      ->orWhere('phone', 'like', "%{$last9}%");
+                                        ->orWhere('phone', 'like', "%{$recipientPhone}%")
+                                        ->orWhere('phone', 'like', "%{$last9}%");
                                 })->update([
                                     'delivery_status' => $statusType,
                                 ]);
@@ -108,7 +112,7 @@ class WhatsAppWebhookController extends Controller
 
                     // 1b. Inbound Messages & RSVPs
                     $messages = $change['messages'] ?? [];
-                    if (!empty($messages) && is_array($messages)) {
+                    if (! empty($messages) && is_array($messages)) {
                         foreach ($messages as $msg) {
                             $this->processInboundMessageItem($msg);
                         }
@@ -118,7 +122,7 @@ class WhatsAppWebhookController extends Controller
         }
 
         // 2. Direct Messages array at root (e.g. some webhooks or test payloads)
-        if (!empty($payload['messages']) && is_array($payload['messages'])) {
+        if (! empty($payload['messages']) && is_array($payload['messages'])) {
             foreach ($payload['messages'] as $msg) {
                 $this->processInboundMessageItem($msg);
             }
@@ -138,7 +142,7 @@ class WhatsAppWebhookController extends Controller
         $smsBody = $payload['text'] ?? $payload['body'] ?? $payload['Body'] ?? $payload['message'] ?? $payload['content'] ?? $payload['msg'] ?? $payload['response'] ?? $payload['rsvp'] ?? $request->query('text') ?? $request->query('message') ?? '';
         $smsPayload = $payload['button_payload'] ?? $payload['payload'] ?? $payload['ButtonPayload'] ?? $payload['id'] ?? '';
 
-        if (!empty($smsFrom) && (!empty($smsBody) || !empty($smsPayload))) {
+        if (! empty($smsFrom) && (! empty($smsBody) || ! empty($smsPayload))) {
             $this->evaluateAndProcessRsvp($smsFrom, $smsBody, $smsPayload);
         }
 
@@ -177,7 +181,7 @@ class WhatsAppWebhookController extends Controller
             $bodyText = $msg['text']['body'] ?? '';
         }
 
-        $combinedText = trim(($buttonTitle ?: '') . ' ' . ($bodyText ?: ''));
+        $combinedText = trim(($buttonTitle ?: '').' '.($bodyText ?: ''));
         $this->evaluateAndProcessRsvp($fromPhone, $combinedText, $buttonPayload);
     }
 
@@ -186,7 +190,9 @@ class WhatsAppWebhookController extends Controller
      */
     protected function evaluateAndProcessRsvp(string $fromPhone, string $rawText = '', ?string $buttonPayload = null): void
     {
-        if (empty($fromPhone)) return;
+        if (empty($fromPhone)) {
+            return;
+        }
 
         $isAttending = false;
         $isDeclined = false;
@@ -195,19 +201,19 @@ class WhatsAppWebhookController extends Controller
         $cleanText = strtolower(trim(preg_replace('/[^\p{L}\p{N}\s_]/u', ' ', $rawText)));
 
         // Check Button Payload
-        if (!empty($normalizedPayload)) {
+        if (! empty($normalizedPayload)) {
             if (
-                str_starts_with($normalizedPayload, 'rsvp_yes') || 
-                str_contains($normalizedPayload, 'rsvp_yes') || 
-                str_contains($normalizedPayload, 'attend') || 
+                str_starts_with($normalizedPayload, 'rsvp_yes') ||
+                str_contains($normalizedPayload, 'rsvp_yes') ||
+                str_contains($normalizedPayload, 'attend') ||
                 str_contains($normalizedPayload, 'yes')
             ) {
                 $isAttending = true;
             } elseif (
-                str_starts_with($normalizedPayload, 'rsvp_no') || 
-                str_contains($normalizedPayload, 'rsvp_no') || 
-                str_contains($normalizedPayload, 'decline') || 
-                str_contains($normalizedPayload, 'cannot') || 
+                str_starts_with($normalizedPayload, 'rsvp_no') ||
+                str_contains($normalizedPayload, 'rsvp_no') ||
+                str_contains($normalizedPayload, 'decline') ||
+                str_contains($normalizedPayload, 'cannot') ||
                 str_contains($normalizedPayload, 'no')
             ) {
                 $isDeclined = true;
@@ -215,19 +221,19 @@ class WhatsAppWebhookController extends Controller
         }
 
         // Check Text Content (English & Swahili keywords)
-        if (!$isAttending && !$isDeclined && !empty($cleanText)) {
+        if (! $isAttending && ! $isDeclined && ! empty($cleanText)) {
             $attendingKeywords = [
                 'attend', 'attending', 'attends', 'confirmed', 'confirm', 'yes', 'ndio',
                 'nitahudhuria', 'nitaudhuria', 'nitafika', 'nitakuja', 'nitakuwepo',
                 'niko ndani', 'nipo', 'sawa', 'accept', 'will attend', 'i will attend',
-                '1', 'sure', 'tutaonana', 'naja'
+                '1', 'sure', 'tutaonana', 'naja',
             ];
 
             $declinedKeywords = [
                 'decline', 'declined', 'declines', 'cannot', 'cant', 'cannot attend',
                 'can t attend', 'no', 'hapana', 'sitahudhuria', 'sitaudhuria',
                 'sitafika', 'sitakuja', 'sitakuwepo', 'sitaweza', 'sorry', 'samahani',
-                '2', 'reject', 'kataa'
+                '2', 'reject', 'kataa',
             ];
 
             foreach ($attendingKeywords as $keyword) {
@@ -237,7 +243,7 @@ class WhatsAppWebhookController extends Controller
                 }
             }
 
-            if (!$isAttending) {
+            if (! $isAttending) {
                 foreach ($declinedKeywords as $keyword) {
                     if ($cleanText === $keyword || str_contains(" {$cleanText} ", " {$keyword} ")) {
                         $isDeclined = true;
@@ -262,7 +268,7 @@ class WhatsAppWebhookController extends Controller
         $cleanPhone = PhoneNormalizer::cleanForApi($rawPhone);
         $guest = null;
 
-        if (!empty($buttonPayload) && str_starts_with($buttonPayload, 'rsvp_')) {
+        if (! empty($buttonPayload) && str_starts_with($buttonPayload, 'rsvp_')) {
             $parts = explode('_', $buttonPayload, 3);
             if (count($parts) >= 3) {
                 $token = $parts[2];
@@ -274,17 +280,17 @@ class WhatsAppWebhookController extends Controller
             }
         }
 
-        if (!$guest) {
+        if (! $guest) {
             $last9 = strlen($cleanPhone) >= 9 ? substr($cleanPhone, -9) : $cleanPhone;
             $guest = Guest::where(function ($q) use ($cleanPhone, $rawPhone, $last9) {
                 $q->where('phone', 'like', "%{$cleanPhone}%")
-                  ->orWhere('phone', 'like', "%{$rawPhone}%")
-                  ->orWhere('phone', 'like', "%{$last9}%");
+                    ->orWhere('phone', 'like', "%{$rawPhone}%")
+                    ->orWhere('phone', 'like', "%{$last9}%");
             })->latest()->first();
         }
 
         // Fallback: match normalized phone or last 9 digits against candidate guests
-        if (!$guest && !empty($cleanPhone)) {
+        if (! $guest && ! empty($cleanPhone)) {
             $last9 = strlen($cleanPhone) >= 9 ? substr($cleanPhone, -9) : $cleanPhone;
             $candidates = Guest::latest()->take(500)->get();
             foreach ($candidates as $c) {
@@ -297,8 +303,9 @@ class WhatsAppWebhookController extends Controller
             }
         }
 
-        if (!$guest) {
+        if (! $guest) {
             Log::warning("WhatsApp RSVP received from unknown number: {$cleanPhone} (Raw: {$rawPhone}, Payload: {$buttonPayload})");
+
             return;
         }
 
@@ -315,19 +322,20 @@ class WhatsAppWebhookController extends Controller
         $autoReplyEnabled = $autoReplyConfig['enabled'] ?? true;
 
         // If auto-reply is disabled by the organizer, do not send confirmation message
-        if (!$autoReplyEnabled) {
+        if (! $autoReplyEnabled) {
             Log::info("WhatsApp RSVP recorded for {$guest->name} (Auto-reply disabled by campaign setting)");
+
             return;
         }
 
         if ($isAttending) {
-            $customTemplate = !empty($autoReplyConfig['attending_text']) 
-                ? $autoReplyConfig['attending_text'] 
-                : "Thank you {{guest_name}}! Your RSVP has been confirmed for {{event_title}}. We look forward to seeing you on {{event_date}}!";
+            $customTemplate = ! empty($autoReplyConfig['attending_text'])
+                ? $autoReplyConfig['attending_text']
+                : 'Thank you {{guest_name}}! Your RSVP has been confirmed for {{event_title}}. We look forward to seeing you on {{event_date}}!';
         } else {
-            $customTemplate = !empty($autoReplyConfig['declined_text']) 
-                ? $autoReplyConfig['declined_text'] 
-                : "Thank you {{guest_name}} for letting us know. Your RSVP has been recorded: Will Not Attend.";
+            $customTemplate = ! empty($autoReplyConfig['declined_text'])
+                ? $autoReplyConfig['declined_text']
+                : 'Thank you {{guest_name}} for letting us know. Your RSVP has been recorded: Will Not Attend.';
         }
 
         $confirmationText = str_ireplace(
@@ -359,7 +367,7 @@ class WhatsAppWebhookController extends Controller
         $deliveredAt = null;
         $errorSuffix = '';
 
-        if (!empty($accessToken) && !str_starts_with($accessToken, 'EAAG...kdv_prod_token_live') && !empty($phoneNumberId)) {
+        if (! empty($accessToken) && ! str_starts_with($accessToken, 'EAAG...kdv_prod_token_live') && ! empty($phoneNumberId)) {
             try {
                 $response = Http::withoutVerifying()
                     ->withToken($accessToken)
@@ -381,14 +389,14 @@ class WhatsAppWebhookController extends Controller
                     Log::info("WhatsApp auto-confirmation reply delivered successfully to {$cleanPhone}");
                 } else {
                     $msgStatus = 'failed';
-                    $err = $response->json('error.message') ?? (!empty($response->body()) ? $response->body() : ('HTTP ' . $response->status()));
+                    $err = $response->json('error.message') ?? (! empty($response->body()) ? $response->body() : ('HTTP '.$response->status()));
                     $errorSuffix = " [Error: {$err}]";
-                    Log::warning("WhatsApp auto-confirmation reply failed for {$cleanPhone}: " . $response->body());
+                    Log::warning("WhatsApp auto-confirmation reply failed for {$cleanPhone}: ".$response->body());
                 }
             } catch (\Throwable $e) {
                 $msgStatus = 'failed';
-                $errorSuffix = " [Error: " . $e->getMessage() . "]";
-                Log::error("Failed to send WhatsApp auto-confirmation reply: " . $e->getMessage());
+                $errorSuffix = ' [Error: '.$e->getMessage().']';
+                Log::error('Failed to send WhatsApp auto-confirmation reply: '.$e->getMessage());
             }
         }
 
@@ -398,7 +406,7 @@ class WhatsAppWebhookController extends Controller
             'guest_id' => $guest->id,
             'channel' => 'whatsapp',
             'recipient_phone' => $cleanPhone,
-            'message_body' => $confirmationText . $errorSuffix,
+            'message_body' => $confirmationText.$errorSuffix,
             'status' => $msgStatus,
             'sent_at' => now(),
             'delivered_at' => $deliveredAt,

@@ -5,8 +5,8 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\CardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\GuestController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\GuestController;
 use App\Http\Controllers\MessagingController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGuestController;
@@ -28,6 +28,7 @@ Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('dashboard');
     }
+
     return redirect()->route('login');
 });
 

@@ -4,11 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Notifications\TwoFactorCodeNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -22,24 +23,25 @@ class TwoFactorController extends Controller
     {
         $userId = $request->session()->get('auth.2fa_user_id');
 
-        if (!$userId) {
+        if (! $userId) {
             return redirect()->route('login');
         }
 
         $user = User::find($userId);
-        if (!$user) {
+        if (! $user) {
             $request->session()->forget(['auth.2fa_user_id', 'auth.2fa_remember', 'auth.2fa_dev_code']);
+
             return redirect()->route('login');
         }
 
         // Mask email: e.g. al***@domain.com
         $emailParts = explode('@', $user->email);
-        $maskedEmail = substr($emailParts[0], 0, 2) . '••••@' . ($emailParts[1] ?? 'kardovo.com');
+        $maskedEmail = substr($emailParts[0], 0, 2).'••••@'.($emailParts[1] ?? 'kardovo.com');
 
         // Mask phone: e.g. +255 7•••• 1234
         $maskedPhone = null;
         if ($user->phone) {
-            $maskedPhone = substr($user->phone, 0, 4) . '••••' . substr($user->phone, -3);
+            $maskedPhone = substr($user->phone, 0, 4).'••••'.substr($user->phone, -3);
         }
 
         return Inertia::render('Auth/VerifyOtp', [
@@ -63,17 +65,17 @@ class TwoFactorController extends Controller
         ]);
 
         $userId = $request->session()->get('auth.2fa_user_id');
-        if (!$userId) {
+        if (! $userId) {
             return redirect()->route('login')->with('error', 'Session expired. Please log in again.');
         }
 
         $user = User::find($userId);
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
         // Apply rate limiter on attempts
-        $throttleKey = '2fa_verify_' . $user->id . '|' . $request->ip();
+        $throttleKey = '2fa_verify_'.$user->id.'|'.$request->ip();
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             $seconds = RateLimiter::availableIn($throttleKey);
             throw ValidationException::withMessages([
@@ -81,7 +83,7 @@ class TwoFactorController extends Controller
             ]);
         }
 
-        if (!$user->verifyTwoFactorCode($request->code)) {
+        if (! $user->verifyTwoFactorCode($request->code)) {
             RateLimiter::hit($throttleKey, 300);
             throw ValidationException::withMessages([
                 'code' => 'The provided 6-digit security code is invalid or has expired.',
@@ -114,18 +116,19 @@ class TwoFactorController extends Controller
     public function resend(Request $request): RedirectResponse
     {
         $userId = $request->session()->get('auth.2fa_user_id');
-        if (!$userId) {
+        if (! $userId) {
             return redirect()->route('login');
         }
 
         $user = User::find($userId);
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('login');
         }
 
-        $throttleKey = '2fa_resend_' . $user->id . '|' . $request->ip();
+        $throttleKey = '2fa_resend_'.$user->id.'|'.$request->ip();
         if (RateLimiter::tooManyAttempts($throttleKey, 2)) {
             $seconds = RateLimiter::availableIn($throttleKey);
+
             return back()->with('error', "Please wait {$seconds} seconds before requesting a new code.");
         }
 
@@ -134,9 +137,9 @@ class TwoFactorController extends Controller
         $code = $user->generateTwoFactorCode();
 
         try {
-            $user->notify(new \App\Notifications\TwoFactorCodeNotification($code));
+            $user->notify(new TwoFactorCodeNotification($code));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning("Failed to resend 2FA email to {$user->email}: " . $e->getMessage());
+            Log::warning("Failed to resend 2FA email to {$user->email}: ".$e->getMessage());
         }
 
         $request->session()->put('auth.2fa_dev_code', $code);

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
+use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\Message;
-use App\Models\CardTemplate;
+use App\Models\SystemSetting;
+use App\Services\PhoneNormalizer;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PublicGuestController extends Controller
@@ -16,7 +19,7 @@ class PublicGuestController extends Controller
     {
         $guest = Guest::with(['event.cardTemplate'])->first();
         $event = $guest?->event ?? Event::with('cardTemplate')->first();
-        
+
         $demoGuest = [
             'id' => 99999,
             'name' => 'Alfred Mashauri',
@@ -62,7 +65,7 @@ class PublicGuestController extends Controller
             ->with(['event.cardTemplate'])
             ->first();
 
-        if (!$guest) {
+        if (! $guest) {
             return $this->showDemoPass($request);
         }
 
@@ -108,13 +111,13 @@ class PublicGuestController extends Controller
         $autoReplyConfig = $event->rsvp_auto_reply_config ?? [];
 
         if ($validated['status'] === 'attending') {
-            $customTemplate = !empty($autoReplyConfig['attending_text'])
+            $customTemplate = ! empty($autoReplyConfig['attending_text'])
                 ? $autoReplyConfig['attending_text']
-                : "Thank you {{guest_name}}! Your RSVP has been confirmed for {{event_title}}. We look forward to seeing you on {{event_date}}!";
+                : 'Thank you {{guest_name}}! Your RSVP has been confirmed for {{event_title}}. We look forward to seeing you on {{event_date}}!';
         } else {
-            $customTemplate = !empty($autoReplyConfig['declined_text'])
+            $customTemplate = ! empty($autoReplyConfig['declined_text'])
                 ? $autoReplyConfig['declined_text']
-                : "Thank you {{guest_name}} for letting us know. Your RSVP has been recorded: Will Not Attend.";
+                : 'Thank you {{guest_name}} for letting us know. Your RSVP has been recorded: Will Not Attend.';
         }
 
         $confirmationText = str_ireplace(
@@ -133,10 +136,10 @@ class PublicGuestController extends Controller
             $customTemplate
         );
 
-        $cleanPhone = \App\Services\PhoneNormalizer::cleanForApi($guest->phone);
+        $cleanPhone = PhoneNormalizer::cleanForApi($guest->phone);
 
         // If active Meta WhatsApp Cloud API credentials are configured, dispatch live confirmation to WhatsApp
-        $gateway = \App\Models\SystemSetting::get('whatsapp_gateway', []);
+        $gateway = SystemSetting::get('whatsapp_gateway', []);
         $accessToken = $gateway['access_token'] ?? '';
         $phoneNumberId = $gateway['phone_number_id'] ?? '';
         $apiVersion = $gateway['api_version'] ?? 'v20.0';
@@ -148,9 +151,9 @@ class PublicGuestController extends Controller
         $deliveredAt = null;
         $errorSuffix = '';
 
-        if (!empty($cleanPhone) && !empty($accessToken) && !str_starts_with($accessToken, 'EAAG...kdv_prod_token_live') && !empty($phoneNumberId)) {
+        if (! empty($cleanPhone) && ! empty($accessToken) && ! str_starts_with($accessToken, 'EAAG...kdv_prod_token_live') && ! empty($phoneNumberId)) {
             try {
-                $response = \Illuminate\Support\Facades\Http::withoutVerifying()
+                $response = Http::withoutVerifying()
                     ->withToken($accessToken)
                     ->timeout(8)
                     ->post("https://graph.facebook.com/{$apiVersion}/{$phoneNumberId}/messages", [
@@ -169,14 +172,14 @@ class PublicGuestController extends Controller
                     $deliveredAt = now();
                 } else {
                     $msgStatus = 'failed';
-                    $err = $response->json('error.message') ?? (!empty($response->body()) ? $response->body() : ('HTTP ' . $response->status()));
+                    $err = $response->json('error.message') ?? (! empty($response->body()) ? $response->body() : ('HTTP '.$response->status()));
                     $errorSuffix = " [Error: {$err}]";
-                    \Illuminate\Support\Facades\Log::warning("WhatsApp RSVP auto-reply failed for {$cleanPhone}: " . $response->body());
+                    Log::warning("WhatsApp RSVP auto-reply failed for {$cleanPhone}: ".$response->body());
                 }
             } catch (\Throwable $e) {
                 $msgStatus = 'failed';
-                $errorSuffix = " [Error: " . $e->getMessage() . "]";
-                \Illuminate\Support\Facades\Log::warning("WhatsApp RSVP web submission auto-reply notice for {$cleanPhone}: " . $e->getMessage());
+                $errorSuffix = ' [Error: '.$e->getMessage().']';
+                Log::warning("WhatsApp RSVP web submission auto-reply notice for {$cleanPhone}: ".$e->getMessage());
             }
         }
 
@@ -186,7 +189,7 @@ class PublicGuestController extends Controller
             'guest_id' => $guest->id,
             'channel' => 'whatsapp',
             'recipient_phone' => $cleanPhone ?: $guest->phone,
-            'message_body' => $confirmationText . $errorSuffix,
+            'message_body' => $confirmationText.$errorSuffix,
             'status' => $msgStatus,
             'sent_at' => now(),
             'delivered_at' => $deliveredAt,

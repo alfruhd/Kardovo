@@ -14,12 +14,16 @@ class QRCodeGenerator
     ];
 
     private static array $gfExp = [];
+
     private static array $gfLog = [];
+
     private static bool $gfInit = false;
 
     private static function initGF(): void
     {
-        if (self::$gfInit) return;
+        if (self::$gfInit) {
+            return;
+        }
         $x = 1;
         for ($i = 0; $i < 255; $i++) {
             self::$gfExp[$i] = $x;
@@ -37,7 +41,10 @@ class QRCodeGenerator
 
     private static function gfMul(int $x, int $y): int
     {
-        if ($x === 0 || $y === 0) return 0;
+        if ($x === 0 || $y === 0) {
+            return 0;
+        }
+
         return self::$gfExp[self::$gfLog[$x] + self::$gfLog[$y]];
     }
 
@@ -54,6 +61,7 @@ class QRCodeGenerator
             }
             $g = $res;
         }
+
         return $g;
     }
 
@@ -62,7 +70,7 @@ class QRCodeGenerator
         self::initGF();
         $g = self::rsGeneratorPoly($ecCount);
         $res = array_merge($data, array_fill(0, $ecCount, 0));
-        
+
         for ($i = 0; $i < count($data); $i++) {
             $coef = $res[$i];
             if ($coef !== 0) {
@@ -71,6 +79,7 @@ class QRCodeGenerator
                 }
             }
         }
+
         return array_slice($res, count($data));
     }
 
@@ -84,7 +93,7 @@ class QRCodeGenerator
         $spec = self::$capacityTable[1];
         foreach (self::$capacityTable as $v => $s) {
             $dataCapacity = $s['total_words'] - $s['ec_words'];
-            $neededBytes = $len + 2; 
+            $neededBytes = $len + 2;
             if ($neededBytes <= $dataCapacity) {
                 $version = $v;
                 $spec = $s;
@@ -93,7 +102,7 @@ class QRCodeGenerator
         }
 
         $totalDataWords = $spec['total_words'] - $spec['ec_words'];
-        
+
         $bits = '0100';
         $bits .= str_pad(decbin($len), 8, '0', STR_PAD_LEFT);
         foreach ($rawBytes as $b) {
@@ -166,7 +175,7 @@ class QRCodeGenerator
                 for ($dx = -1; $dx <= 7; $dx++) {
                     $px = $fx + $dx;
                     $py = $fy + $dy;
-                    if ($px >= 0 && $px < $matrixSize && $py >= 0 && $py < $matrixSize && !$reserved[$py][$px]) {
+                    if ($px >= 0 && $px < $matrixSize && $py >= 0 && $py < $matrixSize && ! $reserved[$py][$px]) {
                         $matrix[$py][$px] = 0;
                         $reserved[$py][$px] = true;
                     }
@@ -175,10 +184,12 @@ class QRCodeGenerator
         }
 
         $alignPos = $spec['align'];
-        if (!empty($alignPos)) {
+        if (! empty($alignPos)) {
             foreach ($alignPos as $ay) {
                 foreach ($alignPos as $ax) {
-                    if ($reserved[$ay][$ax]) continue;
+                    if ($reserved[$ay][$ax]) {
+                        continue;
+                    }
                     for ($dy = -2; $dy <= 2; $dy++) {
                         for ($dx = -2; $dx <= 2; $dx++) {
                             $isBlack = (abs($dx) === 2 || abs($dy) === 2 || ($dx === 0 && $dy === 0));
@@ -191,11 +202,11 @@ class QRCodeGenerator
         }
 
         for ($i = 8; $i < $matrixSize - 8; $i++) {
-            if (!$reserved[6][$i]) {
+            if (! $reserved[6][$i]) {
                 $matrix[6][$i] = ($i % 2 === 0) ? 1 : 0;
                 $reserved[6][$i] = true;
             }
-            if (!$reserved[$i][6]) {
+            if (! $reserved[$i][6]) {
                 $matrix[$i][6] = ($i % 2 === 0) ? 1 : 0;
                 $reserved[$i][6] = true;
             }
@@ -219,12 +230,14 @@ class QRCodeGenerator
         $up = true;
 
         while ($right > 0) {
-            if ($right === 6) $right--;
+            if ($right === 6) {
+                $right--;
+            }
             $rows = $up ? range($matrixSize - 1, 0, -1) : range(0, $matrixSize - 1, 1);
             foreach ($rows as $y) {
                 for ($col = 0; $col < 2; $col++) {
                     $x = $right - $col;
-                    if (!$reserved[$y][$x]) {
+                    if (! $reserved[$y][$x]) {
                         $bit = ($bitIdx < $bitLen) ? ($codewordBits[$bitIdx] === '1' ? 1 : 0) : 0;
                         $bitIdx++;
                         if (($x + $y) % 2 === 0) {
@@ -235,13 +248,13 @@ class QRCodeGenerator
                 }
             }
             $right -= 2;
-            $up = !$up;
+            $up = ! $up;
         }
 
         $formatBits = '101010000010010';
         $coords1 = [
             [8, 0], [8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 7], [8, 8],
-            [7, 8], [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8]
+            [7, 8], [5, 8], [4, 8], [3, 8], [2, 8], [1, 8], [0, 8],
         ];
         for ($i = 0; $i < 15; $i++) {
             $val = $formatBits[$i] === '1' ? 1 : 0;
@@ -261,8 +274,8 @@ class QRCodeGenerator
     }
 
     public static function renderToGdImage(
-        string $text, 
-        int $targetSize = 240, 
+        string $text,
+        int $targetSize = 240,
         int $margin = 2,
         int $darkR = 15,
         int $darkG = 23,
@@ -270,8 +283,7 @@ class QRCodeGenerator
         int $lightR = 255,
         int $lightG = 255,
         int $lightB = 255
-    ): \GdImage
-    {
+    ): \GdImage {
         $matrix = self::createMatrix($text);
         $modules = count($matrix);
         $totalModules = $modules + ($margin * 2);

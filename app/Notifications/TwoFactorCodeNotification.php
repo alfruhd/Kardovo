@@ -36,7 +36,7 @@ class TwoFactorCodeNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         return (new MailMessage)
-            ->subject('Kardovo Security: ' . $this->code)
+            ->subject('Kardovo Security: '.$this->code)
             ->view('emails.two_factor_code', [
                 'userName' => $notifiable->name ?? 'there',
                 'code' => $this->code,

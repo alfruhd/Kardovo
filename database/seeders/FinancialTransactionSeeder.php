@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Event;
 use App\Models\FinancialTransaction;
 use App\Models\User;
-use App\Models\Event;
+use Illuminate\Database\Seeder;
 
 class FinancialTransactionSeeder extends Seeder
 {

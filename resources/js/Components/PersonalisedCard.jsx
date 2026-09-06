@@ -77,6 +77,21 @@ export default function PersonalisedCard({
     const imagePath = template?.image_path || null;
     const elementsConfig = template?.elements_config || {};
 
+    // Reactively detect image natural aspect ratio whenever imagePath changes
+    useEffect(() => {
+        if (!imagePath) {
+            setDetectedImgRatio(null);
+            return;
+        }
+        const img = new Image();
+        img.onload = () => {
+            if (img.naturalWidth && img.naturalHeight) {
+                setDetectedImgRatio(img.naturalWidth / img.naturalHeight);
+            }
+        };
+        img.src = imagePath;
+    }, [imagePath]);
+
     // Dynamic Aspect Ratio & Dimensions (WYSIWYG 1:1 Auto Detection)
     const configRatio = elementsConfig.aspect_ratio;
     let computedRatioNum = null;
@@ -91,15 +106,17 @@ export default function PersonalisedCard({
         }
     }
 
-    const isEngagement = elementsConfig?.theme === 'engagement_burgundy' || 
-        (imagePath && imagePath.includes('adel_laila')) ||
-        (template?.name && template.name.toLowerCase().includes('adel'));
-
-    const isZamroth = elementsConfig?.theme === 'wedding_gold' ||
-        (imagePath && imagePath.includes('zamroth_husna')) ||
-        (template?.name && template.name.toLowerCase().includes('zamroth'));
-
-    const isPredefinedCustomArt = isEngagement || isZamroth || template?.is_predefined === true || template?.user_id === null;
+    const isPredefinedAdel = Boolean(
+        (template?.is_predefined === true || template?.user_id === null) &&
+        (imagePath?.includes('adel_laila') || template?.name?.toLowerCase().includes('adel'))
+    );
+    const isPredefinedZamroth = Boolean(
+        (template?.is_predefined === true || template?.user_id === null) &&
+        (imagePath?.includes('zamroth') || template?.name?.toLowerCase().includes('zamroth'))
+    );
+    const isPredefinedCustomArt = isPredefinedAdel || isPredefinedZamroth;
+    const isEngagement = isPredefinedAdel;
+    const isZamroth = isPredefinedZamroth;
 
     // Determine final aspect ratio (Priority: explicit config -> live measured image -> predefined template defaults -> 2:3)
     const finalRatioNum = computedRatioNum || detectedImgRatio || (

@@ -3162,15 +3162,17 @@ export default function CardTemplates({
                         <div className="w-full flex justify-center py-2 relative">
                             <PersonalisedCard
                                 guest={{
-                                    name: testGuestName,
-                                    allowance_label: testAllowance,
+                                    name: testGuestName || 'Alfred Mashauri',
+                                    allowance_label: testAllowance || 'DOUBLE ENTRY',
                                     card_number: 'KDV-2026-004821',
                                     unique_code: '29841872',
                                     qr_token: 'kdv_live_sample_pass_token_2026',
-                                    category: 'Double Entry'
+                                    category: testAllowance || 'Double Entry',
+                                    max_entries: (testAllowance && testAllowance.toUpperCase().includes('SINGLE')) ? 1 : 2
                                 }}
                                 event={sampleEvent}
                                 template={{
+                                    ...currentTpl,
                                     ...form.data,
                                     image_path: currentTpl?.image_path
                                 }}

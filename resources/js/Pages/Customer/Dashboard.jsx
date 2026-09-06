@@ -119,19 +119,6 @@ export default function CustomerDashboard({
 
                     <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                         <div className="space-y-2 max-w-2xl">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-50 dark:bg-cyan-500/15 border border-cyan-200 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 font-mono text-[10.5px] font-extrabold uppercase tracking-wider">
-                                    <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                                    <span>ORGANIZER PORTAL</span>
-                                </span>
-                                {user.company && (
-                                    <span className="inline-flex items-center gap-1.5 text-[10.5px] font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2.5 py-1 rounded-full border border-slate-200 dark:border-white/10">
-                                        <Building2 className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
-                                        <span>{user.company}</span>
-                                    </span>
-                                )}
-                            </div>
-
                             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white font-display">
                                 Welcome back, {user.name || 'Organizer'}
                             </h1>

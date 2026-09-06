@@ -461,7 +461,7 @@ export default function UpdateProfileInformation({
                             {/* WhatsApp Quota Box */}
                             <div className="p-3.5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-2">
                                 <div className="flex items-center justify-between gap-2">
-                                    <InputLabel htmlFor="max_whatsapp_limit" value="WhatsApp Quota" className="text-xs font-bold text-slate-800 dark:text-slate-200" />
+                                    <InputLabel htmlFor="max_whatsapp_limit" value="WhatsApp Limit" className="text-xs font-bold text-slate-800 dark:text-slate-200" />
                                     <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-md font-medium border border-slate-200/70 dark:border-white/[0.08]">
                                         WhatsApp
                                     </span>
@@ -478,7 +478,7 @@ export default function UpdateProfileInformation({
                                     />
                                 </div>
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                                    Max total WhatsApp passes/messages
+                                    Leave blank for unlimited
                                 </p>
                                 <InputError className="mt-1" message={errors.max_whatsapp_limit} />
                             </div>
@@ -486,7 +486,7 @@ export default function UpdateProfileInformation({
                             {/* SMS Quota Box */}
                             <div className="p-3.5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-2">
                                 <div className="flex items-center justify-between gap-2">
-                                    <InputLabel htmlFor="max_sms_limit" value="Regular SMS Quota" className="text-xs font-bold text-slate-800 dark:text-slate-200" />
+                                    <InputLabel htmlFor="max_sms_limit" value="SMS Limit" className="text-xs font-bold text-slate-800 dark:text-slate-200" />
                                     <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-md font-medium border border-slate-200/70 dark:border-white/[0.08]">
                                         SMS
                                     </span>
@@ -503,7 +503,7 @@ export default function UpdateProfileInformation({
                                     />
                                 </div>
                                 <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                                    Max total SMS passes/messages
+                                    Leave blank for unlimited
                                 </p>
                                 <InputError className="mt-1" message={errors.max_sms_limit} />
                             </div>

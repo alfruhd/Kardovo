@@ -2078,12 +2078,12 @@ export default function AdminDashboard({
                             </div>
                         </div>
 
-                        {/* Dispatch Quota Customization: WhatsApp & SMS */}
+                        {/* Message Limits: WhatsApp & SMS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <InputLabel value="WhatsApp Dispatch Quota (Messages)" />
-                                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">💬 WhatsApp</span>
+                                    <InputLabel value="WhatsApp Limit" />
+                                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">WhatsApp</span>
                                 </div>
                                 <TextInput
                                     type="number"
@@ -2093,13 +2093,13 @@ export default function AdminDashboard({
                                     value={customerForm.data.max_whatsapp_limit}
                                     onChange={(e) => customerForm.setData('max_whatsapp_limit', e.target.value)}
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">Max total WhatsApp passes/messages</span>
+                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unlimited</span>
                             </div>
 
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <InputLabel value="SMS Dispatch Quota (SMS Messages)" />
-                                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">📱 Regular SMS</span>
+                                    <InputLabel value="SMS Limit" />
+                                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">SMS</span>
                                 </div>
                                 <TextInput
                                     type="number"
@@ -2109,7 +2109,7 @@ export default function AdminDashboard({
                                     value={customerForm.data.max_sms_limit}
                                     onChange={(e) => customerForm.setData('max_sms_limit', e.target.value)}
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">Max total SMS passes/messages</span>
+                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unlimited</span>
                             </div>
                         </div>
 
@@ -2462,12 +2462,12 @@ export default function AdminDashboard({
                             )}
                         </div>
 
-                        {/* Dispatch Quota Customization: WhatsApp & SMS */}
+                        {/* Message Limits: WhatsApp & SMS */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <InputLabel value="WhatsApp Dispatch Quota (Messages)" />
-                                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">💬 WhatsApp</span>
+                                    <InputLabel value="WhatsApp Limit" />
+                                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">WhatsApp</span>
                                 </div>
                                 <TextInput
                                     type="number"
@@ -2478,14 +2478,14 @@ export default function AdminDashboard({
                                     onChange={(e) => editCustomerForm.setData('max_whatsapp_limit', e.target.value)}
                                     hasError={Boolean(editCustomerForm.errors.max_whatsapp_limit)}
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">Max total WhatsApp passes/messages</span>
+                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unlimited</span>
                                 <InputError message={editCustomerForm.errors.max_whatsapp_limit} className="mt-1" />
                             </div>
 
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <InputLabel value="SMS Dispatch Quota (SMS Messages)" />
-                                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">📱 Regular SMS</span>
+                                    <InputLabel value="SMS Limit" />
+                                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">SMS</span>
                                 </div>
                                 <TextInput
                                     type="number"
@@ -2496,7 +2496,7 @@ export default function AdminDashboard({
                                     onChange={(e) => editCustomerForm.setData('max_sms_limit', e.target.value)}
                                     hasError={Boolean(editCustomerForm.errors.max_sms_limit)}
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">Max total SMS passes/messages</span>
+                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unlimited</span>
                                 <InputError message={editCustomerForm.errors.max_sms_limit} className="mt-1" />
                             </div>
                         </div>

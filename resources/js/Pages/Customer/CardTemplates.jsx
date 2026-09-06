@@ -498,8 +498,10 @@ export default function CardTemplates({
                 Object.entries(val).forEach(([subKey, subVal]) => {
                     formData.append(`elements_config[${key}][${subKey}]`, subVal);
                 });
-            } else {
+            } else if (typeof val === 'boolean') {
                 formData.append(`elements_config[${key}]`, val ? '1' : '0');
+            } else if (val !== null && val !== undefined) {
+                formData.append(`elements_config[${key}]`, val);
             }
         });
 

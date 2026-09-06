@@ -389,13 +389,39 @@ class AdminController extends Controller
     {
         $user = $request->user();
         if (! $user->isAdmin()) {
-            abort(403, 'Admin access required.');
+            if ($user->isSubAdmin()) {
+                $assignedIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
+                if (! in_array($customer->id, $assignedIds)) {
+                    abort(403, 'Unauthorized to govern this organizer account.');
+                }
+                if (in_array($request->input('role'), ['admin', 'sub_admin'])) {
+                    abort(403, 'Sub-administrators cannot grant Administrator privileges.');
+                }
+            } else {
+                abort(403, 'Admin access required.');
+            }
+        }
+
+        if ($request->filled('password') === false || empty($request->input('password'))) {
+            $request->merge(['password' => null]);
+        }
+        if ($request->input('phone') === '') {
+            $request->merge(['phone' => null]);
+        }
+        if ($request->input('max_events_limit') === '') {
+            $request->merge(['max_events_limit' => null]);
+        }
+        if ($request->input('max_whatsapp_limit') === '') {
+            $request->merge(['max_whatsapp_limit' => null]);
+        }
+        if ($request->input('max_sms_limit') === '') {
+            $request->merge(['max_sms_limit' => null]);
         }
 
         $validated = $request->validate([
             'name' => 'required|string|min:2|max:255',
             'email' => 'required|email|unique:users,email,'.$customer->id,
-            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
+            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,25}$/'],
             'company' => 'nullable|string|max:255',
             'password' => ['nullable', 'string', Password::defaults()],
             'role' => 'nullable|string|in:customer,sub_admin,admin,scanner',

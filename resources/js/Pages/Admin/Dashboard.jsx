@@ -328,10 +328,11 @@ export default function AdminDashboard({
     const openEditCustomerModal = (customer) => {
         setEditingCustomer(customer);
         setEditCustomerClientErrors({});
+        editCustomerForm.clearErrors();
         const perms = customer.effective_permissions || customer.permissions || DEFAULT_ORGANIZER_PERMS;
         editCustomerForm.setData({
-            name: customer.name,
-            email: customer.email,
+            name: customer.name || '',
+            email: customer.email || '',
             phone: customer.phone || '',
             company: customer.company || '',
             password: '',
@@ -380,9 +381,13 @@ export default function AdminDashboard({
 
         setEditCustomerClientErrors({});
         editCustomerForm.put(route('admin.updateCustomer', editingCustomer.id), {
+            preserveScroll: true,
             onSuccess: () => {
                 setEditingCustomer(null);
                 editCustomerForm.reset();
+            },
+            onError: (errors) => {
+                console.error('Governance update error:', errors);
             }
         });
     };
@@ -2244,7 +2249,7 @@ export default function AdminDashboard({
                                     </span>
                                 </h3>
                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                                    Edit organizer profile, switch administrative roles, or toggle permitted portal capabilities.
+                                    Managing <span className="font-bold text-slate-700 dark:text-slate-200">{editingCustomer?.name}</span> ({editingCustomer?.email})
                                 </p>
                             </div>
                         </div>
@@ -2257,6 +2262,19 @@ export default function AdminDashboard({
                         </button>
                     </div>
 
+                    {/* Alert Banner for Validation Failures */}
+                    {(Object.keys(editCustomerClientErrors).length > 0 || Object.keys(editCustomerForm.errors).length > 0) && (
+                        <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start gap-2.5">
+                            <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                            <div className="text-xs text-rose-800 dark:text-rose-300 space-y-0.5">
+                                <div className="font-bold">Unable to save changes. Please review the following:</div>
+                                {Object.values({ ...editCustomerClientErrors, ...editCustomerForm.errors }).map((msg, i) => (
+                                    <div key={i} className="text-[11px] font-medium">• {msg}</div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="space-y-4">
                         {/* Profile Grid */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2267,9 +2285,14 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-bold"
                                     placeholder="e.g. Neema Mbwana"
                                     value={editCustomerForm.data.name}
-                                    onChange={(e) => editCustomerForm.setData('name', e.target.value)}
+                                    onChange={(e) => {
+                                        editCustomerForm.setData('name', e.target.value);
+                                        if (editCustomerClientErrors.name) setEditCustomerClientErrors(prev => ({ ...prev, name: undefined }));
+                                    }}
+                                    hasError={Boolean(editCustomerClientErrors.name || editCustomerForm.errors.name)}
                                     required
                                 />
+                                <InputError message={editCustomerClientErrors.name || editCustomerForm.errors.name} className="mt-1" />
                             </div>
 
                             <div>
@@ -2279,9 +2302,14 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-mono font-bold"
                                     placeholder="e.g. neema@events.co.tz"
                                     value={editCustomerForm.data.email}
-                                    onChange={(e) => editCustomerForm.setData('email', e.target.value)}
+                                    onChange={(e) => {
+                                        editCustomerForm.setData('email', e.target.value);
+                                        if (editCustomerClientErrors.email) setEditCustomerClientErrors(prev => ({ ...prev, email: undefined }));
+                                    }}
+                                    hasError={Boolean(editCustomerClientErrors.email || editCustomerForm.errors.email)}
                                     required
                                 />
+                                <InputError message={editCustomerClientErrors.email || editCustomerForm.errors.email} className="mt-1" />
                             </div>
 
                             <div>
@@ -2291,8 +2319,13 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-bold"
                                     placeholder="e.g. Pristine Events Tanzania"
                                     value={editCustomerForm.data.company}
-                                    onChange={(e) => editCustomerForm.setData('company', e.target.value)}
+                                    onChange={(e) => {
+                                        editCustomerForm.setData('company', e.target.value);
+                                        if (editCustomerForm.errors.company) editCustomerForm.clearErrors('company');
+                                    }}
+                                    hasError={Boolean(editCustomerForm.errors.company)}
                                 />
+                                <InputError message={editCustomerForm.errors.company} className="mt-1" />
                             </div>
 
                             <div>
@@ -2302,26 +2335,54 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-mono font-bold"
                                     placeholder="e.g. +255 712 345 678"
                                     value={editCustomerForm.data.phone}
-                                    onChange={(e) => editCustomerForm.setData('phone', e.target.value)}
+                                    onChange={(e) => {
+                                        editCustomerForm.setData('phone', e.target.value);
+                                        if (editCustomerClientErrors.phone) setEditCustomerClientErrors(prev => ({ ...prev, phone: undefined }));
+                                    }}
+                                    hasError={Boolean(editCustomerClientErrors.phone || editCustomerForm.errors.phone)}
                                 />
+                                <InputError message={editCustomerClientErrors.phone || editCustomerForm.errors.phone} className="mt-1" />
                             </div>
 
                             <div>
-                                <InputLabel value="Reset Password (Leave blank to keep unchanged)" />
+                                <div className="flex items-center justify-between">
+                                    <InputLabel value="Reset Password (Optional)" />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const pwd = generateStrongPassword(16);
+                                            editCustomerForm.setData('password', pwd);
+                                            if (editCustomerClientErrors.password) setEditCustomerClientErrors(prev => ({ ...prev, password: undefined }));
+                                        }}
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
+                                        title="Generate strong 16-character password"
+                                    >
+                                        <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                                        <span>Suggest Strong</span>
+                                    </button>
+                                </div>
                                 <TextInput
-                                    type="password"
+                                    type="text"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="Leave empty to keep existing password..."
+                                    placeholder="Leave blank to keep existing password..."
                                     value={editCustomerForm.data.password}
-                                    onChange={(e) => editCustomerForm.setData('password', e.target.value)}
+                                    onChange={(e) => {
+                                        editCustomerForm.setData('password', e.target.value);
+                                        if (editCustomerClientErrors.password) setEditCustomerClientErrors(prev => ({ ...prev, password: undefined }));
+                                    }}
+                                    hasError={Boolean(editCustomerClientErrors.password || editCustomerForm.errors.password)}
                                 />
+                                <InputError message={editCustomerClientErrors.password || editCustomerForm.errors.password} className="mt-1" />
                             </div>
 
                             <div>
                                 <InputLabel value="Assigned System Role *" />
                                 <select
                                     value={editCustomerForm.data.role}
-                                    onChange={(e) => editCustomerForm.setData('role', e.target.value)}
+                                    onChange={(e) => {
+                                        editCustomerForm.setData('role', e.target.value);
+                                        if (editCustomerForm.errors.role) editCustomerForm.clearErrors('role');
+                                    }}
                                     className="mt-1 block w-full text-xs font-bold rounded-xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-cyan-500/20"
                                 >
                                     <option value="customer">🏢 Event Organiser (Standard Tenant)</option>
@@ -2329,6 +2390,7 @@ export default function AdminDashboard({
                                     <option value="admin">👑 Super Administrator (Full Governance)</option>
                                     <option value="scanner">📱 Gate Scanner Staff (Mobile Only)</option>
                                 </select>
+                                <InputError message={editCustomerForm.errors.role} className="mt-1" />
                             </div>
                         </div>
 
@@ -2366,6 +2428,7 @@ export default function AdminDashboard({
                                         </span>
                                     </label>
                                 </div>
+                                <InputError message={editCustomerForm.errors.status} className="mt-1" />
                             </div>
 
                             <div>
@@ -2377,8 +2440,10 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-mono font-bold"
                                     value={editCustomerForm.data.max_events_limit}
                                     onChange={(e) => editCustomerForm.setData('max_events_limit', e.target.value)}
+                                    hasError={Boolean(editCustomerForm.errors.max_events_limit)}
                                 />
                                 <span className="text-[10px] text-slate-400 font-mono">Leave blank for unrestricted</span>
+                                <InputError message={editCustomerForm.errors.max_events_limit} className="mt-1" />
                             </div>
 
                             {editCustomerForm.data.status === 'suspended' && (
@@ -2390,7 +2455,9 @@ export default function AdminDashboard({
                                         className="mt-1 block w-full text-xs font-bold text-rose-700 dark:text-rose-300"
                                         value={editCustomerForm.data.suspension_reason}
                                         onChange={(e) => editCustomerForm.setData('suspension_reason', e.target.value)}
+                                        hasError={Boolean(editCustomerForm.errors.suspension_reason)}
                                     />
+                                    <InputError message={editCustomerForm.errors.suspension_reason} className="mt-1" />
                                 </div>
                             )}
                         </div>
@@ -2409,8 +2476,10 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-mono font-bold"
                                     value={editCustomerForm.data.max_whatsapp_limit}
                                     onChange={(e) => editCustomerForm.setData('max_whatsapp_limit', e.target.value)}
+                                    hasError={Boolean(editCustomerForm.errors.max_whatsapp_limit)}
                                 />
                                 <span className="text-[10px] text-slate-400 font-mono">Max total WhatsApp passes/messages</span>
+                                <InputError message={editCustomerForm.errors.max_whatsapp_limit} className="mt-1" />
                             </div>
 
                             <div>
@@ -2425,8 +2494,10 @@ export default function AdminDashboard({
                                     className="mt-1 block w-full text-xs font-mono font-bold"
                                     value={editCustomerForm.data.max_sms_limit}
                                     onChange={(e) => editCustomerForm.setData('max_sms_limit', e.target.value)}
+                                    hasError={Boolean(editCustomerForm.errors.max_sms_limit)}
                                 />
                                 <span className="text-[10px] text-slate-400 font-mono">Max total SMS passes/messages</span>
+                                <InputError message={editCustomerForm.errors.max_sms_limit} className="mt-1" />
                             </div>
                         </div>
 
@@ -2448,35 +2519,35 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => editCustomerForm.setData('permissions', { ...DEFAULT_ORGANIZER_PERMS })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition"
+                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
                                         Full Access
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => editCustomerForm.setData('permissions', {
-                                            can_create_events: true,
-                                            can_import_guests: true,
-                                            can_send_broadcasts: false,
-                                            can_customize_templates: false,
-                                            can_manage_scanners: true,
-                                            can_export_data: true,
+                                             can_create_events: true,
+                                             can_import_guests: true,
+                                             can_send_broadcasts: false,
+                                             can_customize_templates: false,
+                                             can_manage_scanners: true,
+                                             can_export_data: true,
                                         })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition"
+                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
                                         Standard Host
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => editCustomerForm.setData('permissions', {
-                                            can_create_events: false,
-                                            can_import_guests: false,
-                                            can_send_broadcasts: false,
-                                            can_customize_templates: false,
-                                            can_manage_scanners: false,
-                                            can_export_data: false,
+                                             can_create_events: false,
+                                             can_import_guests: false,
+                                             can_send_broadcasts: false,
+                                             can_customize_templates: false,
+                                             can_manage_scanners: false,
+                                             can_export_data: false,
                                         })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition"
+                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
                                         Revoke All
                                     </button>
@@ -2530,7 +2601,7 @@ export default function AdminDashboard({
                                                         [cap.key]: e.target.checked,
                                                     });
                                                 }}
-                                                className="mt-1 rounded text-cyan-600 focus:ring-cyan-500 w-4 h-4"
+                                                className="mt-1 rounded text-cyan-600 focus:ring-cyan-500 w-4 h-4 cursor-pointer"
                                             />
                                         </label>
                                     );
@@ -2540,10 +2611,10 @@ export default function AdminDashboard({
                     </div>
 
                     <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
-                        <SecondaryButton onClick={() => setEditingCustomer(null)}>
+                        <SecondaryButton type="button" onClick={() => setEditingCustomer(null)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={editCustomerForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
+                        <PrimaryButton type="submit" disabled={editCustomerForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
                             Save Governance Changes
                         </PrimaryButton>
                     </div>

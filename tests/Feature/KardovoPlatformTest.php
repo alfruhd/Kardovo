@@ -267,10 +267,6 @@ class KardovoPlatformTest extends TestCase
             'name' => 'Royal Purple Custom Artwork',
             'template_type' => 'custom_art',
             'image_file' => $file,
-            'headline' => 'ROYAL WEDDING INVITATION',
-            'overlay_mode' => 'minimal',
-            'show_qr' => true,
-            'show_unique_code' => true,
             'show_category_badge' => false,
             'elements_config' => [
                 'show_guest_name' => true,
@@ -287,4 +283,66 @@ class KardovoPlatformTest extends TestCase
             'template_type' => 'custom_art',
         ]);
     }
+
+    public function test_admin_can_govern_and_update_customer_account(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $customer = User::where('role', 'customer')->first();
+        $originalPasswordHash = $customer->password;
+
+        $response = $this->actingAs($admin)->put(route('admin.updateCustomer', $customer->id), [
+            'name' => 'Updated Organizer Name',
+            'email' => 'updated_organizer@kardovo.test',
+            'phone' => '+255 788 123 456',
+            'company' => 'Apex Events International',
+            'password' => '', // leave blank
+            'role' => 'customer',
+            'status' => 'active',
+            'max_events_limit' => '10',
+            'max_whatsapp_limit' => '500',
+            'max_sms_limit' => '1000',
+            'permissions' => [
+                'can_create_events' => true,
+                'can_import_guests' => true,
+                'can_send_broadcasts' => false,
+                'can_customize_templates' => true,
+                'can_manage_scanners' => false,
+                'can_export_data' => true,
+            ],
+        ]);
+
+        $response->assertStatus(302);
+        $freshCustomer = $customer->fresh();
+
+        $this->assertEquals('Updated Organizer Name', $freshCustomer->name);
+        $this->assertEquals('updated_organizer@kardovo.test', $freshCustomer->email);
+        $this->assertEquals('+255 788 123 456', $freshCustomer->phone);
+        $this->assertEquals('Apex Events International', $freshCustomer->company);
+        $this->assertEquals($originalPasswordHash, $freshCustomer->password); // unchanged
+        $this->assertEquals(10, $freshCustomer->max_events_limit);
+        $this->assertEquals(500, $freshCustomer->max_whatsapp_limit);
+        $this->assertEquals(1000, $freshCustomer->max_sms_limit);
+        $this->assertFalse($freshCustomer->permissions['can_send_broadcasts']);
+        $this->assertFalse($freshCustomer->permissions['can_manage_scanners']);
+        $this->assertTrue($freshCustomer->permissions['can_create_events']);
+    }
+
+    public function test_admin_can_suspend_organizer_with_reason(): void
+    {
+        $admin = User::where('role', 'admin')->first();
+        $customer = User::where('role', 'customer')->first();
+
+        $response = $this->actingAs($admin)->put(route('admin.updateCustomer', $customer->id), [
+            'name' => $customer->name,
+            'email' => $customer->email,
+            'status' => 'suspended',
+            'suspension_reason' => 'Account undergoing annual compliance check.',
+        ]);
+
+        $response->assertStatus(302);
+        $freshCustomer = $customer->fresh();
+        $this->assertEquals('suspended', $freshCustomer->status);
+        $this->assertEquals('Account undergoing annual compliance check.', $freshCustomer->suspension_reason);
+    }
 }
+

@@ -180,13 +180,6 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
             show: isAdmin || isSubAdmin,
         },
         {
-            name: 'Card Templates',
-            href: route('templates.index'),
-            icon: Palette,
-            active: currentUrl.startsWith('/templates'),
-            show: !isScanner && (isAdmin || isSubAdmin || (!isSuspended && perms.can_customize_templates !== false)),
-        },
-        {
             name: isAdmin ? 'All Events' : 'My Events',
             href: route('events.index'),
             icon: Calendar,

@@ -574,29 +574,29 @@ export default function CardTemplates({
                 {/* ═══════════════════════════════════════════════════════════ */}
                 {/* 2. CARD TEMPLATE PRESET SELECTOR GALLERY                    */}
                 {/* ═══════════════════════════════════════════════════════════ */}
-                <div className="relative rounded-3xl overflow-hidden backdrop-blur-2xl bg-gradient-to-br from-[#091322] via-[#0A182E] to-[#07111D] border border-white/[0.12] p-5 sm:p-7 text-white shadow-[0_20px_50px_rgba(0,0,0,0.35)] space-y-5">
+                <div className="relative rounded-3xl overflow-hidden backdrop-blur-2xl bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100/90 dark:from-[#091322] dark:via-[#0A182E] dark:to-[#07111D] border border-slate-200/90 dark:border-white/[0.12] p-5 sm:p-7 text-slate-900 dark:text-white shadow-card dark:shadow-[0_20px_50px_rgba(0,0,0,0.35)] space-y-5">
                     {/* Ambient Glows */}
                     <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 blur-3xl pointer-events-none" />
                     <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-blue-500/10 blur-3xl pointer-events-none" />
 
                     {/* Header Bar */}
-                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-white/[0.08]">
+                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80 dark:border-white/[0.08]">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-2xl bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 flex items-center justify-center shadow-inner">
+                            <div className="w-9 h-9 rounded-2xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 dark:border-cyan-400/30 text-cyan-600 dark:text-cyan-300 flex items-center justify-center shadow-2xs">
                                 <Layers className="w-4.5 h-4.5" />
                             </div>
                             <div>
-                                <h3 className="text-sm sm:text-base font-black tracking-tight text-white font-display">
+                                <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white font-display">
                                     Template Presets Gallery
                                 </h3>
-                                <p className="text-xs text-slate-300 font-medium mt-0.5">
+                                <p className="text-xs text-slate-500 dark:text-slate-300 font-medium mt-0.5">
                                     Click any design below to customize and preview live in the studio
                                 </p>
                             </div>
                         </div>
                         <div className="flex items-center gap-2 self-start sm:self-auto">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-400/30 text-cyan-300 font-mono text-[11px] font-extrabold shadow-inner">
-                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 font-mono text-[11px] font-extrabold shadow-2xs">
+                                <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
                                 <span>{templates.length} {templates.length === 1 ? 'Design Available' : 'Designs Available'}</span>
                             </span>
                         </div>
@@ -620,13 +620,13 @@ export default function CardTemplates({
                                     onClick={() => handleSelectTemplate(tpl)}
                                     className={`group relative p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between text-left select-none ${
                                         isSelected 
-                                            ? 'border-cyan-400 bg-gradient-to-b from-cyan-950/50 via-slate-900/90 to-slate-950 ring-2 ring-cyan-400/40 shadow-[0_10px_35px_rgba(6,182,212,0.25)] scale-[1.01]' 
-                                            : 'border-white/[0.08] hover:border-cyan-400/40 bg-white/[0.03] hover:bg-white/[0.06] shadow-sm hover:shadow-md hover:-translate-y-0.5'
+                                            ? 'border-cyan-500 dark:border-cyan-400 bg-white/90 dark:bg-gradient-to-b dark:from-cyan-950/50 dark:via-slate-900/90 dark:to-slate-950 ring-2 ring-cyan-500/30 dark:ring-cyan-400/40 shadow-card scale-[1.01]' 
+                                            : 'border-slate-200/80 dark:border-white/[0.08] hover:border-cyan-500/50 dark:hover:border-cyan-400/40 bg-white/60 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.06] shadow-2xs hover:shadow-card hover:-translate-y-0.5'
                                     }`}
                                 >
                                     <div className="w-full">
                                         {/* Thumbnail Container */}
-                                        <div className="w-full h-40 sm:h-44 rounded-xl overflow-hidden relative bg-slate-950 border border-white/[0.08]">
+                                        <div className="w-full h-40 sm:h-44 rounded-xl overflow-hidden relative bg-slate-900 dark:bg-slate-950 border border-slate-200/80 dark:border-white/[0.08]">
                                             {isCustom && imgUrl ? (
                                                 <img 
                                                     src={imgUrl} 
@@ -682,14 +682,14 @@ export default function CardTemplates({
                                         {/* Card Info */}
                                         <div className="mt-3 px-0.5 flex items-center justify-between gap-2">
                                             <div className="min-w-0 flex-1">
-                                                <h4 className="font-bold text-sm text-white truncate group-hover:text-cyan-300 transition-colors" title={tpl.name}>
+                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors" title={tpl.name}>
                                                     {tpl.name}
                                                 </h4>
-                                                <p className="text-[11px] text-slate-400 mt-0.5 font-medium truncate flex items-center gap-1.5">
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate flex items-center gap-1.5">
                                                     {isCustom ? (
-                                                        <><ImageIcon className="w-3 h-3 text-cyan-400 flex-shrink-0" /><span>Custom Artwork Flyer</span></>
+                                                        <><ImageIcon className="w-3 h-3 text-cyan-600 dark:text-cyan-400 flex-shrink-0" /><span>Custom Artwork Flyer</span></>
                                                     ) : (
-                                                        <><Palette className="w-3 h-3 text-cyan-400 flex-shrink-0" /><span>Dynamic Gradient Canvas</span></>
+                                                        <><Palette className="w-3 h-3 text-cyan-600 dark:text-cyan-400 flex-shrink-0" /><span>Dynamic Gradient Canvas</span></>
                                                     )}
                                                 </p>
                                             </div>
@@ -697,12 +697,12 @@ export default function CardTemplates({
 
                                         {/* Bottom Action Button */}
                                         {isSelected ? (
-                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-cyan-500 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm">
+                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-slate-900 dark:bg-cyan-500 text-white dark:text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm">
                                                 <span>Active &amp; Editing</span>
                                                 <Check className="w-3.5 h-3.5 stroke-[3]" />
                                             </div>
                                         ) : (
-                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-white/[0.07] group-hover:bg-cyan-500 group-hover:text-slate-950 text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-150 border border-white/[0.08]">
+                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.07] group-hover:bg-cyan-500 group-hover:text-slate-950 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-150 border border-slate-200/80 dark:border-white/[0.08]">
                                                 <span>Customize Design</span>
                                                 <ArrowRight className="w-3.5 h-3.5 opacity-80" />
                                             </div>

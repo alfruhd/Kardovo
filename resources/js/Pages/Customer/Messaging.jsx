@@ -434,7 +434,7 @@ export default function Messaging({
 
     return (
         <KardovoAppLayout
-            title="Messaging & Interactive RSVP Hub"
+            title="Messaging Hub"
             headerActions={
                 <div className="flex items-center gap-2">
                     <button
@@ -448,7 +448,7 @@ export default function Messaging({
                 </div>
             }
         >
-            <Head title="Messaging & RSVP Hub - Kardovo" />
+            <Head title="Messaging Hub - Kardovo" />
 
             <div className="max-w-7xl mx-auto space-y-6">
                 
@@ -458,7 +458,7 @@ export default function Messaging({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-slate-800">
                     <div>
                         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-                            Messaging &amp; RSVP Hub
+                            Messaging Hub
                         </h1>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                             Broadcast invitation passes directly via WhatsApp or SMS with instant response buttons.

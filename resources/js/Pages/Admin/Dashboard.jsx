@@ -1887,25 +1887,17 @@ export default function AdminDashboard({
                 )}
             </div>
 
-            {/* Modal 1: Create Customer Account & Activity Governance */}
+            {/* Modal 1: Create Customer Account */}
             <Modal show={customerModalOpen} onClose={() => setCustomerModalOpen(false)} maxWidth="2xl">
-                <form onSubmit={handleCreateCustomer} className="p-6 sm:p-7 space-y-5">
-                    <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3.5">
+                <form onSubmit={handleCreateCustomer} className="p-6 sm:p-7 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30">
-                                <Users className="w-5 h-5" />
+                            <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center border border-blue-500/30">
+                                <UserPlus className="w-4 h-4" />
                             </div>
-                            <div>
-                                <h3 className="text-lg font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                                    <span>Create Organiser &amp; Assign Role</span>
-                                    <span className="text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40">
-                                        Governance
-                                    </span>
-                                </h3>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                                    Provision an organizer account, configure administrative role, and customize portal activity capabilities.
-                                </p>
-                            </div>
+                            <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
+                                Create Organiser Account
+                            </h3>
                         </div>
                         <button
                             type="button"
@@ -1916,15 +1908,15 @@ export default function AdminDashboard({
                         </button>
                     </div>
 
-                    <div className="space-y-4">
-                        {/* Basic Profile Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-3.5">
+                        {/* Profile Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                             <div>
-                                <InputLabel value="Contact Person Name *" />
+                                <InputLabel value="Full Name *" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-bold"
-                                    placeholder="e.g. Neema Mbwana / Alfred Mashauri"
+                                    placeholder="e.g. Neema Mbwana"
                                     value={customerForm.data.name}
                                     onChange={(e) => {
                                         customerForm.setData('name', e.target.value);
@@ -1937,7 +1929,7 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Email Address (Login Username) *" />
+                                <InputLabel value="Email *" />
                                 <TextInput
                                     type="email"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
@@ -1954,11 +1946,11 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Company / Event Agency Brand" />
+                                <InputLabel value="Company" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-bold"
-                                    placeholder="e.g. Pristine Events Tanzania"
+                                    placeholder="e.g. Pristine Events"
                                     value={customerForm.data.company}
                                     onChange={(e) => customerForm.setData('company', e.target.value)}
                                 />
@@ -1966,7 +1958,7 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Phone Number (SMS / WhatsApp)" />
+                                <InputLabel value="Phone" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
@@ -1983,7 +1975,7 @@ export default function AdminDashboard({
 
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <InputLabel value="Initial Password *" />
+                                    <InputLabel value="Password *" />
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -1992,16 +1984,15 @@ export default function AdminDashboard({
                                             if (customerClientErrors.password) setCustomerClientErrors(prev => ({ ...prev, password: undefined }));
                                         }}
                                         className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
-                                        title="Generate strong 16-character password"
                                     >
                                         <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
-                                        <span>Suggest Strong</span>
+                                        <span>Suggest</span>
                                     </button>
                                 </div>
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="Min 8 chars, uppercase, lowercase, numbers & symbols"
+                                    placeholder="Enter password"
                                     value={customerForm.data.password}
                                     onChange={(e) => {
                                         customerForm.setData('password', e.target.value);
@@ -2014,26 +2005,26 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Assigned System Role *" />
+                                <InputLabel value="Role *" />
                                 <select
                                     value={customerForm.data.role}
                                     onChange={(e) => customerForm.setData('role', e.target.value)}
                                     className="mt-1 block w-full text-xs font-bold rounded-xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-cyan-500/20"
                                 >
-                                    <option value="customer">🏢 Event Organiser (Standard Tenant)</option>
-                                    <option value="sub_admin">🛡️ Sub-Administrator (Scoped Access)</option>
-                                    <option value="admin">👑 Super Administrator (Full Access)</option>
-                                    <option value="scanner">📱 Gate Scanner Staff (Mobile Only)</option>
+                                    <option value="customer">🏢 Organiser</option>
+                                    <option value="sub_admin">🛡️ Sub-Admin</option>
+                                    <option value="admin">👑 Super Admin</option>
+                                    <option value="scanner">📱 Gate Scanner</option>
                                 </select>
                             </div>
                         </div>
 
-                        {/* Account Status & Event Quota */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
+                        {/* Status & Limits */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
                             <div>
-                                <InputLabel value="Account Status" />
-                                <div className="mt-1.5 flex items-center gap-3">
-                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                                <InputLabel value="Status" />
+                                <div className="mt-2 flex items-center gap-2.5">
+                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
                                         <input
                                             type="radio"
                                             name="create_status"
@@ -2042,12 +2033,9 @@ export default function AdminDashboard({
                                             onChange={() => customerForm.setData('status', 'active')}
                                             className="text-emerald-600 focus:ring-emerald-500"
                                         />
-                                        <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                                            Active
-                                        </span>
+                                        <span>Active</span>
                                     </label>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
                                         <input
                                             type="radio"
                                             name="create_status"
@@ -2056,16 +2044,13 @@ export default function AdminDashboard({
                                             onChange={() => customerForm.setData('status', 'suspended')}
                                             className="text-rose-600 focus:ring-rose-500"
                                         />
-                                        <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-rose-500" />
-                                            Suspended
-                                        </span>
+                                        <span>Suspended</span>
                                     </label>
                                 </div>
                             </div>
 
                             <div>
-                                <InputLabel value="Max Events Hosting Quota" />
+                                <InputLabel value="Events Limit" />
                                 <TextInput
                                     type="number"
                                     min="1"
@@ -2074,17 +2059,10 @@ export default function AdminDashboard({
                                     value={customerForm.data.max_events_limit}
                                     onChange={(e) => customerForm.setData('max_events_limit', e.target.value)}
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unrestricted</span>
                             </div>
-                        </div>
 
-                        {/* Message Limits: WhatsApp & SMS */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
                             <div>
-                                <div className="flex items-center justify-between">
-                                    <InputLabel value="WhatsApp Limit" />
-                                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">WhatsApp</span>
-                                </div>
+                                <InputLabel value="WhatsApp Limit" />
                                 <TextInput
                                     type="number"
                                     min="0"
@@ -2093,14 +2071,10 @@ export default function AdminDashboard({
                                     value={customerForm.data.max_whatsapp_limit}
                                     onChange={(e) => customerForm.setData('max_whatsapp_limit', e.target.value)}
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unlimited</span>
                             </div>
 
                             <div>
-                                <div className="flex items-center justify-between">
-                                    <InputLabel value="SMS Limit" />
-                                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">SMS</span>
-                                </div>
+                                <InputLabel value="SMS Limit" />
                                 <TextInput
                                     type="number"
                                     min="0"
@@ -2109,31 +2083,24 @@ export default function AdminDashboard({
                                     value={customerForm.data.max_sms_limit}
                                     onChange={(e) => customerForm.setData('max_sms_limit', e.target.value)}
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unlimited</span>
                             </div>
                         </div>
 
-                        {/* Portal Activity Switchboard */}
-                        <div className="space-y-3 pt-1">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                <div>
-                                    <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
-                                        <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                                        <span>Permitted Portal Activities &amp; Features</span>
-                                    </h4>
-                                    <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
-                                        Toggle specific modules and actions this organizer can access inside their portal.
-                                    </p>
-                                </div>
+                        {/* Permissions */}
+                        <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                                    <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                    <span>Permissions</span>
+                                </h4>
 
-                                {/* Presets */}
                                 <div className="flex items-center gap-1.5">
                                     <button
                                         type="button"
                                         onClick={() => customerForm.setData('permissions', { ...DEFAULT_ORGANIZER_PERMS })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition"
+                                        className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
-                                        Full Access
+                                        Full
                                     </button>
                                     <button
                                         type="button"
@@ -2145,9 +2112,9 @@ export default function AdminDashboard({
                                             can_manage_scanners: true,
                                             can_export_data: true,
                                         })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition"
+                                        className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
-                                        Standard Host
+                                        Standard
                                     </button>
                                     <button
                                         type="button"
@@ -2159,22 +2126,21 @@ export default function AdminDashboard({
                                             can_manage_scanners: false,
                                             can_export_data: false,
                                         })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition"
+                                        className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
-                                        Revoke All
+                                        None
                                     </button>
                                 </div>
                             </div>
 
-                            {/* 6 Capability Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {[
-                                    { key: 'can_create_events', label: 'Event Creation & Management', desc: 'Create, edit, and publish wedding & summit events.', icon: Calendar },
-                                    { key: 'can_import_guests', label: 'Guest Import & Registration', desc: 'Upload CSV/Excel spreadsheets and add attendees.', icon: FileSpreadsheet },
-                                    { key: 'can_send_broadcasts', label: 'WhatsApp & SMS Campaigns', desc: 'Dispatch instant passes & bulk SMS broadcasts.', icon: Send },
-                                    { key: 'can_customize_templates', label: '4K Pass Design Studio', desc: 'Customize typography, QR position, & background art.', icon: Palette },
-                                    { key: 'can_manage_scanners', label: 'Gate Scanner Staff Fleet', desc: 'Provision gatekeeper login PIN accounts.', icon: Smartphone },
-                                    { key: 'can_export_data', label: 'Audit & RSVP Data Export', desc: 'Download CSV reports and check-in logs.', icon: Download },
+                                    { key: 'can_create_events', label: 'Manage Events', icon: Calendar },
+                                    { key: 'can_import_guests', label: 'Import Guests', icon: FileSpreadsheet },
+                                    { key: 'can_send_broadcasts', label: 'Send Broadcasts', icon: Send },
+                                    { key: 'can_customize_templates', label: 'Pass Studio', icon: Palette },
+                                    { key: 'can_manage_scanners', label: 'Gate Scanners', icon: Smartphone },
+                                    { key: 'can_export_data', label: 'Export Data', icon: Download },
                                 ].map((cap) => {
                                     const IconComp = cap.icon;
                                     const isChecked = customerForm.data.permissions[cap.key] !== false;
@@ -2182,26 +2148,21 @@ export default function AdminDashboard({
                                     return (
                                         <label
                                             key={cap.key}
-                                            className={`p-3 rounded-2xl border transition cursor-pointer flex items-start justify-between gap-3 ${
+                                            className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 ${
                                                 isChecked
                                                     ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
                                                     : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-70'
                                             }`}
                                         >
-                                            <div className="flex items-start gap-2.5">
-                                                <div className={`p-1.5 rounded-xl ${
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className={`p-1 rounded-lg ${
                                                     isChecked ? 'bg-cyan-600 text-white' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
                                                 }`}>
-                                                    <IconComp className="w-3.5 h-3.5" />
+                                                    <IconComp className="w-3 h-3" />
                                                 </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white">
-                                                        {cap.label}
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
-                                                        {cap.desc}
-                                                    </div>
-                                                </div>
+                                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                    {cap.label}
+                                                </span>
                                             </div>
 
                                             <input
@@ -2213,7 +2174,7 @@ export default function AdminDashboard({
                                                         [cap.key]: e.target.checked,
                                                     });
                                                 }}
-                                                className="mt-1 rounded text-cyan-600 focus:ring-cyan-500 w-4 h-4"
+                                                className="rounded text-cyan-600 focus:ring-cyan-500 w-3.5 h-3.5 cursor-pointer shrink-0"
                                             />
                                         </label>
                                     );
@@ -2222,12 +2183,12 @@ export default function AdminDashboard({
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
+                    <div className="pt-3.5 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
                         <SecondaryButton onClick={() => setCustomerModalOpen(false)}>
                             Cancel
                         </SecondaryButton>
                         <PrimaryButton disabled={customerForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
-                            Create Account &amp; Grant Access
+                            Create Account
                         </PrimaryButton>
                     </div>
                 </form>
@@ -2235,22 +2196,19 @@ export default function AdminDashboard({
 
             {/* Modal 2: Edit Customer Account & Role Governance */}
             <Modal show={!!editingCustomer} onClose={() => setEditingCustomer(null)} maxWidth="2xl">
-                <form onSubmit={handleUpdateCustomer} className="p-6 sm:p-7 space-y-5">
-                    <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3.5">
+                <form onSubmit={handleUpdateCustomer} className="p-6 sm:p-7 space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30">
-                                <SlidersHorizontal className="w-5 h-5" />
+                            <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                                <SlidersHorizontal className="w-4 h-4" />
                             </div>
-                            <div>
-                                <h3 className="text-lg font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                                    <span>Organiser Governance &amp; Permissions</span>
-                                    <span className="text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40">
-                                        {editingCustomer?.role?.toUpperCase()}
-                                    </span>
+                            <div className="flex items-center gap-2">
+                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
+                                    Organiser Governance
                                 </h3>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                                    Managing <span className="font-bold text-slate-700 dark:text-slate-200">{editingCustomer?.name}</span> ({editingCustomer?.email})
-                                </p>
+                                <span className="text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40">
+                                    {editingCustomer?.role?.toUpperCase()}
+                                </span>
                             </div>
                         </div>
                         <button
@@ -2264,10 +2222,9 @@ export default function AdminDashboard({
 
                     {/* Alert Banner for Validation Failures */}
                     {(Object.keys(editCustomerClientErrors).length > 0 || Object.keys(editCustomerForm.errors).length > 0) && (
-                        <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start gap-2.5">
+                        <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start gap-2">
                             <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
                             <div className="text-xs text-rose-800 dark:text-rose-300 space-y-0.5">
-                                <div className="font-bold">Unable to save changes. Please review the following:</div>
                                 {Object.values({ ...editCustomerClientErrors, ...editCustomerForm.errors }).map((msg, i) => (
                                     <div key={i} className="text-[11px] font-medium">• {msg}</div>
                                 ))}
@@ -2275,15 +2232,15 @@ export default function AdminDashboard({
                         </div>
                     )}
 
-                    <div className="space-y-4">
+                    <div className="space-y-3.5">
                         {/* Profile Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                             <div>
                                 <InputLabel value="Full Name *" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-bold"
-                                    placeholder="e.g. Neema Mbwana"
+                                    placeholder="e.g. Sarah Operations"
                                     value={editCustomerForm.data.name}
                                     onChange={(e) => {
                                         editCustomerForm.setData('name', e.target.value);
@@ -2296,11 +2253,11 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Email Address (Login Username) *" />
+                                <InputLabel value="Email *" />
                                 <TextInput
                                     type="email"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="e.g. neema@events.co.tz"
+                                    placeholder="e.g. subadmin@kardovo.com"
                                     value={editCustomerForm.data.email}
                                     onChange={(e) => {
                                         editCustomerForm.setData('email', e.target.value);
@@ -2313,11 +2270,11 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Company / Event Agency Brand" />
+                                <InputLabel value="Company" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-bold"
-                                    placeholder="e.g. Pristine Events Tanzania"
+                                    placeholder="e.g. Kardovo Operations"
                                     value={editCustomerForm.data.company}
                                     onChange={(e) => {
                                         editCustomerForm.setData('company', e.target.value);
@@ -2329,11 +2286,11 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Phone Number (WhatsApp notifications)" />
+                                <InputLabel value="Phone" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="e.g. +255 712 345 678"
+                                    placeholder="e.g. +255 788 112 233"
                                     value={editCustomerForm.data.phone}
                                     onChange={(e) => {
                                         editCustomerForm.setData('phone', e.target.value);
@@ -2346,7 +2303,7 @@ export default function AdminDashboard({
 
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <InputLabel value="Reset Password (Optional)" />
+                                    <InputLabel value="Password" />
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -2355,16 +2312,15 @@ export default function AdminDashboard({
                                             if (editCustomerClientErrors.password) setEditCustomerClientErrors(prev => ({ ...prev, password: undefined }));
                                         }}
                                         className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
-                                        title="Generate strong 16-character password"
                                     >
                                         <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
-                                        <span>Suggest Strong</span>
+                                        <span>Suggest</span>
                                     </button>
                                 </div>
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="Leave blank to keep existing password..."
+                                    placeholder="Leave blank to keep unchanged"
                                     value={editCustomerForm.data.password}
                                     onChange={(e) => {
                                         editCustomerForm.setData('password', e.target.value);
@@ -2376,7 +2332,7 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Assigned System Role *" />
+                                <InputLabel value="Role *" />
                                 <select
                                     value={editCustomerForm.data.role}
                                     onChange={(e) => {
@@ -2385,21 +2341,21 @@ export default function AdminDashboard({
                                     }}
                                     className="mt-1 block w-full text-xs font-bold rounded-xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-cyan-500/20"
                                 >
-                                    <option value="customer">🏢 Event Organiser (Standard Tenant)</option>
-                                    <option value="sub_admin">🛡️ Sub-Administrator (Scoped Access)</option>
-                                    <option value="admin">👑 Super Administrator (Full Governance)</option>
-                                    <option value="scanner">📱 Gate Scanner Staff (Mobile Only)</option>
+                                    <option value="customer">🏢 Organiser</option>
+                                    <option value="sub_admin">🛡️ Sub-Admin</option>
+                                    <option value="admin">👑 Super Admin</option>
+                                    <option value="scanner">📱 Gate Scanner</option>
                                 </select>
                                 <InputError message={editCustomerForm.errors.role} className="mt-1" />
                             </div>
                         </div>
 
-                        {/* Status & Quota Controls */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
+                        {/* Status & Limits */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
                             <div>
-                                <InputLabel value="Account Status" />
-                                <div className="mt-1.5 flex items-center gap-3">
-                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                                <InputLabel value="Status" />
+                                <div className="mt-2 flex items-center gap-2.5">
+                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
                                         <input
                                             type="radio"
                                             name="edit_status"
@@ -2408,12 +2364,9 @@ export default function AdminDashboard({
                                             onChange={() => editCustomerForm.setData('status', 'active')}
                                             className="text-emerald-600 focus:ring-emerald-500"
                                         />
-                                        <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                                            Active
-                                        </span>
+                                        <span>Active</span>
                                     </label>
-                                    <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
+                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
                                         <input
                                             type="radio"
                                             name="edit_status"
@@ -2422,17 +2375,14 @@ export default function AdminDashboard({
                                             onChange={() => editCustomerForm.setData('status', 'suspended')}
                                             className="text-rose-600 focus:ring-rose-500"
                                         />
-                                        <span className="flex items-center gap-1">
-                                            <span className="w-2 h-2 rounded-full bg-rose-500" />
-                                            Suspended
-                                        </span>
+                                        <span>Suspended</span>
                                     </label>
                                 </div>
                                 <InputError message={editCustomerForm.errors.status} className="mt-1" />
                             </div>
 
                             <div>
-                                <InputLabel value="Max Events Hosting Quota" />
+                                <InputLabel value="Events Limit" />
                                 <TextInput
                                     type="number"
                                     min="1"
@@ -2442,16 +2392,43 @@ export default function AdminDashboard({
                                     onChange={(e) => editCustomerForm.setData('max_events_limit', e.target.value)}
                                     hasError={Boolean(editCustomerForm.errors.max_events_limit)}
                                 />
-                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unrestricted</span>
                                 <InputError message={editCustomerForm.errors.max_events_limit} className="mt-1" />
                             </div>
 
+                            <div>
+                                <InputLabel value="WhatsApp Limit" />
+                                <TextInput
+                                    type="number"
+                                    min="0"
+                                    placeholder="Unlimited"
+                                    className="mt-1 block w-full text-xs font-mono font-bold"
+                                    value={editCustomerForm.data.max_whatsapp_limit}
+                                    onChange={(e) => editCustomerForm.setData('max_whatsapp_limit', e.target.value)}
+                                    hasError={Boolean(editCustomerForm.errors.max_whatsapp_limit)}
+                                />
+                                <InputError message={editCustomerForm.errors.max_whatsapp_limit} className="mt-1" />
+                            </div>
+
+                            <div>
+                                <InputLabel value="SMS Limit" />
+                                <TextInput
+                                    type="number"
+                                    min="0"
+                                    placeholder="Unlimited"
+                                    className="mt-1 block w-full text-xs font-mono font-bold"
+                                    value={editCustomerForm.data.max_sms_limit}
+                                    onChange={(e) => editCustomerForm.setData('max_sms_limit', e.target.value)}
+                                    hasError={Boolean(editCustomerForm.errors.max_sms_limit)}
+                                />
+                                <InputError message={editCustomerForm.errors.max_sms_limit} className="mt-1" />
+                            </div>
+
                             {editCustomerForm.data.status === 'suspended' && (
-                                <div className="col-span-full">
-                                    <InputLabel value="Suspension Reason / Notice to Organiser" />
+                                <div className="col-span-full pt-1">
+                                    <InputLabel value="Suspension Reason" />
                                     <TextInput
                                         type="text"
-                                        placeholder="e.g. Account under billing review or terms check..."
+                                        placeholder="Reason for suspension..."
                                         className="mt-1 block w-full text-xs font-bold text-rose-700 dark:text-rose-300"
                                         value={editCustomerForm.data.suspension_reason}
                                         onChange={(e) => editCustomerForm.setData('suspension_reason', e.target.value)}
@@ -2462,66 +2439,21 @@ export default function AdminDashboard({
                             )}
                         </div>
 
-                        {/* Message Limits: WhatsApp & SMS */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
-                            <div>
-                                <div className="flex items-center justify-between">
-                                    <InputLabel value="WhatsApp Limit" />
-                                    <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">WhatsApp</span>
-                                </div>
-                                <TextInput
-                                    type="number"
-                                    min="0"
-                                    placeholder="Unlimited"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    value={editCustomerForm.data.max_whatsapp_limit}
-                                    onChange={(e) => editCustomerForm.setData('max_whatsapp_limit', e.target.value)}
-                                    hasError={Boolean(editCustomerForm.errors.max_whatsapp_limit)}
-                                />
-                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unlimited</span>
-                                <InputError message={editCustomerForm.errors.max_whatsapp_limit} className="mt-1" />
-                            </div>
+                        {/* Permissions */}
+                        <div className="space-y-2 pt-1">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
+                                    <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                    <span>Permissions</span>
+                                </h4>
 
-                            <div>
-                                <div className="flex items-center justify-between">
-                                    <InputLabel value="SMS Limit" />
-                                    <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">SMS</span>
-                                </div>
-                                <TextInput
-                                    type="number"
-                                    min="0"
-                                    placeholder="Unlimited"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    value={editCustomerForm.data.max_sms_limit}
-                                    onChange={(e) => editCustomerForm.setData('max_sms_limit', e.target.value)}
-                                    hasError={Boolean(editCustomerForm.errors.max_sms_limit)}
-                                />
-                                <span className="text-[10px] text-slate-400 font-mono">Leave blank for unlimited</span>
-                                <InputError message={editCustomerForm.errors.max_sms_limit} className="mt-1" />
-                            </div>
-                        </div>
-
-                        {/* Portal Activity Switchboard */}
-                        <div className="space-y-3 pt-1">
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                                <div>
-                                    <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
-                                        <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                                        <span>Permitted Portal Activities &amp; Features</span>
-                                    </h4>
-                                    <p className="text-[10.5px] text-slate-500 dark:text-slate-400">
-                                        Control what activities this organizer can conduct inside their portal.
-                                    </p>
-                                </div>
-
-                                {/* Presets */}
                                 <div className="flex items-center gap-1.5">
                                     <button
                                         type="button"
                                         onClick={() => editCustomerForm.setData('permissions', { ...DEFAULT_ORGANIZER_PERMS })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                                        className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
-                                        Full Access
+                                        Full
                                     </button>
                                     <button
                                         type="button"
@@ -2533,9 +2465,9 @@ export default function AdminDashboard({
                                              can_manage_scanners: true,
                                              can_export_data: true,
                                         })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                                        className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
-                                        Standard Host
+                                        Standard
                                     </button>
                                     <button
                                         type="button"
@@ -2547,22 +2479,21 @@ export default function AdminDashboard({
                                              can_manage_scanners: false,
                                              can_export_data: false,
                                         })}
-                                        className="px-2 py-1 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
+                                        className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
-                                        Revoke All
+                                        None
                                     </button>
                                 </div>
                             </div>
 
-                            {/* 6 Capability Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 {[
-                                    { key: 'can_create_events', label: 'Event Creation & Management', desc: 'Create, edit, and publish wedding & summit events.', icon: Calendar },
-                                    { key: 'can_import_guests', label: 'Guest Import & Registration', desc: 'Upload CSV/Excel spreadsheets and add attendees.', icon: FileSpreadsheet },
-                                    { key: 'can_send_broadcasts', label: 'WhatsApp & SMS Campaigns', desc: 'Dispatch instant passes & bulk SMS broadcasts.', icon: Send },
-                                    { key: 'can_customize_templates', label: '4K Pass Design Studio', desc: 'Customize typography, QR position, & background art.', icon: Palette },
-                                    { key: 'can_manage_scanners', label: 'Gate Scanner Staff Fleet', desc: 'Provision gatekeeper login PIN accounts.', icon: Smartphone },
-                                    { key: 'can_export_data', label: 'Audit & RSVP Data Export', desc: 'Download CSV reports and check-in logs.', icon: Download },
+                                    { key: 'can_create_events', label: 'Manage Events', icon: Calendar },
+                                    { key: 'can_import_guests', label: 'Import Guests', icon: FileSpreadsheet },
+                                    { key: 'can_send_broadcasts', label: 'Send Broadcasts', icon: Send },
+                                    { key: 'can_customize_templates', label: 'Pass Studio', icon: Palette },
+                                    { key: 'can_manage_scanners', label: 'Gate Scanners', icon: Smartphone },
+                                    { key: 'can_export_data', label: 'Export Data', icon: Download },
                                 ].map((cap) => {
                                     const IconComp = cap.icon;
                                     const isChecked = editCustomerForm.data.permissions[cap.key] !== false;
@@ -2570,26 +2501,21 @@ export default function AdminDashboard({
                                     return (
                                         <label
                                             key={cap.key}
-                                            className={`p-3 rounded-2xl border transition cursor-pointer flex items-start justify-between gap-3 ${
+                                            className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 ${
                                                 isChecked
                                                     ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
                                                     : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-70'
                                             }`}
                                         >
-                                            <div className="flex items-start gap-2.5">
-                                                <div className={`p-1.5 rounded-xl ${
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className={`p-1 rounded-lg ${
                                                     isChecked ? 'bg-cyan-600 text-white' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
                                                 }`}>
-                                                    <IconComp className="w-3.5 h-3.5" />
+                                                    <IconComp className="w-3 h-3" />
                                                 </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white">
-                                                        {cap.label}
-                                                    </div>
-                                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight">
-                                                        {cap.desc}
-                                                    </div>
-                                                </div>
+                                                <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                                                    {cap.label}
+                                                </span>
                                             </div>
 
                                             <input
@@ -2601,7 +2527,7 @@ export default function AdminDashboard({
                                                         [cap.key]: e.target.checked,
                                                     });
                                                 }}
-                                                className="mt-1 rounded text-cyan-600 focus:ring-cyan-500 w-4 h-4 cursor-pointer"
+                                                className="rounded text-cyan-600 focus:ring-cyan-500 w-3.5 h-3.5 cursor-pointer shrink-0"
                                             />
                                         </label>
                                     );
@@ -2610,12 +2536,12 @@ export default function AdminDashboard({
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
+                    <div className="pt-3.5 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
                         <SecondaryButton type="button" onClick={() => setEditingCustomer(null)}>
                             Cancel
                         </SecondaryButton>
                         <PrimaryButton type="submit" disabled={editCustomerForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
-                            Save Governance Changes
+                            Save Changes
                         </PrimaryButton>
                     </div>
                 </form>

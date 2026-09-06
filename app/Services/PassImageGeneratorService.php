@@ -543,6 +543,24 @@ class PassImageGeneratorService
                 self::drawSpacedTextWithShadow($im, $codeSize, $codeY, $codeColor, $fontArialBold, $codeText, $w, (int) max(2, 4 * $pixelScale));
             }
 
+            // 8. Footer Bar (Card Number & Verification Label)
+            $showFooter = ($cfg['show_footer'] ?? false) || ! empty($cfg['footer_text']) || ! empty($template?->footer_text);
+            if ($showFooter && ! empty($template?->footer_text ?: ($cfg['footer_text'] ?? ''))) {
+                $footerText = $cfg['footer_text'] ?? ($template?->footer_text ?: 'Secured & verified by KARDOVO');
+                $footerSize = (float) ($cfg['footer_size'] ?? 8.0) * $fontScale;
+                $footerColor = self::hexToGdColor($im, $cfg['footer_color'] ?? ($isEngagement ? '#7A1E28' : '#94A3B8'));
+                $footerY = $h - (int) (14 * $pixelScale);
+                $cardNumber = $guest->card_number ?: ('KDV-'.$guest->id);
+
+                // Left: Card number
+                imagettftext($im, $footerSize, 0, (int) (24 * $pixelScale), $footerY, $footerColor, $fontArialBold, $cardNumber);
+
+                // Right: Footer text
+                $bboxR = imagettfbbox($footerSize, 0, $fontArialBold, $footerText);
+                $rw = abs($bboxR[2] - $bboxR[0]);
+                imagettftext($im, $footerSize, 0, $w - (int) (24 * $pixelScale) - $rw, $footerY, $footerColor, $fontArialBold, $footerText);
+            }
+
         } else {
             // ══════════════════════════════════════════════════════════════
             // THEME: KARDOVO SIGNATURE PASS (Gradient Background)

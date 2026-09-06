@@ -783,6 +783,21 @@ export default function PersonalisedCard({
                                 <span>{uniqueCode}</span>
                             </div>
                         )}
+
+                        {/* Footer Note */}
+                        {(elementsConfig.show_footer === true || Boolean(elementsConfig.footer_text || template?.footer_text)) && (
+                            <div 
+                                className="absolute bottom-2 left-0 right-0 px-5 flex justify-between items-center text-[7.5px] tracking-wider pointer-events-none z-20 font-mono"
+                                style={{
+                                    color: isEngagement ? '#7A1E28' : (elementsConfig.footer_color || '#94A3B8'),
+                                    fontSize: `${parseFloat(elementsConfig.footer_size) || 7.5}px`,
+                                    textShadow: isEngagement ? 'none' : '0 1px 3px rgba(0,0,0,0.9)'
+                                }}
+                            >
+                                <span>{cardNumber}</span>
+                                <span>{footerText}</span>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     /* ═══════════ UPLOADED CUSTOM ARTWORK (All 9 Layers Dynamically Controlled) ═══════════ */
@@ -1010,6 +1025,21 @@ export default function PersonalisedCard({
                                 }}
                             >
                                 <span>{uniqueCode}</span>
+                            </div>
+                        )}
+
+                        {/* 5. FOOTER NOTE */}
+                        {(elementsConfig.show_footer === true || Boolean(elementsConfig.footer_text || template?.footer_text)) && (
+                            <div 
+                                className="absolute bottom-2 left-0 right-0 px-5 flex justify-between items-center text-[7.5px] tracking-wider pointer-events-none z-20 font-mono"
+                                style={{
+                                    color: elementsConfig.footer_color || '#94A3B8',
+                                    fontSize: `${parseFloat(elementsConfig.footer_size) || 7.5}px`,
+                                    textShadow: '0 1px 3px rgba(0,0,0,0.9)'
+                                }}
+                            >
+                                <span>{cardNumber}</span>
+                                <span>{footerText}</span>
                             </div>
                         )}
                     </div>

@@ -49,18 +49,38 @@ export default function CardTemplates({
     const isAdmin = user?.role === 'admin' || user?.is_admin;
     const canCustomize = isAdmin || (user?.status !== 'suspended' && user?.effective_permissions?.can_customize_templates !== false);
 
-    // Current Active Template (local state fallback to first template)
+    // Sort templates so custom user-added templates and newest templates appear first (left side of gallery)
+    const sortedTemplates = React.useMemo(() => {
+        return [...templates].sort((a, b) => {
+            const aIsUser = Boolean(a.user_id);
+            const bIsUser = Boolean(b.user_id);
+            if (aIsUser && !bIsUser) return -1;
+            if (!aIsUser && bIsUser) return 1;
+            return (b.id || 0) - (a.id || 0);
+        });
+    }, [templates]);
+
+    // Current Active Template (local state fallback to first template in sorted order)
     const [currentTpl, setCurrentTpl] = useState(() => {
-        return selectedTemplate || templates[0] || null;
+        if (selectedTemplate) return selectedTemplate;
+        if (templates.length === 0) return null;
+        const sorted = [...templates].sort((a, b) => {
+            const aIsUser = Boolean(a.user_id);
+            const bIsUser = Boolean(b.user_id);
+            if (aIsUser && !bIsUser) return -1;
+            if (!aIsUser && bIsUser) return 1;
+            return (b.id || 0) - (a.id || 0);
+        });
+        return sorted[0] || null;
     });
 
     useEffect(() => {
         if (selectedTemplate) {
             handleSelectTemplate(selectedTemplate);
-        } else if (templates.length > 0 && !currentTpl) {
-            handleSelectTemplate(templates[0]);
+        } else if (sortedTemplates.length > 0 && !currentTpl) {
+            handleSelectTemplate(sortedTemplates[0]);
         }
-    }, [selectedTemplate?.id]);
+    }, [selectedTemplate?.id, sortedTemplates]);
 
     const isCustomArt = Boolean(currentTpl?.template_type === 'custom_art' && currentTpl?.image_path);
     const isPredefinedTemplate = Boolean(currentTpl?.user_id === null || 
@@ -594,17 +614,27 @@ export default function CardTemplates({
                                 </p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 self-start sm:self-auto">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 font-mono text-[11px] font-extrabold shadow-2xs">
+                        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+                            {canCustomize && (
+                                <button
+                                    type="button"
+                                    onClick={() => setUploadModalOpen(true)}
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs shadow-sm transition active:scale-95 cursor-pointer"
+                                >
+                                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                                    <span>+ Add Custom Template</span>
+                                </button>
+                            )}
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 font-mono text-[11px] font-extrabold shadow-2xs">
                                 <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-                                <span>{templates.length} {templates.length === 1 ? 'Design Available' : 'Designs Available'}</span>
+                                <span>{sortedTemplates.length} {sortedTemplates.length === 1 ? 'Design Available' : 'Designs Available'}</span>
                             </span>
                         </div>
                     </div>
 
-                    {/* Template Cards Grid */}
+                    {/* Template Cards Grid (Newly added templates appear first at the left side) */}
                     <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                        {templates.map((tpl) => {
+                        {sortedTemplates.map((tpl) => {
                             const isSelected = currentTpl?.id === tpl.id;
                             const imgUrl = (isSelected && currentTpl?.image_path)
                                 ? currentTpl.image_path
@@ -656,7 +686,7 @@ export default function CardTemplates({
                                                         <Check className="w-3 h-3 stroke-[3]" /> Active in Studio
                                                     </span>
                                                 ) : isPersonal ? (
-                                                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wide border border-white/10 shadow-sm">
+                                                    <span className="px-2.5 py-1 rounded-lg bg-cyan-500/90 backdrop-blur-md text-slate-950 text-[10px] font-black tracking-wide border border-cyan-400 shadow-sm">
                                                         Custom Design
                                                     </span>
                                                 ) : isRecommended ? (

@@ -37,7 +37,7 @@ class CardTemplateController extends Controller
         }
 
         $templates = $templatesQuery
-            ->orderByRaw("CASE WHEN template_type = 'gradient_card' THEN 0 ELSE 1 END, id ASC")
+            ->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id DESC')
             ->get();
 
         if ($user && $user->isAdmin()) {

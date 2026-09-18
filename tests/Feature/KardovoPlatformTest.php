@@ -21,6 +21,21 @@ class KardovoPlatformTest extends TestCase
         $this->seed();
     }
 
+    public function test_new_user_with_no_events_can_view_dashboard(): void
+    {
+        $newUser = User::factory()->create([
+            'role' => 'organizer',
+        ]);
+
+        $response = $this->actingAs($newUser)->get(route('dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('Customer/Dashboard')
+            ->has('events', 0)
+        );
+    }
+
     public function test_guest_can_view_public_invitation_pass(): void
     {
         $guest = Guest::first();
@@ -344,5 +359,114 @@ class KardovoPlatformTest extends TestCase
         $this->assertEquals('suspended', $freshCustomer->status);
         $this->assertEquals('Account undergoing annual compliance check.', $freshCustomer->suspension_reason);
     }
-}
 
+    public function test_cannot_create_event_with_past_date(): void
+    {
+        $customer = User::where('role', 'customer')->first();
+
+        $response = $this->actingAs($customer)->post(route('events.store'), [
+            'title' => 'Yesterday Party',
+            'event_type' => 'Birthday Party',
+            'event_date' => now()->subDay()->toDateString(),
+            'venue' => 'Serena Hotel',
+            'city' => 'Dar es Salaam',
+        ]);
+
+        $response->assertSessionHasErrors('event_date');
+        $this->assertDatabaseMissing('events', ['title' => 'Yesterday Party']);
+    }
+
+    public function test_can_create_event_with_today_or_future_date(): void
+    {
+        $customer = User::where('role', 'customer')->first();
+
+        $response = $this->actingAs($customer)->post(route('events.store'), [
+            'title' => 'Tomorrow Grand Gala',
+            'event_type' => 'Corporate Gala',
+            'event_date' => now()->addDays(2)->toDateString(),
+            'venue' => 'Mlimani City Hall',
+            'city' => 'Dar es Salaam',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('events', ['title' => 'Tomorrow Grand Gala']);
+    }
+
+    public function test_organizer_scanner_cannot_access_or_scan_other_organizers_events(): void
+    {
+        $organizerA = User::factory()->create(['role' => 'customer']);
+        $organizerB = User::factory()->create(['role' => 'customer']);
+
+        $eventA = Event::create([
+            'user_id' => $organizerA->id,
+            'title' => 'Organizer A Exclusive Gala',
+            'event_type' => 'Gala',
+            'event_date' => now()->addDays(5)->toDateString(),
+            'venue' => 'Serena Hotel',
+            'city' => 'Dar es Salaam',
+            'status' => 'active',
+        ]);
+
+        $eventB = Event::create([
+            'user_id' => $organizerB->id,
+            'title' => 'Organizer B Private Wedding',
+            'event_type' => 'Wedding Reception',
+            'event_date' => now()->addDays(10)->toDateString(),
+            'venue' => 'Kunduchi Beach',
+            'city' => 'Dar es Salaam',
+            'status' => 'active',
+        ]);
+
+        $guestB = Guest::create([
+            'event_id' => $eventB->id,
+            'name' => 'Secret VIP Guest B',
+            'phone' => '+255 711 000 111',
+            'category' => 'VIP',
+            'max_entries' => 1,
+            'entries_used' => 0,
+        ]);
+
+        // 1. In index(), Organizer A only sees Event A, cannot load Event B via URL
+        $response = $this->actingAs($organizerA)->get(route('scanner.index', ['event_id' => $eventB->id]));
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page->component('Scanner/ScannerApp')
+            ->where('activeEvent.id', $eventA->id)
+            ->has('events', 1)
+        );
+
+        // 2. Organizer A cannot validate scan for Event B (403 Access Denied)
+        $validateResponse = $this->actingAs($organizerA)->postJson(route('scanner.validate'), [
+            'event_id' => $eventB->id,
+            'qr_code' => $guestB->unique_code,
+        ]);
+        $validateResponse->assertStatus(403);
+        $validateResponse->assertJsonPath('status', 'rejected');
+
+        // 3. If guest B pass is scanned at Event A gate, it is rejected and does NOT reveal Event B info
+        $validateOtherResponse = $this->actingAs($organizerA)->postJson(route('scanner.validate'), [
+            'event_id' => $eventA->id,
+            'qr_code' => $guestB->unique_code,
+        ]);
+        $validateOtherResponse->assertStatus(200);
+        $validateOtherResponse->assertJsonPath('status', 'rejected');
+        $this->assertNull($validateOtherResponse->json('other_event_title'));
+    }
+
+    public function test_sub_admin_is_redirected_to_admin_portal_from_dashboard_and_login(): void
+    {
+        $subAdmin = User::factory()->create([
+            'role' => 'sub_admin',
+        ]);
+
+        // 1. Visiting /dashboard redirects to admin portal
+        $response = $this->actingAs($subAdmin)->get(route('dashboard'));
+        $response->assertRedirect(route('admin.dashboard'));
+
+        // 2. Logging in via store redirects to admin portal
+        $loginResponse = $this->post(route('login'), [
+            'email' => $subAdmin->email,
+            'password' => 'password',
+        ]);
+        $loginResponse->assertRedirect(route('admin.dashboard'));
+    }
+}

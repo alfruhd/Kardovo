@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { Head, useForm, Link, router } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import Modal from '@/Components/Modal';
@@ -7,6 +8,7 @@ import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import ConfirmationModal from '@/Components/ConfirmationModal';
 import GatewayConfigModal from '@/Components/GatewayConfigModal';
 import { 
     validateEmail, 
@@ -22,7 +24,8 @@ import {
     UserPlus, 
     Calendar, 
     QrCode, 
-    Settings, 
+    Settings,
+    Zap, 
     Plus, 
     CheckCircle2, 
     XCircle,
@@ -59,7 +62,8 @@ import {
     FileSpreadsheet,
     Send,
     Download,
-    KeyRound
+    KeyRound,
+    TrendingUp
 } from 'lucide-react';
 
 export default function AdminDashboard({ 
@@ -74,6 +78,8 @@ export default function AdminDashboard({
     stats = {}, 
     gateways = {} 
 }) {
+
+
     const [activeTab, setActiveTab] = useState('scanners'); // 'scanners' | 'logs' | 'customers' | 'events' | 'templates' | 'gateways'
     const [customerModalOpen, setCustomerModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState(null);
@@ -86,6 +92,17 @@ export default function AdminDashboard({
     const [subAdminSearch, setSubAdminSearch] = useState("");
     const [actionDropdownOpen, setActionDropdownOpen] = useState(false);
     const actionDropdownRef = useRef(null);
+    const [confirmModal, setConfirmModal] = useState({
+        show: false,
+        title: '',
+        message: '',
+        warning: '',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        type: 'danger',
+        loading: false,
+        onConfirm: () => {},
+    });
 
     // Close action dropdown on outside click
     useEffect(() => {
@@ -109,7 +126,7 @@ export default function AdminDashboard({
         name: "",
         email: "",
         phone: "",
-        password: "password",
+        password: "",
         organizer_ids: [],
         event_ids: [],
     });
@@ -136,8 +153,31 @@ export default function AdminDashboard({
         );
     }, [subAdmins, subAdminSearch]);
 
+    const [subAdminClientErrors, setSubAdminClientErrors] = useState({});
+
     const handleCreateSubAdmin = (e) => {
         e.preventDefault();
+        const errs = {};
+        if (!validateRequired(createSubAdminForm.data.name, 2)) {
+            errs.name = 'Name is required.';
+        }
+        if (!validateEmail(createSubAdminForm.data.email)) {
+            errs.email = 'Valid email is required.';
+        }
+        if (createSubAdminForm.data.phone && !validatePhone(createSubAdminForm.data.phone)) {
+            errs.phone = 'Valid phone is required.';
+        }
+        const pwdCheck = validatePassword(createSubAdminForm.data.password);
+        if (!createSubAdminForm.data.password || !pwdCheck.isStrong) {
+            errs.password = 'Min 8 chars with uppercase, lowercase, numbers & symbols.';
+        }
+
+        if (Object.keys(errs).length > 0) {
+            setSubAdminClientErrors(errs);
+            return;
+        }
+
+        setSubAdminClientErrors({});
         createSubAdminForm.post(route("admin.storeSubAdmin"), {
             onSuccess: () => {
                 setSubAdminModalOpen(false);
@@ -149,8 +189,8 @@ export default function AdminDashboard({
     const openEditSubAdminModal = (subAdmin) => {
         setEditingSubAdmin(subAdmin);
         editSubAdminForm.setData({
-            name: subAdmin.name,
-            email: subAdmin.email,
+            name: subAdmin.name || "",
+            email: subAdmin.email || "",
             phone: subAdmin.phone || "",
             password: "",
             organizer_ids: subAdmin.assigned_organizers?.map(o => o.id) || [],
@@ -170,9 +210,22 @@ export default function AdminDashboard({
     };
 
     const handleDeleteSubAdmin = (subAdmin) => {
-        if (confirm(`Are you sure you want to permanently delete Sub Administrator "${subAdmin.name}" (${subAdmin.email})?\n\nThis will remove their administrative assignments without deleting the assigned events or organisers.`)) {
-            router.delete(route("admin.destroySubAdmin", subAdmin.id));
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Delete Sub-Admin?',
+            message: `Delete sub-admin account "${subAdmin.name}"?`,
+            warning: 'This cannot be undone.',
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route("admin.destroySubAdmin", subAdmin.id), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const DEFAULT_ORGANIZER_PERMS = {
@@ -190,7 +243,7 @@ export default function AdminDashboard({
         email: '',
         phone: '',
         company: '',
-        password: 'password',
+        password: '',
         role: 'customer',
         status: 'active',
         max_events_limit: '',
@@ -222,7 +275,7 @@ export default function AdminDashboard({
         event_date: '',
         event_time: '',
         venue: '',
-        city: 'Dar es Salaam',
+        city: '',
         description: '',
         card_template_id: '',
         user_id: '',
@@ -234,9 +287,9 @@ export default function AdminDashboard({
         name: '',
         email: '',
         phone: '',
-        gate_label: 'Gate 1 — Main VIP Entrance',
+        gate_label: '',
         customer_id: customers[0]?.id || '',
-        password: 'password',
+        password: '',
     });
 
     // Form: Edit Gate Staff
@@ -341,6 +394,7 @@ export default function AdminDashboard({
             max_events_limit: customer.max_events_limit ?? '',
             max_whatsapp_limit: customer.max_whatsapp_limit ?? customer.message_quotas?.whatsapp_limit ?? '',
             max_sms_limit: customer.max_sms_limit ?? customer.message_quotas?.sms_limit ?? '',
+            has_payment_override: customer.has_payment_override || false,
             suspension_reason: customer.suspension_reason || '',
             permissions: {
                 can_create_events: perms.can_create_events !== false,
@@ -393,9 +447,22 @@ export default function AdminDashboard({
     };
 
     const handleDeleteCustomer = (customer) => {
-        if (confirm(`Are you sure you want to permanently delete customer "${customer.name}" (${customer.email})?\n\nWARNING: This will permanently delete all associated events, guest passes, and gate scan records.`)) {
-            router.delete(route('admin.destroyCustomer', customer.id));
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Delete Customer?',
+            message: `Delete customer "${customer.name}" and all their events?`,
+            warning: 'This cannot be undone.',
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('admin.destroyCustomer', customer.id), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const openEditEventModal = (event) => {
@@ -430,35 +497,42 @@ export default function AdminDashboard({
     };
 
     const handleDeleteEvent = (event) => {
-        const ownerName = event.user?.name || 'Organiser';
-        if (confirm(`Are you sure you want to permanently delete event "${event.title}" (Organiser: ${ownerName})?\n\nWARNING: This will remove all associated guests (${event.guests_count || 0}), scannable passes, messages, and gate logs.`)) {
-            router.delete(route('events.destroy', event.id));
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Delete Event?',
+            message: `Delete event "${event.title}"? All guests and passes will be removed.`,
+            warning: 'This cannot be undone.',
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('events.destroy', event.id), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const handleCreateScanner = (e) => {
         e.preventDefault();
         const errs = {};
         if (!validateRequired(createScannerForm.data.name, 2)) {
-            errs.name = 'Gate staff name must be at least 2 characters.';
-        }
+            errs.name = 'Name is required.';
         if (!validateEmail(createScannerForm.data.email)) {
-            errs.email = 'Please provide a valid email address.';
+            errs.email = 'Valid email is required.';
         }
-        if (createScannerForm.data.phone && !validatePhone(createScannerForm.data.phone)) {
-            errs.phone = 'Please provide a valid phone number (e.g. +255 712 345 678).';
+            errs.phone = 'Valid phone is required.';
         }
         if (!validateRequired(createScannerForm.data.gate_label, 2)) {
-            errs.gate_label = 'Gate assignment label is required.';
         }
         const pwdCheck = validatePassword(createScannerForm.data.password);
         if (!createScannerForm.data.password || !pwdCheck.isStrong) {
-            errs.password = 'Staff password must be strong (min 8 chars, uppercase, lowercase, numbers & symbols).';
         }
 
         if (Object.keys(errs).length > 0) {
             setScannerClientErrors(errs);
-            return;
         }
 
         setScannerClientErrors({});
@@ -522,26 +596,60 @@ export default function AdminDashboard({
     };
 
     const handleDeleteScanner = (scanner) => {
-        if (confirm(`Are you sure you want to delete gate staff account "${scanner.name}" (${scanner.email})?`)) {
-            router.delete(route('admin.destroyScanner', scanner.id));
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Delete Gate Staff?',
+            message: `Delete gate staff account "${scanner.name}"?`,
+            warning: 'They will no longer be able to scan passes.',
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('admin.destroyScanner', scanner.id), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const handleDeleteLog = (log) => {
         const name = log.guest_name || 'Pass';
-        if (confirm(`Are you sure you want to delete the scan audit record for "${name}" (${log.status === 'granted' ? 'Admitted' : 'Rejected'})?`)) {
-            router.delete(route('admin.destroyScanLog', log.id), {
-                preserveScroll: true,
-            });
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Delete Scan Log?',
+            message: `Delete scan record for "${name}"?`,
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('admin.destroyScanLog', log.id), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const handleClearAllLogs = () => {
-        if (confirm(`Are you sure you want to permanently delete ALL ${recentScanLogs.length} scan audit records?\n\nWARNING: This action cannot be undone.`)) {
-            router.delete(route('admin.clearScanLogs'), {
-                preserveScroll: true,
-            });
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Clear All Scan Logs?',
+            message: `Delete all ${recentScanLogs.length} scan records?`,
+            warning: 'This cannot be undone.',
+            confirmText: 'Clear All',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('admin.clearScanLogs'), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     return (
@@ -553,10 +661,10 @@ export default function AdminDashboard({
                     <button
                         type="button"
                         onClick={() => setGatewayModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
                         title="Delivery Gateways"
                     >
-                        <Settings className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        <Settings className="w-3.5 h-3.5 text-emerald-400" />
                         <span className="hidden sm:inline">Gateways</span>
                     </button>
 
@@ -565,24 +673,24 @@ export default function AdminDashboard({
                         <button
                             type="button"
                             onClick={() => setActionDropdownOpen(!actionDropdownOpen)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
-                            <Plus className="w-3.5 h-3.5" />
+                            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                             <span>Create</span>
                             <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${actionDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {actionDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-52 bg-white dark:bg-[#0C1729] rounded-2xl shadow-xl border border-slate-200 dark:border-white/[0.08] p-1.5 z-50 animate-fadeIn space-y-0.5">
+                            <div className="absolute right-0 mt-2 w-52 bg-[#0B2545] text-white rounded-2xl shadow-2xl border border-[#173860] p-1.5 z-50 animate-fadeIn space-y-0.5">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setActionDropdownOpen(false);
                                         setCustomerModalOpen(true);
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition text-left cursor-pointer"
                                 >
-                                    <Users className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                    <Users className="w-3.5 h-3.5 text-emerald-400" />
                                     <span>Customer Account</span>
                                 </button>
                                 <button
@@ -591,9 +699,9 @@ export default function AdminDashboard({
                                         setActionDropdownOpen(false);
                                         setCreateScannerModalOpen(true);
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition text-left cursor-pointer"
                                 >
-                                    <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
                                     <span>Gate Staff Scanner</span>
                                 </button>
                                 {isSuperAdmin && (
@@ -603,10 +711,10 @@ export default function AdminDashboard({
                                             setActionDropdownOpen(false);
                                             setSubAdminModalOpen(true);
                                         }}
-                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition text-left cursor-pointer"
                                     >
-                                        <UserCheck className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
-                                        <span>Sub-Administrator</span>
+                                        <UserCheck className="w-3.5 h-3.5 text-sky-400" />
+                                        <span>Sub Admin</span>
                                     </button>
                                 )}
                             </div>
@@ -619,146 +727,111 @@ export default function AdminDashboard({
 
             <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
                 
-                {/* 1. SIMPLE PAGE TITLE HEADER */}
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                            Platform Operations Center
-                        </h1>
-                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                            Centralized governance for organizers, delivery gateways, and gate scanner fleet.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-[#0B1524] px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
-                            {gateStaff.length} Scanners Fleet
-                        </span>
-                        <span className="text-xs font-mono font-bold text-cyan-700 dark:text-cyan-300 bg-white/80 dark:bg-[#0B1524] px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
-                            {Number(stats.total_guests || 0).toLocaleString()} Passes Live
-                        </span>
-                    </div>
+                {/* 1. MINIMALISTIC EXECUTIVE HEADER */}
+                <div className="pb-1">
+                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+                        Platform Operations Center
+                    </h1>
+                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                        Centralized governance for organizers, delivery gateways, and gate staff fleet.
+                    </p>
                 </div>
 
-                {/* 2. EXECUTIVE METRIC TELEMETRY GRID (Uniform Design System) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
-                    {/* Sub Admins */}
-                    {isSuperAdmin && (
-                        <div 
-                            onClick={() => setActiveTab("sub_admins")}
-                            className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
-                        >
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Sub Admins</span>
-                                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
-                                    <UserCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                
+                {/* 2. EXECUTIVE ANALYTICS DASHBOARD */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Platform Activity Chart */}
+                    <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col h-full min-h-[350px]">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Platform Throughput</h3>
+                                <p className="text-[11px] text-slate-500">WhatsApp vs SMS dispatch volume</p>
+                            </div>
+                            <div className="flex items-center gap-3 text-[10px] font-bold">
+                                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500"></div><span className="text-slate-600 dark:text-slate-400">WhatsApp</span></div>
+                                <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-500"></div><span className="text-slate-600 dark:text-slate-400">SMS</span></div>
+                            </div>
+                        </div>
+                        <div className="flex-1 min-h-0 w-full">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={stats.traffic_data || []} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="colorWhatsapp" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                                        </linearGradient>
+                                        <linearGradient id="colorSms" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" strokeOpacity={0.15} />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
+                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                                    <Tooltip 
+                                        contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                        itemStyle={{ color: '#e2e8f0', fontSize: '12px', fontWeight: 'bold' }}
+                                    />
+                                    <Area type="monotone" dataKey="whatsapp" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorWhatsapp)" />
+                                    <Area type="monotone" dataKey="sms" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorSms)" />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Quick Stats Mini-Grid */}
+                    <div className="grid grid-cols-2 gap-4 h-full">
+                        <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between h-full">
+                            <div>
+                                <div className="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 dark:text-slate-400 flex items-center justify-center mb-3">
+                                    <QrCode className="w-5 h-5" />
                                 </div>
+                                <h4 className="text-3xl font-black text-slate-900 dark:text-white font-display mb-1 tracking-tight">{stats.total_scans?.toLocaleString() || 0}</h4>
+                                <p className="text-xs text-slate-500 font-medium">Total Passes Scanned</p>
                             </div>
-                            <div className="mt-2.5 sm:mt-3">
-                                <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats.total_sub_admins || subAdmins.length}</div>
-                                <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Delegated staff</div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Organisers */}
-                    <div 
-                        onClick={() => setActiveTab("customers")}
-                        className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Organisers</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
-                                <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <div className="mt-2 text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                <span>{stats.scans_growth || '+0%'} vs last week</span>
                             </div>
                         </div>
-                        <div className="mt-2.5 sm:mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats.total_customers || customers.length}</div>
-                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Active accounts</div>
-                        </div>
-                    </div>
-
-                    {/* Gate Staff */}
-                    <div 
-                        onClick={() => setActiveTab("scanners")}
-                        className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Gate Staff</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
-                                <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between h-full">
+                            <div>
+                                <div className="w-10 h-10 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center mb-3">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <h4 className="text-3xl font-black text-slate-900 dark:text-white font-display mb-1 tracking-tight">{stats.total_events || 0}</h4>
+                                <p className="text-xs text-slate-500 font-medium">Live Events</p>
+                            </div>
+                            <div className="mt-2 text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                <span>{stats.events_growth || '+0%'} vs last week</span>
                             </div>
                         </div>
-                        <div className="mt-2.5 sm:mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats.total_gate_staff || gateStaff.length}</div>
-                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Mobile scanners</div>
-                        </div>
-                    </div>
-
-                    {/* Total Events */}
-                    <div 
-                        onClick={() => setActiveTab("events")}
-                        className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Global Events</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
-                                <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between h-full">
+                            <div>
+                                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
+                                    <Smartphone className="w-5 h-5" />
+                                </div>
+                                <h4 className="text-3xl font-black text-slate-900 dark:text-white font-display mb-1 tracking-tight">{stats.whatsapp_delivered?.toLocaleString() || 0}</h4>
+                                <p className="text-xs text-slate-500 font-medium">WhatsApp Delivered</p>
+                            </div>
+                            <div className="mt-2 text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                <span>{stats.whatsapp_growth || '+0%'} vs last week</span>
                             </div>
                         </div>
-                        <div className="mt-2.5 sm:mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{stats.total_events || allEvents.length}</div>
-                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">All campaigns</div>
-                        </div>
-                    </div>
-
-                    {/* Total Guests */}
-                    <div 
-                        onClick={() => setActiveTab("events")}
-                        className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Guest Passes</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
-                                <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between h-full">
+                            <div>
+                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
+                                    <MessageSquare className="w-5 h-5" />
+                                </div>
+                                <h4 className="text-3xl font-black text-slate-900 dark:text-white font-display mb-1 tracking-tight">{stats.sms_delivered?.toLocaleString() || 0}</h4>
+                                <p className="text-xs text-slate-500 font-medium">SMS Delivered</p>
                             </div>
-                        </div>
-                        <div className="mt-2.5 sm:mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(stats.total_guests || 0).toLocaleString()}</div>
-                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Issued passes</div>
-                        </div>
-                    </div>
-
-                    {/* Check-ins */}
-                    <div 
-                        onClick={() => setActiveTab("logs")}
-                        className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Check-ins</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
-                                <CheckCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <div className="mt-2 text-[10px] font-bold text-emerald-600 flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                <span>{stats.sms_growth || '+0%'} vs last week</span>
                             </div>
-                        </div>
-                        <div className="mt-2.5 sm:mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(stats.total_checkins || 0).toLocaleString()}</div>
-                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Admitted guests</div>
-                        </div>
-                    </div>
-
-                    {/* Scan Audits */}
-                    <div 
-                        onClick={() => setActiveTab("logs")}
-                        className="group rounded-2xl p-3 sm:p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-cyan-500/40 dark:hover:border-cyan-500/40 transition-all duration-200 flex flex-col justify-between cursor-pointer active:scale-[0.99]"
-                    >
-                        <div className="flex items-center justify-between">
-                            <span className="text-[9.5px] sm:text-[10px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Scan Audits</span>
-                            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center transition-colors">
-                                <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                            </div>
-                        </div>
-                        <div className="mt-2.5 sm:mt-3">
-                            <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(stats.total_scans || 0).toLocaleString()}</div>
-                            <div className="text-[10px] sm:text-[11px] text-cyan-600 dark:text-cyan-400 font-semibold mt-0.5">Total logs</div>
                         </div>
                     </div>
                 </div>
@@ -768,7 +841,7 @@ export default function AdminDashboard({
                     {[
                         ...(isSuperAdmin ? [{ id: 'sub_admins', label: 'Sub Admins', count: subAdmins.length, icon: UserCheck }] : []),
                         { id: 'scanners', label: 'Gate Staff', count: gateStaff.length, icon: Smartphone },
-                        { id: 'logs', label: 'Audit Stream', count: recentScanLogs.length, icon: Activity },
+                        { id: 'logs', label: 'Admin Logs', count: recentScanLogs.length, icon: Activity },
                         { id: 'customers', label: 'Organisers', count: customers.length, icon: Users },
                         { id: 'events', label: 'Events', count: allEvents.length, icon: Calendar },
                         { id: 'templates', label: 'Templates', count: globalTemplates.length, icon: Palette },
@@ -783,16 +856,12 @@ export default function AdminDashboard({
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex-shrink-0 min-w-[125px] sm:min-w-0 sm:w-full h-10 sm:h-11 px-3 rounded-xl text-xs font-bold flex items-center justify-between gap-1.5 transition-all duration-200 active:scale-[0.98] cursor-pointer group ${
                                     isActive
-                                        ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs"
+                                        ? "bg-[#16A34A] text-white shadow-xs"
                                         : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]"
                                 }`}
                             >
-                                <div className="flex items-center gap-1.5 sm:gap-2 truncate">
-                                    <IconComponent className={`w-3.5 h-3.5 flex-shrink-0 transition-colors ${
-                                        isActive 
-                                            ? "text-cyan-400 dark:text-white" 
-                                            : "text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200"
-                                    }`} />
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <IconComponent className="w-4 h-4 flex-shrink-0" />
                                     <span className="truncate">{tab.label}</span>
                                 </div>
                                 <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-bold flex-shrink-0 transition-colors ${
@@ -807,40 +876,42 @@ export default function AdminDashboard({
                     })}
                 </div>
 
-                {/* TAB 0: SUB ADMINISTRATORS FLEET & SCOPED ASSIGNMENTS */}
+                {/* TAB 0: SUB ADMINS */}
                 {isSuperAdmin && activeTab === 'sub_admins' && (
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
-                        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
-                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                        <UserCheck className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                    </div>
-                                    <span>Sub Administrators &amp; Delegated Scope</span>
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Manage delegated administrators and assign them to oversee specific event organisers or distinct campaigns. Organisers have zero control over these accounts.
-                                </p>
+                        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
+                                    <UserCheck className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
+                                        Sub Admins
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">
+                                        Delegated administrators with assigned event and organiser access.
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                                 <div className="relative flex-1 sm:flex-initial">
                                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                     <input
                                         type="text"
-                                        placeholder="Search sub admins..."
+                                        placeholder="Search..."
                                         value={subAdminSearch}
                                         onChange={(e) => setSubAdminSearch(e.target.value)}
-                                        className="pl-8 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:ring-cyan-500 w-full sm:w-56"
+                                        className="pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:ring-emerald-500 w-full sm:w-48"
                                     />
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setSubAdminModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
-                                    <span>New Sub Admin</span>
+                                    <span>Create Sub Admin</span>
                                 </button>
                             </div>
                         </div>
@@ -849,19 +920,19 @@ export default function AdminDashboard({
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/90 dark:bg-[#07111D]/90 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.08] font-mono tracking-wider sticky top-0 z-10 backdrop-blur-xs">
-                                        <th className="py-3.5 px-5 font-extrabold text-left">Sub Administrator</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Contact Info</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Assigned Organisers</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Assigned Events</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Authority</th>
-                                        <th className="py-3.5 px-5 font-extrabold text-right">Actions</th>
+                                        <th className="py-3 px-5 font-bold text-left">Admin</th>
+                                        <th className="py-3 px-4 font-bold text-left">Contact</th>
+                                        <th className="py-3 px-4 font-bold text-left">Organisers</th>
+                                        <th className="py-3 px-4 font-bold text-left">Events</th>
+                                        <th className="py-3 px-4 font-bold text-left">Role</th>
+                                        <th className="py-3 px-5 font-bold text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] font-medium">
                                     {filteredSubAdmins.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
-                                                No sub administrators found matching your filter.
+                                                No sub administrators found.
                                             </td>
                                         </tr>
                                     ) : (
@@ -922,7 +993,7 @@ export default function AdminDashboard({
                                                         <button
                                                             type="button"
                                                             onClick={() => openEditSubAdminModal(admin)}
-                                                            className="p-1.5 rounded-xl text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
+                                                            className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
                                                             title="Edit Sub Admin & Assignments"
                                                         >
                                                             <Edit className="w-3.5 h-3.5" />
@@ -946,40 +1017,42 @@ export default function AdminDashboard({
                     </div>
                 )}
 
-                {/* TAB 1: GATE STAFF FLEET & STATION ASSIGNMENTS */}
+                {/* TAB 1: GATE STAFF */}
                 {activeTab === 'scanners' && (
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
-                        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
-                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                        <Smartphone className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                    </div>
-                                    <span>Gate Staff Fleet &amp; Station Deployments</span>
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Manage mobile gatekeeper credentials, assigned venue entrance gates, and verification throughput.
-                                </p>
+                        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
+                                    <Smartphone className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
+                                        Gate Staff
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">
+                                        Mobile scanner personnel deployed to entrance gates.
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                                 <div className="relative flex-1 sm:flex-initial">
                                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                     <input
                                         type="text"
-                                        placeholder="Search gate staff..."
+                                        placeholder="Search..."
                                         value={staffSearch}
                                         onChange={(e) => setStaffSearch(e.target.value)}
-                                        className="pl-8 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:ring-cyan-500 w-full sm:w-56"
+                                        className="pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:ring-emerald-500 w-full sm:w-48"
                                     />
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setCreateScannerModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
-                                    <span>Deploy Scanner</span>
+                                    <span>Create Gate Staff</span>
                                 </button>
                             </div>
                         </div>
@@ -988,12 +1061,12 @@ export default function AdminDashboard({
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/90 dark:bg-[#07111D]/90 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.08] font-mono tracking-wider sticky top-0 z-10 backdrop-blur-xs">
-                                        <th className="py-3.5 px-5 font-extrabold text-left">Staff Member &amp; Account</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Gate Station / Entrance</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Assigned Organiser</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-center">Volume</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-center">Granted vs Rejected</th>
-                                        <th className="py-3.5 px-5 font-extrabold text-right">Actions</th>
+                                        <th className="py-3 px-5 font-bold text-left">Staff Member</th>
+                                        <th className="py-3 px-4 font-bold text-left">Gate</th>
+                                        <th className="py-3 px-4 font-bold text-left">Organiser</th>
+                                        <th className="py-3 px-4 font-bold text-center">Volume</th>
+                                        <th className="py-3 px-4 font-bold text-center">Passed / Rejected</th>
+                                        <th className="py-3 px-5 font-bold text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] font-medium">
@@ -1056,7 +1129,7 @@ export default function AdminDashboard({
                                                             <button
                                                                 type="button"
                                                                 onClick={() => openEditScannerModal(st)}
-                                                                className="p-1.5 rounded-xl text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
+                                                                className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
                                                                 title="Edit Gate Staff Account"
                                                             >
                                                                 <Edit className="w-3.5 h-3.5" />
@@ -1081,32 +1154,32 @@ export default function AdminDashboard({
                     </div>
                 )}
 
-                {/* TAB 2: LIVE GATE SCAN AUDIT STREAM */}
+                {/* TAB 2: ADMIN LOGS */}
                 {activeTab === 'logs' && (
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden space-y-0 transition-colors duration-300">
-                        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                             <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                    <Activity className="w-4 h-4 text-cyan-600 dark:text-cyan-400 animate-pulse" />
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
+                                    <Activity className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
-                                        Live Security Verification Feed
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
+                                        Admin Logs
                                     </h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        Real-time chronological telemetry for pass admissions and rejections across all entrance gates.
+                                    <p className="text-[11px] text-slate-400">
+                                        Chronological security audit stream of all gate scans.
                                     </p>
                                 </div>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                                <div className="flex items-center bg-slate-100 dark:bg-white/[0.06] p-1 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08]">
+                                <div className="flex items-center bg-slate-100 dark:bg-white/[0.06] p-0.5 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-white/[0.08]">
                                     <button
                                         type="button"
                                         onClick={() => setLogStatusFilter('all')}
-                                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-xs ${
                                             logStatusFilter === 'all' 
-                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs' 
+                                                ? 'bg-[#16A34A] text-white shadow-2xs font-bold' 
                                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                     >
@@ -1115,9 +1188,9 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => setLogStatusFilter('granted')}
-                                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-xs ${
                                             logStatusFilter === 'granted' 
-                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs' 
+                                                ? 'bg-[#16A34A] text-white shadow-2xs font-bold' 
                                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                     >
@@ -1126,9 +1199,9 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => setLogStatusFilter('rejected')}
-                                        className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
+                                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer text-xs ${
                                             logStatusFilter === 'rejected' 
-                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs' 
+                                                ? 'bg-[#16A34A] text-white shadow-2xs font-bold' 
                                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                         }`}
                                     >
@@ -1141,10 +1214,10 @@ export default function AdminDashboard({
                                         type="button"
                                         onClick={handleClearAllLogs}
                                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-rose-700 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200/80 dark:border-rose-800/60 transition active:scale-95 cursor-pointer shadow-2xs"
-                                        title="Delete all scan audit records"
+                                        title="Clear all scan logs"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
-                                        <span>Clear All Logs</span>
+                                        <span>Clear</span>
                                     </button>
                                 )}
                             </div>
@@ -1154,12 +1227,12 @@ export default function AdminDashboard({
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead className="sticky top-0 bg-slate-50/95 dark:bg-[#07111D]/95 backdrop-blur-md z-10">
                                     <tr className="text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.08] font-mono tracking-wider">
-                                        <th className="py-3.5 px-5 font-extrabold text-left">Verification Result</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Attendee / Pass ID</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Event Campaign</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Gatekeeper &amp; Station</th>
-                                        <th className="py-3.5 px-5 font-extrabold text-right">Timestamp</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-center w-14">Action</th>
+                                        <th className="py-3 px-5 font-bold text-left">Result</th>
+                                        <th className="py-3 px-4 font-bold text-left">Guest / Pass</th>
+                                        <th className="py-3 px-4 font-bold text-left">Event</th>
+                                        <th className="py-3 px-4 font-bold text-left">Staff &amp; Gate</th>
+                                        <th className="py-3 px-5 font-bold text-right">Time</th>
+                                        <th className="py-3 px-4 font-bold text-center w-14">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] font-medium">
@@ -1185,11 +1258,6 @@ export default function AdminDashboard({
                                                         )}
                                                         <span>{log.status === 'granted' ? 'ADMISSION GRANTED' : 'REJECTED / INVALID'}</span>
                                                     </span>
-                                                    {log.rejection_reason && (
-                                                        <div className="text-[10.5px] text-rose-600 dark:text-rose-400 font-semibold mt-1">
-                                                            Reason: {log.rejection_reason}
-                                                        </div>
-                                                    )}
                                                 </td>
                                                 <td className="py-3.5 px-4 align-middle">
                                                     <div className="font-bold text-slate-900 dark:text-white text-sm truncate">{log.guest_name}</div>
@@ -1201,7 +1269,7 @@ export default function AdminDashboard({
                                                 <td className="py-3.5 px-4 align-middle">
                                                     <div className="font-bold text-slate-900 dark:text-white truncate">{log.scanner_name}</div>
                                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 mt-0.5 truncate">
-                                                        <MapPin className="w-3 h-3 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+                                                        <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500 flex-shrink-0" />
                                                         <span className="truncate">{log.gate_label}</span>
                                                     </div>
                                                 </td>
@@ -1227,40 +1295,42 @@ export default function AdminDashboard({
                     </div>
                 )}
 
-                {/* TAB 3: CUSTOMER ACCOUNTS (ORGANISERS) */}
+                {/* TAB 3: ORGANISERS */}
                 {activeTab === 'customers' && (
                     <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
-                        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
-                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                        <Users className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                    </div>
-                                    <span>Customer Organiser Accounts &amp; Tenancy</span>
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Organisers managing events, personalized pass suites, and attendee dispatch campaigns.
-                                </p>
+                        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
+                                    <Users className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
+                                        Organisers
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">
+                                        Host accounts managing event passes and guest dispatch campaigns.
+                                    </p>
+                                </div>
                             </div>
 
-                            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                                 <div className="relative flex-1 sm:flex-initial">
                                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                     <input
                                         type="text"
-                                        placeholder="Search customers..."
+                                        placeholder="Search..."
                                         value={customerSearch}
                                         onChange={(e) => setCustomerSearch(e.target.value)}
-                                        className="pl-8 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:ring-cyan-500 w-full sm:w-56"
+                                        className="pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:ring-emerald-500 w-full sm:w-48"
                                     />
                                 </div>
                                 <button
                                     type="button"
                                     onClick={() => setCustomerModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] rounded-xl shadow-xs transition-all duration-200 active:scale-95 cursor-pointer whitespace-nowrap"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
-                                    <span>New Customer</span>
+                                    <span>Create Organiser</span>
                                 </button>
                             </div>
                         </div>
@@ -1268,22 +1338,21 @@ export default function AdminDashboard({
                         <div className="overflow-x-auto overflow-y-auto max-h-[520px] scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
                             <table className="w-full text-left text-xs border-collapse">
                                 <thead>
-                                    <tr className="bg-slate-50/90 dark:bg-[#07111D]/90 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.08] font-mono tracking-wider sticky top-0 z-10 backdrop-blur-xs">
-                                        <th className="py-3.5 px-5 font-extrabold text-left">Organiser / Contact</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Role &amp; Authority</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Status</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Message Quotas</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Activity Permissions</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-center">Events</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-center">Fleet</th>
-                                        <th className="py-3.5 px-5 font-extrabold text-right">Actions</th>
+                                    <tr className="bg-slate-50/70 dark:bg-white/[0.02] text-[10.5px] uppercase font-bold text-slate-400 border-b border-slate-200/80 dark:border-white/[0.08] font-mono tracking-wider sticky top-0 z-10 backdrop-blur-xs">
+                                        <th className="py-3 px-4 font-bold text-left">Organiser</th>
+                                        <th className="py-3 px-4 font-bold text-left">Role</th>
+                                        <th className="py-3 px-4 font-bold text-left">Status</th>
+                                        <th className="py-3 px-4 font-bold text-left">Permissions</th>
+                                        <th className="py-3 px-4 font-bold text-center">Events</th>
+                                        <th className="py-3 px-4 font-bold text-center">Fleet</th>
+                                        <th className="py-3 px-4 font-bold text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] font-medium">
+                                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.05] font-medium">
                                     {filteredCustomers.length === 0 ? (
                                         <tr>
-                                            <td colSpan={8} className="py-12 text-center text-slate-400 text-xs">
-                                                No customer accounts found matching your query.
+                                            <td colSpan={7} className="py-12 text-center text-slate-400 text-xs">
+                                                No organisers found.
                                             </td>
                                         </tr>
                                     ) : (
@@ -1367,56 +1436,17 @@ export default function AdminDashboard({
                                                         )}
                                                     </td>
 
-                                                    {/* Message Quotas (WhatsApp & SMS) */}
-                                                    <td className="py-3.5 px-4 align-middle whitespace-nowrap">
-                                                        {(role === 'admin' || role === 'sub_admin') && (c.max_whatsapp_limit === null || c.max_whatsapp_limit === undefined) && (c.max_sms_limit === null || c.max_sms_limit === undefined) ? (
-                                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 text-[10.5px] font-mono font-medium border border-slate-200/70 dark:border-white/[0.08]">
-                                                                <span>Unrestricted (∞)</span>
-                                                            </span>
-                                                        ) : (
-                                                            <div className="flex flex-col gap-1 w-[135px]">
-                                                                {/* WhatsApp Quota Pill */}
-                                                                <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/[0.08] text-[10.5px] font-mono">
-                                                                    <span className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[9.5px]">WA</span>
-                                                                    <span className="text-slate-700 dark:text-slate-200 font-medium">
-                                                                        <strong className="text-slate-900 dark:text-white font-bold">{c.message_quotas?.whatsapp_used ?? 0}</strong>
-                                                                        <span className="text-slate-400 dark:text-slate-500 mx-0.5">/</span>
-                                                                        <span className="text-slate-600 dark:text-slate-400">
-                                                                            {c.max_whatsapp_limit !== null && c.max_whatsapp_limit !== undefined && c.max_whatsapp_limit !== '' 
-                                                                                ? c.max_whatsapp_limit 
-                                                                                : (c.message_quotas?.whatsapp_limit !== null && c.message_quotas?.whatsapp_limit !== undefined ? c.message_quotas.whatsapp_limit : '∞')}
-                                                                        </span>
-                                                                    </span>
-                                                                </div>
-
-                                                                {/* SMS Quota Pill */}
-                                                                <div className="flex items-center justify-between px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/[0.08] text-[10.5px] font-mono">
-                                                                    <span className="text-slate-500 dark:text-slate-400 font-bold uppercase text-[9.5px]">SMS</span>
-                                                                    <span className="text-slate-700 dark:text-slate-200 font-medium">
-                                                                        <strong className="text-slate-900 dark:text-white font-bold">{c.message_quotas?.sms_used ?? 0}</strong>
-                                                                        <span className="text-slate-400 dark:text-slate-500 mx-0.5">/</span>
-                                                                        <span className="text-slate-600 dark:text-slate-400">
-                                                                            {c.max_sms_limit !== null && c.max_sms_limit !== undefined && c.max_sms_limit !== '' 
-                                                                                ? c.max_sms_limit 
-                                                                                : (c.message_quotas?.sms_limit !== null && c.message_quotas?.sms_limit !== undefined ? c.message_quotas.sms_limit : '∞')}
-                                                                        </span>
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </td>
-
                                                     {/* Permissions Activities */}
                                                     <td className="py-3.5 px-4 align-middle whitespace-nowrap">
                                                         {role === 'admin' || role === 'sub_admin' ? (
                                                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 text-[11px] font-medium font-mono border border-slate-200/70 dark:border-white/[0.08]">
                                                                 <Shield className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                                                                <span>Full Administrative Scope</span>
+                                                                <span>Full Access</span>
                                                             </span>
                                                         ) : isSuspended ? (
                                                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-rose-600 dark:text-rose-400 text-[11px] font-medium font-mono border border-slate-200/70 dark:border-white/[0.08]">
                                                                 <XCircle className="w-3 h-3 text-rose-500" />
-                                                                <span>Portal Access Suspended</span>
+                                                                <span>Access Suspended</span>
                                                             </span>
                                                         ) : (
                                                             <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-white/[0.05] border border-slate-200/70 dark:border-white/[0.08]">
@@ -1463,16 +1493,15 @@ export default function AdminDashboard({
                                                     </td>
 
                                                     {/* Actions */}
-                                                    <td className="py-3.5 px-5 align-middle text-right whitespace-nowrap">
-                                                        <div className="flex items-center justify-end gap-1.5">
+                                                    <td className="py-3.5 px-4 align-middle text-right whitespace-nowrap">
+                                                        <div className="flex items-center justify-end gap-1">
                                                             <button
                                                                 type="button"
                                                                 onClick={() => openEditCustomerModal(c)}
-                                                                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 border border-slate-200/70 dark:border-white/[0.08] text-xs font-bold transition shadow-2xs cursor-pointer active:scale-95"
-                                                                title="Manage Role & Activity Access"
+                                                                className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
+                                                                title="Edit Organiser"
                                                             >
-                                                                <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                                                                <span>Governance</span>
+                                                                <Edit className="w-3.5 h-3.5" />
                                                             </button>
                                                             <button
                                                                 type="button"
@@ -1496,98 +1525,100 @@ export default function AdminDashboard({
 
                 {/* TAB 4: EVENT DIRECTORY */}
                 {activeTab === 'events' && (
-                    <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
-                        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display flex items-center gap-2.5">
-                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                        <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                    </div>
-                                    <span>All Platform Events Directory</span>
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                    Global catalog of events created across all customer organizer accounts.
-                                </p>
+                    <div className="bg-white dark:bg-[#0B1524]/90 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
+                        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
+                                    <Calendar className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
+                                        Events
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">
+                                        Global directory of events across all customer organisers.
+                                    </p>
+                                </div>
                             </div>
 
                             <div className="relative">
                                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                 <input
                                     type="text"
-                                    placeholder="Search events, venues, organizers..."
+                                    placeholder="Search events..."
                                     value={eventSearch}
                                     onChange={(e) => setEventSearch(e.target.value)}
-                                    className="pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-cyan-500 focus:ring-cyan-500 w-56 sm:w-64"
+                                    className="pl-8 pr-3 py-1.5 text-xs rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:border-emerald-500 focus:ring-emerald-500 w-full sm:w-48"
                                 />
                             </div>
                         </div>
 
                         <div className="overflow-x-auto overflow-y-auto max-h-[520px] scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
-                            <table className="w-full text-left text-xs border-collapse">
+                            <table className="w-full text-left text-xs">
                                 <thead>
-                                    <tr className="bg-slate-50/90 dark:bg-[#07111D]/90 text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.08] font-mono tracking-wider sticky top-0 z-10 backdrop-blur-xs">
-                                        <th className="py-3.5 px-5 font-extrabold text-left">Event Title &amp; Category</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Organiser / Host</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Date &amp; Schedule</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-left">Venue &amp; Location</th>
-                                        <th className="py-3.5 px-4 font-extrabold text-center">Guest Count</th>
-                                        <th className="py-3.5 px-5 font-extrabold text-right">Actions</th>
+                                    <tr className="bg-slate-50/70 dark:bg-white/[0.02] text-[10.5px] uppercase font-bold text-slate-400 border-b border-slate-200/80 dark:border-white/[0.08] font-mono tracking-wider sticky top-0 z-10 backdrop-blur-xs">
+                                        <th className="py-3 px-4 font-bold text-left">Event</th>
+                                        <th className="py-3 px-4 font-bold text-left">Organiser</th>
+                                        <th className="py-3 px-4 font-bold text-left">Date &amp; Time</th>
+                                        <th className="py-3 px-4 font-bold text-left">Venue</th>
+                                        <th className="py-3 px-4 font-bold text-center">Guests</th>
+                                        <th className="py-3 px-4 font-bold text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] font-medium">
+                                <tbody className="divide-y divide-slate-100 dark:divide-white/[0.05] font-medium">
                                     {filteredEvents.length === 0 ? (
                                         <tr>
                                             <td colSpan={6} className="py-12 text-center text-slate-400 text-xs">
-                                                No events found matching your query.
+                                                No events found.
                                             </td>
                                         </tr>
                                     ) : (
                                         filteredEvents.map((evt) => (
-                                            <tr key={evt.id} className="hover:bg-slate-50/70 dark:hover:bg-white/[0.02] transition">
-                                                <td className="py-3.5 px-5 align-middle">
-                                                    <div className="font-bold text-slate-900 dark:text-white text-sm">{evt.title}</div>
-                                                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 text-[10px] font-bold uppercase tracking-wider border border-cyan-200 dark:border-cyan-800/50">
+                                            <tr key={evt.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
+                                                <td className="py-3 px-4 align-middle">
+                                                    <div className="font-bold text-slate-900 dark:text-white text-xs">{evt.title}</div>
+                                                    <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 text-[10px] font-bold uppercase tracking-wider border border-slate-200/70 dark:border-white/[0.08]">
                                                         {evt.event_type}
                                                     </span>
                                                 </td>
-                                                <td className="py-3.5 px-4 align-middle text-slate-700 dark:text-slate-300">
-                                                    <div className="font-bold text-slate-900 dark:text-white">{evt.user?.name || '—'}</div>
+                                                <td className="py-3 px-4 align-middle text-slate-700 dark:text-slate-300">
+                                                    <div className="font-bold text-slate-900 dark:text-white text-xs">{evt.user?.name || '—'}</div>
                                                     {evt.user?.company && (
-                                                        <div className="text-[10.5px] text-slate-400">{evt.user.company}</div>
+                                                        <div className="text-[10px] text-slate-400">{evt.user.company}</div>
                                                     )}
                                                 </td>
-                                                <td className="py-3.5 px-4 align-middle font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
-                                                    <div className="font-bold text-slate-900 dark:text-slate-100">
+                                                <td className="py-3 px-4 align-middle font-mono text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                                    <div className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                                                         {new Date(evt.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     </div>
-                                                    {evt.event_time && <div className="text-[10.5px] text-slate-400 font-sans">{evt.event_time}</div>}
+                                                    {evt.event_time && <div className="text-[10px] text-slate-400 font-sans">{evt.event_time}</div>}
                                                 </td>
-                                                <td className="py-3.5 px-4 align-middle text-slate-700 dark:text-slate-300 max-w-[200px]">
-                                                    <div className="flex items-center gap-1 truncate font-medium">
-                                                        <MapPin className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
+                                                <td className="py-3 px-4 align-middle text-slate-700 dark:text-slate-300 max-w-[180px]">
+                                                    <div className="flex items-center gap-1 truncate font-medium text-xs">
+                                                        <MapPin className="w-3 h-3 text-slate-400 dark:text-slate-500 flex-shrink-0" />
                                                         <span className="truncate">{evt.venue}</span>
                                                     </div>
-                                                    {evt.city && <div className="text-[10.5px] text-slate-400 pl-4.5">{evt.city}</div>}
+                                                    {evt.city && <div className="text-[10px] text-slate-400 pl-4">{evt.city}</div>}
                                                 </td>
-                                                <td className="py-3.5 px-4 align-middle text-center whitespace-nowrap">
-                                                    <span className="inline-flex items-center justify-center min-w-[32px] px-2 py-0.5 rounded-lg bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200/80 dark:border-cyan-800/40 font-mono font-black text-xs text-cyan-800 dark:text-cyan-300">
+                                                <td className="py-3 px-4 align-middle text-center whitespace-nowrap">
+                                                    <span className="inline-flex items-center justify-center min-w-[28px] px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] font-mono font-bold text-xs text-slate-800 dark:text-slate-200">
                                                         {evt.guests_count || 0}
                                                     </span>
                                                 </td>
-                                                <td className="py-3.5 px-5 align-middle text-right whitespace-nowrap">
-                                                    <div className="flex items-center justify-end gap-1.5">
+                                                <td className="py-3 px-4 align-middle text-right whitespace-nowrap">
+                                                    <div className="flex items-center justify-end gap-1">
                                                         <Link
                                                             href={route('events.show', evt.id)}
-                                                            className="p-1.5 rounded-xl text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
-                                                            title="Inspect Event Dashboard"
+                                                            className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
+                                                            title="Inspect Event"
                                                         >
                                                             <ExternalLink className="w-3.5 h-3.5" />
                                                         </Link>
                                                         <button
                                                             type="button"
                                                             onClick={() => openEditEventModal(evt)}
-                                                            className="p-1.5 rounded-xl text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
-                                                            title="Edit Event Details"
+                                                            className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
+                                                            title="Edit Event"
                                                         >
                                                             <Edit className="w-3.5 h-3.5" />
                                                         </button>
@@ -1612,29 +1643,29 @@ export default function AdminDashboard({
 
                 {/* TAB 5: MASTER CARD TEMPLATES */}
                 {activeTab === 'templates' && (
-                    <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.02)] dark:shadow-card overflow-hidden transition-colors duration-300">
+                    <div className="bg-white dark:bg-[#0B1524]/90 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
                         {/* Header */}
-                        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="flex items-start sm:items-center gap-3.5">
-                                <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
                                     <Palette className="w-4 h-4" />
                                 </div>
                                 <div>
-                                    <h3 className="text-base font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                        Master Card Templates &amp; Pass Artwork Library
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
+                                        Templates
                                     </h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                        Global preset templates available to all platform customers.
+                                    <p className="text-[11px] text-slate-400">
+                                        Preset card designs and pass artwork library.
                                     </p>
                                 </div>
                             </div>
 
                             <Link
                                 href={route('templates.index')}
-                                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs transition active:scale-95 self-start sm:self-auto cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] rounded-xl shadow-xs transition active:scale-95 cursor-pointer whitespace-nowrap"
                             >
                                 <Palette className="w-3.5 h-3.5" />
-                                <span>Open Design Studio</span>
+                                <span>Design Studio</span>
                             </Link>
                         </div>
 
@@ -1642,100 +1673,121 @@ export default function AdminDashboard({
                         <div className="overflow-x-auto overflow-y-auto max-h-[520px] scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
                             <table className="w-full text-left text-xs">
                                 <thead>
-                                    <tr className="bg-slate-50/70 dark:bg-white/[0.02] text-[10.5px] uppercase font-bold text-slate-500 dark:text-slate-400 border-b border-slate-200/80 dark:border-white/[0.08] font-mono tracking-wider">
-                                        <th className="py-3.5 px-5">Template Preview &amp; Title</th>
-                                        <th className="py-3.5 px-4">Engine Type</th>
-                                        <th className="py-3.5 px-4">Owner / Global Scope</th>
-                                        <th className="py-3.5 px-4">Card Headline</th>
-                                        <th className="py-3.5 px-5 text-right">Actions</th>
+                                    <tr className="bg-slate-50/70 dark:bg-white/[0.02] text-[10.5px] uppercase font-bold text-slate-400 border-b border-slate-200/80 dark:border-white/[0.08] font-mono tracking-wider">
+                                        <th className="py-3 px-4 font-bold text-left">Template</th>
+                                        <th className="py-3 px-4 font-bold text-left">Type</th>
+                                        <th className="py-3 px-4 font-bold text-left">Scope</th>
+                                        <th className="py-3 px-4 font-bold text-left">Headline</th>
+                                        <th className="py-3 px-4 font-bold text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-white/[0.05] font-medium">
-                                    {globalTemplates.map((tpl) => {
-                                        const isCustom = tpl.template_type === 'custom_art' && tpl.image_path;
+                                    {globalTemplates.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={5} className="py-12 text-center text-slate-400 text-xs">
+                                                No templates found.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        globalTemplates.map((tpl) => {
+                                            const isCustom = tpl.template_type === 'custom_art' && tpl.image_path;
 
-                                        return (
-                                            <tr key={tpl.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
-                                                {/* 1. Preview & Title */}
-                                                <td className="py-3.5 px-5">
-                                                    <div className="flex items-center gap-3.5">
-                                                        {isCustom ? (
-                                                            <div className="w-11 h-15 rounded-xl bg-slate-900 border border-slate-200/80 dark:border-white/[0.1] overflow-hidden flex-shrink-0 relative shadow-2xs">
-                                                                <img src={tpl.image_path} alt={tpl.name} className="w-full h-full object-cover" />
-                                                            </div>
-                                                        ) : (
-                                                            <div 
-                                                                className="w-11 h-15 rounded-xl flex-shrink-0 flex items-center justify-center text-[9px] text-white font-mono font-bold shadow-2xs border border-slate-200/60 dark:border-white/[0.1]"
-                                                                style={{
-                                                                    background: `linear-gradient(135deg, ${tpl.brand_color_from || '#0A182E'} 0%, ${tpl.brand_color_to || '#050D1A'} 100%)`
-                                                                }}
-                                                            >
-                                                                PASS
-                                                            </div>
-                                                        )}
-                                                        <div className="min-w-0">
-                                                            <div className="font-bold text-slate-900 dark:text-white text-xs truncate">
-                                                                {tpl.name}
+                                            return (
+                                                <tr key={tpl.id} className="hover:bg-slate-50/60 dark:hover:bg-white/[0.02] transition">
+                                                    {/* 1. Preview & Title */}
+                                                    <td className="py-3 px-4 align-middle">
+                                                        <div className="flex items-center gap-3">
+                                                            {isCustom ? (
+                                                                <div className="w-9 h-12 rounded-lg bg-slate-900 border border-slate-200/80 dark:border-white/[0.1] overflow-hidden flex-shrink-0 relative shadow-2xs">
+                                                                    <img src={tpl.image_path} alt={tpl.name} className="w-full h-full object-cover" />
+                                                                </div>
+                                                            ) : (
+                                                                <div 
+                                                                    className="w-9 h-12 rounded-lg flex-shrink-0 flex items-center justify-center text-[8px] text-white font-mono font-bold shadow-2xs border border-slate-200/60 dark:border-white/[0.1]"
+                                                                    style={{
+                                                                        background: `linear-gradient(135deg, ${tpl.brand_color_from || '#0A182E'} 0%, ${tpl.brand_color_to || '#050D1A'} 100%)`
+                                                                    }}
+                                                                >
+                                                                    PASS
+                                                                </div>
+                                                            )}
+                                                            <div className="min-w-0">
+                                                                <div className="font-bold text-slate-900 dark:text-white text-xs truncate">
+                                                                    {tpl.name}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </td>
+                                                    </td>
 
-                                                {/* 2. Engine Type */}
-                                                <td className="py-3.5 px-4">
-                                                    <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-medium px-2.5 py-1 rounded-lg bg-slate-100/80 dark:bg-white/[0.04] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08]">
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${isCustom ? 'bg-cyan-500' : 'bg-slate-400'}`} />
-                                                        <span>{isCustom ? 'Custom Art' : 'Standard Gradient'}</span>
-                                                    </span>
-                                                </td>
-
-                                                {/* 3. Owner / Scope */}
-                                                <td className="py-3.5 px-4">
-                                                    {tpl.user ? (
-                                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 font-medium">
-                                                            {tpl.user.name}
+                                                    {/* 2. Engine Type */}
+                                                    <td className="py-3 px-4 align-middle">
+                                                        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-mono font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.04] text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08]">
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${isCustom ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                                            <span>{isCustom ? 'Custom Art' : 'Gradient'}</span>
                                                         </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center text-[10.5px] font-mono font-medium text-slate-500 dark:text-slate-400 bg-slate-100/60 dark:bg-white/[0.03] px-2 py-0.5 rounded-md border border-slate-200/50 dark:border-white/[0.05]">
-                                                            Global Platform Template
+                                                    </td>
+
+                                                    {/* 3. Owner / Scope */}
+                                                    <td className="py-3 px-4 align-middle">
+                                                        {tpl.user ? (
+                                                            <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
+                                                                {tpl.user.name}
+                                                            </span>
+                                                        ) : (
+                                                            <span className="inline-flex items-center text-[10px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded border border-slate-200/60 dark:border-white/[0.06]">
+                                                                Global Platform
+                                                            </span>
+                                                        )}
+                                                    </td>
+
+                                                    {/* 4. Card Headline */}
+                                                    <td className="py-3 px-4 align-middle">
+                                                        <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 uppercase">
+                                                            {tpl.headline || '—'}
                                                         </span>
-                                                    )}
-                                                </td>
+                                                    </td>
 
-                                                {/* 4. Card Headline */}
-                                                <td className="py-3.5 px-4">
-                                                    <span className="text-xs font-mono font-bold text-slate-700 dark:text-slate-300 tracking-wide uppercase">
-                                                        {tpl.headline || '—'}
-                                                    </span>
-                                                </td>
-
-                                                {/* 5. Actions */}
-                                                <td className="py-3.5 px-5 text-right">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <Link
-                                                            href={route('templates.index')}
-                                                            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
-                                                            title="Edit Template in Studio"
-                                                        >
-                                                            <Edit className="w-3.5 h-3.5" />
-                                                        </Link>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                if (confirm(`Are you sure you want to delete template "${tpl.name}"?`)) {
-                                                                    router.delete(route('templates.destroy', tpl.id));
-                                                                }
-                                                            }}
-                                                            className="p-2 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
-                                                            title="Delete Template"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                                    {/* 5. Actions */}
+                                                    <td className="py-3 px-4 align-middle text-right">
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <Link
+                                                                href={route('templates.index')}
+                                                                className="p-1.5 rounded-xl text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer"
+                                                                title="Edit in Studio"
+                                                            >
+                                                                <Edit className="w-3.5 h-3.5" />
+                                                            </Link>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setConfirmModal({
+                                                                        show: true,
+                                                                        title: 'Delete Template?',
+                                                                        message: `Delete template "${tpl.name}"?`,
+                                                                        warning: 'Events using it will use the default design.',
+                                                                        confirmText: 'Delete',
+                                                                        type: 'danger',
+                                                                        loading: false,
+                                                                        onConfirm: () => {
+                                                                            setConfirmModal(prev => ({ ...prev, loading: true }));
+                                                                            router.delete(route('templates.destroy', tpl.id), {
+                                                                                preserveScroll: true,
+                                                                                onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                                                                            });
+                                                                        }
+                                                                    });
+                                                                }}
+                                                                className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                                                                title="Delete Template"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
                                 </tbody>
                             </table>
                         </div>
@@ -1744,75 +1796,74 @@ export default function AdminDashboard({
 
                 {/* TAB 6: GATEWAYS & INTEGRATIONS */}
                 {activeTab === 'gateways' && (
-                    <div className="bg-white dark:bg-[#0B1524]/90 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] p-6 sm:p-8 shadow-card space-y-6 transition-colors duration-300">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-white/[0.08] pb-5">
-                            <div>
-                                <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                        <Server className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
-                                            Messaging Gateways &amp; Delivery Telemetry
-                                        </h3>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                            Manage Meta WhatsApp Cloud API credentials, SMS provider endpoints, and verify webhook delivery.
-                                        </p>
-                                    </div>
+                    <div className="bg-white dark:bg-[#0B1524]/90 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-card overflow-hidden transition-colors duration-300">
+                        <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 flex-shrink-0">
+                                    <Server className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white font-display">
+                                        Gateways
+                                    </h3>
+                                    <p className="text-[11px] text-slate-400">
+                                        WhatsApp Cloud API and SMS provider delivery settings.
+                                    </p>
                                 </div>
                             </div>
+
                             <button
                                 onClick={() => setGatewayModalOpen(true)}
-                                className="py-2 px-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition active:scale-95 self-start sm:self-auto cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] rounded-xl shadow-xs transition active:scale-95 cursor-pointer whitespace-nowrap"
                             >
-                                <Settings className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
+                                <Settings className="w-3.5 h-3.5" />
                                 <span>Configure Gateways</span>
                             </button>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
                             {/* WhatsApp Gateway Card */}
-                            <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-5">
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-sm shadow-2xs shrink-0">
-                                                <Smartphone className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] flex flex-col justify-between gap-4">
+                                <div className="space-y-3.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                                <Smartphone className="w-4 h-4" />
                                             </div>
                                             <div className="min-w-0">
-                                                <h4 className="font-black text-base text-slate-900 dark:text-white truncate">
-                                                    {gateways.whatsapp?.provider || 'Meta WhatsApp Cloud API'}
+                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                                    {gateways.whatsapp?.provider || 'WhatsApp Cloud API'}
                                                 </h4>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate block">
-                                                    Sender: {gateways.whatsapp?.sender_number || '+255 700 000 000'}
+                                                <span className="text-[11px] text-slate-400 font-mono truncate block">
+                                                    {gateways.whatsapp?.sender_number || '+255 700 000 000'}
                                                 </span>
                                             </div>
                                         </div>
-                                        <span className={`text-[10.5px] font-extrabold px-3 py-1 rounded-full whitespace-nowrap shrink-0 inline-flex items-center tracking-wide ${
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 inline-flex items-center ${
                                             gateways.whatsapp?.status === 'Disabled' 
-                                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
-                                                : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800/60'
+                                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400' 
+                                                : 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800/60'
                                         }`}>
-                                            {gateways.whatsapp?.status || 'Connected (Operational)'}
+                                            {gateways.whatsapp?.status || 'Active'}
                                         </span>
                                     </div>
 
-                                    <div className="bg-white dark:bg-[#0B1524] p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] space-y-2 text-xs text-slate-600 dark:text-slate-300 font-mono">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">Phone Number ID:</span>
-                                            <span className="font-bold text-slate-900 dark:text-white">{gateways.whatsapp?.phone_number_id || '108492019482910'}</span>
+                                    <div className="bg-white dark:bg-[#0B1524] p-3 rounded-xl border border-slate-200/70 dark:border-white/[0.06] space-y-2 text-xs font-mono">
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Phone Number ID</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200 truncate ml-2">{gateways.whatsapp?.phone_number_id || '—'}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">WABA ID:</span>
-                                            <span className="font-bold text-slate-900 dark:text-white">{gateways.whatsapp?.waba_id || '94820194820184'}</span>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">WABA ID</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200 truncate ml-2">{gateways.whatsapp?.waba_id || '—'}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">API Version:</span>
-                                            <span className="font-bold text-slate-900 dark:text-white">{gateways.whatsapp?.api_version || 'v20.0'}</span>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">API Version</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">{gateways.whatsapp?.api_version || 'v20.0'}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">Production Key:</span>
-                                            <span className="text-emerald-700 dark:text-emerald-400 font-bold">✓ Active &amp; Verified</span>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Access Token</span>
+                                            <span className="font-bold text-emerald-600 dark:text-emerald-400">Verified</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1820,55 +1871,55 @@ export default function AdminDashboard({
                                 <button
                                     type="button"
                                     onClick={() => setGatewayModalOpen(true)}
-                                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
+                                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
                                 >
                                     <Settings className="w-3.5 h-3.5" />
-                                    <span>Customize WhatsApp Gateway</span>
+                                    <span>Configure WhatsApp</span>
                                 </button>
                             </div>
 
                             {/* SMS Gateway Card */}
-                            <div className="p-6 rounded-3xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs flex flex-col justify-between space-y-5">
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-sm shadow-2xs shrink-0">
-                                                <MessageSquare className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] flex flex-col justify-between gap-4">
+                                <div className="space-y-3.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+                                                <MessageSquare className="w-4 h-4" />
                                             </div>
                                             <div className="min-w-0">
-                                                <h4 className="font-black text-base text-slate-900 dark:text-white truncate">
-                                                    {gateways.sms?.provider || 'NextSMS Tanzania'}
+                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                                    {gateways.sms?.provider || 'SMS Gateway'}
                                                 </h4>
-                                                <span className="text-xs text-slate-500 dark:text-slate-400 font-mono truncate block">
-                                                    Sender ID: <strong className="text-slate-900 dark:text-white font-bold">{gateways.sms?.sender_id || 'KARDOVO'}</strong>
+                                                <span className="text-[11px] text-slate-400 font-mono truncate block">
+                                                    Sender ID: {gateways.sms?.sender_id || 'KARDOVO'}
                                                 </span>
                                             </div>
                                         </div>
-                                        <span className={`text-[10.5px] font-extrabold px-3 py-1 rounded-full whitespace-nowrap shrink-0 inline-flex items-center tracking-wide ${
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 inline-flex items-center ${
                                             gateways.sms?.status === 'Disabled' 
-                                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300' 
-                                                : 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-cyan-300 border border-blue-300 dark:border-blue-800/60'
+                                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400' 
+                                                : 'bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-800/60'
                                         }`}>
                                             {gateways.sms?.status || 'Active'}
                                         </span>
                                     </div>
 
-                                    <div className="bg-white dark:bg-[#0B1524] p-4 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] space-y-2 text-xs text-slate-600 dark:text-slate-300 font-mono">
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">Account Balance:</span>
-                                            <span className="font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">{gateways.sms?.balance || '12,450 TZS'}</span>
+                                    <div className="bg-white dark:bg-[#0B1524] p-3 rounded-xl border border-slate-200/70 dark:border-white/[0.06] space-y-2 text-xs font-mono">
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Balance</span>
+                                            <span className="font-bold text-blue-600 dark:text-blue-400">{gateways.sms?.balance || '12,450 TZS'}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">Sender ID:</span>
-                                            <span className="font-bold text-slate-900 dark:text-white">{gateways.sms?.sender_id || 'KARDOVO'}</span>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Sender ID</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">{gateways.sms?.sender_id || 'KARDOVO'}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-400">Country Code:</span>
-                                            <span className="font-bold text-slate-900 dark:text-white">{gateways.sms?.country_code || '+255'}</span>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Country Code</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">{gateways.sms?.country_code || '+255'}</span>
                                         </div>
-                                        <div className="flex justify-between truncate">
-                                            <span className="text-slate-400">Endpoint:</span>
-                                            <span className="text-slate-700 dark:text-slate-300 font-medium truncate max-w-[170px]">{gateways.sms?.api_endpoint || 'NextSMS Single SMS API'}</span>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Endpoint</span>
+                                            <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[150px]">{gateways.sms?.api_endpoint || 'NextSMS API'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -1876,12 +1927,68 @@ export default function AdminDashboard({
                                 <button
                                     type="button"
                                     onClick={() => setGatewayModalOpen(true)}
-                                    className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition active:scale-95 shadow-xs cursor-pointer"
+                                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
                                 >
                                     <Settings className="w-3.5 h-3.5" />
-                                    <span>Customize SMS Gateway</span>
+                                    <span>Configure SMS</span>
                                 </button>
                             </div>
+                            {/* AzamPay Gateway Card */}
+                            <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] flex flex-col justify-between gap-4">
+                                <div className="space-y-3.5">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className="w-8 h-8 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-600 dark:text-orange-400 flex items-center justify-center shrink-0">
+                                                <Zap className="w-4 h-4" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                                    {gateways.azampay?.provider || 'AzamPay'}
+                                                </h4>
+                                                <span className="text-[11px] text-slate-400 font-mono truncate block">
+                                                    App: {gateways.azampay?.app_name || 'Kardovo'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 inline-flex items-center ${
+                                            gateways.azampay?.environment === 'sandbox' 
+                                                ? 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400' 
+                                                : 'bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 border border-orange-300 dark:border-orange-800/60'
+                                        }`}>
+                                            {gateways.azampay?.environment === 'sandbox' ? 'Sandbox' : 'Production'}
+                                        </span>
+                                    </div>
+
+                                    <div className="bg-white dark:bg-[#0B1524] p-3 rounded-xl border border-slate-200/70 dark:border-white/[0.06] space-y-2 text-xs font-mono">
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Environment</span>
+                                            <span className="font-bold text-orange-600 dark:text-orange-400 capitalize">{gateways.azampay?.environment || 'Sandbox'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">App Name</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200">{gateways.azampay?.app_name || 'Kardovo'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Client ID</span>
+                                            <span className="font-bold text-slate-800 dark:text-slate-200 truncate ml-2 max-w-[100px]">{gateways.azampay?.client_id ? '••••••••' : '—'}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center text-[11px]">
+                                            <span className="text-slate-400">Client Secret</span>
+                                            <span className="font-medium text-slate-700 dark:text-slate-300 truncate max-w-[150px]">{gateways.azampay?.client_secret ? '••••••••' : '—'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setGatewayModalOpen(true)}
+                                    className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.05] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                                >
+                                    <Settings className="w-3.5 h-3.5" />
+                                    <span>Configure AzamPay</span>
+                                </button>
+                            </div>
+
                         </div>
                     </div>
                 )}
@@ -1983,9 +2090,9 @@ export default function AdminDashboard({
                                             customerForm.setData('password', pwd);
                                             if (customerClientErrors.password) setCustomerClientErrors(prev => ({ ...prev, password: undefined }));
                                         }}
-                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 cursor-pointer bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40"
                                     >
-                                        <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                                        <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
                                         <span>Suggest</span>
                                     </button>
                                 </div>
@@ -2009,7 +2116,7 @@ export default function AdminDashboard({
                                 <select
                                     value={customerForm.data.role}
                                     onChange={(e) => customerForm.setData('role', e.target.value)}
-                                    className="mt-1 block w-full text-xs font-bold rounded-xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                    className="mt-1 block w-full text-xs font-bold rounded-xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                 >
                                     <option value="customer">🏢 Organiser</option>
                                     <option value="sub_admin">🛡️ Sub-Admin</option>
@@ -2020,69 +2127,71 @@ export default function AdminDashboard({
                         </div>
 
                         {/* Status & Limits */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
-                            <div>
-                                <InputLabel value="Status" />
-                                <div className="mt-2 flex items-center gap-2.5">
-                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="create_status"
-                                            value="active"
-                                            checked={customerForm.data.status === 'active'}
-                                            onChange={() => customerForm.setData('status', 'active')}
-                                            className="text-emerald-600 focus:ring-emerald-500"
-                                        />
-                                        <span>Active</span>
-                                    </label>
-                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="create_status"
-                                            value="suspended"
-                                            checked={customerForm.data.status === 'suspended'}
-                                            onChange={() => customerForm.setData('status', 'suspended')}
-                                            className="text-rose-600 focus:ring-rose-500"
-                                        />
-                                        <span>Suspended</span>
-                                    </label>
+                        <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200/60 dark:border-white/[0.04]">
+                                <InputLabel value="Account Status" className="!mb-0" />
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => customerForm.setData('status', 'active')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-lg border transition cursor-pointer flex items-center gap-1.5 ${
+                                            customerForm.data.status === 'active'
+                                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60'
+                                                : 'bg-white dark:bg-[#08121E] text-slate-500 border-slate-200 dark:border-white/[0.08] hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        Active
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => customerForm.setData('status', 'suspended')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-lg border transition cursor-pointer flex items-center gap-1.5 ${
+                                            customerForm.data.status === 'suspended'
+                                                ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800/60'
+                                                : 'bg-white dark:bg-[#08121E] text-slate-500 border-slate-200 dark:border-white/[0.08] hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        Suspended
+                                    </button>
                                 </div>
                             </div>
 
-                            <div>
-                                <InputLabel value="Events Limit" />
-                                <TextInput
-                                    type="number"
-                                    min="1"
-                                    placeholder="Unlimited"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    value={customerForm.data.max_events_limit}
-                                    onChange={(e) => customerForm.setData('max_events_limit', e.target.value)}
-                                />
-                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <InputLabel value="Events Limit" />
+                                    <TextInput
+                                        type="number"
+                                        min="1"
+                                        placeholder="Unlimited"
+                                        className="mt-1 block w-full text-xs font-mono font-bold"
+                                        value={customerForm.data.max_events_limit}
+                                        onChange={(e) => customerForm.setData('max_events_limit', e.target.value)}
+                                    />
+                                </div>
 
-                            <div>
-                                <InputLabel value="WhatsApp Limit" />
-                                <TextInput
-                                    type="number"
-                                    min="0"
-                                    placeholder="Unlimited"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    value={customerForm.data.max_whatsapp_limit}
-                                    onChange={(e) => customerForm.setData('max_whatsapp_limit', e.target.value)}
-                                />
-                            </div>
+                                <div>
+                                    <InputLabel value="WhatsApp Limit" />
+                                    <TextInput
+                                        type="number"
+                                        min="0"
+                                        placeholder="Unlimited"
+                                        className="mt-1 block w-full text-xs font-mono font-bold"
+                                        value={customerForm.data.max_whatsapp_limit}
+                                        onChange={(e) => customerForm.setData('max_whatsapp_limit', e.target.value)}
+                                    />
+                                </div>
 
-                            <div>
-                                <InputLabel value="SMS Limit" />
-                                <TextInput
-                                    type="number"
-                                    min="0"
-                                    placeholder="Unlimited"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    value={customerForm.data.max_sms_limit}
-                                    onChange={(e) => customerForm.setData('max_sms_limit', e.target.value)}
-                                />
+                                <div>
+                                    <InputLabel value="SMS Limit" />
+                                    <TextInput
+                                        type="number"
+                                        min="0"
+                                        placeholder="Unlimited"
+                                        className="mt-1 block w-full text-xs font-mono font-bold"
+                                        value={customerForm.data.max_sms_limit}
+                                        onChange={(e) => customerForm.setData('max_sms_limit', e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -2090,7 +2199,7 @@ export default function AdminDashboard({
                         <div className="space-y-2 pt-1">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
-                                    <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                     <span>Permissions</span>
                                 </h4>
 
@@ -2150,13 +2259,13 @@ export default function AdminDashboard({
                                             key={cap.key}
                                             className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 ${
                                                 isChecked
-                                                    ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
+                                                    ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/60'
                                                     : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-70'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <div className={`p-1 rounded-lg ${
-                                                    isChecked ? 'bg-cyan-600 text-white' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                    isChecked ? 'bg-[#16A34A] text-white' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
                                                 }`}>
                                                     <IconComp className="w-3 h-3" />
                                                 </div>
@@ -2174,7 +2283,7 @@ export default function AdminDashboard({
                                                         [cap.key]: e.target.checked,
                                                     });
                                                 }}
-                                                className="rounded text-cyan-600 focus:ring-cyan-500 w-3.5 h-3.5 cursor-pointer shrink-0"
+                                                className="rounded text-[#16A34A] focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer shrink-0"
                                             />
                                         </label>
                                     );
@@ -2187,26 +2296,26 @@ export default function AdminDashboard({
                         <SecondaryButton onClick={() => setCustomerModalOpen(false)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={customerForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
+                        <PrimaryButton disabled={customerForm.processing}>
                             Create Account
                         </PrimaryButton>
                     </div>
                 </form>
             </Modal>
 
-            {/* Modal 2: Edit Customer Account & Role Governance */}
+{/* Modal 2: Edit Customer Account & Role Governance */}
             <Modal show={!!editingCustomer} onClose={() => setEditingCustomer(null)} maxWidth="2xl">
                 <form onSubmit={handleUpdateCustomer} className="p-6 sm:p-7 space-y-4">
                     <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/30">
                                 <SlidersHorizontal className="w-4 h-4" />
                             </div>
                             <div className="flex items-center gap-2">
                                 <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
                                     Organiser Governance
                                 </h3>
-                                <span className="text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800/40">
+                                <span className="text-[10px] font-mono font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40">
                                     {editingCustomer?.role?.toUpperCase()}
                                 </span>
                             </div>
@@ -2221,26 +2330,29 @@ export default function AdminDashboard({
                     </div>
 
                     {/* Alert Banner for Validation Failures */}
-                    {(Object.keys(editCustomerClientErrors).length > 0 || Object.keys(editCustomerForm.errors).length > 0) && (
-                        <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start gap-2">
-                            <AlertTriangle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
-                            <div className="text-xs text-rose-800 dark:text-rose-300 space-y-0.5">
-                                {Object.values({ ...editCustomerClientErrors, ...editCustomerForm.errors }).map((msg, i) => (
-                                    <div key={i} className="text-[11px] font-medium">• {msg}</div>
-                                ))}
+                    {Object.keys(editCustomerForm.errors).length > 0 && (
+                        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 flex items-start gap-2.5 text-xs text-rose-700 dark:text-rose-300 animate-shake">
+                            <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600 dark:text-rose-400 mt-0.5" />
+                            <div>
+                                <div className="font-bold">Please check the form for errors:</div>
+                                <ul className="list-disc list-inside mt-1 space-y-0.5 font-medium">
+                                    {Object.entries(editCustomerForm.errors).map(([key, msg]) => (
+                                        <li key={key}><strong className="capitalize">{key.replace(/_/g, ' ')}:</strong> {msg}</li>
+                                    ))}
+                                </ul>
                             </div>
                         </div>
                     )}
 
-                    <div className="space-y-3.5">
-                        {/* Profile Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="space-y-3.5 max-h-[60vh] overflow-y-auto pr-1">
+                        {/* Basic Identity Inputs */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <InputLabel value="Full Name *" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-bold"
-                                    placeholder="e.g. Sarah Operations"
+                                    placeholder="e.g. Salim Juma"
                                     value={editCustomerForm.data.name}
                                     onChange={(e) => {
                                         editCustomerForm.setData('name', e.target.value);
@@ -2253,11 +2365,11 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Email *" />
+                                <InputLabel value="Email Address *" />
                                 <TextInput
                                     type="email"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="e.g. subadmin@kardovo.com"
+                                    className="mt-1 block w-full text-xs font-bold"
+                                    placeholder="name@company.com"
                                     value={editCustomerForm.data.email}
                                     onChange={(e) => {
                                         editCustomerForm.setData('email', e.target.value);
@@ -2270,27 +2382,24 @@ export default function AdminDashboard({
                             </div>
 
                             <div>
-                                <InputLabel value="Company" />
+                                <InputLabel value="Company / Brand Name" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-bold"
-                                    placeholder="e.g. Kardovo Operations"
+                                    placeholder="Optional"
                                     value={editCustomerForm.data.company}
-                                    onChange={(e) => {
-                                        editCustomerForm.setData('company', e.target.value);
-                                        if (editCustomerForm.errors.company) editCustomerForm.clearErrors('company');
-                                    }}
+                                    onChange={(e) => editCustomerForm.setData('company', e.target.value)}
                                     hasError={Boolean(editCustomerForm.errors.company)}
                                 />
                                 <InputError message={editCustomerForm.errors.company} className="mt-1" />
                             </div>
 
                             <div>
-                                <InputLabel value="Phone" />
+                                <InputLabel value="Phone Number *" />
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-mono font-bold"
-                                    placeholder="e.g. +255 788 112 233"
+                                    placeholder="+255700000000"
                                     value={editCustomerForm.data.phone}
                                     onChange={(e) => {
                                         editCustomerForm.setData('phone', e.target.value);
@@ -2303,7 +2412,7 @@ export default function AdminDashboard({
 
                             <div>
                                 <div className="flex items-center justify-between">
-                                    <InputLabel value="Password" />
+                                    <InputLabel value="Reset Password (Optional)" />
                                     <button
                                         type="button"
                                         onClick={() => {
@@ -2311,9 +2420,9 @@ export default function AdminDashboard({
                                             editCustomerForm.setData('password', pwd);
                                             if (editCustomerClientErrors.password) setEditCustomerClientErrors(prev => ({ ...prev, password: undefined }));
                                         }}
-                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
+                                        className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 cursor-pointer bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40"
                                     >
-                                        <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                                        <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
                                         <span>Suggest</span>
                                     </button>
                                 </div>
@@ -2339,7 +2448,7 @@ export default function AdminDashboard({
                                         editCustomerForm.setData('role', e.target.value);
                                         if (editCustomerForm.errors.role) editCustomerForm.clearErrors('role');
                                     }}
-                                    className="mt-1 block w-full text-xs font-bold rounded-xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-cyan-500/20"
+                                    className="mt-1 block w-full text-xs font-bold rounded-xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-slate-100 px-3 py-2 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                                 >
                                     <option value="customer">🏢 Organiser</option>
                                     <option value="sub_admin">🛡️ Sub-Admin</option>
@@ -2351,80 +2460,86 @@ export default function AdminDashboard({
                         </div>
 
                         {/* Status & Limits */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
-                            <div>
-                                <InputLabel value="Status" />
-                                <div className="mt-2 flex items-center gap-2.5">
-                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="edit_status"
-                                            value="active"
-                                            checked={editCustomerForm.data.status === 'active'}
-                                            onChange={() => editCustomerForm.setData('status', 'active')}
-                                            className="text-emerald-600 focus:ring-emerald-500"
-                                        />
-                                        <span>Active</span>
-                                    </label>
-                                    <label className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer">
-                                        <input
-                                            type="radio"
-                                            name="edit_status"
-                                            value="suspended"
-                                            checked={editCustomerForm.data.status === 'suspended'}
-                                            onChange={() => editCustomerForm.setData('status', 'suspended')}
-                                            className="text-rose-600 focus:ring-rose-500"
-                                        />
-                                        <span>Suspended</span>
-                                    </label>
+                        <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
+                            <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-200/60 dark:border-white/[0.04]">
+                                <div>
+                                    <InputLabel value="Account Status" className="!mb-0" />
+                                    <InputError message={editCustomerForm.errors.status} className="mt-0.5" />
                                 </div>
-                                <InputError message={editCustomerForm.errors.status} className="mt-1" />
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => editCustomerForm.setData('status', 'active')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-lg border transition cursor-pointer flex items-center gap-1.5 ${
+                                            editCustomerForm.data.status === 'active'
+                                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800/60'
+                                                : 'bg-white dark:bg-[#08121E] text-slate-500 border-slate-200 dark:border-white/[0.08] hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <span className={`w-1.5 h-1.5 rounded-full ${editCustomerForm.data.status === 'active' ? 'bg-emerald-500' : 'bg-slate-400'}`} />
+                                        <span>Active</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => editCustomerForm.setData('status', 'suspended')}
+                                        className={`px-3 py-1 text-xs font-bold rounded-lg border transition cursor-pointer flex items-center gap-1.5 ${
+                                            editCustomerForm.data.status === 'suspended'
+                                                ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800/60'
+                                                : 'bg-white dark:bg-[#08121E] text-slate-500 border-slate-200 dark:border-white/[0.08] hover:bg-slate-50'
+                                        }`}
+                                    >
+                                        <span className={`w-1.5 h-1.5 rounded-full ${editCustomerForm.data.status === 'suspended' ? 'bg-rose-500' : 'bg-slate-400'}`} />
+                                        <span>Suspended</span>
+                                    </button>
+                                </div>
                             </div>
 
-                            <div>
-                                <InputLabel value="Events Limit" />
-                                <TextInput
-                                    type="number"
-                                    min="1"
-                                    placeholder="Unlimited"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    value={editCustomerForm.data.max_events_limit}
-                                    onChange={(e) => editCustomerForm.setData('max_events_limit', e.target.value)}
-                                    hasError={Boolean(editCustomerForm.errors.max_events_limit)}
-                                />
-                                <InputError message={editCustomerForm.errors.max_events_limit} className="mt-1" />
-                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <InputLabel value="Events Limit" />
+                                    <TextInput
+                                        type="number"
+                                        min="1"
+                                        placeholder="Unlimited"
+                                        className="mt-1 block w-full text-xs font-mono font-bold"
+                                        value={editCustomerForm.data.max_events_limit}
+                                        onChange={(e) => editCustomerForm.setData('max_events_limit', e.target.value)}
+                                        hasError={Boolean(editCustomerForm.errors.max_events_limit)}
+                                    />
+                                    <InputError message={editCustomerForm.errors.max_events_limit} className="mt-1" />
+                                </div>
 
-                            <div>
-                                <InputLabel value="WhatsApp Limit" />
-                                <TextInput
-                                    type="number"
-                                    min="0"
-                                    placeholder="Unlimited"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    value={editCustomerForm.data.max_whatsapp_limit}
-                                    onChange={(e) => editCustomerForm.setData('max_whatsapp_limit', e.target.value)}
-                                    hasError={Boolean(editCustomerForm.errors.max_whatsapp_limit)}
-                                />
-                                <InputError message={editCustomerForm.errors.max_whatsapp_limit} className="mt-1" />
-                            </div>
+                                <div>
+                                    <InputLabel value="WhatsApp Limit" />
+                                    <TextInput
+                                        type="number"
+                                        min="0"
+                                        placeholder="Unlimited"
+                                        className="mt-1 block w-full text-xs font-mono font-bold"
+                                        value={editCustomerForm.data.max_whatsapp_limit}
+                                        onChange={(e) => editCustomerForm.setData('max_whatsapp_limit', e.target.value)}
+                                        hasError={Boolean(editCustomerForm.errors.max_whatsapp_limit)}
+                                    />
+                                    <InputError message={editCustomerForm.errors.max_whatsapp_limit} className="mt-1" />
+                                </div>
 
-                            <div>
-                                <InputLabel value="SMS Limit" />
-                                <TextInput
-                                    type="number"
-                                    min="0"
-                                    placeholder="Unlimited"
-                                    className="mt-1 block w-full text-xs font-mono font-bold"
-                                    value={editCustomerForm.data.max_sms_limit}
-                                    onChange={(e) => editCustomerForm.setData('max_sms_limit', e.target.value)}
-                                    hasError={Boolean(editCustomerForm.errors.max_sms_limit)}
-                                />
-                                <InputError message={editCustomerForm.errors.max_sms_limit} className="mt-1" />
+                                <div>
+                                    <InputLabel value="SMS Limit" />
+                                    <TextInput
+                                        type="number"
+                                        min="0"
+                                        placeholder="Unlimited"
+                                        className="mt-1 block w-full text-xs font-mono font-bold"
+                                        value={editCustomerForm.data.max_sms_limit}
+                                        onChange={(e) => editCustomerForm.setData('max_sms_limit', e.target.value)}
+                                        hasError={Boolean(editCustomerForm.errors.max_sms_limit)}
+                                    />
+                                    <InputError message={editCustomerForm.errors.max_sms_limit} className="mt-1" />
+                                </div>
                             </div>
 
                             {editCustomerForm.data.status === 'suspended' && (
-                                <div className="col-span-full pt-1">
+                                <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
                                     <InputLabel value="Suspension Reason" />
                                     <TextInput
                                         type="text"
@@ -2437,13 +2552,32 @@ export default function AdminDashboard({
                                     <InputError message={editCustomerForm.errors.suspension_reason} className="mt-1" />
                                 </div>
                             )}
+
+                            {/* Payment Override (Cash Paid) */}
+                            <div className="pt-2 border-t border-slate-200/60 dark:border-white/[0.04]">
+                                <label className="flex items-center gap-2.5 cursor-pointer">
+                                    <div className={`w-10 h-5 rounded-full flex items-center p-0.5 transition-colors duration-200 ${editCustomerForm.data.has_payment_override ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}>
+                                        <div className={`w-4 h-4 rounded-full bg-white shadow-xs transform transition-transform duration-200 ${editCustomerForm.data.has_payment_override ? 'translate-x-5' : 'translate-x-0'}`} />
+                                    </div>
+                                    <div>
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white block leading-tight">Payment Access Override</span>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400 block mt-0.5">Unlock Paywalled Features (Cash Payment)</span>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={editCustomerForm.data.has_payment_override}
+                                        onChange={(e) => editCustomerForm.setData('has_payment_override', e.target.checked)}
+                                    />
+                                </label>
+                            </div>
                         </div>
 
                         {/* Permissions */}
                         <div className="space-y-2 pt-1">
                             <div className="flex items-center justify-between">
                                 <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-mono flex items-center gap-1.5">
-                                    <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                    <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                     <span>Permissions</span>
                                 </h4>
 
@@ -2458,12 +2592,12 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => editCustomerForm.setData('permissions', {
-                                             can_create_events: true,
-                                             can_import_guests: true,
-                                             can_send_broadcasts: false,
-                                             can_customize_templates: false,
-                                             can_manage_scanners: true,
-                                             can_export_data: true,
+                                            can_create_events: true,
+                                            can_import_guests: true,
+                                            can_send_broadcasts: false,
+                                            can_customize_templates: false,
+                                            can_manage_scanners: true,
+                                            can_export_data: true,
                                         })}
                                         className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
@@ -2472,12 +2606,12 @@ export default function AdminDashboard({
                                     <button
                                         type="button"
                                         onClick={() => editCustomerForm.setData('permissions', {
-                                             can_create_events: false,
-                                             can_import_guests: false,
-                                             can_send_broadcasts: false,
-                                             can_customize_templates: false,
-                                             can_manage_scanners: false,
-                                             can_export_data: false,
+                                            can_create_events: false,
+                                            can_import_guests: false,
+                                            can_send_broadcasts: false,
+                                            can_customize_templates: false,
+                                            can_manage_scanners: false,
+                                            can_export_data: false,
                                         })}
                                         className="px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 transition cursor-pointer"
                                     >
@@ -2503,13 +2637,13 @@ export default function AdminDashboard({
                                             key={cap.key}
                                             className={`p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 ${
                                                 isChecked
-                                                    ? 'bg-cyan-50/40 dark:bg-cyan-950/20 border-cyan-300 dark:border-cyan-800/60'
+                                                    ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800/60'
                                                     : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-70'
                                             }`}
                                         >
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <div className={`p-1 rounded-lg ${
-                                                    isChecked ? 'bg-cyan-600 text-white' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
+                                                    isChecked ? 'bg-[#16A34A] text-white' : 'bg-slate-200 dark:bg-white/[0.08] text-slate-500'
                                                 }`}>
                                                     <IconComp className="w-3 h-3" />
                                                 </div>
@@ -2527,7 +2661,7 @@ export default function AdminDashboard({
                                                         [cap.key]: e.target.checked,
                                                     });
                                                 }}
-                                                className="rounded text-cyan-600 focus:ring-cyan-500 w-3.5 h-3.5 cursor-pointer shrink-0"
+                                                className="rounded text-[#16A34A] focus:ring-emerald-500 w-3.5 h-3.5 cursor-pointer shrink-0"
                                             />
                                         </label>
                                     );
@@ -2537,10 +2671,10 @@ export default function AdminDashboard({
                     </div>
 
                     <div className="pt-3.5 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
-                        <SecondaryButton type="button" onClick={() => setEditingCustomer(null)}>
+                        <SecondaryButton onClick={() => setEditingCustomer(null)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton type="submit" disabled={editCustomerForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
+                        <PrimaryButton type="submit" disabled={editCustomerForm.processing}>
                             Save Changes
                         </PrimaryButton>
                     </div>
@@ -2552,7 +2686,7 @@ export default function AdminDashboard({
                 <form onSubmit={handleUpdateEvent} className="p-6 sm:p-7 space-y-5">
                     <div className="flex items-center justify-between pb-3.5 border-b border-slate-200/80 dark:border-white/[0.08]">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-700 dark:text-blue-400 flex items-center justify-center border border-blue-500/30">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/30">
                                 <Calendar className="w-4 h-4" />
                             </div>
                             <div>
@@ -2586,7 +2720,7 @@ export default function AdminDashboard({
                             <div>
                                 <InputLabel value="Owner / Organiser Customer *" />
                                 <select
-                                    className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition"
+                                    className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition"
                                     value={editEventForm.data.user_id}
                                     onChange={(e) => editEventForm.setData('user_id', e.target.value)}
                                     required
@@ -2603,7 +2737,7 @@ export default function AdminDashboard({
                             <div>
                                 <InputLabel value="Event Type *" />
                                 <select
-                                    className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition"
+                                    className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition"
                                     value={editEventForm.data.event_type}
                                     onChange={(e) => editEventForm.setData('event_type', e.target.value)}
                                     required
@@ -2649,6 +2783,7 @@ export default function AdminDashboard({
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-bold"
+                                    placeholder="e.g. Kunduchi Beach Gardens"
                                     value={editEventForm.data.venue}
                                     onChange={(e) => editEventForm.setData('venue', e.target.value)}
                                     required
@@ -2660,6 +2795,7 @@ export default function AdminDashboard({
                                 <TextInput
                                     type="text"
                                     className="mt-1 block w-full text-xs font-bold"
+                                    placeholder="e.g. Dar es Salaam"
                                     value={editEventForm.data.city}
                                     onChange={(e) => editEventForm.setData('city', e.target.value)}
                                 />
@@ -2670,7 +2806,7 @@ export default function AdminDashboard({
                             <div>
                                 <InputLabel value="Invitation Template" />
                                 <select
-                                    className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition"
+                                    className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition"
                                     value={editEventForm.data.card_template_id}
                                     onChange={(e) => editEventForm.setData('card_template_id', e.target.value)}
                                 >
@@ -2686,7 +2822,7 @@ export default function AdminDashboard({
                             <div>
                                 <InputLabel value="Event Status" />
                                 <select
-                                    className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition"
+                                    className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition"
                                     value={editEventForm.data.status}
                                     onChange={(e) => editEventForm.setData('status', e.target.value)}
                                 >
@@ -2702,7 +2838,7 @@ export default function AdminDashboard({
                             <InputLabel value="Description / Admin Notes" />
                             <textarea
                                 rows={2}
-                                className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs p-3 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition outline-none"
+                                className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs p-3 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/20 transition outline-none"
                                 placeholder="Admin or organiser notes..."
                                 value={editEventForm.data.description}
                                 onChange={(e) => editEventForm.setData('description', e.target.value)}
@@ -2714,7 +2850,7 @@ export default function AdminDashboard({
                         <SecondaryButton onClick={() => setEditingEvent(null)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={editEventForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
+                        <PrimaryButton disabled={editEventForm.processing}>
                             Save Changes
                         </PrimaryButton>
                     </div>
@@ -2723,32 +2859,32 @@ export default function AdminDashboard({
 
             {/* Modal 2: Create Gate Staff Account */}
             <Modal show={createScannerModalOpen} onClose={() => setCreateScannerModalOpen(false)} maxWidth="md">
-                <form onSubmit={handleCreateScanner} className="p-6 sm:p-7 space-y-5">
-                    <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3.5">
+                <form onSubmit={handleCreateScanner} className="p-6 bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
                                 <Smartphone className="w-4 h-4" />
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white font-display">
-                                Create Gate Staff Account
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                                Create Gate Staff
                             </h3>
                         </div>
                         <button
                             type="button"
                             onClick={() => setCreateScannerModalOpen(false)}
-                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition"
+                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
-                    <div className="space-y-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <InputLabel value="Staff Member Full Name *" />
+                            <InputLabel value="Name *" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-bold"
-                                placeholder="e.g. Baraka Gatekeeper"
+                                className="mt-1 block w-full text-xs font-bold rounded-xl"
+                                placeholder="e.g. Salim Juma"
                                 value={createScannerForm.data.name}
                                 onChange={(e) => {
                                     createScannerForm.setData('name', e.target.value);
@@ -2756,15 +2892,16 @@ export default function AdminDashboard({
                                 }}
                                 hasError={Boolean(scannerClientErrors.name || createScannerForm.errors.name)}
                                 required
+                                autoFocus
                             />
                             <InputError message={scannerClientErrors.name || createScannerForm.errors.name} className="mt-1" />
                         </div>
 
                         <div>
-                            <InputLabel value="Email Address (Login Username) *" />
+                            <InputLabel value="Email *" />
                             <TextInput
                                 type="email"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
                                 placeholder="e.g. gate1@kardovo.com"
                                 value={createScannerForm.data.email}
                                 onChange={(e) => {
@@ -2778,11 +2915,11 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Assigned Gate Station / Label *" />
+                            <InputLabel value="Gate *" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-bold"
-                                placeholder="e.g. Gate 1 — Main VIP Entrance"
+                                className="mt-1 block w-full text-xs font-bold rounded-xl"
+                                placeholder="e.g. Gate 1"
                                 value={createScannerForm.data.gate_label}
                                 onChange={(e) => {
                                     createScannerForm.setData('gate_label', e.target.value);
@@ -2795,15 +2932,15 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Assign to Organiser (Optional)" />
+                            <InputLabel value="Organiser (Optional)" />
                             <select
-                                className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition"
+                                className="mt-1 block w-full rounded-xl border border-slate-300 dark:border-white/[0.12] bg-white dark:bg-[#07111D] text-slate-900 dark:text-white text-xs font-bold px-3 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
                                 value={createScannerForm.data.customer_id}
                                 onChange={(e) => createScannerForm.setData('customer_id', e.target.value)}
                             >
-                                <option value="" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Global / All Customer Events</option>
+                                <option value="">Global / All Events</option>
                                 {customers.map((c) => (
-                                    <option key={c.id} value={c.id} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
+                                    <option key={c.id} value={c.id}>
                                         {c.name} {c.company ? `(${c.company})` : ''}
                                     </option>
                                 ))}
@@ -2811,10 +2948,10 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Phone Number (Optional)" />
+                            <InputLabel value="Phone (Optional)" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
                                 placeholder="+255 7XX XXX XXX"
                                 value={createScannerForm.data.phone}
                                 onChange={(e) => {
@@ -2827,76 +2964,80 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <div className="flex items-center justify-between">
-                                <InputLabel value="Staff Password *" />
+                            <InputLabel value="Password *" />
+                            <div className="relative mt-1">
+                                <TextInput
+                                    type="text"
+                                    className="block w-full text-xs font-mono font-bold rounded-xl pr-20"
+                                    placeholder="Min 8 chars"
+                                    value={createScannerForm.data.password}
+                                    onChange={(e) => {
+                                        createScannerForm.setData('password', e.target.value);
+                                        if (scannerClientErrors.password) setScannerClientErrors(prev => ({ ...prev, password: undefined }));
+                                    }}
+                                    hasError={Boolean(scannerClientErrors.password || createScannerForm.errors.password)}
+                                    required
+                                />
                                 <button
                                     type="button"
                                     onClick={() => {
-                                        const pwd = generateStrongPassword(16);
+                                        const pwd = generateStrongPassword(14);
                                         createScannerForm.setData('password', pwd);
                                         if (scannerClientErrors.password) setScannerClientErrors(prev => ({ ...prev, password: undefined }));
                                     }}
-                                    className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
-                                    title="Generate strong 16-character password"
+                                    className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/40 transition cursor-pointer"
                                 >
-                                    <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
-                                    <span>Suggest Strong</span>
+                                    <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Generate</span>
                                 </button>
                             </div>
-                            <TextInput
-                                type="text"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
-                                placeholder="Min 8 chars, uppercase, lowercase, numbers & symbols"
-                                value={createScannerForm.data.password}
-                                onChange={(e) => {
-                                    createScannerForm.setData('password', e.target.value);
-                                    if (scannerClientErrors.password) setScannerClientErrors(prev => ({ ...prev, password: undefined }));
-                                }}
-                                hasError={Boolean(scannerClientErrors.password || createScannerForm.errors.password)}
-                                required
-                            />
                             <InputError message={scannerClientErrors.password || createScannerForm.errors.password} className="mt-1" />
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
+                    <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex justify-end gap-2">
                         <SecondaryButton onClick={() => setCreateScannerModalOpen(false)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={createScannerForm.processing} className="bg-kardovo-navy dark:bg-emerald-600">
-                            Create Gate Staff Account
-                        </PrimaryButton>
+                        <button
+                            type="submit"
+                            disabled={createScannerForm.processing}
+                            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                        >
+                            {createScannerForm.processing ? 'Creating...' : 'Create Staff'}
+                        </button>
                     </div>
                 </form>
             </Modal>
 
             {/* Modal 3: Edit Gate Staff Account */}
             <Modal show={!!editingScanner} onClose={() => setEditingScanner(null)} maxWidth="md">
-                <form onSubmit={handleUpdateScanner} className="p-6 sm:p-7 space-y-5">
-                    <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3.5">
+                <form onSubmit={handleUpdateScanner} className="p-6 bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
                                 <Edit className="w-4 h-4" />
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white font-display">
-                                Edit Gate Staff Account
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                                Edit Gate Staff
                             </h3>
                         </div>
                         <button
                             type="button"
                             onClick={() => setEditingScanner(null)}
-                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition"
+                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
-                    <div className="space-y-3.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <InputLabel value="Staff Member Full Name *" />
+                            <InputLabel value="Name *" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-bold"
+                                className="mt-1 block w-full text-xs font-bold rounded-xl"
+                                placeholder="e.g. Salim Juma"
                                 value={editScannerForm.data.name}
                                 onChange={(e) => editScannerForm.setData('name', e.target.value)}
                                 required
@@ -2904,10 +3045,11 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Email Address *" />
+                            <InputLabel value="Email *" />
                             <TextInput
                                 type="email"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
+                                placeholder="name@company.com"
                                 value={editScannerForm.data.email}
                                 onChange={(e) => editScannerForm.setData('email', e.target.value)}
                                 required
@@ -2915,10 +3057,11 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Assigned Gate Station / Label *" />
+                            <InputLabel value="Gate *" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-bold"
+                                className="mt-1 block w-full text-xs font-bold rounded-xl"
+                                placeholder="e.g. Gate 1"
                                 value={editScannerForm.data.gate_label}
                                 onChange={(e) => editScannerForm.setData('gate_label', e.target.value)}
                                 required
@@ -2926,15 +3069,15 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Assign to Organiser" />
+                            <InputLabel value="Organiser (Optional)" />
                             <select
-                                className="mt-1 block w-full rounded-2xl border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold px-3 py-2 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-4 focus:ring-cyan-500/20 transition"
+                                className="mt-1 block w-full rounded-xl border border-slate-300 dark:border-white/[0.12] bg-white dark:bg-[#07111D] text-slate-900 dark:text-white text-xs font-bold px-3 py-2.5 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
                                 value={editScannerForm.data.customer_id}
                                 onChange={(e) => editScannerForm.setData('customer_id', e.target.value)}
                             >
-                                <option value="" className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">Global / All Customer Events</option>
+                                <option value="">Global / All Events</option>
                                 {customers.map((c) => (
-                                    <option key={c.id} value={c.id} className="bg-white text-slate-900 dark:bg-slate-900 dark:text-white">
+                                    <option key={c.id} value={c.id}>
                                         {c.name} {c.company ? `(${c.company})` : ''}
                                     </option>
                                 ))}
@@ -2942,32 +3085,33 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Phone Number" />
+                            <InputLabel value="Phone (Optional)" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
+                                placeholder="+255 7XX XXX XXX"
                                 value={editScannerForm.data.phone}
                                 onChange={(e) => editScannerForm.setData('phone', e.target.value)}
                             />
                         </div>
 
                         <div>
-                            <InputLabel value="Reset Password (Leave blank to keep current password)" />
+                            <InputLabel value="Reset Password (Optional)" />
                             <TextInput
                                 type="password"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
-                                placeholder="New password..."
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
+                                placeholder="Leave blank to keep current"
                                 value={editScannerForm.data.password}
                                 onChange={(e) => editScannerForm.setData('password', e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
+                    <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex justify-end gap-2">
                         <SecondaryButton onClick={() => setEditingScanner(null)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={editScannerForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
+                        <PrimaryButton disabled={editScannerForm.processing}>
                             Save Changes
                         </PrimaryButton>
                     </div>
@@ -2980,184 +3124,239 @@ export default function AdminDashboard({
                 onClose={() => setGatewayModalOpen(false)} 
                 gateways={gateways} 
             />
-        {/* Modal 5: Create Sub Administrator */}
-            <Modal show={subAdminModalOpen} onClose={() => setSubAdminModalOpen(false)} maxWidth="lg">
-                <form onSubmit={handleCreateSubAdmin} className="p-6 sm:p-7 space-y-5">
-                    <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3.5">
+        {/* Modal 5: Create Sub Admin */}
+            <Modal show={subAdminModalOpen} onClose={() => setSubAdminModalOpen(false)} maxWidth="2xl">
+                <form onSubmit={handleCreateSubAdmin} className="p-6 bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
                                 <UserCheck className="w-4 h-4" />
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white font-display">
-                                Create Sub Administrator Account
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                                Create Sub Admin
                             </h3>
                         </div>
                         <button
                             type="button"
                             onClick={() => setSubAdminModalOpen(false)}
-                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition"
+                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <InputLabel value="Full Name *" />
+                            <InputLabel value="Name *" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-bold"
+                                className="mt-1 block w-full text-xs font-bold rounded-xl"
                                 placeholder="e.g. Sarah Operations"
                                 value={createSubAdminForm.data.name}
-                                onChange={(e) => createSubAdminForm.setData('name', e.target.value)}
+                                onChange={(e) => {
+                                    createSubAdminForm.setData('name', e.target.value);
+                                    if (subAdminClientErrors.name) setSubAdminClientErrors(prev => ({ ...prev, name: undefined }));
+                                }}
+                                hasError={Boolean(subAdminClientErrors.name || createSubAdminForm.errors.name)}
                                 required
+                                autoFocus
                             />
+                            <InputError message={subAdminClientErrors.name || createSubAdminForm.errors.name} className="mt-1" />
                         </div>
 
                         <div>
-                            <InputLabel value="Email Address (Login) *" />
+                            <InputLabel value="Email *" />
                             <TextInput
                                 type="email"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
                                 placeholder="e.g. sarah@kardovo.com"
                                 value={createSubAdminForm.data.email}
-                                onChange={(e) => createSubAdminForm.setData('email', e.target.value)}
+                                onChange={(e) => {
+                                    createSubAdminForm.setData('email', e.target.value);
+                                    if (subAdminClientErrors.email) setSubAdminClientErrors(prev => ({ ...prev, email: undefined }));
+                                }}
+                                hasError={Boolean(subAdminClientErrors.email || createSubAdminForm.errors.email)}
                                 required
                             />
+                            <InputError message={subAdminClientErrors.email || createSubAdminForm.errors.email} className="mt-1" />
                         </div>
 
                         <div>
-                            <InputLabel value="Phone Number (Optional)" />
+                            <InputLabel value="Phone (Optional)" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
                                 placeholder="+255 7XX XXX XXX"
                                 value={createSubAdminForm.data.phone}
-                                onChange={(e) => createSubAdminForm.setData('phone', e.target.value)}
+                                onChange={(e) => {
+                                    createSubAdminForm.setData('phone', e.target.value);
+                                    if (subAdminClientErrors.phone) setSubAdminClientErrors(prev => ({ ...prev, phone: undefined }));
+                                }}
+                                hasError={Boolean(subAdminClientErrors.phone || createSubAdminForm.errors.phone)}
                             />
+                            <InputError message={subAdminClientErrors.phone || createSubAdminForm.errors.phone} className="mt-1" />
                         </div>
 
                         <div>
-                            <InputLabel value="Initial Password *" />
-                            <TextInput
-                                type="password"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
-                                value={createSubAdminForm.data.password}
-                                onChange={(e) => createSubAdminForm.setData('password', e.target.value)}
-                                required
-                            />
+                            <InputLabel value="Password *" />
+                            <div className="relative mt-1">
+                                <TextInput
+                                    type="text"
+                                    className="block w-full text-xs font-mono font-bold rounded-xl pr-20"
+                                    placeholder="Min 8 chars"
+                                    value={createSubAdminForm.data.password}
+                                    onChange={(e) => {
+                                        createSubAdminForm.setData('password', e.target.value);
+                                        if (subAdminClientErrors.password) setSubAdminClientErrors(prev => ({ ...prev, password: undefined }));
+                                    }}
+                                    hasError={Boolean(subAdminClientErrors.password || createSubAdminForm.errors.password)}
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const pwd = generateStrongPassword(14);
+                                        createSubAdminForm.setData('password', pwd);
+                                        if (subAdminClientErrors.password) setSubAdminClientErrors(prev => ({ ...prev, password: undefined }));
+                                    }}
+                                    className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 px-2 py-1 rounded-lg border border-emerald-200 dark:border-emerald-800/40 transition cursor-pointer"
+                                >
+                                    <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                                    <span>Generate</span>
+                                </button>
+                            </div>
+                            <InputError message={subAdminClientErrors.password || createSubAdminForm.errors.password} className="mt-1" />
                         </div>
                     </div>
 
-                    {/* Assignment Scope Section */}
-                    <div className="space-y-4 pt-3 border-t border-slate-200/80 dark:border-white/[0.08]">
-                        <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-1.5">
-                                <Users className="w-3.5 h-3.5 text-blue-500" />
-                                <span>Assign to Organisers</span>
-                                <span className="text-[10px] text-slate-400 font-normal">(Sub Admin can oversee all events created by checked organisers)</span>
+                    {/* Scope Assignments */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/[0.08]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Organisers (Optional)</span>
+                                    </span>
+                                    {createSubAdminForm.data.organizer_ids.length > 0 && (
+                                        <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded">
+                                            {createSubAdminForm.data.organizer_ids.length} selected
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="max-h-36 overflow-y-auto p-2 rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] space-y-1">
+                                    {customers.length === 0 ? (
+                                        <div className="text-[11px] text-slate-400 p-2 italic text-center">No organisers found</div>
+                                    ) : (
+                                        customers.map(c => {
+                                            const isChecked = createSubAdminForm.data.organizer_ids.includes(c.id);
+                                            return (
+                                                <label key={c.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white dark:hover:bg-white/[0.04] cursor-pointer transition text-xs select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            const newIds = e.target.checked
+                                                                ? [...createSubAdminForm.data.organizer_ids, c.id]
+                                                                : createSubAdminForm.data.organizer_ids.filter(id => id !== c.id);
+                                                            createSubAdminForm.setData('organizer_ids', newIds);
+                                                        }}
+                                                        className="rounded text-[#16A34A] focus:ring-[#16A34A] h-3.5 w-3.5"
+                                                    />
+                                                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{c.name}</span>
+                                                    {c.company && <span className="text-[10px] text-slate-400 truncate">({c.company})</span>}
+                                                </label>
+                                            );
+                                        })
+                                    )}
+                                </div>
                             </div>
-                            <div className="max-h-32 overflow-y-auto p-2.5 rounded-2xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
-                                {customers.length === 0 ? (
-                                    <div className="text-xs text-slate-400 italic">No organisers available.</div>
-                                ) : (
-                                    customers.map(c => {
-                                        const isChecked = createSubAdminForm.data.organizer_ids.includes(c.id);
-                                        return (
-                                            <label key={c.id} className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white dark:hover:bg-white/[0.04] cursor-pointer transition text-xs select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={(e) => {
-                                                        const newIds = e.target.checked
-                                                            ? [...createSubAdminForm.data.organizer_ids, c.id]
-                                                            : createSubAdminForm.data.organizer_ids.filter(id => id !== c.id);
-                                                        createSubAdminForm.setData('organizer_ids', newIds);
-                                                    }}
-                                                    className="rounded text-cyan-600 focus:ring-cyan-500 h-3.5 w-3.5"
-                                                />
-                                                <span className="font-bold text-slate-800 dark:text-slate-200">{c.name}</span>
-                                                {c.company && <span className="text-[10.5px] text-slate-400">({c.company})</span>}
-                                            </label>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </div>
 
-                        <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-purple-500" />
-                                <span>Assign to Specific Events</span>
-                                <span className="text-[10px] text-slate-400 font-normal">(Sub Admin can oversee these individual events)</span>
-                            </div>
-                            <div className="max-h-32 overflow-y-auto p-2.5 rounded-2xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
-                                {allEvents.length === 0 ? (
-                                    <div className="text-xs text-slate-400 italic">No events available.</div>
-                                ) : (
-                                    allEvents.map(ev => {
-                                        const isChecked = createSubAdminForm.data.event_ids.includes(ev.id);
-                                        return (
-                                            <label key={ev.id} className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white dark:hover:bg-white/[0.04] cursor-pointer transition text-xs select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={(e) => {
-                                                        const newIds = e.target.checked
-                                                            ? [...createSubAdminForm.data.event_ids, ev.id]
-                                                            : createSubAdminForm.data.event_ids.filter(id => id !== ev.id);
-                                                        createSubAdminForm.setData('event_ids', newIds);
-                                                    }}
-                                                    className="rounded text-purple-600 focus:ring-purple-500 h-3.5 w-3.5"
-                                                />
-                                                <span className="font-bold text-slate-800 dark:text-slate-200">{ev.title}</span>
-                                                <span className="text-[10.5px] text-slate-400">({ev.venue || 'TBA'})</span>
-                                            </label>
-                                        );
-                                    })
-                                )}
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Events (Optional)</span>
+                                    </span>
+                                    {createSubAdminForm.data.event_ids.length > 0 && (
+                                        <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded">
+                                            {createSubAdminForm.data.event_ids.length} selected
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="max-h-36 overflow-y-auto p-2 rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] space-y-1">
+                                    {allEvents.length === 0 ? (
+                                        <div className="text-[11px] text-slate-400 p-2 italic text-center">No events found</div>
+                                    ) : (
+                                        allEvents.map(ev => {
+                                            const isChecked = createSubAdminForm.data.event_ids.includes(ev.id);
+                                            return (
+                                                <label key={ev.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white dark:hover:bg-white/[0.04] cursor-pointer transition text-xs select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            const newIds = e.target.checked
+                                                                ? [...createSubAdminForm.data.event_ids, ev.id]
+                                                                : createSubAdminForm.data.event_ids.filter(id => id !== ev.id);
+                                                            createSubAdminForm.setData('event_ids', newIds);
+                                                        }}
+                                                        className="rounded text-[#16A34A] focus:ring-[#16A34A] h-3.5 w-3.5"
+                                                    />
+                                                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{ev.title}</span>
+                                                    <span className="text-[10px] text-slate-400 truncate">({ev.venue || 'TBA'})</span>
+                                                </label>
+                                            );
+                                        })
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
+                    <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex justify-end gap-2">
                         <SecondaryButton onClick={() => setSubAdminModalOpen(false)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={createSubAdminForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
-                            Create Sub Administrator
-                        </PrimaryButton>
+                        <button
+                            type="submit"
+                            disabled={createSubAdminForm.processing}
+                            className="inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                        >
+                            {createSubAdminForm.processing ? 'Creating...' : 'Create Sub Admin'}
+                        </button>
                     </div>
                 </form>
             </Modal>
 
-            {/* Modal 6: Edit Sub Administrator */}
-            <Modal show={!!editingSubAdmin} onClose={() => setEditingSubAdmin(null)} maxWidth="lg">
-                <form onSubmit={handleUpdateSubAdmin} className="p-6 sm:p-7 space-y-5">
-                    <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-white/[0.08] pb-3.5">
+            {/* Modal 6: Edit Sub Admin */}
+            <Modal show={!!editingSubAdmin} onClose={() => setEditingSubAdmin(null)} maxWidth="2xl">
+                <form onSubmit={handleUpdateSubAdmin} className="p-6 bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-2xl space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30">
+                            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20">
                                 <Edit className="w-4 h-4" />
                             </div>
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white font-display">
-                                Edit Sub Administrator &amp; Assignments
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                                Edit Sub Admin
                             </h3>
                         </div>
                         <button
                             type="button"
                             onClick={() => setEditingSubAdmin(null)}
-                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition"
+                            className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center transition cursor-pointer"
                         >
                             <X className="w-3.5 h-3.5" />
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                         <div>
-                            <InputLabel value="Full Name *" />
+                            <InputLabel value="Name *" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-bold"
+                                className="mt-1 block w-full text-xs font-bold rounded-xl"
+                                placeholder="e.g. Sarah Operations"
                                 value={editSubAdminForm.data.name}
                                 onChange={(e) => editSubAdminForm.setData('name', e.target.value)}
                                 required
@@ -3165,10 +3364,11 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Email Address *" />
+                            <InputLabel value="Email *" />
                             <TextInput
                                 type="email"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
+                                placeholder="e.g. sarah@kardovo.com"
                                 value={editSubAdminForm.data.email}
                                 onChange={(e) => editSubAdminForm.setData('email', e.target.value)}
                                 required
@@ -3176,107 +3376,136 @@ export default function AdminDashboard({
                         </div>
 
                         <div>
-                            <InputLabel value="Phone Number" />
+                            <InputLabel value="Phone (Optional)" />
                             <TextInput
                                 type="text"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
+                                placeholder="+255 7XX XXX XXX"
                                 value={editSubAdminForm.data.phone}
                                 onChange={(e) => editSubAdminForm.setData('phone', e.target.value)}
                             />
                         </div>
 
                         <div>
-                            <InputLabel value="Reset Password (Leave blank to keep current)" />
+                            <InputLabel value="Reset Password (Optional)" />
                             <TextInput
                                 type="password"
-                                className="mt-1 block w-full text-xs font-mono font-bold"
-                                placeholder="New password..."
+                                className="mt-1 block w-full text-xs font-mono font-bold rounded-xl"
+                                placeholder="Leave blank to keep current"
                                 value={editSubAdminForm.data.password}
                                 onChange={(e) => editSubAdminForm.setData('password', e.target.value)}
                             />
                         </div>
                     </div>
 
-                    {/* Assignment Scope Section */}
-                    <div className="space-y-4 pt-3 border-t border-slate-200/80 dark:border-white/[0.08]">
-                        <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-1.5">
-                                <Users className="w-3.5 h-3.5 text-blue-500" />
-                                <span>Assign to Organisers</span>
+                    {/* Scope Assignments */}
+                    <div className="pt-2 border-t border-slate-100 dark:border-white/[0.08]">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <Users className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Organisers (Optional)</span>
+                                    </span>
+                                    {editSubAdminForm.data.organizer_ids.length > 0 && (
+                                        <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded">
+                                            {editSubAdminForm.data.organizer_ids.length} selected
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="max-h-36 overflow-y-auto p-2 rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] space-y-1">
+                                    {customers.length === 0 ? (
+                                        <div className="text-[11px] text-slate-400 p-2 italic text-center">No organisers found</div>
+                                    ) : (
+                                        customers.map(c => {
+                                            const isChecked = editSubAdminForm.data.organizer_ids.includes(c.id);
+                                            return (
+                                                <label key={c.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white dark:hover:bg-white/[0.04] cursor-pointer transition text-xs select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            const newIds = e.target.checked
+                                                                ? [...editSubAdminForm.data.organizer_ids, c.id]
+                                                                : editSubAdminForm.data.organizer_ids.filter(id => id !== c.id);
+                                                            editSubAdminForm.setData('organizer_ids', newIds);
+                                                        }}
+                                                        className="rounded text-[#16A34A] focus:ring-[#16A34A] h-3.5 w-3.5"
+                                                    />
+                                                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{c.name}</span>
+                                                    {c.company && <span className="text-[10px] text-slate-400 truncate">({c.company})</span>}
+                                                </label>
+                                            );
+                                        })
+                                    )}
+                                </div>
                             </div>
-                            <div className="max-h-32 overflow-y-auto p-2.5 rounded-2xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
-                                {customers.length === 0 ? (
-                                    <div className="text-xs text-slate-400 italic">No organisers available.</div>
-                                ) : (
-                                    customers.map(c => {
-                                        const isChecked = editSubAdminForm.data.organizer_ids.includes(c.id);
-                                        return (
-                                            <label key={c.id} className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white dark:hover:bg-white/[0.04] cursor-pointer transition text-xs select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={(e) => {
-                                                        const newIds = e.target.checked
-                                                            ? [...editSubAdminForm.data.organizer_ids, c.id]
-                                                            : editSubAdminForm.data.organizer_ids.filter(id => id !== c.id);
-                                                        editSubAdminForm.setData('organizer_ids', newIds);
-                                                    }}
-                                                    className="rounded text-cyan-600 focus:ring-cyan-500 h-3.5 w-3.5"
-                                                />
-                                                <span className="font-bold text-slate-800 dark:text-slate-200">{c.name}</span>
-                                                {c.company && <span className="text-[10.5px] text-slate-400">({c.company})</span>}
-                                            </label>
-                                        );
-                                    })
-                                )}
-                            </div>
-                        </div>
 
-                        <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5 mb-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-purple-500" />
-                                <span>Assign to Specific Events</span>
-                            </div>
-                            <div className="max-h-32 overflow-y-auto p-2.5 rounded-2xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] space-y-1.5">
-                                {allEvents.length === 0 ? (
-                                    <div className="text-xs text-slate-400 italic">No events available.</div>
-                                ) : (
-                                    allEvents.map(ev => {
-                                        const isChecked = editSubAdminForm.data.event_ids.includes(ev.id);
-                                        return (
-                                            <label key={ev.id} className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white dark:hover:bg-white/[0.04] cursor-pointer transition text-xs select-none">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isChecked}
-                                                    onChange={(e) => {
-                                                        const newIds = e.target.checked
-                                                            ? [...editSubAdminForm.data.event_ids, ev.id]
-                                                            : editSubAdminForm.data.event_ids.filter(id => id !== ev.id);
-                                                        editSubAdminForm.setData('event_ids', newIds);
-                                                    }}
-                                                    className="rounded text-purple-600 focus:ring-purple-500 h-3.5 w-3.5"
-                                                />
-                                                <span className="font-bold text-slate-800 dark:text-slate-200">{ev.title}</span>
-                                                <span className="text-[10.5px] text-slate-400">({ev.venue || 'TBA'})</span>
-                                            </label>
-                                        );
-                                    })
-                                )}
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                        <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>Events (Optional)</span>
+                                    </span>
+                                    {editSubAdminForm.data.event_ids.length > 0 && (
+                                        <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-1.5 py-0.5 rounded">
+                                            {editSubAdminForm.data.event_ids.length} selected
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="max-h-36 overflow-y-auto p-2 rounded-xl bg-slate-50 dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] space-y-1">
+                                    {allEvents.length === 0 ? (
+                                        <div className="text-[11px] text-slate-400 p-2 italic text-center">No events found</div>
+                                    ) : (
+                                        allEvents.map(ev => {
+                                            const isChecked = editSubAdminForm.data.event_ids.includes(ev.id);
+                                            return (
+                                                <label key={ev.id} className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-white dark:hover:bg-white/[0.04] cursor-pointer transition text-xs select-none">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={isChecked}
+                                                        onChange={(e) => {
+                                                            const newIds = e.target.checked
+                                                                ? [...editSubAdminForm.data.event_ids, ev.id]
+                                                                : editSubAdminForm.data.event_ids.filter(id => id !== ev.id);
+                                                            editSubAdminForm.setData('event_ids', newIds);
+                                                        }}
+                                                        className="rounded text-[#16A34A] focus:ring-[#16A34A] h-3.5 w-3.5"
+                                                    />
+                                                    <span className="font-bold text-slate-800 dark:text-slate-200 truncate">{ev.title}</span>
+                                                    <span className="text-[10px] text-slate-400 truncate">({ev.venue || 'TBA'})</span>
+                                                </label>
+                                            );
+                                        })
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="pt-4 border-t border-slate-200/80 dark:border-white/[0.08] flex justify-end gap-2.5">
+                    <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex justify-end gap-2">
                         <SecondaryButton onClick={() => setEditingSubAdmin(null)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={editSubAdminForm.processing} className="bg-kardovo-navy dark:bg-cyan-600">
+                        <PrimaryButton disabled={editSubAdminForm.processing}>
                             Save Changes
                         </PrimaryButton>
                     </div>
                 </form>
             </Modal>
 
+            <ConfirmationModal
+                show={confirmModal.show}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                warning={confirmModal.warning}
+                confirmText={confirmModal.confirmText}
+                cancelText={confirmModal.cancelText}
+                type={confirmModal.type}
+                loading={confirmModal.loading}
+                onConfirm={confirmModal.onConfirm}
+                onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+            />
         </KardovoAppLayout>
     );
 }

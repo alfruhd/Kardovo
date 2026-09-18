@@ -19,7 +19,7 @@ class DashboardController extends Controller
             return redirect()->route('scanner.index');
         }
 
-        if ($user->isAdmin()) {
+        if ($user->isAdmin() || $user->isSubAdmin()) {
             return redirect()->route('admin.dashboard');
         }
 

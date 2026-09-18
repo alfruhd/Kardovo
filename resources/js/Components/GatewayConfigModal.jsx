@@ -53,13 +53,13 @@ export default function GatewayConfigModal({
         gateway_type: 'whatsapp',
         config: {
             provider: gateways.whatsapp?.provider || 'Meta WhatsApp Cloud API',
-            phone_number_id: gateways.whatsapp?.phone_number_id || '108492019482910',
-            waba_id: gateways.whatsapp?.waba_id || '94820194820184',
-            api_version: gateways.whatsapp?.api_version || 'v20.0',
-            access_token: gateways.whatsapp?.access_token || 'EAAGkdv_prod_access_token_live',
-            sender_number: gateways.whatsapp?.sender_number || '+255 700 000 000',
+            phone_number_id: gateways.whatsapp?.phone_number_id || '',
+            waba_id: gateways.whatsapp?.waba_id || '',
+            api_version: gateways.whatsapp?.api_version || '',
+            access_token: gateways.whatsapp?.access_token || '',
+            sender_number: gateways.whatsapp?.sender_number || '',
             webhook_url: gateways.whatsapp?.webhook_url || webhookUrl,
-            verify_token: gateways.whatsapp?.verify_token || 'kardovo_verify_token_2026',
+            verify_token: gateways.whatsapp?.verify_token || '',
             status: gateways.whatsapp?.status || 'Connected (Operational)',
         }
     });
@@ -68,13 +68,26 @@ export default function GatewayConfigModal({
         gateway_type: 'sms',
         config: {
             provider: gateways.sms?.provider || 'NextSMS Tanzania',
-            sender_id: gateways.sms?.sender_id || 'KARDOVO',
-            api_key: gateways.sms?.api_key || 'nextsms_live_api_key_849201',
-            api_secret: gateways.sms?.api_secret || 'sec_984187201948201',
-            api_endpoint: gateways.sms?.api_endpoint || 'https://messaging-service.co.tz/api/sms/v1/text/single',
-            balance: gateways.sms?.balance || '12,450 TZS',
-            country_code: gateways.sms?.country_code || '+255',
+            sender_id: gateways.sms?.sender_id || '',
+            api_key: gateways.sms?.api_key || '',
+            api_secret: gateways.sms?.api_secret || '',
+            api_endpoint: gateways.sms?.api_endpoint || '',
+            balance: gateways.sms?.balance || '',
+            country_code: gateways.sms?.country_code || '',
             status: gateways.sms?.status || 'Active',
+        }
+    });
+
+
+    const azampayForm = useForm({
+        gateway_type: 'azampay',
+        config: {
+            provider: gateways.azampay?.provider || 'AzamPay',
+            app_name: gateways.azampay?.app_name || 'Kardovo',
+            client_id: gateways.azampay?.client_id || '',
+            client_secret: gateways.azampay?.client_secret || '',
+            environment: gateways.azampay?.environment || 'sandbox',
+            status: gateways.azampay?.status || 'Pending Configuration',
         }
     });
 
@@ -90,7 +103,7 @@ export default function GatewayConfigModal({
         setTestingConnection(true);
         setTestResult(null);
         try {
-            const config = type === 'whatsapp' ? whatsappForm.data.config : smsForm.data.config;
+            const config = type === 'whatsapp' ? whatsappForm.data.config : (type === 'sms' ? smsForm.data.config : azampayForm.data.config);
             const res = await axios.post(route('admin.gateway.test'), {
                 gateway_type: type,
                 config: config,
@@ -129,6 +142,24 @@ export default function GatewayConfigModal({
         }
     };
 
+
+    const handleSaveAzamPay = (e) => {
+        e.preventDefault();
+        const errs = {};
+        if (!azampayForm.data.config.client_id?.trim()) errs.client_id = 'Client ID is required.';
+        if (!azampayForm.data.config.client_secret?.trim()) errs.client_secret = 'Client Secret is required.';
+        if (Object.keys(errs).length > 0) {
+            setGwErrors(errs);
+            return;
+        }
+        azampayForm.post(route('admin.gateway'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setGwErrors({});
+                onClose();
+            },
+        });
+    };
     const handleSaveWhatsApp = (e) => {
         e.preventDefault();
         const errs = {};
@@ -181,8 +212,8 @@ export default function GatewayConfigModal({
                 {/* 1. MODAL HEADER */}
                 <div className="px-6 py-5 border-b border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between bg-white dark:bg-[#08121E] flex-shrink-0">
                     <div className="flex items-center gap-3.5">
-                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-500/20 to-blue-500/10 text-cyan-700 dark:text-cyan-400 flex items-center justify-center border border-cyan-500/30 shadow-xs flex-shrink-0">
-                            <Server className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                        <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/30 shadow-xs flex-shrink-0">
+                            <Server className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
@@ -195,7 +226,7 @@ export default function GatewayConfigModal({
                                 </span>
                             </div>
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                                Configure Meta WhatsApp Cloud API credentials, test live messaging, and manage SMS delivery.
+                                Configure Meta WhatsApp Cloud API credentials, test live messaging, manage SMS delivery, and configure AzamPay.
                             </p>
                         </div>
                     </div>
@@ -218,14 +249,11 @@ export default function GatewayConfigModal({
                             className={`flex-1 py-2 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 cursor-pointer border ${
                                 activeTab === 'whatsapp'
                                     ? 'bg-white dark:bg-[#0B1828] text-emerald-900 dark:text-emerald-300 border-emerald-500/40 shadow-xs ring-2 ring-emerald-500/20'
-                                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.04]'
                             }`}
                         >
-                            <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                            <span>WhatsApp Cloud API</span>
-                            <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 font-extrabold border border-emerald-500/30">
-                                {whatsappForm.data.config.status === 'Disabled' ? 'Off' : 'Meta API'}
-                            </span>
+                            <Smartphone className={`w-4 h-4 ${activeTab === 'whatsapp' ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`} />
+                            <span>WhatsApp</span>
                         </button>
                         <button
                             type="button"
@@ -233,15 +261,25 @@ export default function GatewayConfigModal({
                             className={`flex-1 py-2 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 cursor-pointer border ${
                                 activeTab === 'sms'
                                     ? 'bg-white dark:bg-[#0B1828] text-blue-900 dark:text-blue-300 border-blue-500/40 shadow-xs ring-2 ring-blue-500/20'
-                                    : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.04]'
                             }`}
                         >
-                            <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                            <span>SMS Gateway Provider</span>
-                            <span className="text-[9.5px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-800 dark:text-blue-300 font-extrabold border border-blue-500/30">
-                                {smsForm.data.config.status === 'Disabled' ? 'Off' : 'NextSMS'}
-                            </span>
+                            <MessageSquare className={`w-4 h-4 ${activeTab === 'sms' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                            <span>SMS Gateway</span>
                         </button>
+                        <button
+                            type="button"
+                            onClick={() => { setActiveTab('azampay'); setTestResult(null); }}
+                            className={`flex-1 py-2 px-4 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition-all duration-200 active:scale-95 cursor-pointer border ${
+                                activeTab === 'azampay'
+                                    ? 'bg-white dark:bg-[#0B1828] text-orange-900 dark:text-orange-300 border-orange-500/40 shadow-xs ring-2 ring-orange-500/20'
+                                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/[0.04]'
+                            }`}
+                        >
+                            <Zap className={`w-4 h-4 ${activeTab === 'azampay' ? 'text-orange-600 dark:text-orange-400' : 'text-slate-400'}`} />
+                            <span>AzamPay</span>
+                        </button>
+
                     </div>
                 </div>
 
@@ -437,7 +475,7 @@ export default function GatewayConfigModal({
                                                 </p>
                                                 <div className="p-3 rounded-xl bg-black/10 dark:bg-black/40 border border-amber-500/30 font-medium text-[11px] space-y-1.5">
                                                     <div className="font-extrabold text-amber-950 dark:text-amber-200">👉 How to enable your number in 10 seconds:</div>
-                                                    <div>1. Open <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer" className="underline font-black text-cyan-700 dark:text-cyan-400">Meta for Developers</a> &gt; Your App &gt; WhatsApp &gt; <strong>API Setup</strong>.</div>
+                                                    <div>1. Open <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer" className="underline font-black text-emerald-700 dark:text-emerald-400">Meta for Developers</a> &gt; Your App &gt; WhatsApp &gt; <strong>API Setup</strong>.</div>
                                                     <div>2. Under <strong>Step 1: Send and receive messages</strong>, look at the <strong>&quot;To&quot;</strong> recipient phone number dropdown.</div>
                                                     <div>3. Click <strong>&quot;Manage phone number list&quot;</strong> and add <code>+{testResult.details?.test_phone || testPhone}</code>.</div>
                                                     <div>4. Click <strong>Test Connection</strong> again to receive your real message!</div>
@@ -474,7 +512,7 @@ export default function GatewayConfigModal({
                             <div className="p-5 rounded-2xl bg-slate-50/80 dark:bg-white/[0.02] border border-slate-200/90 dark:border-white/[0.08] space-y-4">
                                 <div className="flex items-center justify-between border-b border-slate-200/60 dark:border-white/[0.06] pb-3">
                                     <div className="flex items-center gap-2">
-                                        <Smartphone className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                        <Smartphone className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                         <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                                             3. Sender Identity &amp; Operational Status
                                         </h4>
@@ -485,7 +523,7 @@ export default function GatewayConfigModal({
                                     <div>
                                         <InputLabel value="Operational Status" />
                                         <select
-                                            className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1828] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 py-2.5 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition"
+                                            className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1828] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 py-2.5 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
                                             value={whatsappForm.data.config.status}
                                             onChange={(e) => whatsappForm.setData('config', { ...whatsappForm.data.config, status: e.target.value })}
                                         >
@@ -498,7 +536,7 @@ export default function GatewayConfigModal({
                                     <div>
                                         <InputLabel value="Gateway Provider" />
                                         <select
-                                            className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1828] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 py-2.5 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition"
+                                            className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1828] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 py-2.5 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition"
                                             value={whatsappForm.data.config.provider}
                                             onChange={(e) => whatsappForm.setData('config', { ...whatsappForm.data.config, provider: e.target.value })}
                                         >
@@ -559,7 +597,7 @@ export default function GatewayConfigModal({
                                             <button
                                                 type="button"
                                                 onClick={() => whatsappForm.setData('config', { ...whatsappForm.data.config, webhook_url: webhookUrl })}
-                                                className="text-[10px] text-cyan-600 dark:text-cyan-400 hover:underline font-bold cursor-pointer"
+                                                className="text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-bold cursor-pointer"
                                             >
                                                 Use Current Origin
                                             </button>
@@ -570,7 +608,7 @@ export default function GatewayConfigModal({
                                                 value={whatsappForm.data.config.webhook_url || ''}
                                                 onChange={(e) => whatsappForm.setData('config', { ...whatsappForm.data.config, webhook_url: e.target.value })}
                                                 placeholder="e.g. https://62c20482554209.lhr.life/api/webhooks/whatsapp"
-                                                className="block w-full text-[11px] font-mono bg-white dark:bg-[#0B1828] border border-slate-300 dark:border-white/[0.08] rounded-xl px-3 py-2 text-slate-700 dark:text-slate-300 font-bold focus:ring-1 focus:ring-cyan-500"
+                                                className="block w-full text-[11px] font-mono bg-white dark:bg-[#0B1828] border border-slate-300 dark:border-white/[0.08] rounded-xl px-3 py-2 text-slate-700 dark:text-slate-300 font-bold focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
                                             />
                                             <button
                                                 type="button"
@@ -582,7 +620,7 @@ export default function GatewayConfigModal({
                                                         setTimeout(() => setCopiedWebhook(false), 2000);
                                                     }
                                                 }}
-                                                className="px-3.5 py-2 text-xs font-black bg-white dark:bg-white/[0.08] border border-slate-300 dark:border-white/[0.08] hover:border-cyan-500/70 text-slate-800 dark:text-white rounded-xl flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer flex-shrink-0"
+                                                className="px-3.5 py-2 text-xs font-black bg-white dark:bg-white/[0.08] border border-slate-300 dark:border-white/[0.08] hover:border-emerald-500/70 text-slate-800 dark:text-white rounded-xl flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer flex-shrink-0"
                                                 title="Copy Webhook URL"
                                             >
                                                 {copiedWebhook ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
@@ -631,7 +669,7 @@ export default function GatewayConfigModal({
                                     <div>
                                         <InputLabel value="SMS Gateway Provider" />
                                         <select
-                                            className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1828] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 py-2.5 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition"
+                                            className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1828] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 py-2.5 hover:border-blue-500/70 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                                             value={smsForm.data.config.provider}
                                             onChange={(e) => smsForm.setData('config', { ...smsForm.data.config, provider: e.target.value })}
                                         >
@@ -646,7 +684,7 @@ export default function GatewayConfigModal({
                                     <div>
                                         <InputLabel value="Gateway Status" />
                                         <select
-                                            className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1828] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 py-2.5 hover:border-cyan-500/70 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition"
+                                            className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1828] text-slate-900 dark:text-white rounded-xl text-xs font-bold px-3.5 py-2.5 hover:border-blue-500/70 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                                             value={smsForm.data.config.status}
                                             onChange={(e) => smsForm.setData('config', { ...smsForm.data.config, status: e.target.value })}
                                         >
@@ -766,12 +804,110 @@ export default function GatewayConfigModal({
                             </div>
                         </form>
                     )}
+
+                    {/* ════════ AZAMPAY TAB ════════ */}
+                    {activeTab === 'azampay' && (
+                        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            
+                            {/* Notice */}
+                            <div className="p-4 rounded-xl bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-900/30 flex items-start gap-3">
+                                <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 flex-shrink-0 mt-0.5" />
+                                <div className="text-xs text-orange-800 dark:text-orange-200 leading-relaxed">
+                                    <p className="font-bold mb-1">AzamPay Integration</p>
+                                    <p>Configure your AzamPay credentials to accept payments via Mobile Money and Cards. Ensure you have the correct Client ID and Secret from your AzamPay Merchant Portal.</p>
+                                </div>
+                            </div>
+
+                            <form id="azampay-form" onSubmit={handleSaveAzamPay} className="space-y-6">
+                                
+                                <div className="bg-slate-50 dark:bg-[#07111D] p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-4">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-2">
+                                            <Key className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                                            <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                                                API Credentials
+                                            </h4>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <InputLabel value="App Name *" />
+                                            <TextInput
+                                                type="text"
+                                                placeholder="e.g. Kardovo"
+                                                className="mt-1 block w-full text-xs font-mono bg-white dark:bg-[#0B1828]"
+                                                value={azampayForm.data.config.app_name}
+                                                onChange={(e) => azampayForm.setData('config', { ...azampayForm.data.config, app_name: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div>
+                                            <InputLabel value="Environment *" />
+                                            <select
+                                                className="mt-1 block w-full text-xs font-mono bg-white dark:bg-[#0B1828] border-slate-300 dark:border-slate-700 dark:text-white rounded-lg shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                                                value={azampayForm.data.config.environment}
+                                                onChange={(e) => azampayForm.setData('config', { ...azampayForm.data.config, environment: e.target.value })}
+                                            >
+                                                <option value="sandbox">Sandbox (Testing)</option>
+                                                <option value="production">Production (Live)</option>
+                                            </select>
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <InputLabel value="Client ID *" />
+                                            <TextInput
+                                                type="text"
+                                                placeholder="Enter Client ID"
+                                                className="mt-1 block w-full text-xs font-mono bg-white dark:bg-[#0B1828]"
+                                                value={azampayForm.data.config.client_id}
+                                                onChange={(e) => {
+                                                    azampayForm.setData('config', { ...azampayForm.data.config, client_id: e.target.value });
+                                                    if (gwErrors.client_id) setGwErrors(prev => ({ ...prev, client_id: undefined }));
+                                                }}
+                                                hasError={Boolean(gwErrors.client_id)}
+                                                required
+                                            />
+                                            <InputError message={gwErrors.client_id} className="mt-1" />
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                            <InputLabel value="Client Secret *" />
+                                            <TextInput
+                                                type="password"
+                                                placeholder="Enter Client Secret"
+                                                className="mt-1 block w-full text-xs font-mono bg-white dark:bg-[#0B1828]"
+                                                value={azampayForm.data.config.client_secret}
+                                                onChange={(e) => {
+                                                    azampayForm.setData('config', { ...azampayForm.data.config, client_secret: e.target.value });
+                                                    if (gwErrors.client_secret) setGwErrors(prev => ({ ...prev, client_secret: undefined }));
+                                                }}
+                                                hasError={Boolean(gwErrors.client_secret)}
+                                                required
+                                            />
+                                            <InputError message={gwErrors.client_secret} className="mt-1" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+
                 </div>
 
                 {/* 4. FIXED ACTION FOOTER */}
                 <div className="px-6 py-4 border-t border-slate-200/80 dark:border-white/[0.08] bg-slate-50/95 dark:bg-[#07111D]/95 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-shrink-0">
                     <div className="flex items-center gap-2">
-                        {activeTab === 'whatsapp' ? (
+                        
+                        {activeTab === 'azampay' ? (
+                            <SecondaryButton
+                                type="button"
+                                onClick={() => handleTestConnection('azampay')}
+                                disabled={testingConnection}
+                                className="!py-2.5 !text-xs !bg-orange-50 dark:!bg-orange-500/10 !text-orange-700 dark:!text-orange-400 !border-orange-200 dark:!border-orange-500/20 hover:!bg-orange-100 dark:hover:!bg-orange-500/20"
+                            >
+                                {testingConnection ? 'Testing...' : 'Test AzamPay Gateway'}
+                            </SecondaryButton>
+                        ) : activeTab === 'whatsapp' ? (
                             <button
                                 type="button"
                                 onClick={() => handleTestConnection('whatsapp')}
@@ -798,12 +934,22 @@ export default function GatewayConfigModal({
                         <SecondaryButton onClick={onClose} className="rounded-xl px-4 py-2.5 text-xs font-bold">
                             Cancel
                         </SecondaryButton>
-                        {activeTab === 'whatsapp' ? (
+                        
+                        {activeTab === 'azampay' ? (
+                            <SecondaryButton
+                                type="button"
+                                onClick={() => handleTestConnection('azampay')}
+                                disabled={testingConnection}
+                                className="!py-2.5 !text-xs !bg-orange-50 dark:!bg-orange-500/10 !text-orange-700 dark:!text-orange-400 !border-orange-200 dark:!border-orange-500/20 hover:!bg-orange-100 dark:hover:!bg-orange-500/20"
+                            >
+                                {testingConnection ? 'Testing...' : 'Test AzamPay Gateway'}
+                            </SecondaryButton>
+                        ) : activeTab === 'whatsapp' ? (
                             <PrimaryButton 
                                 type="submit" 
                                 form="whatsapp-gw-form" 
                                 disabled={whatsappForm.processing} 
-                                className="rounded-xl px-5 py-2.5 text-xs font-bold bg-kardovo-navy hover:bg-slate-900 dark:bg-emerald-600 dark:hover:bg-emerald-500 shadow-md"
+                                className="rounded-xl px-5 py-2.5 text-xs font-bold bg-[#16A34A] hover:bg-[#15803D] text-white shadow-xs"
                             >
                                 Save WhatsApp Settings
                             </PrimaryButton>
@@ -812,7 +958,7 @@ export default function GatewayConfigModal({
                                 type="submit" 
                                 form="sms-gw-form" 
                                 disabled={smsForm.processing} 
-                                className="rounded-xl px-5 py-2.5 text-xs font-bold bg-kardovo-navy hover:bg-slate-900 dark:bg-blue-600 dark:hover:bg-blue-500 shadow-md"
+                                className="rounded-xl px-5 py-2.5 text-xs font-bold bg-[#16A34A] hover:bg-[#15803D] text-white shadow-xs"
                             >
                                 Save SMS Settings
                             </PrimaryButton>

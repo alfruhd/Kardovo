@@ -9,16 +9,16 @@ export default function StatusBadge({ status, type = 'general', className = '' }
     let label = status;
 
     if (s === 'read') {
-        style = 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/50 font-semibold';
+        style = 'bg-cyan-50 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800/60 font-semibold';
         icon = <CheckCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 shrink-0" />;
         label = 'Read';
     } else if (s === 'delivered') {
-        style = 'bg-blue-50 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800/50 font-semibold';
-        icon = <CheckCheck className="w-3 h-3 text-blue-600 dark:text-blue-400 shrink-0" />;
+        style = 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50 font-semibold';
+        icon = <CheckCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />;
         label = 'Delivered';
     } else if (s === 'sent') {
-        style = 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700/60 font-semibold';
-        icon = <Send className="w-3 h-3 text-slate-500 dark:text-slate-400 shrink-0" />;
+        style = 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/50 font-semibold';
+        icon = <Send className="w-3 h-3 text-blue-500 dark:text-blue-400 shrink-0" />;
         label = 'Sent';
     } else if (s === 'attending' || s === 'will attend' || s === 'granted' || s === 'active') {
         style = 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50 font-semibold';

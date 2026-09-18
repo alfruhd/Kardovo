@@ -67,6 +67,10 @@ class PassImageGeneratorService
             }
         }
 
+        if ($isZamroth && (! $ratioNum || ($configRatio && trim($configRatio) === '800 / 1200'))) {
+            $ratioNum = 896 / 1200; // ~0.7467 (natural Zamroth & Husna photo ratio)
+        }
+
         // Fallback to orientation / template defaults
         if (! $ratioNum || $ratioNum <= 0) {
             $orientation = $cfg['orientation'] ?? 'portrait';
@@ -76,6 +80,8 @@ class PassImageGeneratorService
                 $ratioNum = 1.0;
             } elseif ($isEngagement) {
                 $ratioNum = 800 / 1184; // ~0.6757
+            } elseif ($isZamroth) {
+                $ratioNum = 896 / 1200; // ~0.7467
             } else {
                 $ratioNum = 800 / 1200; // 0.6667 (2:3)
             }
@@ -382,7 +388,7 @@ class PassImageGeneratorService
                 }
             }
 
-            // 4. Guest Plaque (Exact Match to Studio Slider & Box Width)
+            // 4. Guest Plaque (WYSIWYG: matches CSS -translate-y-1/2 visual centering)
             if ($showGuestName) {
                 $nameCfg = $cfg['guest_name'] ?? [];
                 $nameYPercent = (float) ($nameCfg['y'] ?? 71.5);
@@ -390,7 +396,6 @@ class PassImageGeneratorService
                 $plaqueY = (int) round(($nameYPercent / 100) * $h);
                 $plaqueCenterX = (int) round(($nameXPercent / 100) * $w);
 
-                // Read font size directly from saved configuration
                 $configuredFontSize = ! empty($nameCfg['fontSize']) ? (float) $nameCfg['fontSize'] : ($isEngagement ? 18.0 : 20.0);
                 $nameSize = $configuredFontSize * $fontScale;
                 $nameColor = self::hexToGdColor($im, $nameCfg['color'] ?? ($isEngagement ? '#54101A' : '#FFFFFF'));
@@ -408,7 +413,6 @@ class PassImageGeneratorService
                     $nameSize = max(8 * $fontScale, $nameSize * 0.7);
                 }
 
-                // Select font family according to config
                 $chosenFont = $fontGeorgiaBold;
                 $fontFamilyName = strtolower($nameCfg['fontFamily'] ?? '');
                 if (str_contains($fontFamilyName, 'sans')) {
@@ -417,12 +421,16 @@ class PassImageGeneratorService
                     $chosenFont = $fontGeorgiaBold;
                 }
 
+                // CSS line-height compensation: CSS -translate-y-1/2 centers the layout box (line-height ~1.2×)
+                // at Y%, so glyphs render slightly above Y%. PHP bbox centers the tight glyph box at Y%,
+                // placing it slightly lower. Subtract ~10% of font size to match CSS visual center.
+                $lhCorrection = (int) round($nameSize * 0.10);
+
                 if (! $hideBox) {
                     $plaqueWPercent = isset($nameCfg['plaqueWidth']) ? (float) $nameCfg['plaqueWidth'] : 84.0;
                     $plaqueW = (int) round(($plaqueWPercent / 100) * $w);
 
                     if ($isEngagement || $isZamroth) {
-                        // Predefined templates include the top "INVITATION PASS ISSUED TO" header
                         $headerLabelSize = (float) max(6.5 * $fontScale, 7.5 * $fontScale);
                         $plaqueH = (int) round(($nameSize * 1.35) + ($headerLabelSize * 1.4) + (20 * $pixelScale));
                         $plaqueX = (int) ($plaqueCenterX - ($plaqueW / 2));
@@ -444,33 +452,53 @@ class PassImageGeneratorService
                         self::drawSpacedText($im, $headerLabelSize, $headerY, $isEngagement ? $burgundy : $graySub, $fontArialBold, 'INVITATION PASS ISSUED TO', $w, (int) max(2, 3 * $pixelScale));
                         self::drawCenteredText($im, $nameSize, 0, $nameDrawY, $isEngagement ? $burgundyDark : $nameColor, $chosenFont, $guestName, $w);
                     } else {
-                        // Uploaded custom template: single elegant frosted box around the name
-                        $plaqueH = (int) round(($nameSize * 1.6) + (16 * $pixelScale));
+                        // Custom uploaded template: single-row frosted box, name only.
+                        // Matches CSS: className="py-2.5 px-4 rounded-2xl" → rounded-2xl = 16px corners, py-2.5 = 10px pad.
+                        // CSS box height = fontSize * lineHeight(1.2) + 2 * 10px padding
+                        $plaqueH = (int) round(($nameSize * 1.2) + (20 * $pixelScale));
                         $plaqueX = (int) ($plaqueCenterX - ($plaqueW / 2));
-                        $plaqueTop = (int) ($plaqueY - ($plaqueH / 2));
-                        $plaqueBg = imagecolorallocatealpha($im, 0, 0, 0, 65);
-                        $plaqueBorder = imagecolorallocatealpha($im, 255, 255, 255, 75);
+                        // rounded-2xl = 16px in CSS; scaled to PHP canvas:
+                        $plaqueRadius = (int) round(16 * $pixelScale);
+                        // Apply line-height correction to box center so it matches CSS -translate-y-1/2
+                        $boxCenterY = $plaqueY - $lhCorrection;
+                        $plaqueTop = (int) ($boxCenterY - ($plaqueH / 2));
+                        // Read boxBg from config if set (CSS: nameCfg.boxBg || 'rgba(0,0,0,0.65)')
+                        $nameBgHex = $nameCfg['boxBg'] ?? null;
+                        // CSS rgba(0,0,0,0.65) → GD alpha = round(127*(1-0.65)) = 44
+                        $plaqueBg = $nameBgHex
+                            ? self::hexToGdColor($im, $nameBgHex, 44)
+                            : imagecolorallocatealpha($im, 0, 0, 0, 44);
+                        // CSS rgba(255,255,255,0.25) → GD alpha = round(127*(1-0.25)) = 95
+                        $plaqueBorder = imagecolorallocatealpha($im, 255, 255, 255, 95);
 
-                        self::drawSmoothPill($im, $plaqueX, $plaqueTop, $plaqueW, $plaqueH, $plaqueBg, $plaqueBorder);
-                        self::drawCenteredText($im, $nameSize, 0, $plaqueY, $nameColor, $chosenFont, $guestName, $w);
+                        self::drawSmoothPill($im, $plaqueX, $plaqueTop, $plaqueW, $plaqueH, $plaqueBg, $plaqueBorder, $plaqueRadius);
+                        self::drawCenteredText($im, $nameSize, 0, $boxCenterY, $nameColor, $chosenFont, $guestName, $w);
                     }
                 } else {
-                    // Pure clean typography directly at the specified percentage coordinate
-                    self::drawCenteredText($im, $nameSize, 0, $plaqueY, $isEngagement ? $burgundyDark : $nameColor, $chosenFont, $guestName, $w);
+                    // Clean text: apply line-height correction to match CSS visual center
+                    self::drawCenteredText($im, $nameSize, 0, $plaqueY - $lhCorrection, $isEngagement ? $burgundyDark : $nameColor, $chosenFont, $guestName, $w);
                 }
             }
 
-            // 5. Allowance Badge (Exact Match to Category Configuration)
+            // 5. Allowance Badge (WYSIWYG: CSS pill centered at Y% via -translate-y-1/2)
             if ($showAllowance) {
                 $allowCfg = $cfg['allowance_badge'] ?? [];
                 $allowYPercent = (float) ($allowCfg['y'] ?? ($ratioNum <= 0.62 ? 77.0 : 78.5));
                 $allowXPercent = (float) ($allowCfg['x'] ?? 50.0);
                 $allowY = (int) round(($allowYPercent / 100) * $h);
                 $allowCenterX = (int) round(($allowXPercent / 100) * $w);
-                $allowSize = (float) ($allowCfg['fontSize'] ?? 9.5) * $fontScale;
-                $allowColor = self::hexToGdColor($im, $allowCfg['color'] ?? ($isEngagement ? '#7A1E28' : '#FDE047'));
+                // CSS default fontSize for allowance badge is 9px (not 9.5)
+                $configuredAllowSize = (float) ($allowCfg['fontSize'] ?? 9.0);
+                $allowSize = $configuredAllowSize * $fontScale;
+                // CSS default: allowanceCfg.color || '#FDE68A' (amber-200)
+                $allowColor = self::hexToGdColor($im, $allowCfg['color'] ?? ($isEngagement ? '#7A1E28' : '#FDE68A'));
                 $maxEntries = $guest->max_entries ?: 1;
                 $allowanceText = $guest->category ? mb_strtoupper($guest->category) : ($maxEntries > 1 ? 'DOUBLE ENTRY' : 'SINGLE ENTRY');
+
+                // CSS letter-spacing: 0.12em → per-char extra spacing in PHP
+                $allowCharSpacing = (int) max(1, round($configuredAllowSize * 0.12 * $pixelScale * 0.75));
+                // CSS line-height correction for allowance badge text
+                $allowLhCorrection = (int) round($allowSize * 0.10);
 
                 $hideBadgeBox = ! empty($allowCfg['hide_badge_box']) || ! empty($allowCfg['clean_text']) ||
                                 (isset($allowCfg['clean_text']) && in_array($allowCfg['clean_text'], [true, 1, '1', 'true'], true)) ||
@@ -481,30 +509,45 @@ class PassImageGeneratorService
                     if ($boxWPercent) {
                         $allowBoxW = (int) round(($boxWPercent / 100) * $w);
                     } else {
-                        $bbox = imagettfbbox($allowSize, 0, $fontArialBold, $allowanceText);
-                        $textW = abs($bbox[2] - $bbox[0]);
-                        $allowBoxW = (int) min($w - 40, $textW + (36 * $pixelScale));
+                        // Measure text width with letter-spacing applied
+                        $chars = preg_split('//u', $allowanceText, -1, PREG_SPLIT_NO_EMPTY);
+                        $textW = 0;
+                        foreach ($chars as $ch) {
+                            $b = imagettfbbox($allowSize, 0, $fontArialBold, $ch);
+                            $textW += abs($b[2] - $b[0]) + $allowCharSpacing;
+                        }
+                        $textW = max(0, $textW - $allowCharSpacing);
+                        // CSS px-[14px] each side + Ticket icon 11px + gap 5px
+                        $allowBoxW = (int) min($w - 40, $textW + (int) round((14 + 11 + 5 + 14) * $pixelScale));
                     }
-                    $allowBoxH = (int) round(($allowSize * 1.5) + (14 * $pixelScale));
+                    // CSS pill: padding 4px top/bottom → height = fontSize*lineHeight(1.2) + 8px scaled
+                    $allowBoxH = (int) round(($allowSize * 1.2) + (8 * $pixelScale));
                     $allowBoxX = (int) ($allowCenterX - ($allowBoxW / 2));
-                    $allowBoxTop = (int) ($allowY - ($allowBoxH / 2));
+                    // Apply line-height correction to box center
+                    $allowBoxCenterY = $allowY - $allowLhCorrection;
+                    $allowBoxTop = (int) ($allowBoxCenterY - ($allowBoxH / 2));
 
+                    // Read boxBg from config (CSS: allowanceCfg.boxBg || 'rgba(0,0,0,0.65)')
+                    $boxBgHex = $allowCfg['boxBg'] ?? null;
                     if ($isEngagement) {
                         $boxBg = imagecolorallocatealpha($im, 255, 255, 255, 30);
-                        $boxBorder = imagecolorallocatealpha($im, 122, 30, 40, 75);
+                        // CSS border: rgba(122,30,40,0.75) for engagement
+                        $boxBorder = imagecolorallocatealpha($im, 122, 30, 40, 32);
                     } else {
-                        $boxBg = imagecolorallocatealpha($im, 0, 0, 0, 65);
-                        $boxBorder = imagecolorallocatealpha($im, 255, 255, 255, 60);
+                        // CSS rgba(0,0,0,0.65) → GD alpha=44; rgba(255,255,255,0.3) → GD alpha=89
+                        $boxBg = $boxBgHex ? self::hexToGdColor($im, $boxBgHex, 44) : imagecolorallocatealpha($im, 0, 0, 0, 44);
+                        $boxBorder = imagecolorallocatealpha($im, 255, 255, 255, 89);
                     }
 
+                    // drawSmoothPill defaults to h/2 radius = rounded-full (matches CSS borderRadius:'9999px')
                     self::drawSmoothPill($im, $allowBoxX, $allowBoxTop, $allowBoxW, $allowBoxH, $boxBg, $boxBorder);
-                    self::drawSpacedText($im, $allowSize, $allowY, $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $pixelScale));
+                    self::drawSpacedText($im, $allowSize, $allowBoxCenterY, $allowColor, $fontArialBold, $allowanceText, $w, $allowCharSpacing);
                 } else {
-                    self::drawSpacedTextWithShadow($im, $allowSize, $allowY, $allowColor, $fontArialBold, $allowanceText, $w, (int) max(1, 2 * $pixelScale));
+                    self::drawSpacedTextWithShadow($im, $allowSize, $allowY - $allowLhCorrection, $allowColor, $fontArialBold, $allowanceText, $w, $allowCharSpacing);
                 }
             }
 
-            // 6. QR Code Pass (Positioned exactly at user-configured percentage)
+            // 6. QR Code Pass — center of QR image at (qrX, qrY) matching CSS -translate-x/y-1/2
             if ($showQr) {
                 $qrCfg = $cfg['qr_code'] ?? [];
                 $rawQrSize = (float) ($qrCfg['size'] ?? 72);
@@ -530,7 +573,7 @@ class PassImageGeneratorService
                 }
             }
 
-            // 7. Security Verification Code (Positioned exactly at user-configured percentage)
+            // 7. Security Verification Code — CSS uses letterSpacing 0.22em; match with drawSpacedText
             if ($showCode) {
                 $codeCfg = $cfg['card_number'] ?? [];
                 $defaultCodeY = ($ratioNum <= 0.62) ? 94.0 : 96.0;
@@ -540,7 +583,13 @@ class PassImageGeneratorService
                 $codeSize = (float) ($codeCfg['fontSize'] ?? 9.5) * $fontScale;
                 $codeColor = self::hexToGdColor($im, $codeCfg['color'] ?? ($isEngagement ? '#7A1E28' : '#FFFFFF'));
                 $codeText = $guest->unique_code ?: $guest->card_number ?: ('KDV-'.$guest->id);
-                self::drawSpacedTextWithShadow($im, $codeSize, $codeY, $codeColor, $fontArialBold, $codeText, $w, (int) max(2, 4 * $pixelScale));
+                // Apply CSS line-height correction and use per-char spacing matching CSS 0.22em
+                $codeLhCorrection = (int) round($codeSize * 0.10);
+                // 0.22em letter-spacing = 0.22 × fontSize px (in CSS). Convert to GD: fontSize is in pts.
+                // Extra spacing per char ≈ 0.22 × configuredFontSize × pixelScale × (72/96)
+                $configuredCodeSize = (float) ($codeCfg['fontSize'] ?? 9.5);
+                $codeCharSpacing = (int) max(2, round($configuredCodeSize * 0.22 * $pixelScale * 0.75));
+                self::drawSpacedTextWithShadow($im, $codeSize, $codeY - $codeLhCorrection, $codeColor, $fontArialBold, $codeText, $w, $codeCharSpacing);
             }
 
         } else {
@@ -782,9 +831,9 @@ class PassImageGeneratorService
         }
     }
 
-    private static function drawSmoothPill(\GdImage $im, int $x, int $y, int $w, int $h, int $fillColor, ?int $borderColor = null): void
+    private static function drawSmoothPill(\GdImage $im, int $x, int $y, int $w, int $h, int $fillColor, ?int $borderColor = null, ?int $cornerRadius = null): void
     {
-        $radius = (int) ($h / 2);
+        $radius = $cornerRadius !== null ? min($cornerRadius, (int) ($h / 2)) : (int) ($h / 2);
         $layer = imagecreatetruecolor($w, $h);
         imagealphablending($layer, false);
         imagesavealpha($layer, true);
@@ -795,15 +844,28 @@ class PassImageGeneratorService
 
         // Fill body
         imagefilledrectangle($layer, $radius, 0, $w - $radius - 1, $h - 1, $fillColor);
-        imagefilledarc($layer, $radius, $radius, $radius * 2, $h, 90, 270, $fillColor, IMG_ARC_PIE);
-        imagefilledarc($layer, $w - $radius - 1, $radius, $radius * 2, $h, 270, 90, $fillColor, IMG_ARC_PIE);
+        imagefilledarc($layer, $radius, $radius, $radius * 2, $radius * 2, 90, 270, $fillColor, IMG_ARC_PIE);
+        imagefilledarc($layer, $w - $radius - 1, $radius, $radius * 2, $radius * 2, 270, 90, $fillColor, IMG_ARC_PIE);
+        // Fill bottom corners too if radius < h/2
+        if ($radius < $h / 2) {
+            imagefilledarc($layer, $radius, $h - $radius - 1, $radius * 2, $radius * 2, 90, 270, $fillColor, IMG_ARC_PIE);
+            imagefilledarc($layer, $w - $radius - 1, $h - $radius - 1, $radius * 2, $radius * 2, 270, 90, $fillColor, IMG_ARC_PIE);
+            imagefilledrectangle($layer, 0, $radius, $radius - 1, $h - $radius - 1, $fillColor);
+            imagefilledrectangle($layer, $w - $radius, $radius, $w - 1, $h - $radius - 1, $fillColor);
+        }
 
-        // Clean border without cross-overs
+        // Border
         if ($borderColor !== null) {
             imageline($layer, $radius, 0, $w - $radius - 1, 0, $borderColor);
             imageline($layer, $radius, $h - 1, $w - $radius - 1, $h - 1, $borderColor);
-            imagearc($layer, $radius, $radius, $radius * 2, $h, 90, 270, $borderColor);
-            imagearc($layer, $w - $radius - 1, $radius, $radius * 2, $h, 270, 90, $borderColor);
+            imagearc($layer, $radius, $radius, $radius * 2, $radius * 2, 90, 270, $borderColor);
+            imagearc($layer, $w - $radius - 1, $radius, $radius * 2, $radius * 2, 270, 90, $borderColor);
+            if ($radius < $h / 2) {
+                imagearc($layer, $radius, $h - $radius - 1, $radius * 2, $radius * 2, 90, 270, $borderColor);
+                imagearc($layer, $w - $radius - 1, $h - $radius - 1, $radius * 2, $radius * 2, 270, 90, $borderColor);
+                imageline($layer, 0, $radius, 0, $h - $radius - 1, $borderColor);
+                imageline($layer, $w - 1, $radius, $w - 1, $h - $radius - 1, $borderColor);
+            }
         }
 
         imagecopy($im, $layer, $x, $y, 0, 0, $w, $h);
@@ -833,4 +895,3 @@ class PassImageGeneratorService
         return $lines;
     }
 }
-

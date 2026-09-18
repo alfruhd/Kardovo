@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Event;
 use App\Models\Guest;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class GuestImportService
@@ -101,60 +102,75 @@ class GuestImportService
         $skipped = 0;
         $createdGuests = [];
 
-        foreach ($rows as $rowIndex => $row) {
-            $nameIdx = $headerMap['name'] ?? 0;
-            $phoneIdx = $headerMap['phone'] ?? 1;
-            $categoryIdx = $headerMap['category'] ?? 2;
-            $maxEntriesIdx = $headerMap['max_entries'] ?? 3;
-            $emailIdx = $headerMap['email'] ?? 4;
-            $notesIdx = $headerMap['notes'] ?? 5;
+        $chunks = array_chunk($rows, 250);
 
-            $name = trim((string) ($row[$nameIdx] ?? ''));
-            $rawPhone = trim((string) ($row[$phoneIdx] ?? ''));
-            $category = trim((string) ($row[$categoryIdx] ?? ''));
-            $maxEntriesRaw = trim((string) ($row[$maxEntriesIdx] ?? ''));
-            $email = trim((string) ($row[$emailIdx] ?? ''));
-            $notes = trim((string) ($row[$notesIdx] ?? ''));
+        foreach ($chunks as $chunk) {
+            DB::transaction(function () use (
+                $chunk,
+                $headerMap,
+                $defaultCategory,
+                $defaultMaxEntries,
+                $event,
+                &$imported,
+                &$skipped,
+                &$createdGuests
+            ) {
+                foreach ($chunk as $row) {
+                    $nameIdx = $headerMap['name'] ?? 0;
+                    $phoneIdx = $headerMap['phone'] ?? 1;
+                    $categoryIdx = $headerMap['category'] ?? 2;
+                    $maxEntriesIdx = $headerMap['max_entries'] ?? 3;
+                    $emailIdx = $headerMap['email'] ?? 4;
+                    $notesIdx = $headerMap['notes'] ?? 5;
 
-            // Acceptance Condition 1: Name must not be empty
-            if (empty($name)) {
-                $skipped++;
+                    $name = trim((string) ($row[$nameIdx] ?? ''));
+                    $rawPhone = trim((string) ($row[$phoneIdx] ?? ''));
+                    $category = trim((string) ($row[$categoryIdx] ?? ''));
+                    $maxEntriesRaw = trim((string) ($row[$maxEntriesIdx] ?? ''));
+                    $email = trim((string) ($row[$emailIdx] ?? ''));
+                    $notes = trim((string) ($row[$notesIdx] ?? ''));
 
-                continue;
-            }
+                    // Acceptance Condition 1: Name must not be empty
+                    if (empty($name)) {
+                        $skipped++;
 
-            // Acceptance Condition 2: Category and Allowance normalization
-            if (empty($category)) {
-                $category = $defaultCategory;
-            }
+                        continue;
+                    }
 
-            if (! empty($maxEntriesRaw) && is_numeric($maxEntriesRaw)) {
-                $maxEntries = max(1, min(20, (int) $maxEntriesRaw));
-            } else {
-                $maxEntries = str_contains(strtolower($category), 'double') ? 2 : $defaultMaxEntries;
-            }
+                    // Acceptance Condition 2: Category and Allowance normalization
+                    if (empty($category)) {
+                        $category = $defaultCategory;
+                    }
 
-            // Acceptance Condition 3: Phone number normalization (No +, no spaces, leading 0 to 255)
-            if (empty($rawPhone)) {
-                $phone = '2557'.rand(10, 89).rand(100, 999).rand(100, 999);
-            } else {
-                $phone = PhoneNormalizer::cleanForApi($rawPhone);
-            }
+                    if (! empty($maxEntriesRaw) && is_numeric($maxEntriesRaw)) {
+                        $maxEntries = max(1, min(20, (int) $maxEntriesRaw));
+                    } else {
+                        $maxEntries = str_contains(strtolower($category), 'double') ? 2 : $defaultMaxEntries;
+                    }
 
-            $guest = $event->guests()->create([
-                'name' => $name,
-                'phone' => $phone,
-                'email' => ! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null,
-                'category' => $category,
-                'max_entries' => $maxEntries,
-                'entries_used' => 0,
-                'delivery_status' => 'draft',
-                'rsvp_status' => 'pending',
-                'notes' => ! empty($notes) ? $notes : null,
-            ]);
+                    // Acceptance Condition 3: Phone number normalization (No +, no spaces, leading 0 to 255)
+                    if (empty($rawPhone)) {
+                        $phone = '2557'.random_int(10, 89).random_int(100, 999).random_int(100, 999);
+                    } else {
+                        $phone = PhoneNormalizer::cleanForApi($rawPhone);
+                    }
 
-            $createdGuests[] = $guest;
-            $imported++;
+                    $guest = $event->guests()->create([
+                        'name' => $name,
+                        'phone' => $phone,
+                        'email' => ! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null,
+                        'category' => $category,
+                        'max_entries' => $maxEntries,
+                        'entries_used' => 0,
+                        'delivery_status' => 'draft',
+                        'rsvp_status' => 'pending',
+                        'notes' => ! empty($notes) ? $notes : null,
+                    ]);
+
+                    $createdGuests[] = $guest;
+                    $imported++;
+                }
+            });
         }
 
         return [

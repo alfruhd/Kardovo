@@ -57,11 +57,12 @@ class FinanceController extends Controller
         $pendingExpenses = (float) $allPeriodTransactions->where('type', 'expense')->where('status', 'pending')->sum('amount');
 
         $incomeByCategory = [
+            'package_purchase' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'package_purchase')->where('status', 'completed')->sum('amount'),
             'pass_sales' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'pass_sales')->where('status', 'completed')->sum('amount'),
             'sms_credits' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'sms_credits')->where('status', 'completed')->sum('amount'),
             'design_service' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'design_service')->where('status', 'completed')->sum('amount'),
             'subscription' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'subscription')->where('status', 'completed')->sum('amount'),
-            'other_income' => (float) $allPeriodTransactions->where('type', 'income')->whereNotIn('category', ['pass_sales', 'sms_credits', 'design_service', 'subscription'])->where('status', 'completed')->sum('amount'),
+            'other_income' => (float) $allPeriodTransactions->where('type', 'income')->whereNotIn('category', ['package_purchase', 'pass_sales', 'sms_credits', 'design_service', 'subscription'])->where('status', 'completed')->sum('amount'),
         ];
 
         $expenseByCategory = [
@@ -73,6 +74,9 @@ class FinanceController extends Controller
         ];
 
         // 6-Month rolling trend
+        $allCompletedTxs = FinancialTransaction::where('status', 'completed')
+            ->get(['id', 'amount', 'type', 'category', 'transaction_date']);
+
         $monthlyTrend = [];
         for ($i = 5; $i >= 0; $i--) {
             $monthDate = now()->subMonths($i);
@@ -80,38 +84,37 @@ class FinanceController extends Controller
             $month = $monthDate->month;
             $monthName = $monthDate->format('M Y');
 
-            $mIncome = FinancialTransaction::where('type', 'income')
-                ->where('status', 'completed')
-                ->whereYear('transaction_date', $year)
-                ->whereMonth('transaction_date', $month)
-                ->sum('amount');
+            $matching = $allCompletedTxs->filter(function ($tx) use ($year, $month) {
+                if (! $tx->transaction_date) {
+                    return false;
+                }
+                $d = Carbon::parse($tx->transaction_date);
 
-            $mExpense = FinancialTransaction::where('type', 'expense')
-                ->where('status', 'completed')
-                ->whereYear('transaction_date', $year)
-                ->whereMonth('transaction_date', $month)
-                ->sum('amount');
+                return $d->year === $year && $d->month === $month;
+            });
+
+            $mIncome = (float) $matching->where('type', 'income')->sum('amount');
+            $mExpense = (float) $matching->where('type', 'expense')->sum('amount');
 
             $monthlyTrend[] = [
                 'month' => $monthName,
-                'income' => (float) $mIncome,
-                'expense' => (float) $mExpense,
+                'income' => $mIncome,
+                'expense' => $mExpense,
                 'net' => (float) ($mIncome - $mExpense),
             ];
         }
 
         // Extract available years from database
-        $allTxDates = FinancialTransaction::pluck('transaction_date');
-        $availableYears = $allTxDates->map(function ($d) {
-            return $d ? Carbon::parse($d)->year : now()->year;
+        $availableYears = $allCompletedTxs->toBase()->map(function ($tx) {
+            return $tx->transaction_date ? Carbon::parse($tx->transaction_date)->year : (int) now()->year;
         })->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
 
-        // Compute Yearly Cashflow Summary for all years
+        // Compute Yearly Cashflow Summary for all years in memory
         $yearlyCashflow = [];
         foreach ($availableYears as $yr) {
-            $yrTxs = FinancialTransaction::whereYear('transaction_date', $yr)
-                ->where('status', 'completed')
-                ->get();
+            $yrTxs = $allCompletedTxs->filter(function ($tx) use ($yr) {
+                return $tx->transaction_date && Carbon::parse($tx->transaction_date)->year === (int) $yr;
+            });
 
             $yrInflow = (float) $yrTxs->where('type', 'income')->sum('amount');
             $yrOutflow = (float) $yrTxs->where('type', 'expense')->sum('amount');
@@ -133,16 +136,20 @@ class FinanceController extends Controller
             ];
         }
 
-        // Compute Monthly Cashflow for every month
+        // Compute Monthly Cashflow for every month in memory
         $monthlyCashflow = [];
         $targetYears = ($selectedYear !== 'all' && in_array((int) $selectedYear, $availableYears)) ? [(int) $selectedYear] : $availableYears;
 
         foreach ($targetYears as $yr) {
             for ($m = 12; $m >= 1; $m--) {
-                $mTxs = FinancialTransaction::whereYear('transaction_date', $yr)
-                    ->whereMonth('transaction_date', $m)
-                    ->where('status', 'completed')
-                    ->get();
+                $mTxs = $allCompletedTxs->filter(function ($tx) use ($yr, $m) {
+                    if (! $tx->transaction_date) {
+                        return false;
+                    }
+                    $d = Carbon::parse($tx->transaction_date);
+
+                    return $d->year === (int) $yr && $d->month === (int) $m;
+                });
 
                 if ($mTxs->isEmpty() && $selectedYear === 'all') {
                     continue; // Skip empty months if viewing all years combined
@@ -319,16 +326,22 @@ class FinanceController extends Controller
 
         if ($exportFormat === 'cashflow') {
             // Export Monthly Cashflow Statement CSV
-            $allTxDates = FinancialTransaction::pluck('transaction_date');
-            $availableYears = $allTxDates->map(fn ($d) => $d ? Carbon::parse($d)->year : now()->year)->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
+            $allCompletedTxs = FinancialTransaction::where('status', 'completed')
+                ->get(['amount', 'type', 'category', 'transaction_date']);
+
+            $availableYears = $allCompletedTxs->toBase()->map(fn ($d) => $d->transaction_date ? Carbon::parse($d->transaction_date)->year : (int) now()->year)->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
 
             $cashflowRows = [];
             foreach ($availableYears as $yr) {
                 for ($m = 12; $m >= 1; $m--) {
-                    $mTxs = FinancialTransaction::whereYear('transaction_date', $yr)
-                        ->whereMonth('transaction_date', $m)
-                        ->where('status', 'completed')
-                        ->get();
+                    $mTxs = $allCompletedTxs->filter(function ($tx) use ($yr, $m) {
+                        if (! $tx->transaction_date) {
+                            return false;
+                        }
+                        $d = Carbon::parse($tx->transaction_date);
+
+                        return $d->year === (int) $yr && $d->month === (int) $m;
+                    });
 
                     if ($mTxs->isEmpty()) {
                         continue;
@@ -502,11 +515,12 @@ class FinanceController extends Controller
         $netMarginPct = $grossRevenue > 0 ? round(($netProfit / $grossRevenue) * 100, 1) : 0;
 
         $incomeByCategory = [
+            'package_purchase' => (float) $transactions->where('type', 'income')->where('category', 'package_purchase')->where('status', 'completed')->sum('amount'),
             'pass_sales' => (float) $transactions->where('type', 'income')->where('category', 'pass_sales')->where('status', 'completed')->sum('amount'),
             'sms_credits' => (float) $transactions->where('type', 'income')->where('category', 'sms_credits')->where('status', 'completed')->sum('amount'),
             'design_service' => (float) $transactions->where('type', 'income')->where('category', 'design_service')->where('status', 'completed')->sum('amount'),
             'subscription' => (float) $transactions->where('type', 'income')->where('category', 'subscription')->where('status', 'completed')->sum('amount'),
-            'other_income' => (float) $transactions->where('type', 'income')->whereNotIn('category', ['pass_sales', 'sms_credits', 'design_service', 'subscription'])->where('status', 'completed')->sum('amount'),
+            'other_income' => (float) $transactions->where('type', 'income')->whereNotIn('category', ['package_purchase', 'pass_sales', 'sms_credits', 'design_service', 'subscription'])->where('status', 'completed')->sum('amount'),
         ];
 
         $expenseByCategory = [
@@ -518,14 +532,18 @@ class FinanceController extends Controller
         ];
 
         // Monthly cashflow for PDF
-        $allTxDates = FinancialTransaction::pluck('transaction_date');
-        $availableYears = $allTxDates->map(fn ($d) => $d ? Carbon::parse($d)->year : now()->year)->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
+        $allCompletedTxs = FinancialTransaction::where('status', 'completed')
+            ->get(['amount', 'type', 'category', 'transaction_date']);
+
+        $availableYears = $allCompletedTxs->toBase()->map(fn ($d) => $d->transaction_date ? Carbon::parse($d->transaction_date)->year : (int) now()->year)->push((int) now()->year)->unique()->sortDesc()->values()->toArray();
 
         $monthlyCashflow = [];
         $yearlyCashflow = [];
 
         foreach ($availableYears as $yr) {
-            $yrTxs = FinancialTransaction::whereYear('transaction_date', $yr)->where('status', 'completed')->get();
+            $yrTxs = $allCompletedTxs->filter(function ($tx) use ($yr) {
+                return $tx->transaction_date && Carbon::parse($tx->transaction_date)->year === (int) $yr;
+            });
             $yrInflow = (float) $yrTxs->where('type', 'income')->sum('amount');
             $yrOutflow = (float) $yrTxs->where('type', 'expense')->sum('amount');
             $yrCogs = (float) $yrTxs->where('type', 'expense')->whereIn('category', ['carrier_sms_cogs', 'whatsapp_api_cogs', 'payment_gateway_fee'])->sum('amount');
@@ -545,10 +563,14 @@ class FinanceController extends Controller
             ];
 
             for ($m = 12; $m >= 1; $m--) {
-                $mTxs = FinancialTransaction::whereYear('transaction_date', $yr)
-                    ->whereMonth('transaction_date', $m)
-                    ->where('status', 'completed')
-                    ->get();
+                $mTxs = $allCompletedTxs->filter(function ($tx) use ($yr, $m) {
+                    if (! $tx->transaction_date) {
+                        return false;
+                    }
+                    $d = Carbon::parse($tx->transaction_date);
+
+                    return $d->year === (int) $yr && $d->month === (int) $m;
+                });
 
                 if ($mTxs->isEmpty()) {
                     continue;

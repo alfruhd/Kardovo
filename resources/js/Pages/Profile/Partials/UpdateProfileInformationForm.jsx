@@ -26,7 +26,8 @@ import {
     Lock,
     Image as ImageIcon,
     Check,
-    AlertCircle
+    AlertCircle,
+    SlidersHorizontal
 } from 'lucide-react';
 
 export default function UpdateProfileInformation({
@@ -175,15 +176,15 @@ export default function UpdateProfileInformation({
         <section className={`space-y-6 ${className}`}>
             <header className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                        <User className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div>
                         <h2 className="text-base font-black text-slate-900 dark:text-white font-display">
                             Profile &amp; Organization Information
                         </h2>
                         <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-                            Customize your profile photo, official identity, contact details, and dispatch quota limits.
+                            Update your profile photo, identity, and contact details.
                         </p>
                     </div>
                 </div>
@@ -194,7 +195,7 @@ export default function UpdateProfileInformation({
                 <div className="p-5 rounded-3xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] space-y-4">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
-                            <Camera className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                            <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             <span>Profile Avatar &amp; Photo</span>
                         </span>
                         <span className="text-[10.5px] font-mono text-slate-400">JPG, PNG, WEBP up to 5MB</span>
@@ -218,7 +219,7 @@ export default function UpdateProfileInformation({
 
                                 {/* Hover Overlay */}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 backdrop-blur-xs">
-                                    <Camera className="w-5 h-5 text-cyan-300" />
+                                    <Camera className="w-5 h-5 text-emerald-300" />
                                     <span>Change</span>
                                 </div>
                             </div>
@@ -230,7 +231,7 @@ export default function UpdateProfileInformation({
                                     e.stopPropagation();
                                     fileInputRef.current?.click();
                                 }}
-                                className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white shadow-md flex items-center justify-center transition active:scale-95 border-2 border-white dark:border-[#0B1524]"
+                                className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-[#16A34A] dark:hover:bg-[#15803D] text-white shadow-md flex items-center justify-center transition active:scale-95 border-2 border-white dark:border-[#0B1524]"
                                 title="Upload new photo"
                             >
                                 <Camera className="w-3.5 h-3.5" />
@@ -262,7 +263,7 @@ export default function UpdateProfileInformation({
                                     onClick={() => fileInputRef.current?.click()}
                                     className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-white/[0.08] hover:bg-slate-100 dark:hover:bg-white/[0.12] border border-slate-200 dark:border-white/[0.1] text-slate-700 dark:text-slate-200 text-xs font-bold shadow-xs transition active:scale-95 cursor-pointer"
                                 >
-                                    <UploadCloud className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                    <UploadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                     <span>{previewUrl ? 'Change Photo' : 'Upload Photo'}</span>
                                 </button>
 
@@ -416,7 +417,7 @@ export default function UpdateProfileInformation({
                     <div className="flex items-center justify-between gap-4">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-display">
                                     Two-Factor Authentication (2FA)
                                 </h3>
@@ -438,73 +439,59 @@ export default function UpdateProfileInformation({
                                 onChange={(e) => setData('two_factor_enabled', e.target.checked)}
                                 className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-600"></div>
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
                         </label>
                     </div>
                 </div>
 
-                {/* 💬 3. DISPATCH QUOTAS: WHATSAPP & SMS (Admin Authority Only) */}
+                {/* 💬 3. TENANCY LIMITS (Admin Authority Only) */}
                 {isAdmin && (
-                    <div className="p-4 sm:p-5 rounded-3xl bg-slate-50/80 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] space-y-3.5">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-display">
-                                    Dispatch Quota Settings (Admin Governance)
-                                </h3>
-                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                    Set limits for guest pass dispatches (leave empty for unlimited).
-                                </p>
-                            </div>
+                    <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
+                        <div className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-mono flex items-center gap-1.5">
+                            <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Tenancy Limits</span>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                            {/* WhatsApp Quota Box */}
-                            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-2">
-                                <div className="flex items-center justify-between gap-2">
-                                    <InputLabel htmlFor="max_whatsapp_limit" value="WhatsApp Limit" className="text-xs font-bold text-slate-800 dark:text-slate-200" />
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-md font-medium border border-slate-200/70 dark:border-white/[0.08]">
-                                        WhatsApp
-                                    </span>
-                                </div>
-                                <div className="relative">
-                                    <TextInput
-                                        id="max_whatsapp_limit"
-                                        type="number"
-                                        min="0"
-                                        placeholder="Unlimited"
-                                        className="block w-full text-xs font-mono font-bold px-3 py-2.5"
-                                        value={data.max_whatsapp_limit}
-                                        onChange={(e) => setData('max_whatsapp_limit', e.target.value)}
-                                    />
-                                </div>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                                    Leave blank for unlimited
-                                </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <InputLabel htmlFor="max_events_limit" value="Events Limit" />
+                                <TextInput
+                                    id="max_events_limit"
+                                    type="number"
+                                    min="1"
+                                    placeholder="Unlimited"
+                                    className="mt-1 block w-full text-xs font-mono font-bold"
+                                    value={data.max_events_limit}
+                                    onChange={(e) => setData('max_events_limit', e.target.value)}
+                                />
+                                <InputError className="mt-1" message={errors.max_events_limit} />
+                            </div>
+
+                            <div>
+                                <InputLabel htmlFor="max_whatsapp_limit" value="WhatsApp Limit" />
+                                <TextInput
+                                    id="max_whatsapp_limit"
+                                    type="number"
+                                    min="0"
+                                    placeholder="Unlimited"
+                                    className="mt-1 block w-full text-xs font-mono font-bold"
+                                    value={data.max_whatsapp_limit}
+                                    onChange={(e) => setData('max_whatsapp_limit', e.target.value)}
+                                />
                                 <InputError className="mt-1" message={errors.max_whatsapp_limit} />
                             </div>
 
-                            {/* SMS Quota Box */}
-                            <div className="p-3.5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-2">
-                                <div className="flex items-center justify-between gap-2">
-                                    <InputLabel htmlFor="max_sms_limit" value="SMS Limit" className="text-xs font-bold text-slate-800 dark:text-slate-200" />
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-mono text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-md font-medium border border-slate-200/70 dark:border-white/[0.08]">
-                                        SMS
-                                    </span>
-                                </div>
-                                <div className="relative">
-                                    <TextInput
-                                        id="max_sms_limit"
-                                        type="number"
-                                        min="0"
-                                        placeholder="Unlimited"
-                                        className="block w-full text-xs font-mono font-bold px-3 py-2.5"
-                                        value={data.max_sms_limit}
-                                        onChange={(e) => setData('max_sms_limit', e.target.value)}
-                                    />
-                                </div>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                                    Leave blank for unlimited
-                                </p>
+                            <div>
+                                <InputLabel htmlFor="max_sms_limit" value="SMS Limit" />
+                                <TextInput
+                                    id="max_sms_limit"
+                                    type="number"
+                                    min="0"
+                                    placeholder="Unlimited"
+                                    className="mt-1 block w-full text-xs font-mono font-bold"
+                                    value={data.max_sms_limit}
+                                    onChange={(e) => setData('max_sms_limit', e.target.value)}
+                                />
                                 <InputError className="mt-1" message={errors.max_sms_limit} />
                             </div>
                         </div>
@@ -550,9 +537,9 @@ export default function UpdateProfileInformation({
                         )}
                         <PrimaryButton 
                             disabled={processing || Boolean(clientErrors.name || clientErrors.email || clientErrors.phone || clientErrors.avatar_file)} 
-                            className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-[#16A34A] hover:bg-[#15803D] border-[#16A34A] text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <Save className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
+                            <Save className="w-3.5 h-3.5 text-white" />
                             <span>{processing ? 'Saving...' : 'Save Profile Changes'}</span>
                         </PrimaryButton>
                     </div>

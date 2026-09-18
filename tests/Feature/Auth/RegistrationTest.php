@@ -14,8 +14,7 @@ test('new users can register with strong password', function () {
         'password_confirmation' => 'SecureP@ss123!',
     ]);
 
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $response->assertRedirect(route('two-factor.index', absolute: false));
 });
 
 test('weak password is rejected during registration', function () {

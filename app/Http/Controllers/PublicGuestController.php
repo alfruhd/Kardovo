@@ -9,6 +9,7 @@ use App\Models\Message;
 use App\Models\SystemSetting;
 use App\Services\PhoneNormalizer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -43,7 +44,9 @@ class PublicGuestController extends Controller
             'city' => $event?->city ?? 'Dar es Salaam',
         ];
 
-        $allTemplates = CardTemplate::orderBy('id', 'asc')->get();
+        $allTemplates = Cache::remember('card_templates_global', 3600, function () {
+            return CardTemplate::whereNull('user_id')->orderBy('id', 'asc')->get();
+        });
 
         return Inertia::render('Public/GuestPass', [
             'guest' => $demoGuest,
@@ -69,10 +72,13 @@ class PublicGuestController extends Controller
             return $this->showDemoPass($request);
         }
 
-        $allTemplates = CardTemplate::whereNull('user_id')
-            ->orWhere('user_id', $guest->event->user_id ?? null)
-            ->orderBy('id', 'asc')
-            ->get();
+        $userId = $guest->event->user_id ?? 0;
+        $allTemplates = Cache::remember("card_templates_user_{$userId}", 3600, function () use ($userId) {
+            return CardTemplate::whereNull('user_id')
+                ->orWhere('user_id', $userId ?: null)
+                ->orderBy('id', 'asc')
+                ->get();
+        });
 
         return Inertia::render('Public/GuestPass', [
             'guest' => $guest,
@@ -80,6 +86,7 @@ class PublicGuestController extends Controller
             'template' => $guest->event->cardTemplate,
             'allTemplates' => $allTemplates,
             'isDemo' => $isDemo,
+            'micrositeConfig' => $guest->event->microsite_config ?? null,
         ]);
     }
 

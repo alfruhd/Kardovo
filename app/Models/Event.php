@@ -17,12 +17,14 @@ class Event extends Model
         'city',
         'description',
         'rsvp_auto_reply_config',
+        'microsite_config',
         'status',
     ];
 
     protected $casts = [
         'event_date' => 'date',
         'rsvp_auto_reply_config' => 'array',
+        'microsite_config' => 'array',
     ];
 
     public function user()
@@ -53,5 +55,35 @@ class Event extends Model
     public function assignedSubAdmins()
     {
         return $this->belongsToMany(User::class, 'sub_admin_assignments', 'event_id', 'sub_admin_id');
+    }
+
+    public function scopeAccessibleBy($query, User $user)
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        if ($user->isSubAdmin()) {
+            $assignedCustomerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
+            $assignedEventIds = $user->assignedEvents()->pluck('events.id')->toArray();
+
+            return $query->where(function ($q) use ($user, $assignedCustomerIds, $assignedEventIds) {
+                $q->where('user_id', $user->id);
+                if (! empty($assignedCustomerIds)) {
+                    $q->orWhereIn('user_id', $assignedCustomerIds);
+                }
+                if (! empty($assignedEventIds)) {
+                    $q->orWhereIn('id', $assignedEventIds);
+                }
+            });
+        }
+
+        if ($user->isScanner()) {
+            $customerId = $user->customer_id ?? $user->id;
+
+            return $query->where('user_id', $customerId);
+        }
+
+        return $query->where('user_id', $user->id);
     }
 }

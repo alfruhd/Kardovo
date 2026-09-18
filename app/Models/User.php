@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 
-#[Fillable(['name', 'email', 'password', 'two_factor_enabled', 'two_factor_code', 'two_factor_expires_at', 'role', 'permissions', 'status', 'max_events_limit', 'max_whatsapp_limit', 'max_sms_limit', 'suspension_reason', 'phone', 'company', 'avatar', 'gate_label', 'customer_id'])]
+#[Fillable(['name', 'email', 'password', 'two_factor_enabled', 'two_factor_code', 'two_factor_expires_at', 'role', 'permissions', 'status', 'max_events_limit', 'max_whatsapp_limit', 'max_sms_limit', 'suspension_reason', 'phone', 'company', 'avatar', 'gate_label', 'customer_id', 'has_payment_override'])]
 #[Hidden(['password', 'remember_token', 'two_factor_code'])]
 class User extends Authenticatable
 {
@@ -34,6 +34,7 @@ class User extends Authenticatable
             'max_events_limit' => 'integer',
             'max_whatsapp_limit' => 'integer',
             'max_sms_limit' => 'integer',
+            'has_payment_override' => 'boolean',
         ];
     }
 
@@ -99,9 +100,14 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'customer_id');
     }
 
-    public function scanLogs()
+    public function scans()
     {
         return $this->hasMany(ScanLog::class, 'scanner_id');
+    }
+
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
     }
 
     public function isAdmin(): bool
@@ -227,9 +233,6 @@ class User extends Authenticatable
 
     public function canSendWhatsApp(int $quantity = 1): bool
     {
-        if ($this->isAdmin() || $this->isSubAdmin()) {
-            return true;
-        }
         if (is_null($this->max_whatsapp_limit)) {
             return true;
         }
@@ -240,9 +243,6 @@ class User extends Authenticatable
 
     public function canSendSms(int $quantity = 1): bool
     {
-        if ($this->isAdmin() || $this->isSubAdmin()) {
-            return true;
-        }
         if (is_null($this->max_sms_limit)) {
             return true;
         }

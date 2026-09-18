@@ -68,7 +68,7 @@ return new class extends Migration
         Schema::create('scan_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('event_id')->constrained('events')->cascadeOnDelete();
-            $table->foreignId('guest_id')->constrained('guests')->cascadeOnDelete();
+            $table->foreignId('guest_id')->nullable()->constrained('guests')->cascadeOnDelete();
             $table->foreignId('scanner_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('scanner_name')->nullable();
             $table->string('gate_label')->default('Main Gate');

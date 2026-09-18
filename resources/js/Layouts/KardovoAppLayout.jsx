@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, usePage, router } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import { 
     Calendar, 
-    Users, 
     Palette, 
     MessageSquare, 
     QrCode, 
@@ -10,28 +9,24 @@ import {
     LogOut, 
     Menu, 
     X, 
-    Plus, 
     CheckCircle2, 
     AlertCircle,
+    AlertTriangle,
     User as UserIcon,
     ChevronRight,
     ChevronLeft,
-    ChevronDown,
     Settings,
-    Key,
     Lock,
-    ShieldCheck,
-    Sparkles,
-    Building2,
-    Smartphone,
     Sun,
     Moon,
     CircleDollarSign,
-    TrendingUp,
-    LayoutDashboard
+    LayoutDashboard,
+    Ticket,
+    Wallet
 } from 'lucide-react';
 import KardovoLogo from '@/Components/KardovoLogo';
 import { useTheme } from '@/Hooks/useTheme';
+import CreateEventModal from '@/Components/CreateEventModal';
 
 export default function KardovoAppLayout({ children, title, headerActions }) {
     const { auth, flash } = usePage().props;
@@ -43,9 +38,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
         }
         return false;
     });
-    const [userDropdownOpen, setUserDropdownOpen] = useState(false);
     const [toast, setToast] = useState(null);
-    const dropdownRef = useRef(null);
 
     // Smart Dynamic Auto-Hiding Topbar Logic
     const [headerVisible, setHeaderVisible] = useState(true);
@@ -88,15 +81,12 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                     }
                 }, 2800);
             } 
-            // Scrolling DOWN -> Reappear briefly on start of scroll, then auto-disappear after 1.8 seconds
+            // Scrolling DOWN -> Disappear smoothly
             else if (currentScrollY > lastScrollY.current + 4) {
-                setHeaderVisible(true);
+                if (!isHoveringTop) {
+                    setHeaderVisible(false);
+                }
                 if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                hideTimerRef.current = setTimeout(() => {
-                    if (!isHoveringTop && window.scrollY > 40) {
-                        setHeaderVisible(false);
-                    }
-                }, 1800);
             }
 
             lastScrollY.current = currentScrollY;
@@ -145,17 +135,6 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
         }
     }, [flash]);
 
-    // Close dropdown on outside click
-    useEffect(() => {
-        function handleClickOutside(event) {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setUserDropdownOpen(false);
-            }
-        }
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
     const isAdmin = user?.role === 'admin' || user?.is_admin;
     const isSubAdmin = user?.role === 'sub_admin' || user?.is_sub_admin;
     const isScanner = user?.role === 'scanner';
@@ -164,52 +143,88 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
 
     const currentUrl = typeof window !== 'undefined' ? window.location.pathname : '';
 
+    const safeRoute = (name, fallback = '#') => {
+        try {
+            return typeof route === 'function' && route().has(name) ? route(name) : fallback;
+        } catch {
+            return fallback;
+        }
+    };
+
     const navItems = [
         {
             name: 'Dashboard',
-            href: route('dashboard'),
+            href: safeRoute('dashboard', '/dashboard'),
             icon: LayoutDashboard,
             active: currentUrl === '/dashboard',
-            show: !isAdmin && !isScanner,
+            show: !isAdmin && !isSubAdmin && !isScanner,
         },
         {
             name: 'Admin Portal',
-            href: route('admin.dashboard'),
+            href: safeRoute('admin.dashboard', '/admin'),
             icon: Shield,
-            active: (currentUrl === '/admin' || currentUrl.startsWith('/admin')) && !currentUrl.startsWith('/admin/finance'),
+            active: (currentUrl === '/admin' || currentUrl.startsWith('/admin')) && !currentUrl.startsWith('/admin/finance') && !currentUrl.startsWith('/admin/audit-logs'),
             show: isAdmin || isSubAdmin,
         },
         {
-            name: isAdmin ? 'All Events' : 'My Events',
-            href: route('events.index'),
+            name: 'Calendar',
+            href: safeRoute('calendar.index', '/calendar'),
             icon: Calendar,
+            active: currentUrl === '/calendar' || currentUrl.startsWith('/calendar'),
+            show: !isScanner,
+        },
+        {
+            name: 'Payment',
+            href: safeRoute('organizer.wallet.index', '/organizer/pricing'),
+            icon: Wallet,
+            active: currentUrl.startsWith('/organizer/pricing'),
+            show: !isScanner && !isAdmin && !isSubAdmin,
+        },
+        {
+            name: 'Card Templates',
+            href: safeRoute('templates.index', '/templates'),
+            icon: Palette,
+            active: currentUrl === '/templates' || currentUrl.startsWith('/templates'),
+            show: !isScanner && (isAdmin || isSubAdmin || (!isSuspended && perms.can_customize_templates !== false)),
+        },
+        {
+            name: isAdmin ? 'All Events' : 'My Events',
+            href: safeRoute('events.index', '/events'),
+            icon: Ticket,
             active: currentUrl === '/events' || currentUrl.startsWith('/events'),
             show: !isScanner,
         },
         {
             name: 'Messaging Hub',
-            href: route('messaging.index'),
+            href: safeRoute('messaging.index', '/messaging'),
             icon: MessageSquare,
             active: currentUrl.startsWith('/messaging'),
             show: !isScanner && (isAdmin || isSubAdmin || (!isSuspended && perms.can_send_broadcasts !== false)),
         },
         {
             name: 'Gate Scanner',
-            href: route('scanner.index'),
+            href: safeRoute('scanner.index', '/scanner'),
             icon: QrCode,
             active: currentUrl.startsWith('/scanner'),
             show: isScanner || isAdmin || isSubAdmin || (!isSuspended && perms.can_manage_scanners !== false),
         },
         {
             name: 'Financial Analysis',
-            href: route('admin.finance'),
+            href: safeRoute('admin.finance', '/admin/finance'),
             icon: CircleDollarSign,
             active: currentUrl.startsWith('/admin/finance'),
             show: isAdmin,
         },
         {
+            name: 'Audit Logs',
+            href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
+            icon: Shield,
+            active: currentUrl.startsWith('/admin/audit-logs'),
+            show: isAdmin || isSubAdmin,
+        },
+        {
             name: 'Account Profile',
-            href: route('profile.edit'),
+            href: safeRoute('profile.edit', '/profile'),
             icon: UserIcon,
             active: currentUrl.startsWith('/profile'),
             show: true,
@@ -217,66 +232,73 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
     ].filter(item => item.show);
 
     return (
-        <div className="min-h-screen bg-[#F1F5F9] dark:bg-[#060C16] flex flex-col md:flex-row text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-white transition-colors duration-200">
+        <div className="min-h-screen bg-[#F1F5F9] dark:bg-[#0F172A] flex flex-col md:flex-row text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
             
             {/* 📱 MOBILE TWO-DECK SYSTEM */}
-            <div className="md:hidden sticky top-0 z-40 bg-white/95 dark:bg-[#0B1524]/95 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.08] shadow-xs transition-colors duration-200">
+            {/* 📱 MOBILE TWO-DECK SYSTEM */}
+            <div className="md:hidden sticky top-0 z-40 bg-[#0B2545] text-white border-b border-[#173860] shadow-md transition-colors duration-200">
                 {/* 1. TOP DECK: Global Navigation, Brand, Theme & Profile */}
-                <div className="px-3.5 h-[60px] flex items-center justify-between border-b border-slate-200/70 dark:border-white/[0.06]">
+                <div className="px-3.5 h-[60px] flex items-center justify-between border-b border-[#173860]">
                     {/* Left: Menu Button & Brand */}
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
                             onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-100/80 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] border border-slate-200/90 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 shadow-2xs active:scale-90 transition-all duration-200 cursor-pointer"
+                            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-white shadow-2xs active:scale-90 transition-all duration-200 cursor-pointer"
                             aria-label="Open Navigation Menu"
                         >
                             {sidebarOpen ? (
-                                <X className="w-4.5 h-4.5 text-rose-600 dark:text-rose-400" />
+                                <X className="w-4.5 h-4.5 text-rose-400" />
                             ) : (
-                                <Menu className="w-4.5 h-4.5" />
+                                <Menu className="w-4.5 h-4.5 text-emerald-400" />
                             )}
                         </button>
 
                         <Link href="/dashboard" className="flex items-center">
-                            <KardovoLogo light={isDark} showText={true} size="lg" imgClassName="h-9 w-9" />
+                            <KardovoLogo light={true} showText={true} size="lg" imgClassName="h-9 w-9" />
                         </Link>
                     </div>
 
-                    {/* Right: Theme Toggle & Avatar */}
+                    {/* Right: Theme Toggle & Profile */}
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={toggleTheme}
-                            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-slate-100/80 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] border border-slate-200/90 dark:border-white/[0.08] text-slate-700 dark:text-amber-400 shadow-2xs active:scale-90 transition-all duration-200 cursor-pointer"
+                            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-amber-400 shadow-2xs active:scale-90 transition-all duration-200 cursor-pointer"
                             title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                         >
                             {isDark ? (
                                 <Sun className="w-4.5 h-4.5 text-amber-400" />
                             ) : (
-                                <Moon className="w-4.5 h-4.5 text-cyan-600" />
+                                <Moon className="w-4.5 h-4.5 text-emerald-300" />
                             )}
                         </button>
 
                         <Link
                             href={route('profile.edit')}
-                            className="w-10 h-10 rounded-2xl overflow-hidden border border-slate-200/90 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold text-xs shadow-2xs bg-slate-100/80 dark:bg-white/[0.06] active:scale-90 transition-all duration-200"
-                            title="User Profile"
+                            className={`w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center shadow-2xs active:scale-90 transition-all duration-200 cursor-pointer ${
+                                currentUrl === '/profile'
+                                    ? 'border-2 border-[#16A34A] ring-2 ring-emerald-500/30'
+                                    : 'border border-white/[0.15] hover:border-emerald-400/50 bg-white/[0.08] hover:bg-white/[0.14]'
+                            }`}
+                            title={user?.name ? `${user.name} — Profile & Settings` : "Account Profile & Settings"}
                         >
                             {user?.avatar ? (
-                                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                                <img 
+                                    src={user.avatar}
+                                    alt={user.name || 'Profile'} 
+                                    className="w-full h-full object-cover"
+                                />
                             ) : (
-                                <span className="font-extrabold text-sm">{user?.name?.charAt(0) || 'U'}</span>
+                                <UserIcon className="w-4.5 h-4.5 text-slate-200" />
                             )}
                         </Link>
                     </div>
                 </div>
-
-                {/* 2. BELOW DECK: Context Page Title & Function Action Buttons */}
-                <div className="px-3.5 py-2.5 flex items-center justify-between gap-2 min-h-[44px] bg-slate-50/80 dark:bg-[#07111D]/90 border-b border-slate-200/70 dark:border-white/[0.06]">
+                <div className="px-3.5 py-2.5 flex items-center justify-between gap-2 min-h-[44px] bg-[#07192F] border-b border-[#173860]">
                     <div className="min-w-0 flex-1 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-600 dark:bg-cyan-400 flex-shrink-0 animate-pulse" />
-                        <h1 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider font-display truncate">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                        <h1 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider font-display truncate">
                             {title || 'Dashboard'}
                         </h1>
                     </div>
@@ -289,9 +311,9 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 </div>
             </div>
 
-            {/* Sidebar Navigation */}
+            {/* Sidebar Navigation (Themed #0B2545 Dark Slate Blue & Vibrant Emerald) */}
             <aside className={`
-                fixed inset-y-0 left-0 z-50 bg-gradient-to-b from-[#F8FAFC] via-white to-[#F0F4FA] dark:from-[#091424] dark:via-[#070E1A] dark:to-[#050B14] text-slate-700 dark:text-slate-200 flex flex-col justify-between transition-all duration-300 ease-in-out border-r border-slate-200/90 dark:border-cyan-500/20 shadow-[0_4px_30px_rgba(0,100,220,0.04)] dark:shadow-[0_4px_40px_rgba(0,0,0,0.8)]
+                fixed inset-y-0 left-0 z-50 bg-[#0B2545] text-slate-200 flex flex-col justify-between transition-all duration-300 ease-in-out border-r border-[#173860] dark:border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5)]
                 md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex-shrink-0
                 ${sidebarCollapsed ? 'md:w-20' : 'md:w-64'}
                 ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'}
@@ -300,7 +322,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                     <button
                         type="button"
                         onClick={toggleSidebarCollapse}
-                        className="hidden md:flex absolute -right-3.5 top-6 z-50 w-7 h-7 rounded-full bg-white dark:bg-[#0A1A2E] border border-slate-300 dark:border-cyan-400/60 text-slate-600 dark:text-cyan-300 hover:text-cyan-600 dark:hover:text-white hover:bg-cyan-50 dark:hover:bg-cyan-600 hover:border-cyan-400 shadow-md items-center justify-center transition-all duration-200 active:scale-90"
+                        className="hidden md:flex absolute -right-3.5 top-6 z-50 w-7 h-7 rounded-full bg-[#0E3058] border border-emerald-500/40 text-emerald-300 hover:text-white hover:bg-emerald-600 hover:border-emerald-400 shadow-md items-center justify-center transition-all duration-200 active:scale-90 cursor-pointer"
                         title={sidebarCollapsed ? "Expand Sidebar Menu" : "Collapse / Hide Sidebar Menu"}
                     >
                         {sidebarCollapsed ? (
@@ -311,15 +333,15 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                     </button>
 
                     {/* Brand Logo in Sidebar */}
-                    <div className={`p-4 border-b border-slate-200/90 dark:border-cyan-500/20 flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+                    <div className={`p-4 border-b border-[#173860] dark:border-white/[0.06] flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
                         <Link href="/dashboard" className="flex items-center">
-                            <KardovoLogo light={isDark} showText={!sidebarCollapsed} size="md" />
+                            <KardovoLogo light={true} showText={!sidebarCollapsed} size="md" />
                         </Link>
                     </div>
 
                     {user?.company && !sidebarCollapsed && (
                         <div className="px-4 pt-3.5 pb-1">
-                            <div className="text-xs sm:text-[12.5px] font-semibold text-slate-700 dark:text-slate-200 truncate" title={user.company}>
+                            <div className="text-xs sm:text-[12.5px] font-semibold text-slate-300 truncate" title={user.company}>
                                 {user.company}
                             </div>
                         </div>
@@ -327,12 +349,6 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
 
                     {/* Navigation Links with High-End Active Styling */}
                     <nav className="p-3 space-y-1.5 flex-1">
-                        {!sidebarCollapsed && (
-                            <div className="text-[10px] uppercase font-mono font-bold tracking-widest text-cyan-700 dark:text-cyan-400 px-3 mb-2 flex items-center gap-1.5">
-                                <span className="w-1 h-1 rounded-full bg-cyan-500 dark:bg-cyan-400 dark:shadow-[0_0_6px_rgba(0,210,255,0.8)]" />
-                                <span>Platform Navigation</span>
-                            </div>
-                        )}
                         {navItems.map((item) => {
                             const Icon = item.icon;
                             return (
@@ -344,15 +360,11 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                                     className={`
                                         flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs font-semibold transition-all duration-150 relative group active:scale-[0.98]
                                         ${item.active 
-                                            ? 'bg-gradient-to-r from-cyan-500/15 via-blue-500/10 to-transparent text-cyan-950 dark:bg-gradient-to-r dark:from-cyan-500/20 dark:via-blue-600/15 dark:to-transparent dark:text-cyan-300 font-black border border-cyan-500/30 dark:border-cyan-400/40 shadow-[0_2px_10px_rgba(0,163,255,0.12)] dark:shadow-[0_0_20px_rgba(0,163,255,0.15)] dark:ring-1 dark:ring-cyan-400/25' 
-                                            : 'text-slate-600 dark:text-slate-400 hover:bg-gradient-to-r hover:from-slate-100 hover:to-cyan-50/40 hover:text-cyan-900 dark:hover:bg-gradient-to-r dark:hover:from-white/[0.07] dark:hover:to-cyan-950/25 dark:hover:text-cyan-200 border border-transparent dark:hover:border-cyan-500/20'}
+                                            ? 'bg-[#16A34A] text-white font-bold shadow-sm border border-[#16A34A]' 
+                                            : 'text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.08] border border-transparent'}
                                     `}
                                 >
-                                    {/* Active Indicator Accent Bar */}
-                                    {item.active && (
-                                        <div className="absolute left-1 top-1/2 -translate-y-1/2 w-1 h-4.5 bg-gradient-to-b from-cyan-500 to-blue-600 dark:from-cyan-400 dark:to-blue-500 rounded-full shadow-[0_0_8px_rgba(0,163,255,0.8)] dark:shadow-[0_0_12px_rgba(0,210,255,1)]" />
-                                    )}
-                                    <Icon className={`w-4 h-4 transition-colors duration-150 flex-shrink-0 ${item.active ? 'text-cyan-600 dark:text-cyan-400 dark:drop-shadow-[0_0_8px_rgba(0,210,255,0.6)]' : 'text-slate-400 dark:text-slate-500 group-hover:text-cyan-600 dark:group-hover:text-cyan-400'}`} />
+                                    <Icon className={`w-4 h-4 transition-colors duration-150 flex-shrink-0 ${item.active ? 'text-white' : 'text-slate-400 group-hover:text-emerald-300'}`} />
                                     {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
                                 </Link>
                             );
@@ -360,43 +372,56 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                     </nav>
                 </div>
 
-                <div className="p-3 border-t border-slate-200/90 dark:border-cyan-500/20 bg-gradient-to-b from-white/90 to-slate-100/90 dark:from-[#08111E]/95 dark:to-[#050A14]/98 flex-shrink-0 space-y-2 transition-colors duration-200">
-                    {/* User Profile Card with Padlock */}
-                    <Link
-                        href={route('profile.edit')}
-                        onClick={() => setSidebarOpen(false)}
-                        title={sidebarCollapsed ? user?.name : undefined}
-                        className={`flex items-center ${sidebarCollapsed ? 'justify-center p-1.5' : 'justify-between p-2'} rounded-2xl hover:bg-white dark:hover:bg-cyan-950/30 transition group border border-transparent hover:border-slate-200/90 dark:hover:border-cyan-500/30 shadow-2xs hover:shadow-xs`}
-                    >
-                        <div className="flex items-center gap-2.5 truncate min-w-0">
-                            <div className="relative flex-shrink-0">
-                                {user?.avatar ? (
-                                    <div className="w-8 h-8 rounded-xl overflow-hidden shadow-md group-hover:ring-2 group-hover:ring-cyan-500/40 dark:group-hover:ring-cyan-400/60 transition bg-slate-100 dark:bg-slate-800">
-                                        <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                <div className="p-3 flex-shrink-0 transition-colors duration-200">
+                    {/* User Plan & Quotas */}
+                    {user?.is_customer && !sidebarCollapsed && user?.message_quotas && (
+                        <div className="mb-3 p-3.5 bg-slate-900/40 border border-white/[0.08] rounded-2xl w-full shadow-inner relative overflow-hidden group">
+                            {/* Decorative background glow */}
+                            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 rounded-full bg-emerald-500/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
+                            <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-blue-500/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
+                            
+                            <div className="relative z-10 flex items-center justify-between mb-4">
+                                <p className="text-[10px] font-black text-slate-300 tracking-wider uppercase">Active Quotas</p>
+                                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] font-black rounded-full border border-emerald-500/20">LIVE</span>
+                            </div>
+                            
+                            {/* WhatsApp Quota */}
+                            <div className="mb-3.5 relative z-10">
+                                <div className="flex justify-between text-[11px] font-medium text-slate-300 mb-1.5 items-center">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                        </div>
+                                        <span>WhatsApp</span>
                                     </div>
-                                ) : (
-                                    <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold font-mono text-xs shadow-2xs">
-                                        {user?.name?.charAt(0) || 'U'}
+                                    <span className="font-black text-emerald-400 text-[10px]">{user.message_quotas.whatsapp_limit === null ? 'Unlimited' : `${user.message_quotas.whatsapp_remaining} left`}</span>
+                                </div>
+                                {user.message_quotas.whatsapp_limit !== null && (
+                                    <div className="w-full bg-slate-950/60 rounded-full h-1.5 overflow-hidden border border-white/5">
+                                        <div className="bg-gradient-to-r from-emerald-500 to-emerald-300 h-1.5 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.8)] transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, (user.message_quotas.whatsapp_remaining / user.message_quotas.whatsapp_limit) * 100))}%` }}></div>
                                     </div>
                                 )}
                             </div>
-                            {!sidebarCollapsed && (
-                                <div className="truncate">
-                                    <div className="text-xs font-bold text-slate-900 dark:text-white truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition flex items-center gap-1.5">
-                                        <span className="truncate">{user?.name}</span>
+                            
+                            {/* SMS Quota */}
+                            <div className="relative z-10">
+                                <div className="flex justify-between text-[11px] font-medium text-slate-300 mb-1.5 items-center">
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                                        </div>
+                                        <span>SMS</span>
                                     </div>
-                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono capitalize truncate flex items-center gap-1">
-                                        <span>{user?.role}</span>
-                                        {user?.gate_label ? <span>• {user.gate_label.split('—')[0]}</span> : ''}
-                                    </div>
+                                    <span className="font-black text-blue-400 text-[10px]">{user.message_quotas.sms_limit === null ? 'Unlimited' : `${user.message_quotas.sms_remaining} left`}</span>
                                 </div>
-                            )}
+                                {user.message_quotas.sms_limit !== null && (
+                                    <div className="w-full bg-slate-950/60 rounded-full h-1.5 overflow-hidden border border-white/5">
+                                        <div className="bg-gradient-to-r from-blue-500 to-blue-300 h-1.5 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.8)] transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, (user.message_quotas.sms_remaining / user.message_quotas.sms_limit) * 100))}%` }}></div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-
-                        {!sidebarCollapsed && (
-                            <Settings className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition" />
-                        )}
-                    </Link>
+                    )}
 
                     {/* Bottom Sign Out Button */}
                     <Link
@@ -406,10 +431,10 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         onClick={() => setSidebarOpen(false)}
                         title={sidebarCollapsed ? "Sign Out of Platform" : undefined}
                         className={`
-                            w-full flex items-center ${sidebarCollapsed ? 'justify-center p-2' : 'justify-center gap-2 py-2 px-3'} rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/50 text-rose-700 hover:text-rose-900 dark:text-rose-300 dark:hover:text-rose-200 border border-rose-200 hover:border-rose-300 dark:border-rose-800/40 dark:hover:border-rose-700/60 shadow-2xs cursor-pointer
+                            w-full flex items-center ${sidebarCollapsed ? 'justify-center p-2' : 'justify-center gap-2 py-2 px-3'} rounded-xl text-xs font-bold transition-all duration-200 active:scale-95 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-100 border border-rose-500/25 shadow-2xs cursor-pointer
                         `}
                     >
-                        <LogOut className="w-3.5 h-3.5 text-rose-500 dark:text-rose-400 flex-shrink-0" />
+                        <LogOut className="w-3.5 h-3.5 text-rose-400 flex-shrink-0" />
                         {!sidebarCollapsed && <span>Sign Out</span>}
                     </Link>
                 </div>
@@ -436,7 +461,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                     className="fixed top-0 left-0 right-0 h-4 z-50 pointer-events-auto"
                 />
 
-                {/* Minimalist, Clean & Professional Sticky Topbar */}
+                {/* Minimalist, Clean & Themed Sticky Topbar */}
                 <header 
                     onMouseEnter={() => {
                         setIsHoveringTop(true);
@@ -452,7 +477,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                             }, 1800);
                         }
                     }}
-                    className={`hidden md:flex h-14 bg-white/90 dark:bg-[#070E1A]/90 backdrop-blur-2xl backdrop-saturate-180 border-b border-slate-200/90 dark:border-cyan-500/15 shadow-[0_4px_20px_rgba(0,100,220,0.03)] dark:shadow-[0_4px_30px_rgba(0,0,0,0.6)] sticky top-0 z-40 px-4 sm:px-6 items-center justify-between gap-4 transition-all duration-300 ease-in-out ${
+                    className={`hidden md:flex h-14 bg-[#0B2545] text-white backdrop-blur-2xl border-b border-[#173860] shadow-[0_4px_25px_rgba(0,0,0,0.3)] sticky top-0 z-40 px-4 sm:px-6 items-center justify-between gap-4 transition-all duration-300 ease-in-out ${
                         headerVisible 
                             ? "translate-y-0 opacity-100 pointer-events-auto" 
                             : "-translate-y-full opacity-0 pointer-events-none"
@@ -460,16 +485,16 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 >
                     {/* Left: Minimalist Breadcrumb & Section Title */}
                     <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex items-center gap-1.5 text-xs font-extrabold text-cyan-600 dark:text-cyan-400 select-none">
+                        <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-400 select-none">
                             <span>Kardovo</span>
-                            <span className="text-slate-300 dark:text-slate-600">/</span>
+                            <span className="text-slate-400">/</span>
                         </div>
-                        <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white tracking-tight truncate font-display">
+                        <h1 className="text-sm sm:text-base font-black text-white tracking-tight truncate font-display">
                             {title || "Dashboard"}
                         </h1>
                     </div>
 
-                    {/* Right: Actions, Theme Toggle & User Menu */}
+                    {/* Right: Actions & Theme Toggle */}
                     <div className="flex items-center gap-2">
                         {headerActions && (
                             <div className="flex items-center gap-1.5">
@@ -477,136 +502,56 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                             </div>
                         )}
 
-                        {/* Minimalist Theme Mode Toggle */}
+                        {/* Complementary Theme Mode Toggle */}
                         <button
                             type="button"
                             onClick={toggleTheme}
-                            className="w-8 h-8 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition flex items-center justify-center cursor-pointer"
+                            className="w-8 h-8 rounded-xl text-slate-200 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] shadow-2xs transition flex items-center justify-center cursor-pointer active:scale-95"
                             title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
                         >
                             {isDark ? (
                                 <Sun className="w-4 h-4 text-amber-400" />
                             ) : (
-                                <Moon className="w-4 h-4 text-cyan-600" />
+                                <Moon className="w-4 h-4 text-emerald-300" />
                             )}
                         </button>
 
-                        <div className="h-4 w-px bg-slate-200 dark:bg-white/[0.08] mx-0.5" />
-
-                        {/* Minimalist User Profile Dropdown Pill with Padlock */}
-                        <div className="relative" ref={dropdownRef}>
-                            <button
-                                type="button"
-                                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                                className="flex items-center gap-2 py-1 px-1.5 sm:pr-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-white/[0.06] transition cursor-pointer select-none group"
-                            >
-                                <div className="relative flex-shrink-0">
-                                    {user?.avatar ? (
-                                        <div className="w-7 h-7 rounded-lg overflow-hidden shadow-xs bg-slate-100 dark:bg-slate-800">
-                                            <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
-                                        </div>
-                                    ) : (
-                                        <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] text-slate-800 dark:text-slate-100 flex items-center justify-center font-bold font-mono text-xs shadow-2xs">
-                                            {user?.name?.charAt(0) || "U"}
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="hidden sm:flex items-center gap-1.5 max-w-[140px]">
-                                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 truncate">
-                                        {user?.name}
-                                    </span>
-                                </div>
-                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${userDropdownOpen ? "rotate-180" : ""}`} />
-                            </button>
-
-                            {/* Refined Dropdown Menu */}
-                            {userDropdownOpen && (
-                                <div className="absolute right-0 mt-2 w-60 bg-white/95 dark:bg-[#0B1524]/95 backdrop-blur-2xl rounded-2xl shadow-xl border border-slate-200/80 dark:border-white/[0.08] py-1.5 z-50 animate-fadeIn text-xs">
-                                    <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-white/[0.08]">
-                                        <div className="font-bold text-slate-900 dark:text-white truncate flex items-center gap-1.5">
-                                            <span className="truncate">{user?.name}</span>
-                                        </div>
-                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-mono mt-0.5">{user?.email}</div>
-                                        <div className="mt-1.5 flex items-center justify-between gap-1.5">
-                                            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08]">
-                                                {user?.role}
-                                            </span>
-                                            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-semibold text-slate-500 dark:text-slate-400">
-                                                <ShieldCheck className="w-3 h-3 text-emerald-500" />
-                                                <span>{user?.status === 'suspended' ? 'Suspended' : 'Governed'}</span>
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="py-1">
-                                        <Link
-                                            href={route("profile.edit")}
-                                            onClick={() => setUserDropdownOpen(false)}
-                                            className="flex items-center gap-2.5 px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06] font-medium transition"
-                                        >
-                                            <UserIcon className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                                            <span>Manage Profile</span>
-                                        </Link>
-
-                                        <Link
-                                            href={route("profile.edit")}
-                                            onClick={() => setUserDropdownOpen(false)}
-                                            className="flex items-center gap-2.5 px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06] font-medium transition"
-                                        >
-                                            <Lock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                            <span>Security &amp; Password</span>
-                                        </Link>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                toggleTheme();
-                                                setUserDropdownOpen(false);
-                                            }}
-                                            className="w-full flex items-center justify-between px-3.5 py-2 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06] font-medium transition text-left cursor-pointer"
-                                        >
-                                            <div className="flex items-center gap-2.5">
-                                                {isDark ? <Sun className="w-3.5 h-3.5 text-amber-400" /> : <Moon className="w-3.5 h-3.5 text-cyan-600" />}
-                                                <span>Theme Mode</span>
-                                            </div>
-                                            <span className="text-[10.5px] font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.1] text-slate-600 dark:text-slate-300">
-                                                {isDark ? "Dark" : "Light"}
-                                            </span>
-                                        </button>
-                                    </div>
-
-                                    <div className="border-t border-slate-100 dark:border-white/[0.08] pt-1 mt-1">
-                                        <Link
-                                            href={route("logout")}
-                                            method="post"
-                                            as="button"
-                                            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 font-semibold transition text-left cursor-pointer"
-                                        >
-                                            <LogOut className="w-3.5 h-3.5" />
-                                            <span>Sign Out</span>
-                                        </Link>
-                                    </div>
-                                </div>
+                        {/* Account Profile Link */}
+                        <Link
+                            href={route('profile.edit')}
+                            className={`w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center transition active:scale-95 shadow-2xs cursor-pointer ${
+                                currentUrl === '/profile'
+                                    ? 'border-2 border-[#16A34A] ring-2 ring-emerald-500/30'
+                                    : 'border border-white/[0.15] hover:border-emerald-400/50 bg-white/[0.08] hover:bg-white/[0.14]'
+                            }`}
+                            title={user?.name ? `${user.name} — Profile & Settings` : "Account Profile & Settings"}
+                        >
+                            {user?.avatar ? (
+                                <img 
+                                    src={user.avatar} 
+                                    alt={user.name || 'Profile'} 
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <UserIcon className="w-4 h-4 text-slate-200" />
                             )}
-                        </div>
+                        </Link>
                     </div>
                 </header>
 
                 {/* Account Suspension Banner */}
-                {user?.status === 'suspended' && (
+                {isSuspended && (
                     <div className="px-6 pt-4">
-                        <div className="p-4 rounded-2xl flex items-center justify-between border bg-rose-50 dark:bg-rose-950/70 text-rose-800 dark:text-rose-200 border-rose-300 dark:border-rose-800/80 shadow-md">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-xl bg-rose-200/60 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300">
-                                    <Lock className="w-5 h-5" />
+                        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-200 flex items-start gap-3 shadow-xs">
+                            <div className="w-8 h-8 rounded-xl bg-rose-500/20 flex items-center justify-center flex-shrink-0 text-rose-600 dark:text-rose-400">
+                                <Lock className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <div className="text-xs font-black uppercase tracking-wider font-mono">
+                                    Account Suspended by System Administration
                                 </div>
-                                <div>
-                                    <div className="text-xs font-black uppercase tracking-wider font-mono">
-                                        Account Suspended by System Administration
-                                    </div>
-                                    <div className="text-xs font-medium text-rose-700 dark:text-rose-300 mt-0.5">
-                                        Your organizer portal activities, guest imports, broadcast campaigns, and studio customization privileges are currently locked. Contact support or administration for clearance.
-                                    </div>
+                                <div className="text-xs font-medium text-rose-700 dark:text-rose-300 mt-0.5">
+                                    Your organizer portal activities, guest imports, broadcast campaigns, and studio customization privileges are currently locked. Contact support or administration for clearance.
                                 </div>
                             </div>
                         </div>
@@ -648,6 +593,8 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                     {children}
                 </div>
             </main>
+
+            <CreateEventModal />
         </div>
     );
 }

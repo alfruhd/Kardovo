@@ -1,75 +1,87 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\AzampayWebhookController;
 use App\Http\Controllers\CardTemplateController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\MessagingController;
+use App\Http\Controllers\Organizer\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGuestController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\WhatsAppWebhookController;
+use App\Http\Middleware\EnsureOrganizerHasPaid;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 // Public Guest Routes (WhatsApp & SMS 1-tap card & RSVP)
 Route::get('/demo/pass', [PublicGuestController::class, 'showDemoPass'])->name('guest.demoPass');
-Route::get('/card/{token}', [PublicGuestController::class, 'showCard'])->name('guest.card');
-Route::post('/card/{token}/rsvp', [PublicGuestController::class, 'submitRsvp'])->name('guest.rsvp');
+Route::get('/card/{token}', [PublicGuestController::class, 'showCard'])->middleware('throttle:300,1')->name('guest.card');
+Route::post('/card/{token}/rsvp', [PublicGuestController::class, 'submitRsvp'])->middleware('throttle:60,1')->name('guest.rsvp');
 
 // Instant Dev Role Switcher
 Route::post('/dev/switch-user', [AuthenticatedSessionController::class, 'switchUser'])->name('dev.switchUser');
 
 // Public Root Redirect
 Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->route('dashboard');
-    }
-
-    return redirect()->route('login');
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
+    ]);
 });
 
 // Authenticated Application Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Events
-    Route::resource('events', EventController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
+    // Calendar
+    Route::get('/calendar', [EventController::class, 'calendar'])->name('calendar.index');
 
-    // Guests
-    Route::post('/events/{event}/guests', [GuestController::class, 'store'])->name('guests.store');
-    Route::post('/events/{event}/guests/import', [GuestController::class, 'import'])->name('guests.import');
-    Route::put('/events/{event}/guests/{guest}', [GuestController::class, 'update'])->name('guests.update');
-    Route::delete('/events/{event}/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy');
-    Route::delete('/events/{event}/guests-clear', [GuestController::class, 'clearAll'])->name('guests.clearAll');
-    Route::get('/events/{event}/guests-export', [GuestController::class, 'exportCsv'])->name('guests.export');
-    Route::get('/events/{event}/guests-export-pdf', [GuestController::class, 'exportPdf'])->name('guests.exportPdf');
-    Route::get('/guests/sample-template', [GuestController::class, 'downloadSampleTemplate'])->name('guests.sampleTemplate');
+    Route::middleware([EnsureOrganizerHasPaid::class])->group(function () {
+        // Events
+        Route::resource('events', EventController::class)->only(['index', 'show', 'store', 'update', 'destroy']);
 
-    // Card Templates
-    Route::get('/templates', [CardTemplateController::class, 'index'])->name('templates.index');
-    Route::post('/templates', [CardTemplateController::class, 'store'])->name('templates.store');
-    Route::match(['put', 'post'], '/templates/{cardTemplate}', [CardTemplateController::class, 'update'])->name('templates.update');
-    Route::delete('/templates/{cardTemplate}', [CardTemplateController::class, 'destroy'])->name('templates.destroy');
-    Route::get('/guests/{guest}/card-view', [CardTemplateController::class, 'guestCard'])->name('guests.cardView');
+        // Guests
+        Route::post('/events/{event}/guests', [GuestController::class, 'store'])->name('guests.store');
+        Route::post('/events/{event}/guests/import', [GuestController::class, 'import'])->name('guests.import');
+        Route::put('/events/{event}/guests/{guest}', [GuestController::class, 'update'])->name('guests.update');
+        Route::delete('/events/{event}/guests/{guest}', [GuestController::class, 'destroy'])->name('guests.destroy');
+        Route::delete('/events/{event}/guests-clear', [GuestController::class, 'clearAll'])->name('guests.clearAll');
+        Route::get('/events/{event}/guests-export', [GuestController::class, 'exportCsv'])->name('guests.export');
+        Route::get('/events/{event}/guests-export-pdf', [GuestController::class, 'exportPdf'])->name('guests.exportPdf');
+        Route::get('/guests/sample-template', [GuestController::class, 'downloadSampleTemplate'])->name('guests.sampleTemplate');
 
-    // Messaging & Broadcast Hub
-    Route::get('/messaging', [MessagingController::class, 'index'])->name('messaging.index');
-    Route::post('/messaging/broadcast', [MessagingController::class, 'sendBroadcast'])->name('messaging.broadcast');
-    Route::post('/guests/{guest}/send-message', [MessagingController::class, 'sendSingle'])->name('messaging.sendSingle');
-    Route::patch('/messaging/events/{event}/template', [MessagingController::class, 'updateEventTemplate'])->name('messaging.updateEventTemplate');
-    Route::delete('/messaging/logs/clear-all', [MessagingController::class, 'clearLogs'])->name('messaging.clearLogs');
-    Route::delete('/messaging/logs/{message}', [MessagingController::class, 'destroyLog'])->name('messaging.destroyLog');
+        // Card Templates
+        Route::get('/templates', [CardTemplateController::class, 'index'])->name('templates.index');
+        Route::post('/templates', [CardTemplateController::class, 'store'])->name('templates.store');
+        Route::match(['put', 'post'], '/templates/{cardTemplate}', [CardTemplateController::class, 'update'])->name('templates.update');
+        Route::delete('/templates/{cardTemplate}', [CardTemplateController::class, 'destroy'])->name('templates.destroy');
+        Route::get('/guests/{guest}/card-view', [CardTemplateController::class, 'guestCard'])->name('guests.cardView');
 
-    // Scanner App (Mobile / PWA View)
-    Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');
-    Route::post('/scanner/validate', [ScannerController::class, 'validateScan'])->name('scanner.validate');
+        // Messaging & Broadcast Hub
+        Route::get('/messaging', [MessagingController::class, 'index'])->name('messaging.index');
+        Route::post('/messaging/broadcast', [MessagingController::class, 'sendBroadcast'])->name('messaging.broadcast');
+        Route::post('/guests/{guest}/send-message', [MessagingController::class, 'sendSingle'])->name('messaging.sendSingle');
+        Route::patch('/messaging/events/{event}/template', [MessagingController::class, 'updateEventTemplate'])->name('messaging.updateEventTemplate');
+        Route::delete('/messaging/logs/clear-all', [MessagingController::class, 'clearLogs'])->name('messaging.clearLogs');
+        Route::delete('/messaging/logs/{message}', [MessagingController::class, 'destroyLog'])->name('messaging.destroyLog');
+
+        // Scanner App (Mobile / PWA View)
+        Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');
+        Route::post('/scanner/validate', [ScannerController::class, 'validateScan'])->middleware('throttle:300,1')->name('scanner.validate');
+    });
 
     // Admin Portal
     Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.auditLogs');
     Route::post('/admin/gateway', [AdminController::class, 'updateGateway'])->name('admin.gateway');
     Route::post('/admin/gateway/test', [AdminController::class, 'testGateway'])->name('admin.gateway.test');
     Route::post('/admin/customers', [AdminController::class, 'storeCustomer'])->name('admin.storeCustomer');
@@ -94,6 +106,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/finance/export-pdf', [FinanceController::class, 'exportPdf'])->name('admin.finance.exportPdf');
     Route::post('/admin/finance/exchange-rate/refresh', [FinanceController::class, 'refreshExchangeRate'])->name('admin.finance.exchangeRate.refresh');
     Route::post('/admin/finance/exchange-rate/update', [FinanceController::class, 'updateExchangeRate'])->name('admin.finance.exchangeRate.update');
+
+    // Organizer Pricing & Direct Payments
+    Route::get('/organizer/pricing', [PaymentController::class, 'index'])->name('organizer.wallet.index');
+    Route::post('/organizer/pricing/purchase', [PaymentController::class, 'purchasePackage'])->name('organizer.pricing.purchase');
+    Route::get('/organizer/payments/{transaction}/receipt', [PaymentController::class, 'receipt'])->name('organizer.payments.receipt');
 
     // User Profile
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -125,6 +142,9 @@ Route::post('/api/webhooks/whatsapp', [WhatsAppWebhookController::class, 'handle
 // SMS Gateway Webhooks (NextSMS, Beem, Twilio, AfricasTalking)
 Route::match(['get', 'post'], '/webhooks/sms', [WhatsAppWebhookController::class, 'handleSms'])->name('webhooks.sms');
 Route::match(['get', 'post'], '/api/webhooks/sms', [WhatsAppWebhookController::class, 'handleSms']);
+
+// Azampay Webhooks
+Route::post('/api/webhooks/azampay', [AzampayWebhookController::class, 'handleCallback'])->name('webhooks.azampay');
 
 // Error 404 Route & Universal Fallback
 Route::get('/404', function () {

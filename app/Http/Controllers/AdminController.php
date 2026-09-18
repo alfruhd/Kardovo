@@ -5,9 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
+use App\Models\Message;
 use App\Models\ScanLog;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Services\AuditLogger;
 use App\Services\PhoneNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -28,25 +30,52 @@ class AdminController extends Controller
         $isSuperAdmin = $user->isAdmin();
         $isSubAdmin = $user->isSubAdmin();
 
+        $attachCustomerQuotas = function ($customersCollection) {
+            $customerIds = $customersCollection->pluck('id')->filter()->all();
+            if (empty($customerIds)) {
+                return $customersCollection;
+            }
+
+            $messageCounts = Message::join('events', 'messages.event_id', '=', 'events.id')
+                ->whereIn('events.user_id', $customerIds)
+                ->selectRaw('events.user_id, messages.channel, count(*) as total')
+                ->groupBy('events.user_id', 'messages.channel')
+                ->get()
+                ->groupBy('user_id');
+
+            return $customersCollection->map(function ($c) use ($messageCounts) {
+                $c->effective_permissions = $c->effective_permissions;
+                $userCounts = $messageCounts->get($c->id, collect());
+                $waUsed = (int) ($userCounts->firstWhere('channel', 'whatsapp')->total ?? 0);
+                $smsUsed = (int) ($userCounts->firstWhere('channel', 'sms')->total ?? 0);
+
+                $c->message_quotas = [
+                    'whatsapp_limit' => $c->max_whatsapp_limit,
+                    'whatsapp_used' => $waUsed,
+                    'whatsapp_remaining' => is_null($c->max_whatsapp_limit) ? null : max(0, $c->max_whatsapp_limit - $waUsed),
+                    'sms_limit' => $c->max_sms_limit,
+                    'sms_used' => $smsUsed,
+                    'sms_remaining' => is_null($c->max_sms_limit) ? null : max(0, $c->max_sms_limit - $smsUsed),
+                ];
+
+                return $c;
+            });
+        };
+
         if ($isSuperAdmin) {
-            $customers = User::whereIn('role', ['customer', 'sub_admin', 'admin'])
+            $rawCustomers = User::whereIn('role', ['customer', 'sub_admin'])
                 ->withCount(['events', 'scanners'])
                 ->latest()
-                ->get()
-                ->map(function ($c) {
-                    $c->effective_permissions = $c->effective_permissions;
-                    $c->message_quotas = $c->getMessageQuotaStats();
-
-                    return $c;
-                });
+                ->get();
+            $customers = $attachCustomerQuotas($rawCustomers);
 
             $gateStaff = User::where('role', 'scanner')
                 ->with(['customer'])
-                ->withCount(['scanLogs as total_scans_count'])
-                ->withCount(['scanLogs as granted_scans_count' => function ($q) {
+                ->withCount(['scans as total_scans_count'])
+                ->withCount(['scans as granted_scans_count' => function ($q) {
                     $q->where('status', 'granted');
                 }])
-                ->withCount(['scanLogs as rejected_scans_count' => function ($q) {
+                ->withCount(['scans as rejected_scans_count' => function ($q) {
                     $q->where('status', 'rejected');
                 }])
                 ->latest()
@@ -67,16 +96,11 @@ class AdminController extends Controller
             $assignedCustomerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
             $assignedEventIds = $user->assignedEvents()->pluck('events.id')->toArray();
 
-            $customers = User::whereIn('id', $assignedCustomerIds)
+            $rawCustomers = User::whereIn('id', $assignedCustomerIds)
                 ->withCount(['events', 'scanners'])
                 ->latest()
-                ->get()
-                ->map(function ($c) {
-                    $c->effective_permissions = $c->effective_permissions;
-                    $c->message_quotas = $c->getMessageQuotaStats();
-
-                    return $c;
-                });
+                ->get();
+            $customers = $attachCustomerQuotas($rawCustomers);
 
             $allEvents = Event::whereIn('id', $assignedEventIds)
                 ->orWhereIn('user_id', $assignedCustomerIds)
@@ -90,11 +114,11 @@ class AdminController extends Controller
             $gateStaff = User::where('role', 'scanner')
                 ->whereIn('customer_id', $scopedCustomerIds)
                 ->with(['customer'])
-                ->withCount(['scanLogs as total_scans_count'])
-                ->withCount(['scanLogs as granted_scans_count' => function ($q) {
+                ->withCount(['scans as total_scans_count'])
+                ->withCount(['scans as granted_scans_count' => function ($q) {
                     $q->where('status', 'granted');
                 }])
-                ->withCount(['scanLogs as rejected_scans_count' => function ($q) {
+                ->withCount(['scans as rejected_scans_count' => function ($q) {
                     $q->where('status', 'rejected');
                 }])
                 ->latest()
@@ -132,6 +156,51 @@ class AdminController extends Controller
         $totalCheckins = Guest::where('entries_used', '>', 0)->sum('entries_used');
         $totalScans = ScanLog::count();
 
+        $whatsappCount = Message::where('channel', 'whatsapp')->count();
+        $smsCount = Message::where('channel', 'sms')->count();
+        $totalMessagesCount = $whatsappCount + $smsCount;
+
+        $totalDistribution = max($totalMessagesCount, 1);
+        $whatsappPercentage = round(($whatsappCount / $totalDistribution) * 100);
+        $smsPercentage = round(($smsCount / $totalDistribution) * 100);
+
+        $thisWeek = Message::where('created_at', '>=', now()->subDays(7))->count();
+        $lastWeek = Message::whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count();
+        $wowGrowth = $lastWeek > 0 ? round((($thisWeek - $lastWeek) / $lastWeek) * 100, 1) : ($thisWeek > 0 ? 100 : 0);
+        $wowSign = $wowGrowth > 0 ? '+' : '';
+
+        $thisWeekScans = ScanLog::where('scanned_at', '>=', now()->subDays(7))->count();
+        $lastWeekScans = ScanLog::whereBetween('scanned_at', [now()->subDays(14), now()->subDays(7)])->count();
+        $scansGrowth = $lastWeekScans > 0 ? round((($thisWeekScans - $lastWeekScans) / $lastWeekScans) * 100, 1) : ($thisWeekScans > 0 ? 100 : 0);
+
+        $thisWeekWa = Message::where('channel', 'whatsapp')->where('created_at', '>=', now()->subDays(7))->count();
+        $lastWeekWa = Message::where('channel', 'whatsapp')->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count();
+        $waGrowth = $lastWeekWa > 0 ? round((($thisWeekWa - $lastWeekWa) / $lastWeekWa) * 100, 1) : ($thisWeekWa > 0 ? 100 : 0);
+
+        $thisWeekSms = Message::where('channel', 'sms')->where('created_at', '>=', now()->subDays(7))->count();
+        $lastWeekSms = Message::where('channel', 'sms')->whereBetween('created_at', [now()->subDays(14), now()->subDays(7)])->count();
+        $smsGrowth = $lastWeekSms > 0 ? round((($thisWeekSms - $lastWeekSms) / $lastWeekSms) * 100, 1) : ($thisWeekSms > 0 ? 100 : 0);
+
+        $sevenDaysAgo = now()->subDays(6)->startOfDay();
+        $dailyTraffic = Message::where('created_at', '>=', $sevenDaysAgo)
+            ->selectRaw('DATE(created_at) as msg_date, channel, count(*) as count')
+            ->groupBy('msg_date', 'channel')
+            ->get();
+
+        $trafficData = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $dateString = $date->toDateString();
+
+            $dayData = $dailyTraffic->where('msg_date', $dateString);
+
+            $trafficData[] = [
+                'name' => $date->format('D'),
+                'whatsapp' => (int) ($dayData->where('channel', 'whatsapp')->first()->count ?? 0),
+                'sms' => (int) ($dayData->where('channel', 'sms')->first()->count ?? 0),
+            ];
+        }
+
         $whatsappGateway = SystemSetting::get('whatsapp_gateway', [
             'provider' => 'Meta WhatsApp Cloud API',
             'phone_number_id' => '108492019482910',
@@ -155,6 +224,15 @@ class AdminController extends Controller
             'status' => 'Active',
         ]);
 
+        $azampayGateway = SystemSetting::get('azampay_gateway', [
+            'provider' => 'AzamPay',
+            'app_name' => 'Kardovo',
+            'client_id' => '',
+            'client_secret' => '',
+            'environment' => 'sandbox',
+            'status' => 'Pending Configuration',
+        ]);
+
         return Inertia::render('Admin/Dashboard', [
             'isSuperAdmin' => $isSuperAdmin,
             'isSubAdmin' => $isSubAdmin,
@@ -172,10 +250,21 @@ class AdminController extends Controller
                 'total_guests' => $totalGuests,
                 'total_checkins' => $totalCheckins,
                 'total_scans' => $totalScans,
+                'scans_growth' => ($scansGrowth > 0 ? '+' : '').$scansGrowth.'%',
+                'whatsapp_delivered' => $whatsappCount,
+                'whatsapp_growth' => ($waGrowth > 0 ? '+' : '').$waGrowth.'%',
+                'sms_delivered' => $smsCount,
+                'sms_growth' => ($smsGrowth > 0 ? '+' : '').$smsGrowth.'%',
+                'total_messages' => $totalMessagesCount,
+                'whatsapp_percentage' => $whatsappPercentage,
+                'sms_percentage' => $smsPercentage,
+                'wow_growth' => $wowSign.$wowGrowth.'%',
+                'traffic_data' => $trafficData,
             ],
             'gateways' => [
                 'whatsapp' => $whatsappGateway,
                 'sms' => $smsGateway,
+                'azampay' => $azampayGateway,
             ],
         ]);
     }
@@ -188,14 +277,16 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'gateway_type' => 'required|in:whatsapp,sms',
+            'gateway_type' => 'required|in:whatsapp,sms,azampay',
             'config' => 'required|array',
         ]);
 
         if ($validated['gateway_type'] === 'whatsapp') {
             SystemSetting::set('whatsapp_gateway', $validated['config']);
-        } else {
+        } elseif ($validated['gateway_type'] === 'sms') {
             SystemSetting::set('sms_gateway', $validated['config']);
+        } else {
+            SystemSetting::set('azampay_gateway', $validated['config']);
         }
 
         return back()->with('success', 'Gateway settings updated successfully.');
@@ -209,7 +300,7 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'gateway_type' => 'required|in:whatsapp,sms',
+            'gateway_type' => 'required|in:whatsapp,sms,azampay',
             'config' => 'required|array',
             'test_phone' => 'nullable|string',
         ]);
@@ -331,7 +422,7 @@ class AdminController extends Controller
                     'message' => 'Connection to Meta Graph API failed: '.$e->getMessage(),
                 ], 500);
             }
-        } else {
+        } elseif ($validated['gateway_type'] === 'sms') {
             // SMS Gateway Test
             $config = $validated['config'];
             $senderId = $config['sender_id'] ?? 'KARDOVO';
@@ -340,6 +431,46 @@ class AdminController extends Controller
                 'success' => true,
                 'message' => "✓ SMS Gateway verified! Active Sender ID: {$senderId}.",
             ]);
+        } elseif ($validated['gateway_type'] === 'azampay') {
+            // Azampay Gateway Test
+            $config = $validated['config'];
+
+            // Generate a token just to see if the credentials are valid
+            try {
+                $appName = $config['app_name'] ?? 'Kardovo';
+                $clientId = $config['client_id'] ?? '';
+                $clientSecret = $config['client_secret'] ?? '';
+
+                if (empty($clientId) || empty($clientSecret)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Client ID and Secret are required for AzamPay.',
+                    ], 422);
+                }
+
+                $response = Http::post('https://authenticator.azampay.co.tz/AppRegistration/GenerateToken', [
+                    'appName' => $appName,
+                    'clientId' => $clientId,
+                    'clientSecret' => $clientSecret,
+                ]);
+
+                if ($response->successful()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => '✓ AzamPay Gateway verified! Successfully generated auth token.',
+                    ]);
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to authenticate with AzamPay. Please check your Client ID and Secret.',
+                ], 422);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Connection to AzamPay API failed: '.$e->getMessage(),
+                ], 500);
+            }
         }
     }
 
@@ -362,6 +493,7 @@ class AdminController extends Controller
             'max_events_limit' => 'nullable|integer|min:1',
             'max_whatsapp_limit' => 'nullable|integer|min:0',
             'max_sms_limit' => 'nullable|integer|min:0',
+            'has_payment_override' => 'nullable|boolean',
             'suspension_reason' => 'nullable|string|max:255',
         ], [
             'name.min' => 'Customer name must be at least 2 characters.',
@@ -380,7 +512,8 @@ class AdminController extends Controller
         $validated['max_sms_limit'] = isset($validated['max_sms_limit']) && $validated['max_sms_limit'] !== '' ? (int) $validated['max_sms_limit'] : null;
         $validated['max_events_limit'] = isset($validated['max_events_limit']) && $validated['max_events_limit'] !== '' ? (int) $validated['max_events_limit'] : null;
 
-        User::create($validated);
+        $newUser = User::create($validated);
+        AuditLogger::log('create_user', User::class, (string) $newUser->id, ['role' => $newUser->role]);
 
         return back()->with('success', "Organizer account '{$validated['name']}' created successfully with assigned role, quotas, and permissions.");
     }
@@ -430,6 +563,7 @@ class AdminController extends Controller
             'max_events_limit' => 'nullable|integer|min:1',
             'max_whatsapp_limit' => 'nullable|integer|min:0',
             'max_sms_limit' => 'nullable|integer|min:0',
+            'has_payment_override' => 'nullable|boolean',
             'suspension_reason' => 'nullable|string|max:255',
         ], [
             'name.min' => 'Customer name must be at least 2 characters.',
@@ -468,7 +602,18 @@ class AdminController extends Controller
             unset($validated['password']);
         }
 
+        $oldRole = $customer->role;
         $customer->update($validated);
+
+        $changed = $customer->getChanges();
+        unset($changed['updated_at']); // Clean up clutter
+        if (count($changed) > 0) {
+            AuditLogger::log('update_user', User::class, (string) $customer->id, [
+                'old_role' => $oldRole,
+                'new_role' => $customer->role,
+                'changed_fields' => array_keys($changed),
+            ]);
+        }
 
         return back()->with('success', "Account '{$customer->name}' updated successfully (Role: {$customer->role}, Status: {$customer->status}).");
     }

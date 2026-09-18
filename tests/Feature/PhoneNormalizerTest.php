@@ -78,3 +78,74 @@ test('MessagingController sendBroadcast saves sanitized phone without plus or sp
     expect($message->recipient_phone)->not->toContain('+');
     expect($message->recipient_phone)->not->toContain(' ');
 });
+
+test('broadcast appends pass link and rsvp footer when include_pass_link is true', function () {
+    $user = User::where('role', 'customer')->first();
+    $event = Event::where('user_id', $user->id)->first();
+
+    $guest = Guest::create([
+        'event_id' => $event->id,
+        'name' => 'Baraka Juma',
+        'phone' => '+255 712 111 222',
+        'category' => 'Single Entry',
+        'max_entries' => 1,
+        'delivery_status' => 'draft',
+        'qr_token' => 'kdv_test_token_123',
+    ]);
+
+    $response = $this->actingAs($user)->post(route('messaging.broadcast'), [
+        'event_id' => $event->id,
+        'channel' => 'whatsapp',
+        'campaign_type' => 'text_only',
+        'include_pass_link' => true,
+        'target_filter' => 'custom',
+        'selected_guest_ids' => [$guest->id],
+        'custom_caption' => 'Important event update: Ceremony starts at 2 PM.',
+    ]);
+
+    $response->assertRedirect();
+
+    $message = Message::where('guest_id', $guest->id)->latest()->first();
+    expect($message)->not->toBeNull();
+    expect($message->message_body)->toContain('Important event update');
+    expect($message->message_body)->toContain('🎟️ *Digital Pass & RSVP:*');
+    expect($message->message_body)->toContain('kdv_test_token_123');
+    expect($message->message_body)->not->toContain('Reply');
+});
+
+test('broadcast does not append pass link when include_pass_link is false', function () {
+    $user = User::where('role', 'customer')->first();
+    $event = Event::where('user_id', $user->id)->first();
+
+    $guest = Guest::create([
+        'event_id' => $event->id,
+        'name' => 'Amina Hassan',
+        'phone' => '+255 714 333 444',
+        'category' => 'Single Entry',
+        'max_entries' => 1,
+        'delivery_status' => 'draft',
+        'qr_token' => 'kdv_test_token_456',
+    ]);
+
+    Http::fake([
+        'graph.facebook.com/*' => Http::response(['messages' => [['id' => 'wamid.HBgL...']]], 200),
+    ]);
+
+    $response = $this->actingAs($user)->post(route('messaging.broadcast'), [
+        'event_id' => $event->id,
+        'channel' => 'whatsapp',
+        'campaign_type' => 'text_only',
+        'include_pass_link' => false,
+        'target_filter' => 'custom',
+        'selected_guest_ids' => [$guest->id],
+        'custom_caption' => 'Strictly text announcement without pass.',
+    ]);
+
+    $response->assertRedirect();
+
+    $message = Message::where('guest_id', $guest->id)->latest()->first();
+    expect($message)->not->toBeNull();
+    expect($message->message_body)->toBe('Strictly text announcement without pass.');
+    expect($message->message_body)->not->toContain('/card/');
+    expect($message->message_body)->not->toContain('Digital Pass');
+});

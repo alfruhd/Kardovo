@@ -6,6 +6,7 @@ import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import ConfirmationModal from '@/Components/ConfirmationModal';
 import { 
     TrendingUp, 
     TrendingDown, 
@@ -29,7 +30,8 @@ import {
 } from 'lucide-react';
 
 const CATEGORY_MAP = {
-    // Income Categories
+    // Income
+    package_purchase: { label: 'Platform Packages', badgeClass: 'bg-emerald-100/80 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-500/20' },
     pass_sales: { label: 'Pass Quota Sales', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
     sms_credits: { label: 'SMS Top-up Credits', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
     design_service: { label: 'Custom 4K Artwork', badgeClass: 'bg-slate-100 dark:bg-white/[0.06] text-slate-700 dark:text-slate-300 border-slate-200/80 dark:border-white/[0.08]' },
@@ -76,6 +78,17 @@ export default function Finance({
     const actionDropdownRef = useRef(null);
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
     const exportDropdownRef = useRef(null);
+    const [confirmModal, setConfirmModal] = useState({
+        show: false,
+        title: '',
+        message: '',
+        warning: '',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        type: 'danger',
+        loading: false,
+        onConfirm: () => {},
+    });
 
     const activeFxRate = Number(fx_rate?.rate || 2650);
 
@@ -209,11 +222,22 @@ export default function Finance({
     };
 
     const handleDeleteTransaction = (tx) => {
-        if (confirm(`Are you sure you want to permanently delete transaction ${tx.transaction_number} (${tx.title})?`)) {
-            router.delete(route('admin.finance.destroy', tx.id), {
-                preserveScroll: true
-            });
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Delete Transaction?',
+            message: `Delete transaction ${tx.transaction_number} (${tx.title})?`,
+            warning: 'This cannot be undone.',
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('admin.finance.destroy', tx.id), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const formatTzs = (amount) => {
@@ -275,20 +299,20 @@ export default function Finance({
                     <button
                         type="button"
                         onClick={() => setFxModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] rounded-xl transition cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition cursor-pointer"
                         title="Live USD/TZS Spot Exchange Rate"
                     >
-                        <RefreshCw className={`w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 ${isSyncingFx ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isSyncingFx ? 'animate-spin' : ''}`} />
                         <span className="font-mono">1 USD ≈ {Number(activeFxRate).toLocaleString()} TZS</span>
                     </button>
 
                     {/* PDF Report Export */}
                     <a
                         href={route('admin.finance.exportPdf', { period: period })}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 border border-rose-200 dark:border-rose-800/50 rounded-xl transition cursor-pointer shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-300 hover:text-white bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 rounded-xl transition cursor-pointer shadow-2xs"
                         title="Download Executive Financial Statement PDF"
                     >
-                        <FileText className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                        <FileText className="w-3.5 h-3.5 text-rose-400" />
                         <span className="hidden sm:inline">PDF Report</span>
                     </a>
 
@@ -297,16 +321,16 @@ export default function Finance({
                         <button
                             type="button"
                             onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.1] border border-slate-200 dark:border-white/[0.08] rounded-xl transition cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition cursor-pointer"
                             title="Export CSV Reports"
                         >
-                            <Download className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                            <Download className="w-3.5 h-3.5 text-slate-300" />
                             <span className="hidden sm:inline">Export CSV</span>
                             <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${exportDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {exportDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-[#0C1729] rounded-2xl shadow-xl border border-slate-200 dark:border-white/[0.08] p-1.5 z-50 animate-fadeIn space-y-0.5">
+                            <div className="absolute right-0 mt-2 w-60 bg-[#0B2545] text-white rounded-2xl shadow-2xl border border-[#173860] p-1.5 z-50 animate-fadeIn space-y-0.5">
                                 <a
                                     href={route('admin.finance.export', {
                                         period: period,
@@ -316,12 +340,12 @@ export default function Finance({
                                         search: searchTerm,
                                     })}
                                     onClick={() => setExportDropdownOpen(false)}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition text-left cursor-pointer"
                                 >
-                                    <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                    <FileSpreadsheet className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                                     <div>
                                         <div className="font-bold">Transaction Ledger (CSV)</div>
-                                        <div className="text-[10px] text-slate-400 font-normal">Filtered detailed entries</div>
+                                        <div className="text-[10px] text-slate-300 font-normal">Filtered detailed entries</div>
                                     </div>
                                 </a>
                                 <a
@@ -329,12 +353,12 @@ export default function Finance({
                                         format: 'cashflow',
                                     })}
                                     onClick={() => setExportDropdownOpen(false)}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition text-left cursor-pointer"
                                 >
-                                    <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                                    <BarChart3 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                                     <div>
                                         <div className="font-bold">Cashflow Statement (CSV)</div>
-                                        <div className="text-[10px] text-slate-400 font-normal">Month & annual summary matrix</div>
+                                        <div className="text-[10px] text-slate-300 font-normal">Month & annual summary matrix</div>
                                     </div>
                                 </a>
                             </div>
@@ -346,24 +370,24 @@ export default function Finance({
                         <button
                             type="button"
                             onClick={() => setActionDropdownOpen(!actionDropdownOpen)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
-                            <Plus className="w-3.5 h-3.5 text-cyan-400 dark:text-white" />
+                            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                             <span>New Entry</span>
                             <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${actionDropdownOpen ? 'rotate-180' : ''}`} />
                         </button>
 
                         {actionDropdownOpen && (
-                            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#0C1729] rounded-2xl shadow-xl border border-slate-200 dark:border-white/[0.08] p-1.5 z-50 animate-fadeIn space-y-0.5">
+                            <div className="absolute right-0 mt-2 w-48 bg-[#0B2545] text-white rounded-2xl shadow-2xl border border-[#173860] p-1.5 z-50 animate-fadeIn space-y-0.5">
                                 <button
                                     type="button"
                                     onClick={() => {
                                         setActionDropdownOpen(false);
                                         openCreateModal('income');
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition text-left cursor-pointer"
                                 >
-                                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
                                     <span>Record Income</span>
                                 </button>
                                 <button
@@ -372,9 +396,9 @@ export default function Finance({
                                         setActionDropdownOpen(false);
                                         openCreateModal('expense');
                                     }}
-                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-200 hover:bg-white/[0.08] hover:text-white rounded-xl transition text-left cursor-pointer"
                                 >
-                                    <ArrowDownRight className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                                    <ArrowDownRight className="w-3.5 h-3.5 text-rose-400" />
                                     <span>Log Expense</span>
                                 </button>
                             </div>
@@ -412,7 +436,7 @@ export default function Finance({
                                 onClick={() => handlePeriodChange(p.id)}
                                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer ${
                                     period === p.id
-                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-bold'
+                                        ? 'bg-[#16A34A] text-white shadow-xs font-bold'
                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06]'
                                 }`}
                             >
@@ -424,25 +448,25 @@ export default function Finance({
 
                 {/* ═══════════════ 2. FOUR HERO FINANCIAL KPI CARDS (COLOR-CODED & MINIMALISTIC) ═══════════════ */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    {/* Card 1: Gross Revenue (Blue) */}
-                    <div className="h-full rounded-2xl p-5 bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:border-blue-300 dark:hover:border-blue-800/50 transition duration-200 flex flex-col justify-between">
+                    {/* Card 1: Gross Revenue (Emerald/Positive Inflow) */}
+                    <div className="h-full rounded-2xl p-5 bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] shadow-xs hover:border-emerald-300 dark:hover:border-emerald-800/50 transition duration-200 flex flex-col justify-between">
                         <div>
                             <div className="flex items-center justify-between gap-2">
-                                <span className="text-[11px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 truncate">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 truncate">
                                     Gross Revenue
                                 </span>
-                                <div className="w-7 h-7 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 border border-blue-200/50 dark:border-blue-800/40">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 border border-emerald-200/50 dark:border-emerald-800/40">
                                     <ArrowUpRight className="w-3.5 h-3.5 stroke-[2.5]" />
                                 </div>
                             </div>
-                            <div className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono mt-3 tracking-tight">
+                            <div className="text-2xl font-black text-slate-900 dark:text-white font-mono mt-3 tracking-tight">
                                 {formatTzs(metrics.gross_revenue)}
                             </div>
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs">
                             <span className="text-slate-500 dark:text-slate-400 font-medium">USD Equiv.</span>
-                            <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-mono font-bold text-xs border border-blue-200/60 dark:border-blue-800/40">
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-mono font-bold text-xs border border-emerald-200/60 dark:border-emerald-800/40">
                                 {formatUsd(metrics.gross_revenue)}
                             </span>
                         </div>
@@ -530,7 +554,7 @@ export default function Finance({
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                    <BarChart3 className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                    <BarChart3 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
@@ -592,24 +616,25 @@ export default function Finance({
                         <div className="bg-white dark:bg-[#0B172A] p-6 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-card space-y-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-800/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shadow-2xs">
+                                    <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-2xs">
                                         <TrendingUp className="w-4 h-4" />
                                     </div>
                                     <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
                                         Revenue Streams
                                     </h3>
                                 </div>
-                                <span className="text-[11px] font-mono font-bold text-blue-600 dark:text-blue-400">
+                                <span className="text-[11px] font-mono font-bold text-emerald-600 dark:text-emerald-400">
                                     {formatTzs(metrics.gross_revenue)}
                                 </span>
                             </div>
 
                             <div className="space-y-3">
                                 {[
-                                    { label: 'Pass Quota Packages', amount: income_by_category.pass_sales, barColor: 'bg-cyan-500', dotColor: 'bg-cyan-500' },
-                                    { label: 'Bulk SMS Top-up Credits', amount: income_by_category.sms_credits, barColor: 'bg-blue-500', dotColor: 'bg-blue-500' },
+                                    { label: 'Platform Packages (AzamPay)', amount: income_by_category.package_purchase, barColor: 'bg-[#10b981]', dotColor: 'bg-[#10b981]' },
+                                    { label: 'Pass Quota Packages', amount: income_by_category.pass_sales, barColor: 'bg-emerald-500', dotColor: 'bg-emerald-500' },
+                                    { label: 'Bulk SMS Top-up Credits', amount: income_by_category.sms_credits, barColor: 'bg-[#15803D]', dotColor: 'bg-[#15803D]' },
                                     { label: 'Custom 4K Artwork & Branding', amount: income_by_category.design_service, barColor: 'bg-amber-500', dotColor: 'bg-amber-500' },
-                                    { label: 'Enterprise Subscriptions', amount: income_by_category.subscription, barColor: 'bg-purple-500', dotColor: 'bg-purple-500' },
+                                    { label: 'Enterprise Subscriptions', amount: income_by_category.subscription, barColor: 'bg-emerald-700 dark:bg-emerald-400', dotColor: 'bg-emerald-700 dark:bg-emerald-400' },
                                 ].map((item, idx) => {
                                     const pct = metrics.gross_revenue > 0 ? Math.round((item.amount / metrics.gross_revenue) * 100) : 0;
                                     return (
@@ -681,7 +706,7 @@ export default function Finance({
                     <div className="p-5 sm:p-6 border-b border-slate-200/80 dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             </div>
                             <div>
                                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider font-display">
@@ -700,7 +725,7 @@ export default function Finance({
                                 onClick={() => handleYearChange('all')}
                                 className={`px-3 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer ${
                                     selectedYear === 'all'
-                                        ? 'bg-white dark:bg-cyan-600 text-slate-900 dark:text-white shadow-xs'
+                                        ? 'bg-[#16A34A] text-white shadow-xs'
                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                             >
@@ -713,7 +738,7 @@ export default function Finance({
                                     onClick={() => handleYearChange(String(yr))}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition active:scale-95 cursor-pointer ${
                                         String(selectedYear) === String(yr)
-                                            ? 'bg-white dark:bg-cyan-600 text-slate-900 dark:text-white shadow-xs'
+                                            ? 'bg-[#16A34A] text-white shadow-xs'
                                             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                     }`}
                                 >
@@ -750,7 +775,7 @@ export default function Finance({
                                         <div className="space-y-1.5 text-xs pt-1">
                                             <div className="flex items-center justify-between">
                                                 <span className="text-slate-500 dark:text-slate-400 font-medium">Inflow</span>
-                                                <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                                                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                                                     {formatTzs(y.gross_revenue)}
                                                 </span>
                                             </div>
@@ -806,7 +831,7 @@ export default function Finance({
                                                 <div className="font-bold text-slate-900 dark:text-white font-mono">{row.month_name}</div>
                                                 <div className="text-[10.5px] text-slate-400">Year {row.year}</div>
                                             </td>
-                                            <td className="py-3.5 px-4 text-right font-mono font-bold text-blue-600 dark:text-blue-400">
+                                            <td className="py-3.5 px-4 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                                                 <div>+{formatTzs(row.inflow)}</div>
                                                 <div className="text-[10px] text-slate-400 font-normal">{formatUsd(row.inflow)}</div>
                                             </td>
@@ -860,7 +885,7 @@ export default function Finance({
                                     onClick={() => handleTypeChange(tab.id)}
                                     className={`px-3.5 py-2 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer ${
                                         typeTab === tab.id
-                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs'
+                                            ? 'bg-[#16A34A] text-white shadow-xs'
                                             : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.06]'
                                     }`}
                                 >
@@ -878,14 +903,14 @@ export default function Finance({
                                     placeholder="Search by code, title, client..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-xs font-medium rounded-xl pl-8 pr-3 py-2 w-full sm:w-64 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-500 transition outline-none"
+                                    className="bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-xs font-medium rounded-xl pl-8 pr-3 py-2 w-full sm:w-64 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition outline-none"
                                 />
                             </div>
 
                             <select
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-xs font-medium rounded-xl px-3 py-2 hover:border-slate-400 focus:border-slate-900 dark:focus:border-cyan-500 transition outline-none cursor-pointer"
+                                className="bg-white dark:bg-[#08121E] border border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-slate-100 text-xs font-medium rounded-xl px-3 py-2 hover:border-emerald-500/70 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition outline-none cursor-pointer"
                             >
                                 <option value="all">All Categories</option>
                                 <option value="pass_sales">Pass Quota Sales</option>
@@ -1080,7 +1105,7 @@ export default function Finance({
                                                 onClick={() => setCurrentPage(pageNum)}
                                                 className={`min-w-[32px] h-8 px-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                                                     currentPage === pageNum
-                                                        ? 'bg-slate-900 dark:bg-cyan-600 text-white font-bold shadow-xs'
+                                                        ? 'bg-[#16A34A] text-white font-bold shadow-xs'
                                                         : 'border border-slate-200 dark:border-white/[0.08] bg-white dark:bg-[#0B172A] text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/[0.06]'
                                                 }`}
                                             >
@@ -1128,7 +1153,7 @@ export default function Finance({
                                     txForm.setData('category', 'pass_sales');
                                 }}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    modalMode === 'income' ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
+                                    modalMode === 'income' ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
                                 }`}
                             >
                                 Income
@@ -1141,7 +1166,7 @@ export default function Finance({
                                     txForm.setData('category', 'carrier_sms_cogs');
                                 }}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
-                                    modalMode === 'expense' ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
+                                    modalMode === 'expense' ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-600 dark:text-slate-400'
                                 }`}
                             >
                                 Expense
@@ -1304,7 +1329,7 @@ export default function Finance({
                             <InputLabel value="Audit Notes (Optional)" />
                             <textarea
                                 rows={2}
-                                className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20"
+                                className="mt-1 block w-full border border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-medium p-2.5 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20"
                                 placeholder="Add invoice notes or settlement details..."
                                 value={txForm.data.notes}
                                 onChange={(e) => txForm.setData('notes', e.target.value)}
@@ -1319,7 +1344,6 @@ export default function Finance({
                         <PrimaryButton
                             type="submit"
                             disabled={txForm.processing}
-                            className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold rounded-xl shadow-xs"
                         >
                             {modalMode === 'income' ? 'Save Income Record' : 'Save Expense Record'}
                         </PrimaryButton>
@@ -1332,7 +1356,7 @@ export default function Finance({
                 <div className="p-6 space-y-5">
                     <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.08]">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-9 h-9 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 flex items-center justify-center border border-cyan-200/60 dark:border-cyan-800/40">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-200/60 dark:border-emerald-800/40">
                                 <RefreshCw className={`w-4 h-4 ${isSyncingFx ? 'animate-spin' : ''}`} />
                             </div>
                             <div>
@@ -1389,7 +1413,7 @@ export default function Finance({
                             type="button"
                             onClick={handleSyncLiveFx}
                             disabled={isSyncingFx}
-                            className="w-full py-2.5 px-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition active:scale-95 disabled:opacity-60 cursor-pointer"
+                            className="w-full py-2.5 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs transition active:scale-95 disabled:opacity-60 cursor-pointer"
                         >
                             <RefreshCw className={`w-3.5 h-3.5 ${isSyncingFx ? 'animate-spin' : ''}`} />
                             <span>{isSyncingFx ? 'Syncing Live Spot Rates...' : 'Sync Live Market Rate Now'}</span>
@@ -1415,7 +1439,7 @@ export default function Finance({
                                 <button
                                     type="submit"
                                     disabled={fxForm.processing}
-                                    className="py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-bold text-xs whitespace-nowrap shadow-xs transition active:scale-95 disabled:opacity-60 cursor-pointer"
+                                    className="py-2.5 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs whitespace-nowrap shadow-xs transition active:scale-95 disabled:opacity-60 cursor-pointer"
                                 >
                                     Save Override
                                 </button>
@@ -1424,6 +1448,19 @@ export default function Finance({
                     </form>
                 </div>
             </Modal>
+
+            <ConfirmationModal
+                show={confirmModal.show}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                warning={confirmModal.warning}
+                confirmText={confirmModal.confirmText}
+                cancelText={confirmModal.cancelText}
+                type={confirmModal.type}
+                loading={confirmModal.loading}
+                onConfirm={confirmModal.onConfirm}
+                onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+            />
         </KardovoAppLayout>
     );
 }

@@ -286,9 +286,9 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
 
                     <PrimaryButton
                         disabled={processing || data.code.length !== 6}
-                        className="w-full justify-center py-3.5 rounded-2xl bg-kardovo-navy dark:bg-cyan-600 hover:bg-slate-900 dark:hover:bg-cyan-500 text-white font-black text-xs shadow-lg hover:shadow-xl transition active:scale-95 disabled:opacity-50"
+                        className="w-full justify-center py-3.5 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] border-[#16A34A] text-white font-black text-xs shadow-lg transition active:scale-95 disabled:opacity-50"
                     >
-                        <Lock className="w-3.5 h-3.5 mr-1 text-cyan-400 dark:text-slate-950" />
+                        <Lock className="w-3.5 h-3.5 mr-1 text-white" />
                         <span>Verify &amp; Continue</span>
                     </PrimaryButton>
 

@@ -8,9 +8,9 @@ export default function StatCard({
     trend, 
     className = '',
     titleColor = 'text-slate-900 dark:text-white',
-    subtitleColor = 'text-cyan-600 dark:text-cyan-400 font-semibold',
-    iconColor = 'text-cyan-600 dark:text-cyan-400',
-    iconBg = 'bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20',
+    subtitleColor = 'text-emerald-600 dark:text-emerald-400 font-semibold',
+    iconColor = 'text-emerald-600 dark:text-emerald-400',
+    iconBg = 'bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20',
     valueColor = 'text-slate-900 dark:text-white',
     hoverBorder = 'hover:border-slate-300 dark:hover:border-slate-700'
 }) {

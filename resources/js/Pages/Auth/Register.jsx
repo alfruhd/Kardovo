@@ -79,6 +79,7 @@ export default function Register() {
                         value={data.name}
                         className="mt-1 block w-full"
                         autoComplete="name"
+                        placeholder="e.g. Salim Juma"
                         isFocused={true}
                         onChange={(e) => setData('name', e.target.value)}
                         hasError={Boolean(errors.name)}
@@ -107,6 +108,7 @@ export default function Register() {
                         value={data.email}
                         className="mt-1 block w-full"
                         autoComplete="username"
+                        placeholder="name@company.com"
                         onChange={(e) => setData('email', e.target.value)}
                         hasError={Boolean(errors.email)}
                         isValid={Boolean(data.email && isEmailValid)}
@@ -195,6 +197,7 @@ export default function Register() {
                             value={data.password_confirmation}
                             className="block w-full pr-10"
                             autoComplete="new-password"
+                            placeholder="••••••••••••"
                             onChange={(e) =>
                                 setData('password_confirmation', e.target.value)
                             }

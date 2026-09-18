@@ -29,6 +29,21 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhooks/*',
             'api/webhooks/*',
         ]);
+
+        $middleware->redirectTo(
+            guests: '/login',
+            users: function (Request $request) {
+                $user = $request->user();
+                if ($user?->isScanner()) {
+                    return route('scanner.index');
+                }
+                if ($user?->isAdmin() || $user?->isSubAdmin()) {
+                    return route('admin.dashboard');
+                }
+
+                return route('dashboard');
+            },
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

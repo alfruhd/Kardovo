@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Head, useForm, usePage, router } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
+import EmptyEventState from '@/Components/EmptyEventState';
 import PersonalisedCard from '@/Components/PersonalisedCard';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
@@ -8,6 +9,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
+import ConfirmationModal from '@/Components/ConfirmationModal';
 import Modal from '@/Components/Modal';
 import { 
     Palette, 
@@ -43,11 +45,13 @@ export default function CardTemplates({
     templates = [], 
     selectedTemplate, 
     sampleEvent, 
-    sampleGuest 
+    sampleGuest,
+    events = []
 }) {
     const user = usePage().props.auth?.user;
     const isAdmin = user?.role === 'admin' || user?.is_admin;
     const canCustomize = isAdmin || (user?.status !== 'suspended' && user?.effective_permissions?.can_customize_templates !== false);
+    const hasNoEvents = !isAdmin && events.length === 0;
 
     // Sort templates so custom user-added templates and newest templates appear first (left side of gallery)
     const sortedTemplates = React.useMemo(() => {
@@ -95,6 +99,17 @@ export default function CardTemplates({
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState(null);
     const [uploadedImgMeta, setUploadedImgMeta] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({
+        show: false,
+        title: '',
+        message: '',
+        warning: '',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        type: 'danger',
+        loading: false,
+        onConfirm: () => {},
+    });
 
     // Dummy test guest state for live stage preview
     const [testGuestName, setTestGuestName] = useState(sampleGuest?.name || 'Alfred Mashauri');
@@ -187,15 +202,15 @@ export default function CardTemplates({
             image_height: cfg.image_height || null,
 
             // Layer Visibility Flags (Customizable Overlays)
-            show_guest_name: cfg.show_guest_name ?? true,
-            show_allowance_badge: cfg.show_allowance_badge ?? true,
-            show_qr: cfg.show_qr ?? tpl?.show_qr ?? true,
-            show_unique_code: cfg.show_unique_code ?? tpl?.show_unique_code ?? true,
-            show_headline: cfg.show_headline ?? tpl?.show_category_badge ?? true,
-            show_couple_names: cfg.show_couple_names ?? (isEngage ? true : (isCustom ? (cfg.show_couple_names ?? false) : true)),
-            show_date: cfg.show_date ?? (isEngage ? true : (isCustom ? (cfg.show_date ?? false) : true)),
-            show_quote: cfg.show_quote ?? (isEngage ? true : (isCustom ? (cfg.show_quote ?? false) : true)),
-            show_venue: cfg.show_venue ?? (isEngage ? true : (isCustom ? (cfg.show_venue ?? false) : true)),
+            show_guest_name: [true, 'true', 1, '1'].includes(cfg.show_guest_name ?? true),
+            show_allowance_badge: [true, 'true', 1, '1'].includes(cfg.show_allowance_badge ?? true),
+            show_qr: [true, 'true', 1, '1'].includes(cfg.show_qr ?? tpl?.show_qr ?? true),
+            show_unique_code: [true, 'true', 1, '1'].includes(cfg.show_unique_code ?? tpl?.show_unique_code ?? true),
+            show_headline: [true, 'true', 1, '1'].includes(cfg.show_headline ?? true),
+            show_couple_names: [true, 'true', 1, '1'].includes(cfg.show_couple_names ?? (isEngage ? true : (isCustom ? false : true))),
+            show_date: [true, 'true', 1, '1'].includes(cfg.show_date ?? (isEngage ? true : (isCustom ? false : true))),
+            show_quote: [true, 'true', 1, '1'].includes(cfg.show_quote ?? (isEngage ? true : (isCustom ? false : true))),
+            show_venue: [true, 'true', 1, '1'].includes(cfg.show_venue ?? (isEngage ? true : (isCustom ? false : true))),
 
             guest_name: {
                 x: 50,
@@ -254,9 +269,9 @@ export default function CardTemplates({
         brand_color_to: currentTpl?.brand_color_to || '#0A1A2E',
         headline: currentTpl?.headline || 'EXCLUSIVE INVITATION PASS',
         footer_text: currentTpl?.footer_text || 'Secured & verified by KARDOVO',
-        show_qr: currentTpl?.show_qr ?? true,
-        show_unique_code: currentTpl?.show_unique_code ?? true,
-        show_category_badge: currentTpl?.show_category_badge ?? true,
+        show_qr: [true, 'true', 1, '1'].includes(currentTpl?.show_qr ?? true),
+        show_unique_code: [true, 'true', 1, '1'].includes(currentTpl?.show_unique_code ?? true),
+        show_category_badge: [true, 'true', 1, '1'].includes(currentTpl?.show_category_badge ?? true),
         elements_config: buildMergedElementsConfig(currentTpl)
     });
 
@@ -268,6 +283,8 @@ export default function CardTemplates({
         overlay_mode: 'minimal',
         image_file: null,
         show_guest_name: true,
+        show_allowance_badge: true,
+        show_category_badge: true,
         show_qr: true,
         show_unique_code: true,
         show_headline: false,
@@ -295,7 +312,7 @@ export default function CardTemplates({
                 ...prev,
                 show_qr: true,
                 show_unique_code: true,
-                show_category_badge: false,
+                show_category_badge: true,
                 elements_config: {
                     ...prev.elements_config,
                     ...newLayers,
@@ -468,6 +485,8 @@ export default function CardTemplates({
         const isMinimal = uploadForm.data.overlay_mode !== 'full';
         const customElementsConfig = {
             show_guest_name: uploadForm.data.show_guest_name ?? true,
+            show_allowance_badge: uploadForm.data.show_allowance_badge ?? true,
+            show_category_badge: uploadForm.data.show_category_badge ?? true,
             show_qr: uploadForm.data.show_qr ?? true,
             show_unique_code: uploadForm.data.show_unique_code ?? true,
             show_headline: isMinimal ? false : (uploadForm.data.show_headline ?? true),
@@ -491,7 +510,7 @@ export default function CardTemplates({
         formData.append('headline', uploadForm.data.headline || "YOU'RE INVITED");
         formData.append('show_qr', uploadForm.data.show_qr ? '1' : '0');
         formData.append('show_unique_code', uploadForm.data.show_unique_code ? '1' : '0');
-        formData.append('show_category_badge', isMinimal ? '0' : '1');
+        formData.append('show_category_badge', uploadForm.data.show_category_badge ? '1' : '0');
         
         Object.entries(customElementsConfig).forEach(([key, val]) => {
             if (typeof val === 'object' && val !== null) {
@@ -525,23 +544,29 @@ export default function CardTemplates({
 
     const openDeleteConfirmation = (e, tpl) => {
         if (e) e.stopPropagation();
-        setTemplateToDelete(tpl);
-        setDeleteModalOpen(true);
-    };
-
-    const confirmDeleteTemplate = () => {
-        if (!templateToDelete) return;
-        router.delete(route('templates.destroy', templateToDelete.id), {
-            preserveScroll: true,
-            onSuccess: () => {
-                setDeleteModalOpen(false);
-                if (currentTpl?.id === templateToDelete.id) {
-                    const remaining = templates.filter(t => t.id !== templateToDelete.id);
-                    if (remaining.length > 0) {
-                        handleSelectTemplate(remaining[0]);
-                    }
-                }
-                setTemplateToDelete(null);
+        setConfirmModal({
+            show: true,
+            title: 'Delete Template?',
+            message: `Delete template "${tpl.name}"?`,
+            warning: 'Events using it will use the default design.',
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('templates.destroy', tpl.id), {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        setConfirmModal(prev => ({ ...prev, show: false, loading: false }));
+                        if (currentTpl?.id === tpl.id) {
+                            const remaining = templates.filter(t => t.id !== tpl.id);
+                            if (remaining.length > 0) {
+                                handleSelectTemplate(remaining[0]);
+                            }
+                        }
+                    },
+                    onError: () => setConfirmModal(prev => ({ ...prev, loading: false })),
+                });
             }
         });
     };
@@ -561,22 +586,32 @@ export default function CardTemplates({
         <KardovoAppLayout
             title="Card Templates & Artwork Studio"
             headerActions={
-                <button
-                    onClick={() => setUploadModalOpen(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
-                >
-                    <Upload className="w-3.5 h-3.5 text-slate-200 dark:text-white" />
-                    <span>+ Import Custom Artwork</span>
-                </button>
+                !hasNoEvents && (
+                    <button
+                        onClick={() => setUploadModalOpen(true)}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                    >
+                        <Upload className="w-3.5 h-3.5 text-white" />
+                        <span>Add Template</span>
+                    </button>
+                )
             }
         >
             <Head title="Card & Artwork Studio - Kardovo" />
 
             <div className="max-w-7xl mx-auto space-y-6">
-                
-                {/* ═══════════════════════════════════════════════════════════ */}
-                {/* 1. SIMPLE PAGE TITLE HEADER                                  */}
-                {/* ═══════════════════════════════════════════════════════════ */}
+                {hasNoEvents ? (
+                    <EmptyEventState
+                        title="No Event Selected"
+                        description="Please select an event from the dashboard or create a new one to manage messaging and broadcast passes."
+                        buttonText="Go to Dashboard"
+                        buttonHref={route('dashboard')}
+                    />
+                ) : (
+                    <>
+                        {/* ═══════════════════════════════════════════════════════════ */}
+                        {/* 1. SIMPLE PAGE TITLE HEADER                                  */}
+                        {/* ═══════════════════════════════════════════════════════════ */}
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                         <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
@@ -596,22 +631,18 @@ export default function CardTemplates({
                 {/* ═══════════════════════════════════════════════════════════ */}
                 {/* 2. CARD TEMPLATE PRESET SELECTOR GALLERY                    */}
                 {/* ═══════════════════════════════════════════════════════════ */}
-                <div className="relative rounded-3xl overflow-hidden backdrop-blur-2xl bg-gradient-to-br from-slate-50 via-sky-50/40 to-slate-100/90 dark:from-[#091322] dark:via-[#0A182E] dark:to-[#07111D] border border-slate-200/90 dark:border-white/[0.12] p-5 sm:p-7 text-slate-900 dark:text-white shadow-card dark:shadow-[0_20px_50px_rgba(0,0,0,0.35)] space-y-5">
-                    {/* Ambient Glows */}
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 blur-3xl pointer-events-none" />
-                    <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-blue-500/10 blur-3xl pointer-events-none" />
-
+                <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 shadow-xs space-y-5">
                     {/* Header Bar */}
-                    <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200/80 dark:border-white/[0.08]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-white/[0.06]">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-2xl bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 dark:border-cyan-400/30 text-cyan-600 dark:text-cyan-300 flex items-center justify-center shadow-2xs">
+                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-2xs">
                                 <Layers className="w-4.5 h-4.5" />
                             </div>
                             <div>
-                                <h3 className="text-sm sm:text-base font-black tracking-tight text-slate-900 dark:text-white font-display">
+                                <h3 className="text-base font-bold text-slate-900 dark:text-white">
                                     Template Presets Gallery
                                 </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-300 font-medium mt-0.5">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                                     Click any design below to customize and preview live in the studio
                                 </p>
                             </div>
@@ -621,28 +652,27 @@ export default function CardTemplates({
                                 <button
                                     type="button"
                                     onClick={() => setUploadModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs shadow-sm transition active:scale-95 cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] text-white font-bold text-xs shadow-xs transition active:scale-95 cursor-pointer"
                                 >
                                     <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                                    <span>+ Add Custom Template</span>
+                                    <span>Add Template</span>
                                 </button>
                             )}
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-500/10 dark:bg-cyan-500/15 border border-cyan-500/20 dark:border-cyan-400/30 text-cyan-700 dark:text-cyan-300 font-mono text-[11px] font-extrabold shadow-2xs">
-                                <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 font-mono text-xs font-semibold">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                                 <span>{sortedTemplates.length} {sortedTemplates.length === 1 ? 'Design Available' : 'Designs Available'}</span>
                             </span>
                         </div>
                     </div>
 
-                    {/* Template Cards Grid (Newly added templates appear first at the left side) */}
-                    <div className="relative z-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                    {/* Template Cards Carousel (Newly added templates appear first at the left side) */}
+                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-5 pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
                         {sortedTemplates.map((tpl) => {
                             const isSelected = currentTpl?.id === tpl.id;
                             const imgUrl = (isSelected && currentTpl?.image_path)
                                 ? currentTpl.image_path
                                 : (tpl.image_path || tpl.elements_config?.bg_image || tpl.elements_config?.image_path || null);
                             const isCustom = Boolean(imgUrl || tpl.template_type === 'custom_art');
-                            const isRecommended = isCustom && !tpl.user_id;
                             const isPersonal = !!tpl.user_id;
                             const canDeleteThis = tpl.user_id === user?.id || user?.role === 'admin';
 
@@ -650,52 +680,53 @@ export default function CardTemplates({
                                 <div
                                     key={tpl.id}
                                     onClick={() => handleSelectTemplate(tpl)}
-                                    className={`group relative p-3.5 rounded-2xl border transition-all duration-200 cursor-pointer flex flex-col justify-between text-left select-none ${
+                                    className={`group relative p-3.5 rounded-2xl border transition-all duration-150 cursor-pointer flex flex-col justify-between text-left select-none shrink-0 snap-start w-[260px] sm:w-[300px] ${
                                         isSelected 
-                                            ? 'border-cyan-500 dark:border-cyan-400 bg-white/90 dark:bg-gradient-to-b dark:from-cyan-950/50 dark:via-slate-900/90 dark:to-slate-950 ring-2 ring-cyan-500/30 dark:ring-cyan-400/40 shadow-card scale-[1.01]' 
-                                            : 'border-slate-200/80 dark:border-white/[0.08] hover:border-cyan-500/50 dark:hover:border-cyan-400/40 bg-white/60 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.06] shadow-2xs hover:shadow-card hover:-translate-y-0.5'
+                                            ? 'border-2 border-[#16A34A] bg-emerald-50/30 dark:bg-emerald-950/20 shadow-xs' 
+                                            : 'border-slate-200/80 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/[0.12] bg-slate-50/70 dark:bg-white/[0.02] hover:bg-slate-100/70 dark:hover:bg-white/[0.05]'
                                     }`}
                                 >
                                     <div className="w-full">
                                         {/* Thumbnail Container */}
-                                        <div className="w-full h-40 sm:h-44 rounded-xl overflow-hidden relative bg-slate-900 dark:bg-slate-950 border border-slate-200/80 dark:border-white/[0.08]">
+                                        <div className="w-full h-40 sm:h-44 rounded-xl overflow-hidden relative bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-white/[0.06]">
                                             {isCustom && imgUrl ? (
                                                 <img 
                                                     src={imgUrl} 
-                                                    alt={tpl.name} 
-                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                                                    onError={(e) => {
-                                                        e.currentTarget.onerror = null;
-                                                        e.currentTarget.src = '/templates/zamroth_husna_bg.jpg';
-                                                    }}
+                                                    alt={tpl.name}
+                                                    className="w-full h-full object-cover"
+                                                    loading="lazy"
                                                 />
                                             ) : (
                                                 <div 
-                                                    className="w-full h-full flex flex-col items-center justify-center p-4 text-white text-center"
+                                                    className="w-full h-full flex items-center justify-center p-3 text-center"
                                                     style={{
-                                                        background: `linear-gradient(135deg, ${tpl.brand_color_from || '#0A1128'} 0%, #008EE8 50%, ${tpl.brand_color_to || '#008EE8'} 100%)`
+                                                        background: tpl.elements_config?.bg_color || '#1A365D',
+                                                        color: tpl.elements_config?.guest_name_color || '#F1F5F9',
                                                     }}
                                                 >
-                                                    <Palette className="w-8 h-8 text-white/80 mb-2" />
-                                                    <span className="font-extrabold tracking-wider text-xs truncate max-w-[200px]">{tpl.headline || 'GRADIENT PASS'}</span>
+                                                    <div className="space-y-1">
+                                                        <Sparkles className="w-6 h-6 mx-auto opacity-70" />
+                                                        <div className="text-xs font-bold truncate max-w-[140px]">{tpl.name}</div>
+                                                        <div className="text-[10px] opacity-60">Gradient Canvas</div>
+                                                    </div>
                                                 </div>
                                             )}
 
                                             {/* Status Badge */}
                                             <div className="absolute top-2.5 left-2.5">
                                                 {isSelected ? (
-                                                    <span className="px-2.5 py-1 rounded-lg bg-cyan-500 text-slate-950 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                                                    <span className="px-2.5 py-1 rounded-lg bg-[#16A34A] text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-xs">
                                                         <Check className="w-3 h-3 stroke-[3]" /> Active in Studio
                                                     </span>
                                                 ) : isPersonal ? (
-                                                    <span className="px-2.5 py-1 rounded-lg bg-cyan-500/90 backdrop-blur-md text-slate-950 text-[10px] font-black tracking-wide border border-cyan-400 shadow-sm">
+                                                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 dark:bg-slate-950/80 text-white text-[10px] font-bold tracking-wide border border-white/10 shadow-xs backdrop-blur-xs">
                                                         Custom Design
                                                     </span>
-                                                ) : isRecommended ? (
-                                                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold tracking-wide border border-white/10 shadow-sm">
+                                                ) : (
+                                                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 dark:bg-slate-950/80 text-white text-[10px] font-bold tracking-wide border border-white/10 shadow-xs backdrop-blur-xs">
                                                         Official Preset
                                                     </span>
-                                                ) : null}
+                                                )}
                                             </div>
 
                                             {/* Delete Button (Hover) */}
@@ -703,7 +734,7 @@ export default function CardTemplates({
                                                 <button
                                                     type="button"
                                                     onClick={(e) => openDeleteConfirmation(e, tpl)}
-                                                    className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-black/60 hover:bg-rose-600 text-white backdrop-blur-md border border-white/10 shadow-sm transition active:scale-90 opacity-0 group-hover:opacity-100 cursor-pointer"
+                                                    className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-black/60 hover:bg-rose-600 text-white backdrop-blur-xs border border-white/10 shadow-xs transition active:scale-90 opacity-0 group-hover:opacity-100 cursor-pointer"
                                                     title="Delete this template"
                                                 >
                                                     <Trash2 className="w-3.5 h-3.5" />
@@ -714,14 +745,14 @@ export default function CardTemplates({
                                         {/* Card Info */}
                                         <div className="mt-3 px-0.5 flex items-center justify-between gap-2">
                                             <div className="min-w-0 flex-1">
-                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-cyan-600 dark:group-hover:text-cyan-300 transition-colors" title={tpl.name}>
+                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" title={tpl.name}>
                                                     {tpl.name}
                                                 </h4>
                                                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate flex items-center gap-1.5">
                                                     {isCustom ? (
-                                                        <><ImageIcon className="w-3 h-3 text-cyan-600 dark:text-cyan-400 flex-shrink-0" /><span>Custom Artwork Flyer</span></>
+                                                        <><ImageIcon className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" /><span>Custom Artwork Flyer</span></>
                                                     ) : (
-                                                        <><Palette className="w-3 h-3 text-cyan-600 dark:text-cyan-400 flex-shrink-0" /><span>Dynamic Gradient Canvas</span></>
+                                                        <><Palette className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" /><span>Dynamic Gradient Canvas</span></>
                                                     )}
                                                 </p>
                                             </div>
@@ -729,14 +760,14 @@ export default function CardTemplates({
 
                                         {/* Bottom Action Button */}
                                         {isSelected ? (
-                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-slate-900 dark:bg-cyan-500 text-white dark:text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-sm">
+                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-[#16A34A] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs">
                                                 <span>Active &amp; Editing</span>
                                                 <Check className="w-3.5 h-3.5 stroke-[3]" />
                                             </div>
                                         ) : (
-                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.07] group-hover:bg-cyan-500 group-hover:text-slate-950 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1.5 transition-all duration-150 border border-slate-200/80 dark:border-white/[0.08]">
+                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 dark:border-white/[0.08]">
                                                 <span>Customize Design</span>
-                                                <ArrowRight className="w-3.5 h-3.5 opacity-80" />
+                                                <ArrowRight className="w-3.5 h-3.5 opacity-70" />
                                             </div>
                                         )}
                                     </div>
@@ -755,7 +786,7 @@ export default function CardTemplates({
                     <div className="bg-white dark:bg-[#0B1524] p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-4">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-white/[0.08]">
                             <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-cyan-500/10 dark:bg-cyan-400/10 text-cyan-600 dark:text-cyan-300 flex items-center justify-center border border-cyan-500/20 shadow-2xs">
+                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-2xs">
                                     <Sparkles className="w-4 h-4" />
                                 </div>
                                 <div>
@@ -768,7 +799,7 @@ export default function CardTemplates({
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10 px-2.5 py-1 rounded-lg border border-cyan-500/20">
+                                <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/20">
                                     Global Preset Attributes
                                 </span>
                             </div>
@@ -779,7 +810,7 @@ export default function CardTemplates({
                             <div className="space-y-1.5 flex flex-col justify-start">
                                 <div className="h-6 flex items-center justify-between">
                                     <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-500" />
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                         Template Name <span className="text-rose-500">*</span>
                                     </label>
                                     <span className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500 px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.06]">
@@ -787,7 +818,7 @@ export default function CardTemplates({
                                     </span>
                                 </div>
                                 <TextInput
-                                    className="block w-full h-10 text-xs font-bold bg-white dark:bg-[#07111D] border-slate-200 dark:border-white/[0.1] focus:border-cyan-500 focus:ring-cyan-500/20 shadow-2xs rounded-xl"
+                                    className="block w-full h-10 text-xs font-bold bg-white dark:bg-[#07111D] border-slate-200 dark:border-white/[0.1] focus:border-emerald-500 focus:ring-emerald-500/20 shadow-2xs rounded-xl"
                                     value={form.data.name}
                                     onChange={(e) => form.setData('name', e.target.value)}
                                     required
@@ -799,7 +830,7 @@ export default function CardTemplates({
                             <div className="space-y-1.5 flex flex-col justify-start">
                                 <div className="h-6 flex items-center justify-between">
                                     <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                         Headline Banner Text
                                     </label>
                                     <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] transition hover:bg-slate-200 dark:hover:bg-white/[0.1]">
@@ -813,15 +844,15 @@ export default function CardTemplates({
                                                 updateDirectConfig("show_headline", isChecked);
                                                 updateDirectConfig("show_category_badge", isChecked);
                                             }}
-                                            className="rounded text-cyan-600 focus:ring-cyan-500 h-3.5 w-3.5 cursor-pointer"
+                                            className="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 cursor-pointer"
                                         />
-                                        <span className={(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "text-cyan-600 dark:text-cyan-400 font-black" : "text-slate-400 font-medium"}>
+                                        <span className={(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "text-emerald-600 dark:text-emerald-400 font-black" : "text-slate-400 font-medium"}>
                                             {(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "Visible" : "Hidden"}
                                         </span>
                                     </label>
                                 </div>
                                 <TextInput
-                                    className={`block w-full h-10 text-xs font-bold bg-white dark:bg-[#07111D] border-slate-200 dark:border-white/[0.1] focus:border-cyan-500 focus:ring-cyan-500/20 shadow-2xs rounded-xl transition-all ${
+                                    className={`block w-full h-10 text-xs font-bold bg-white dark:bg-[#07111D] border-slate-200 dark:border-white/[0.1] focus:border-emerald-500 focus:ring-emerald-500/20 shadow-2xs rounded-xl transition-all ${
                                         (form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false)
                                             ? "opacity-40 bg-slate-100 dark:bg-white/[0.04]"
                                             : ""
@@ -866,9 +897,9 @@ export default function CardTemplates({
                                         updateDirectConfig("headline_y", val);
                                         updateNestedConfig("category_badge", "y", val);
                                     }}
-                                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500 disabled:opacity-40"
+                                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600 disabled:opacity-40"
                                 />
-                                <span className="text-xs font-mono font-black text-cyan-700 dark:text-cyan-300 bg-white dark:bg-[#07111D] px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-white/[0.08] shadow-2xs min-w-[54px] text-center shrink-0">
+                                <span className="text-xs font-mono font-black text-emerald-700 dark:text-emerald-300 bg-white dark:bg-[#07111D] px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-white/[0.08] shadow-2xs min-w-[54px] text-center shrink-0">
                                     {parseFloat(form.data.elements_config?.headline_y ?? form.data.elements_config?.category_badge?.y ?? 5.5)}%
                                 </span>
                             </div>
@@ -917,7 +948,7 @@ export default function CardTemplates({
                                     onClick={() => setInspectorTab("layers")}
                                     className={`col-span-2 sm:col-span-1 sm:row-span-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex flex-row sm:flex-col items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "layers"
-                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
+                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
                                     }`}
                                     title="Layers & Elements"
@@ -932,7 +963,7 @@ export default function CardTemplates({
                                     onClick={() => setInspectorTab("content")}
                                     className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "content"
-                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
+                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
                                     }`}
                                     title="Content & Text"
@@ -947,7 +978,7 @@ export default function CardTemplates({
                                     onClick={() => setInspectorTab(isCustomArt ? "artwork" : "palette")}
                                     className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         (inspectorTab === "artwork" || inspectorTab === "palette")
-                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
+                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
                                     }`}
                                     title={isCustomArt ? "Artwork Asset" : "Background & Palette"}
@@ -966,7 +997,7 @@ export default function CardTemplates({
                                     onClick={() => setInspectorTab("plaque")}
                                     className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "plaque"
-                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
+                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
                                     }`}
                                     title="Guest Plaque"
@@ -981,7 +1012,7 @@ export default function CardTemplates({
                                     onClick={() => setInspectorTab("qr")}
                                     className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "qr"
-                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
+                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
                                     }`}
                                     title="QR Code"
@@ -996,7 +1027,7 @@ export default function CardTemplates({
                                     onClick={() => setInspectorTab("security")}
                                     className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         inspectorTab === "security"
-                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
+                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
                                     }`}
                                     title="Security Code"
@@ -1011,7 +1042,7 @@ export default function CardTemplates({
                                     onClick={() => setInspectorTab(isCustomArt ? "category" : "badge")}
                                     className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
                                         (inspectorTab === "badge" || inspectorTab === "category")
-                                            ? "bg-slate-900 dark:bg-cyan-600 text-white shadow-xs font-extrabold"
+                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
                                             : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
                                     }`}
                                     title={isCustomArt ? "Allowance Badge" : "Verified Badge"}
@@ -1030,14 +1061,14 @@ export default function CardTemplates({
                             {/* ── Active Category Context Header Banner ── */}
                             <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-slate-100/60 dark:from-white/[0.04] dark:to-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-4 shadow-2xs">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-slate-900 dark:bg-cyan-600 text-white flex items-center justify-center shadow-xs flex-shrink-0">
-                                        {inspectorTab === 'layers' && <Layers className="w-4 h-4 text-white" />}
-                                        {inspectorTab === 'content' && <Type className="w-4 h-4 text-white" />}
-                                        {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? <ImageIcon className="w-4 h-4 text-white" /> : <Palette className="w-4 h-4 text-white" />)}
-                                        {inspectorTab === 'plaque' && <Move className="w-4 h-4 text-white" />}
-                                        {(inspectorTab === 'category' || inspectorTab === 'badge') && <ShieldCheck className="w-4 h-4 text-white" />}
-                                        {inspectorTab === 'qr' && <QrCode className="w-4 h-4 text-white" />}
-                                        {inspectorTab === 'security' && <Clock className="w-4 h-4 text-white" />}
+                                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs flex-shrink-0">
+                                        {inspectorTab === 'layers' && <Layers className="w-4 h-4" />}
+                                        {inspectorTab === 'content' && <Type className="w-4 h-4" />}
+                                        {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? <ImageIcon className="w-4 h-4" /> : <Palette className="w-4 h-4" />)}
+                                        {inspectorTab === 'plaque' && <Move className="w-4 h-4" />}
+                                        {(inspectorTab === 'category' || inspectorTab === 'badge') && <ShieldCheck className="w-4 h-4" />}
+                                        {inspectorTab === 'qr' && <QrCode className="w-4 h-4" />}
+                                        {inspectorTab === 'security' && <Clock className="w-4 h-4" />}
                                     </div>
                                     <div>
                                         <div className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
@@ -1071,7 +1102,7 @@ export default function CardTemplates({
                                 <div className="space-y-5 animate-fadeIn">
                                     <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-white/[0.08]">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-lg bg-cyan-500/15 dark:bg-cyan-400/15 text-cyan-600 dark:text-cyan-300 flex items-center justify-center border border-cyan-500/20 shadow-2xs">
+                                            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-2xs">
                                                 <Layers className="w-3.5 h-3.5" />
                                             </div>
                                             <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
@@ -1098,13 +1129,13 @@ export default function CardTemplates({
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('minimal')}
-                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 dark:hover:border-cyan-400 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
+                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-emerald-500/60 dark:hover:border-emerald-500/50 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
                                             >
                                                 <div className="flex items-center justify-between gap-1">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate">
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
                                                         Minimal Pass
                                                     </span>
-                                                    <span className="text-[9px] font-mono font-bold text-cyan-700 dark:text-cyan-300 bg-cyan-500/10 dark:bg-cyan-400/10 border border-cyan-500/20 px-1.5 py-0.5 rounded-full shrink-0">
+                                                    <span className="text-[9px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 px-1.5 py-0.5 rounded-full shrink-0">
                                                         Popular
                                                     </span>
                                                 </div>
@@ -1117,10 +1148,10 @@ export default function CardTemplates({
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('full')}
-                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 dark:hover:border-cyan-400 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
+                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-emerald-500/60 dark:hover:border-emerald-500/50 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate">
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
                                                         Full Suite
                                                     </span>
                                                 </div>
@@ -1133,10 +1164,10 @@ export default function CardTemplates({
                                             <button
                                                 type="button"
                                                 onClick={() => applyLayerPreset('pass_only')}
-                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-cyan-500 dark:hover:border-cyan-400 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
+                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-emerald-500/60 dark:hover:border-emerald-500/50 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
                                             >
                                                 <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors truncate">
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
                                                         QR Pass Only
                                                     </span>
                                                 </div>
@@ -1163,9 +1194,9 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         currentConfig.show_guest_name !== false
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
+                                                     }`}>
                                                         <Move className="w-4 h-4" />
                                                     </div>
                                                     <div className="min-w-0">
@@ -1194,7 +1225,7 @@ export default function CardTemplates({
                                                         onChange={(e) => updateDirectConfig('show_guest_name', e.target.checked)}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
 
@@ -1207,7 +1238,7 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         currentConfig.show_allowance_badge !== false
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                         <ShieldCheck className="w-4 h-4" />
@@ -1238,7 +1269,7 @@ export default function CardTemplates({
                                                         onChange={(e) => updateDirectConfig('show_allowance_badge', e.target.checked)}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
 
@@ -1251,14 +1282,14 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         (form.data.show_qr && currentConfig.show_qr !== false)
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                         <QrCode className="w-4 h-4" />
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Scannable QR Code Pass</span>
+                                                            <span className="truncate">Cryptographic QR Scanner Token</span>
                                                             {(form.data.show_qr && currentConfig.show_qr !== false) ? (
                                                                 <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -1271,7 +1302,7 @@ export default function CardTemplates({
                                                             )}
                                                         </div>
                                                         <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            Sub-second camera scannable dynamic QR token for gate entry.
+                                                            High-contrast vector QR code scanned by the gate security usher.
                                                         </div>
                                                     </div>
                                                 </div>
@@ -1285,7 +1316,7 @@ export default function CardTemplates({
                                                         }}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
 
@@ -1298,7 +1329,7 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         (form.data.show_unique_code && currentConfig.show_unique_code !== false)
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                         <Clock className="w-4 h-4" />
@@ -1332,7 +1363,7 @@ export default function CardTemplates({
                                                         }}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
 
@@ -1345,7 +1376,7 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         currentConfig.show_couple_names !== false
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                         <Type className="w-4 h-4" />
@@ -1354,7 +1385,7 @@ export default function CardTemplates({
                                                         <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                             <span className="truncate">Couple / Event Host Names</span>
                                                             {currentConfig.show_couple_names !== false ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
+                                                                 <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
                                                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                                                                     <span>VISIBLE</span>
                                                                 </span>
@@ -1376,7 +1407,7 @@ export default function CardTemplates({
                                                         onChange={(e) => updateDirectConfig('show_couple_names', e.target.checked)}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
 
@@ -1389,7 +1420,7 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         currentConfig.show_date !== false
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                         <Calendar className="w-4 h-4" />
@@ -1420,7 +1451,7 @@ export default function CardTemplates({
                                                         onChange={(e) => updateDirectConfig('show_date', e.target.checked)}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
 
@@ -1433,7 +1464,7 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                         <ShieldCheck className="w-4 h-4" />
@@ -1469,7 +1500,7 @@ export default function CardTemplates({
                                                         }}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
 
@@ -1483,7 +1514,7 @@ export default function CardTemplates({
                                                     <div className="flex items-center gap-3 min-w-0">
                                                         <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                             (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
-                                                                ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                                ? 'bg-[#16A34A] text-white shadow-2xs'
                                                                 : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                         }`}>
                                                             <ShieldCheck className="w-4 h-4" />
@@ -1518,7 +1549,7 @@ export default function CardTemplates({
                                                             }}
                                                             className="sr-only peer"
                                                         />
-                                                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                     </label>
                                                 </div>
                                             )}
@@ -1532,7 +1563,7 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         currentConfig.show_quote !== false
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                         <Sparkles className="w-4 h-4" />
@@ -1563,7 +1594,7 @@ export default function CardTemplates({
                                                         onChange={(e) => updateDirectConfig('show_quote', e.target.checked)}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
 
@@ -1576,7 +1607,7 @@ export default function CardTemplates({
                                                 <div className="flex items-center gap-3 min-w-0">
                                                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                         currentConfig.show_venue !== false
-                                                            ? 'bg-slate-900 dark:bg-cyan-600 text-white shadow-2xs'
+                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
                                                             : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
                                                     }`}>
                                                         <MapPin className="w-4 h-4" />
@@ -1607,7 +1638,7 @@ export default function CardTemplates({
                                                         onChange={(e) => updateDirectConfig('show_venue', e.target.checked)}
                                                         className="sr-only peer"
                                                     />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-slate-900 dark:peer-checked:bg-cyan-600" />
+                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                                 </label>
                                             </div>
                                         </div>
@@ -1620,10 +1651,10 @@ export default function CardTemplates({
                                 <div className="space-y-6 animate-fadeIn">
                                     <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.08]">
                                         <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <Type className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                            <Type className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                             <span>{isCustomArt ? 'Artwork Typography & Pass Copy' : 'Signature Pass Elements & Typography'}</span>
                                         </div>
-                                        <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
+                                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                                             Live Canvas Sync
                                         </span>
                                     </div>
@@ -1632,454 +1663,474 @@ export default function CardTemplates({
                                     {isCustomArt ? (
                                         <div className="space-y-5">
                                             {/* 1. Couple / Host Names Section */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Couple / Event Host Names
-                                                </div>
-                                                <TextInput
-                                                    className="block w-full text-xs font-serif font-bold"
-                                                    value={currentConfig.couple_names || ''}
-                                                    onChange={(e) => updateDirectConfig('couple_names', e.target.value)}
-                                                    placeholder="e.g. Zamroth & Husna"
-                                                />
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-                                                    <div>
-                                                        <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                            <span>Font Size</span>
-                                                            <span className="font-mono text-cyan-600 dark:text-cyan-400">{currentConfig.couple_names_size || 40}px</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="18"
-                                                            max="65"
-                                                            step="1"
-                                                            value={currentConfig.couple_names_size || 40}
-                                                            onChange={(e) => updateDirectConfig('couple_names_size', parseFloat(e.target.value))}
-                                                            className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                                                        />
+                                            {currentConfig.show_couple_names !== false && (
+                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Couple / Event Host Names
                                                     </div>
-                                                    <div>
-                                                        <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                            <span>Vertical Position (Y%)</span>
-                                                            <span className="font-mono text-cyan-600 dark:text-cyan-400">{currentConfig.couple_names_y || 13.5}%</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="5"
-                                                            max="40"
-                                                            step="0.5"
-                                                            value={currentConfig.couple_names_y || 13.5}
-                                                            onChange={(e) => updateDirectConfig('couple_names_y', parseFloat(e.target.value))}
-                                                            className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Text Color" />
-                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                    <TextInput
+                                                        className="block w-full text-xs font-serif font-bold"
+                                                        value={currentConfig.couple_names || ''}
+                                                        onChange={(e) => updateDirectConfig('couple_names', e.target.value)}
+                                                        placeholder="e.g. Zamroth & Husna"
+                                                    />
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
+                                                        <div>
+                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                                <span>Font Size</span>
+                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.couple_names_size || 40}px</span>
+                                                            </div>
                                                             <input
-                                                                type="color"
-                                                                value={currentConfig.couple_names_color || '#FFFFFF'}
-                                                                onChange={(e) => updateDirectConfig('couple_names_color', e.target.value)}
-                                                                className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                type="range"
+                                                                min="18"
+                                                                max="65"
+                                                                step="1"
+                                                                value={currentConfig.couple_names_size || 40}
+                                                                onChange={(e) => updateDirectConfig('couple_names_size', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                                             />
-                                                            <TextInput
-                                                                className="block w-full text-[11px] font-mono uppercase"
-                                                                value={currentConfig.couple_names_color || '#FFFFFF'}
-                                                                onChange={(e) => updateDirectConfig('couple_names_color', e.target.value)}
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                                <span>Vertical Position (Y%)</span>
+                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.couple_names_y || 13.5}%</span>
+                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min="5"
+                                                                max="40"
+                                                                step="0.5"
+                                                                value={currentConfig.couple_names_y || 13.5}
+                                                                onChange={(e) => updateDirectConfig('couple_names_y', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                                             />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Text Color" />
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <input
+                                                                    type="color"
+                                                                    value={currentConfig.couple_names_color || '#FFFFFF'}
+                                                                    onChange={(e) => updateDirectConfig('couple_names_color', e.target.value)}
+                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                />
+                                                                <TextInput
+                                                                    className="block w-full text-[11px] font-mono uppercase"
+                                                                    value={currentConfig.couple_names_color || '#FFFFFF'}
+                                                                    onChange={(e) => updateDirectConfig('couple_names_color', e.target.value)}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* 2. Subtitle / Invitation Prefix */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Subtitle / Invitation Prefix
-                                                </div>
-                                                <TextInput
-                                                    className="block w-full text-xs font-medium"
-                                                    value={currentConfig.subtitle_text || ''}
-                                                    onChange={(e) => updateDirectConfig('subtitle_text', e.target.value)}
-                                                    placeholder="e.g. We invite your pleasure to come to our Engagement Party of"
-                                                />
-                                                <div className="grid grid-cols-2 gap-3 pt-1">
-                                                    <div>
-                                                        <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                            <span>Font Size</span>
-                                                            <span className="font-mono text-cyan-600 dark:text-cyan-400">{currentConfig.subtitle_size || 9.5}px</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="7"
-                                                            max="18"
-                                                            step="0.5"
-                                                            value={currentConfig.subtitle_size || 9.5}
-                                                            onChange={(e) => updateDirectConfig('subtitle_size', parseFloat(e.target.value))}
-                                                            className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                                                        />
+                                            {currentConfig.show_headline !== false && (
+                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Subtitle / Invitation Prefix
                                                     </div>
-                                                    <div>
-                                                        <InputLabel value="Subtitle Color" />
-                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                    <TextInput
+                                                        className="block w-full text-xs font-medium"
+                                                        value={currentConfig.subtitle_text || ''}
+                                                        onChange={(e) => updateDirectConfig('subtitle_text', e.target.value)}
+                                                        placeholder="e.g. We invite your pleasure to come to our Engagement Party of"
+                                                    />
+                                                    <div className="grid grid-cols-2 gap-3 pt-1">
+                                                        <div>
+                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                                <span>Font Size</span>
+                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.subtitle_size || 9.5}px</span>
+                                                            </div>
                                                             <input
-                                                                type="color"
-                                                                value={currentConfig.subtitle_color || '#FFFFFF'}
-                                                                onChange={(e) => updateDirectConfig('subtitle_color', e.target.value)}
-                                                                className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                type="range"
+                                                                min="7"
+                                                                max="18"
+                                                                step="0.5"
+                                                                value={currentConfig.subtitle_size || 9.5}
+                                                                onChange={(e) => updateDirectConfig('subtitle_size', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                                             />
-                                                            <TextInput
-                                                                className="block w-full text-[11px] font-mono uppercase"
-                                                                value={currentConfig.subtitle_color || '#FFFFFF'}
-                                                                onChange={(e) => updateDirectConfig('subtitle_color', e.target.value)}
-                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Subtitle Color" />
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <input
+                                                                    type="color"
+                                                                    value={currentConfig.subtitle_color || '#FFFFFF'}
+                                                                    onChange={(e) => updateDirectConfig('subtitle_color', e.target.value)}
+                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                />
+                                                                <TextInput
+                                                                    className="block w-full text-[11px] font-mono uppercase"
+                                                                    value={currentConfig.subtitle_color || '#FFFFFF'}
+                                                                    onChange={(e) => updateDirectConfig('subtitle_color', e.target.value)}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* 3. Date & Schedule Lockup */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Date &amp; Schedule Lockup
-                                                </div>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    <div>
-                                                        <InputLabel value="Month" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono font-bold uppercase"
-                                                            value={currentConfig.date_month || ''}
-                                                            onChange={(e) => updateDirectConfig('date_month', e.target.value)}
-                                                        />
+                                            {currentConfig.show_date !== false && (
+                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Date &amp; Schedule Lockup
                                                     </div>
-                                                    <div>
-                                                        <InputLabel value="Day Name" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono font-bold uppercase"
-                                                            value={currentConfig.date_day_name || ''}
-                                                            onChange={(e) => updateDirectConfig('date_day_name', e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Day Number" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono font-bold text-center"
-                                                            value={currentConfig.date_day_num || ''}
-                                                            onChange={(e) => updateDirectConfig('date_day_num', e.target.value)}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <InputLabel value="Time" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono font-bold"
-                                                            value={currentConfig.date_time || ''}
-                                                            onChange={(e) => updateDirectConfig('date_time', e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Year" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono font-bold"
-                                                            value={currentConfig.date_year || ''}
-                                                            onChange={(e) => updateDirectConfig('date_year', e.target.value)}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200/80 dark:border-white/[0.08]">
-                                                    <div>
-                                                        <div className="flex justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                            <span>Date Size</span>
-                                                            <span className="font-mono text-cyan-600 dark:text-cyan-400">{currentConfig.date_size || 10.5}px</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="8"
-                                                            max="22"
-                                                            step="0.5"
-                                                            value={currentConfig.date_size || 10.5}
-                                                            onChange={(e) => updateDirectConfig('date_size', parseFloat(e.target.value))}
-                                                            className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <div className="flex justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                            <span>Position Y%</span>
-                                                            <span className="font-mono text-cyan-600 dark:text-cyan-400">{currentConfig.date_y || 51.5}%</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="25"
-                                                            max="75"
-                                                            step="0.5"
-                                                            value={currentConfig.date_y || 51.5}
-                                                            onChange={(e) => updateDirectConfig('date_y', parseFloat(e.target.value))}
-                                                            className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Date Color" />
-                                                        <div className="flex items-center gap-1.5 mt-0.5">
-                                                            <input
-                                                                type="color"
-                                                                value={currentConfig.date_color || '#FFFFFF'}
-                                                                onChange={(e) => updateDirectConfig('date_color', e.target.value)}
-                                                                className="w-7 h-7 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                            />
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <div>
+                                                            <InputLabel value="Month" />
                                                             <TextInput
-                                                                className="block w-full text-[10.5px] font-mono uppercase"
-                                                                value={currentConfig.date_color || '#FFFFFF'}
-                                                                onChange={(e) => updateDirectConfig('date_color', e.target.value)}
+                                                                className="block w-full text-xs font-mono font-bold uppercase"
+                                                                value={currentConfig.date_month || ''}
+                                                                onChange={(e) => updateDirectConfig('date_month', e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Day Name" />
+                                                            <TextInput
+                                                                className="block w-full text-xs font-mono font-bold uppercase"
+                                                                value={currentConfig.date_day_name || ''}
+                                                                onChange={(e) => updateDirectConfig('date_day_name', e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Day Number" />
+                                                            <TextInput
+                                                                className="block w-full text-xs font-mono font-bold text-center"
+                                                                value={currentConfig.date_day_num || ''}
+                                                                onChange={(e) => updateDirectConfig('date_day_num', e.target.value)}
                                                             />
                                                         </div>
                                                     </div>
-                                                    <div>
-                                                        <InputLabel value="Day # Accent" />
-                                                        <div className="flex items-center gap-1.5 mt-0.5">
-                                                            <input
-                                                                type="color"
-                                                                value={currentConfig.date_num_color || '#FDE68A'}
-                                                                onChange={(e) => updateDirectConfig('date_num_color', e.target.value)}
-                                                                className="w-7 h-7 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                            />
+
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div>
+                                                            <InputLabel value="Time" />
                                                             <TextInput
-                                                                className="block w-full text-[10.5px] font-mono uppercase"
-                                                                value={currentConfig.date_num_color || '#FDE68A'}
-                                                                onChange={(e) => updateDirectConfig('date_num_color', e.target.value)}
+                                                                className="block w-full text-xs font-mono font-bold"
+                                                                value={currentConfig.date_time || ''}
+                                                                onChange={(e) => updateDirectConfig('date_time', e.target.value)}
                                                             />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Year" />
+                                                            <TextInput
+                                                                className="block w-full text-xs font-mono font-bold"
+                                                                value={currentConfig.date_year || ''}
+                                                                onChange={(e) => updateDirectConfig('date_year', e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200/80 dark:border-white/[0.08]">
+                                                        <div>
+                                                            <div className="flex justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                                <span>Date Size</span>
+                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.date_size || 10.5}px</span>
+                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min="8"
+                                                                max="22"
+                                                                step="0.5"
+                                                                value={currentConfig.date_size || 10.5}
+                                                                onChange={(e) => updateDirectConfig('date_size', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <div className="flex justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                                <span>Position Y%</span>
+                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.date_y || 51.5}%</span>
+                                                            </div>
+                                                            <input
+                                                                type="range"
+                                                                min="25"
+                                                                max="75"
+                                                                step="0.5"
+                                                                value={currentConfig.date_y || 51.5}
+                                                                onChange={(e) => updateDirectConfig('date_y', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Date Color" />
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <input
+                                                                    type="color"
+                                                                    value={currentConfig.date_color || '#FFFFFF'}
+                                                                    onChange={(e) => updateDirectConfig('date_color', e.target.value)}
+                                                                    className="w-7 h-7 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                />
+                                                                <TextInput
+                                                                    className="block w-full text-[10.5px] font-mono uppercase"
+                                                                    value={currentConfig.date_color || '#FFFFFF'}
+                                                                    onChange={(e) => updateDirectConfig('date_color', e.target.value)}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Day # Accent" />
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <input
+                                                                    type="color"
+                                                                    value={currentConfig.date_num_color || '#FDE68A'}
+                                                                    onChange={(e) => updateDirectConfig('date_num_color', e.target.value)}
+                                                                    className="w-7 h-7 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                />
+                                                                <TextInput
+                                                                    className="block w-full text-[10.5px] font-mono uppercase"
+                                                                    value={currentConfig.date_num_color || '#FDE68A'}
+                                                                    onChange={(e) => updateDirectConfig('date_num_color', e.target.value)}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* 4. Invitation Quote / Tagline */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Invitation Quote / Tagline
-                                                </div>
-                                                <textarea
-                                                    rows={2}
-                                                    className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs focus:border-cyan-500 focus:ring-cyan-500 p-2.5 uppercase font-medium"
-                                                    value={currentConfig.invitation_quote || ''}
-                                                    onChange={(e) => updateDirectConfig('invitation_quote', e.target.value)}
-                                                />
-                                                <div className="grid grid-cols-2 gap-3 pt-1">
-                                                    <div>
-                                                        <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                            <span>Quote Font Size</span>
-                                                            <span className="font-mono text-cyan-600 dark:text-cyan-400">{currentConfig.quote_size || 8.5}px</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="6"
-                                                            max="16"
-                                                            step="0.5"
-                                                            value={currentConfig.quote_size || 8.5}
-                                                            onChange={(e) => updateDirectConfig('quote_size', parseFloat(e.target.value))}
-                                                            className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                                                        />
+                                            {currentConfig.show_quote !== false && (
+                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Invitation Quote / Tagline
                                                     </div>
-                                                    <div>
-                                                        <InputLabel value="Quote Color" />
-                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                    <textarea
+                                                        rows={2}
+                                                        className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs focus:border-emerald-500 focus:ring-emerald-500 p-2.5 uppercase font-medium"
+                                                        value={currentConfig.invitation_quote || ''}
+                                                        onChange={(e) => updateDirectConfig('invitation_quote', e.target.value)}
+                                                    />
+                                                    <div className="grid grid-cols-2 gap-3 pt-1">
+                                                        <div>
+                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                                <span>Quote Font Size</span>
+                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.quote_size || 8.5}px</span>
+                                                            </div>
                                                             <input
-                                                                type="color"
-                                                                value={currentConfig.quote_color || '#FFFFFF'}
-                                                                onChange={(e) => updateDirectConfig('quote_color', e.target.value)}
-                                                                className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                type="range"
+                                                                min="6"
+                                                                max="16"
+                                                                step="0.5"
+                                                                value={currentConfig.quote_size || 8.5}
+                                                                onChange={(e) => updateDirectConfig('quote_size', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                                             />
-                                                            <TextInput
-                                                                className="block w-full text-[11px] font-mono uppercase"
-                                                                value={currentConfig.quote_color || '#FFFFFF'}
-                                                                onChange={(e) => updateDirectConfig('quote_color', e.target.value)}
-                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Quote Color" />
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <input
+                                                                    type="color"
+                                                                    value={currentConfig.quote_color || '#FFFFFF'}
+                                                                    onChange={(e) => updateDirectConfig('quote_color', e.target.value)}
+                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                />
+                                                                <TextInput
+                                                                    className="block w-full text-[11px] font-mono uppercase"
+                                                                    value={currentConfig.quote_color || '#FFFFFF'}
+                                                                    onChange={(e) => updateDirectConfig('quote_color', e.target.value)}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* 5. Venue Details */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Venue &amp; Location Details
+                                            {currentConfig.show_venue !== false && (
+                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Venue &amp; Location Details
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div>
+                                                            <InputLabel value="Venue Name" />
+                                                            <TextInput
+                                                                className="block w-full text-xs font-bold uppercase"
+                                                                value={currentConfig.venue_name || ''}
+                                                                onChange={(e) => updateDirectConfig('venue_name', e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Location Subtitle" />
+                                                            <TextInput
+                                                                className="block w-full text-xs"
+                                                                value={currentConfig.venue_sub || ''}
+                                                                onChange={(e) => updateDirectConfig('venue_sub', e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <div>
+                                                            <InputLabel value="Venue Date" />
+                                                            <TextInput
+                                                                className="block w-full text-xs font-mono"
+                                                                value={currentConfig.venue_date || ''}
+                                                                onChange={(e) => updateDirectConfig('venue_date', e.target.value)}
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Save The Date Label" />
+                                                            <TextInput
+                                                                className="block w-full text-xs font-bold uppercase"
+                                                                value={currentConfig.save_the_date || ''}
+                                                                onChange={(e) => updateDirectConfig('save_the_date', e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <InputLabel value="Venue Name" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-bold uppercase"
-                                                            value={currentConfig.venue_name || ''}
-                                                            onChange={(e) => updateDirectConfig('venue_name', e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Location Subtitle" />
-                                                        <TextInput
-                                                            className="block w-full text-xs"
-                                                            value={currentConfig.venue_sub || ''}
-                                                            onChange={(e) => updateDirectConfig('venue_sub', e.target.value)}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <div>
-                                                        <InputLabel value="Venue Date" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono"
-                                                            value={currentConfig.venue_date || ''}
-                                                            onChange={(e) => updateDirectConfig('venue_date', e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Save The Date Label" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-bold uppercase"
-                                                            value={currentConfig.save_the_date || ''}
-                                                            onChange={(e) => updateDirectConfig('save_the_date', e.target.value)}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            )}
                                         </div>
                                     ) : (
                                         /* ─── B. SIGNATURE PASS ADJUSTABLE ELEMENTS ─── */
                                         <div className="space-y-5">
                                             {/* 1. Headline Banner Typography */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Headline Banner
-                                                </div>
-                                                <TextInput
-                                                    className="block w-full text-xs font-bold uppercase"
-                                                    value={currentConfig.headline_text || form.data.headline || ''}
-                                                    onChange={(e) => {
-                                                        form.setData('headline', e.target.value);
-                                                        updateDirectConfig('headline_text', e.target.value);
-                                                    }}
-                                                    placeholder="e.g. EXCLUSIVE INVITATION PASS"
-                                                />
-                                                <div className="grid grid-cols-3 gap-3 pt-1">
-                                                    <div>
-                                                        <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                            <span>Font Size</span>
-                                                            <span className="font-mono text-cyan-600 dark:text-cyan-400">{currentConfig.headline_size || 11.5}px</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="8"
-                                                            max="22"
-                                                            step="0.5"
-                                                            value={currentConfig.headline_size || 11.5}
-                                                            onChange={(e) => updateDirectConfig('headline_size', parseFloat(e.target.value))}
-                                                            className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                                                        />
+                                            {currentConfig.show_headline !== false && (
+                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Headline Banner
                                                     </div>
-                                                    <div>
-                                                        <InputLabel value="Letter Spacing" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono mt-0.5"
-                                                            value={currentConfig.headline_spacing || '0.22em'}
-                                                            onChange={(e) => updateDirectConfig('headline_spacing', e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Headline Color" />
-                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                    <TextInput
+                                                        className="block w-full text-xs font-bold uppercase"
+                                                        value={currentConfig.headline_text || form.data.headline || ''}
+                                                        onChange={(e) => {
+                                                            form.setData('headline', e.target.value);
+                                                            updateDirectConfig('headline_text', e.target.value);
+                                                        }}
+                                                        placeholder="e.g. EXCLUSIVE INVITATION PASS"
+                                                    />
+                                                    <div className="grid grid-cols-3 gap-3 pt-1">
+                                                        <div>
+                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                                <span>Font Size</span>
+                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.headline_size || 11.5}px</span>
+                                                            </div>
                                                             <input
-                                                                type="color"
-                                                                value={currentConfig.headline_color || form.data.brand_color_to || '#0070BA'}
-                                                                onChange={(e) => updateDirectConfig('headline_color', e.target.value)}
-                                                                className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                type="range"
+                                                                min="8"
+                                                                max="22"
+                                                                step="0.5"
+                                                                value={currentConfig.headline_size || 11.5}
+                                                                onChange={(e) => updateDirectConfig('headline_size', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                                             />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Letter Spacing" />
                                                             <TextInput
-                                                                className="block w-full text-[11px] font-mono uppercase"
-                                                                value={currentConfig.headline_color || form.data.brand_color_to || '#0070BA'}
-                                                                onChange={(e) => updateDirectConfig('headline_color', e.target.value)}
+                                                                className="block w-full text-xs font-mono mt-0.5"
+                                                                value={currentConfig.headline_spacing || '0.22em'}
+                                                                onChange={(e) => updateDirectConfig('headline_spacing', e.target.value)}
                                                             />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Headline Color" />
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <input
+                                                                    type="color"
+                                                                    value={currentConfig.headline_color || form.data.brand_color_to || '#0070BA'}
+                                                                    onChange={(e) => updateDirectConfig('headline_color', e.target.value)}
+                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                />
+                                                                <TextInput
+                                                                    className="block w-full text-[11px] font-mono uppercase"
+                                                                    value={currentConfig.headline_color || form.data.brand_color_to || '#0070BA'}
+                                                                    onChange={(e) => updateDirectConfig('headline_color', e.target.value)}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* 2. Event Title Typography */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Event Title Typography
-                                                </div>
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                    <div>
-                                                        <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                            <span>Font Size</span>
-                                                            <span className="font-mono text-cyan-600 dark:text-cyan-400">{currentConfig.event_title_size || 21}px</span>
-                                                        </div>
-                                                        <input
-                                                            type="range"
-                                                            min="14"
-                                                            max="36"
-                                                            step="1"
-                                                            value={currentConfig.event_title_size || 21}
-                                                            onChange={(e) => updateDirectConfig('event_title_size', parseFloat(e.target.value))}
-                                                            className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
-                                                        />
+                                            {currentConfig.show_couple_names !== false && (
+                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Event Title Typography
                                                     </div>
-                                                    <div>
-                                                        <InputLabel value="Font Family" />
-                                                        <select
-                                                            value={currentConfig.event_title_font || 'system-ui, -apple-system, sans-serif'}
-                                                            onChange={(e) => updateDirectConfig('event_title_font', e.target.value)}
-                                                            className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs p-2 mt-0.5"
-                                                        >
-                                                            <option value="system-ui, -apple-system, sans-serif">Modern Sans-Serif</option>
-                                                            <option value="Georgia, 'Playfair Display', serif">Luxury Serif</option>
-                                                            <option value="ui-monospace, SFMono-Regular, monospace">Monospace</option>
-                                                        </select>
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Title Color" />
-                                                        <div className="flex items-center gap-2 mt-0.5">
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                                        <div>
+                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                                                                <span>Font Size</span>
+                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.event_title_size || 21}px</span>
+                                                            </div>
                                                             <input
-                                                                type="color"
-                                                                value={currentConfig.event_title_color || '#0F172A'}
-                                                                onChange={(e) => updateDirectConfig('event_title_color', e.target.value)}
-                                                                className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                type="range"
+                                                                min="14"
+                                                                max="36"
+                                                                step="1"
+                                                                value={currentConfig.event_title_size || 21}
+                                                                onChange={(e) => updateDirectConfig('event_title_size', parseFloat(e.target.value))}
+                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                                             />
-                                                            <TextInput
-                                                                className="block w-full text-[11px] font-mono uppercase"
-                                                                value={currentConfig.event_title_color || '#0F172A'}
-                                                                onChange={(e) => updateDirectConfig('event_title_color', e.target.value)}
-                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Font Family" />
+                                                            <select
+                                                                value={currentConfig.event_title_font || 'system-ui, -apple-system, sans-serif'}
+                                                                onChange={(e) => updateDirectConfig('event_title_font', e.target.value)}
+                                                                className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs p-2 mt-0.5"
+                                                            >
+                                                                <option value="system-ui, -apple-system, sans-serif">Modern Sans-Serif</option>
+                                                                <option value="Georgia, 'Playfair Display', serif">Luxury Serif</option>
+                                                                <option value="ui-monospace, SFMono-Regular, monospace">Monospace</option>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <InputLabel value="Title Color" />
+                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                <input
+                                                                    type="color"
+                                                                    value={currentConfig.event_title_color || '#0F172A'}
+                                                                    onChange={(e) => updateDirectConfig('event_title_color', e.target.value)}
+                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
+                                                                />
+                                                                <TextInput
+                                                                    className="block w-full text-[11px] font-mono uppercase"
+                                                                    value={currentConfig.event_title_color || '#0F172A'}
+                                                                    onChange={(e) => updateDirectConfig('event_title_color', e.target.value)}
+                                                                />
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* 3. Schedule & Venue Cards Section */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Schedule &amp; Venue Labels
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <div>
-                                                        <InputLabel value="Schedule Card Label" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-bold uppercase mt-0.5"
-                                                            value={currentConfig.schedule_label_text || 'SCHEDULE'}
-                                                            onChange={(e) => updateDirectConfig('schedule_label_text', e.target.value)}
-                                                        />
+                                            {(currentConfig.show_date !== false || currentConfig.show_venue !== false) && (
+                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                        Schedule &amp; Venue Labels
                                                     </div>
-                                                    <div>
-                                                        <InputLabel value="Venue Card Label" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-bold uppercase mt-0.5"
-                                                            value={currentConfig.venue_label_text || 'VENUE LOCATION'}
-                                                            onChange={(e) => updateDirectConfig('venue_label_text', e.target.value)}
-                                                        />
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {currentConfig.show_date !== false && (
+                                                            <div>
+                                                                <InputLabel value="Schedule Card Label" />
+                                                                <TextInput
+                                                                    className="block w-full text-xs font-bold uppercase mt-0.5"
+                                                                    value={currentConfig.schedule_label_text || 'SCHEDULE'}
+                                                                    onChange={(e) => updateDirectConfig('schedule_label_text', e.target.value)}
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        {currentConfig.show_venue !== false && (
+                                                            <div>
+                                                                <InputLabel value="Venue Card Label" />
+                                                                <TextInput
+                                                                    className="block w-full text-xs font-bold uppercase mt-0.5"
+                                                                    value={currentConfig.venue_label_text || 'VENUE LOCATION'}
+                                                                    onChange={(e) => updateDirectConfig('venue_label_text', e.target.value)}
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
-                                            </div>
+                                            )}
 
                                             {/* 4. Guest Plaque Header & Security Footer */}
                                             <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
@@ -2117,7 +2168,7 @@ export default function CardTemplates({
                             {inspectorTab === 'artwork' && isCustomArt && (
                                 <div className="space-y-4 animate-fadeIn">
                                     <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <ImageIcon className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                        <ImageIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                         <span>Custom 4K Artwork Asset</span>
                                     </div>
 
@@ -2146,7 +2197,7 @@ export default function CardTemplates({
                                 <div className="space-y-4 animate-fadeIn">
                                     <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.08]">
                                         <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <Move className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                            <Move className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                             <span>Guest Name Geometry &amp; Typography</span>
                                         </div>
                                     </div>
@@ -2177,7 +2228,7 @@ export default function CardTemplates({
                                                     }}
                                                     className="sr-only peer"
                                                 />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                             </label>
                                         </div>
                                     )}
@@ -2186,7 +2237,7 @@ export default function CardTemplates({
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{nameCfg.y ?? 71.5}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{nameCfg.y ?? 71.5}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2195,14 +2246,14 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={nameCfg.y ?? 71.5}
                                                 onChange={(e) => updateNestedConfig('guest_name', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Horizontal Offset (X%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{nameCfg.x ?? 50}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{nameCfg.x ?? 50}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2211,7 +2262,7 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={nameCfg.x ?? 50}
                                                 onChange={(e) => updateNestedConfig('guest_name', 'x', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
                                     </div>
@@ -2228,7 +2279,7 @@ export default function CardTemplates({
                                                         step="0.5"
                                                         value={nameCfg.fontSize ?? 22}
                                                         onChange={(e) => updateNestedConfig('guest_name', 'fontSize', Math.max(6, parseFloat(e.target.value) || 6))}
-                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-cyan-600 dark:text-cyan-400"
+                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-emerald-600 dark:text-emerald-400"
                                                     />
                                                     <span className="text-[10px] text-slate-400">px</span>
                                                 </div>
@@ -2240,14 +2291,14 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={nameCfg.fontSize ?? 22}
                                                 onChange={(e) => updateNestedConfig('guest_name', 'fontSize', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Plaque Box Width (%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{nameCfg.plaqueWidth ?? 84}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{nameCfg.plaqueWidth ?? 84}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2257,7 +2308,7 @@ export default function CardTemplates({
                                                 disabled={Boolean(nameCfg.hide_plaque_box || nameCfg.hide_name_box || nameCfg.clean_text)}
                                                 value={nameCfg.plaqueWidth ?? 84}
                                                 onChange={(e) => updateNestedConfig('guest_name', 'plaqueWidth', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600 disabled:opacity-30"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600 disabled:opacity-30"
                                             />
                                         </div>
                                     </div>
@@ -2304,7 +2355,7 @@ export default function CardTemplates({
                                 <div className="space-y-4 animate-fadeIn">
                                     <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.08]">
                                         <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                             <span>Invitation Category Badge &amp; Typography</span>
                                         </div>
                                     </div>
@@ -2333,7 +2384,7 @@ export default function CardTemplates({
                                                 }}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                            <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                         </label>
                                     </div>
 
@@ -2342,7 +2393,7 @@ export default function CardTemplates({
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{allowanceCfg.y ?? 78.5}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{allowanceCfg.y ?? 78.5}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2351,14 +2402,14 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={allowanceCfg.y ?? 78.5}
                                                 onChange={(e) => updateNestedConfig('allowance_badge', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Horizontal Offset (X%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{allowanceCfg.x ?? 50}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{allowanceCfg.x ?? 50}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2367,7 +2418,7 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={allowanceCfg.x ?? 50}
                                                 onChange={(e) => updateNestedConfig('allowance_badge', 'x', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
                                     </div>
@@ -2385,7 +2436,7 @@ export default function CardTemplates({
                                                         step="0.5"
                                                         value={allowanceCfg.fontSize ?? 10}
                                                         onChange={(e) => updateNestedConfig('allowance_badge', 'fontSize', Math.max(6, parseFloat(e.target.value) || 6))}
-                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-cyan-600 dark:text-cyan-400"
+                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-emerald-600 dark:text-emerald-400"
                                                     />
                                                     <span className="text-[10px] text-slate-400">px</span>
                                                 </div>
@@ -2397,14 +2448,14 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={allowanceCfg.fontSize ?? 10}
                                                 onChange={(e) => updateNestedConfig('allowance_badge', 'fontSize', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Pill Box Width (%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{allowanceCfg.plaqueWidth ?? 84}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{allowanceCfg.plaqueWidth ?? 84}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2414,7 +2465,7 @@ export default function CardTemplates({
                                                 disabled={Boolean(allowanceCfg.hide_badge_box || allowanceCfg.clean_text)}
                                                 value={allowanceCfg.plaqueWidth ?? 84}
                                                 onChange={(e) => updateNestedConfig('allowance_badge', 'plaqueWidth', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600 disabled:opacity-30"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600 disabled:opacity-30"
                                             />
                                         </div>
                                     </div>
@@ -2462,7 +2513,7 @@ export default function CardTemplates({
                                                 type="checkbox"
                                                 checked={currentConfig.show_allowance_badge !== false}
                                                 onChange={(e) => updateDirectConfig('show_allowance_badge', e.target.checked)}
-                                                className="rounded text-cyan-600 focus:ring-cyan-500"
+                                                className="rounded text-[#16A34A] focus:ring-[#16A34A]"
                                             />
                                             <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                                                 Display Invitation Category Badge on Pass
@@ -2476,7 +2527,7 @@ export default function CardTemplates({
                             {inspectorTab === 'qr' && (
                                 <div className="space-y-4 animate-fadeIn">
                                     <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <QrCode className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                        <QrCode className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                         <span>QR Pass Verification Block Geometry</span>
                                     </div>
 
@@ -2484,7 +2535,7 @@ export default function CardTemplates({
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{qrCfg.y}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{qrCfg.y}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2493,14 +2544,14 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={qrCfg.y}
                                                 onChange={(e) => updateNestedConfig('qr_code', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Horizontal Offset (X%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{qrCfg.x ?? 50}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{qrCfg.x ?? 50}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2509,7 +2560,7 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={qrCfg.x ?? 50}
                                                 onChange={(e) => updateNestedConfig('qr_code', 'x', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
                                     </div>
@@ -2526,7 +2577,7 @@ export default function CardTemplates({
                                                         step="1"
                                                         value={Math.max(20, parseFloat(qrCfg.size) || 72)}
                                                         onChange={(e) => updateNestedConfig('qr_code', 'size', Math.max(20, parseFloat(e.target.value) || 20))}
-                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-cyan-600 dark:text-cyan-400"
+                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-emerald-600 dark:text-emerald-400"
                                                     />
                                                     <span className="text-[10px] text-slate-400">px</span>
                                                 </div>
@@ -2538,7 +2589,7 @@ export default function CardTemplates({
                                                 step="1"
                                                 value={Math.max(20, parseFloat(qrCfg.size) || 72)}
                                                 onChange={(e) => updateNestedConfig('qr_code', 'size', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
@@ -2565,7 +2616,7 @@ export default function CardTemplates({
                                             type="checkbox"
                                             checked={form.data.show_qr}
                                             onChange={(e) => form.setData('show_qr', e.target.checked)}
-                                            className="rounded text-cyan-600 focus:ring-cyan-500"
+                                            className="rounded text-[#16A34A] focus:ring-[#16A34A]"
                                         />
                                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                                             Display Scannable QR Code on Invitation Pass
@@ -2578,7 +2629,7 @@ export default function CardTemplates({
                             {(inspectorTab === 'badge' && !isUploadedCustomArt) && (
                                 <div className="space-y-4 animate-fadeIn">
                                     <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <ShieldCheck className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                         <span>Security Badge Placement</span>
                                     </div>
 
@@ -2586,7 +2637,7 @@ export default function CardTemplates({
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{badgeCfg.y}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{badgeCfg.y}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2595,7 +2646,7 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={badgeCfg.y}
                                                 onChange={(e) => updateNestedConfig('category_badge', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
@@ -2626,7 +2677,7 @@ export default function CardTemplates({
                                                 updateDirectConfig('show_verified_badge', e.target.checked);
                                                 updateDirectConfig('show_category_badge', e.target.checked);
                                             }}
-                                            className="rounded text-cyan-600 focus:ring-cyan-500"
+                                            className="rounded text-[#16A34A] focus:ring-[#16A34A]"
                                         />
                                         <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                                             Display Verified Security Badge Header
@@ -2640,10 +2691,10 @@ export default function CardTemplates({
                                 <div className="space-y-5 animate-fadeIn">
                                     <div className="flex items-center justify-between">
                                         <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                            <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                             <span>Pass Background Engine</span>
                                         </div>
-                                        <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">
+                                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
                                             Live Canvas Sync
                                         </span>
                                     </div>
@@ -2668,7 +2719,7 @@ export default function CardTemplates({
                                                         onClick={() => updateDirectConfig('bg_mode', mode.id)}
                                                         className={`py-2 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 ${
                                                             isCurrent
-                                                                ? 'bg-white dark:bg-[#0B1524] text-cyan-700 dark:text-cyan-300 shadow-sm border border-slate-200 dark:border-white/[0.08]'
+                                                                ? 'bg-white dark:bg-[#0B1524] text-emerald-700 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-white/[0.08]'
                                                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                                         }`}
                                                     >
@@ -2716,7 +2767,7 @@ export default function CardTemplates({
                                                                     }
                                                                 });
                                                             }}
-                                                            className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-cyan-500 text-left transition flex items-center gap-2.5 group active:scale-95 shadow-2xs"
+                                                            className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-emerald-500 text-left transition flex items-center gap-2.5 group active:scale-95 shadow-2xs"
                                                         >
                                                             <div 
                                                                 className="w-5 h-5 rounded-full border border-black/15 shadow-xs flex-shrink-0 flex items-center justify-center"
@@ -2724,7 +2775,7 @@ export default function CardTemplates({
                                                             >
                                                                 <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: preset.badge }} />
                                                             </div>
-                                                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-cyan-600">
+                                                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
                                                                 {preset.label}
                                                             </span>
                                                         </button>
@@ -2786,13 +2837,13 @@ export default function CardTemplates({
                                                                     }
                                                                 });
                                                             }}
-                                                            className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-cyan-500 dark:hover:border-cyan-400 text-left transition flex items-center gap-2.5 group active:scale-95 shadow-2xs"
+                                                            className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-emerald-500 dark:hover:border-emerald-400 text-left transition flex items-center gap-2.5 group active:scale-95 shadow-2xs"
                                                         >
                                                             <div 
                                                                 className="w-5 h-5 rounded-full border border-black/10 shadow-xs flex-shrink-0"
                                                                 style={{ background: `linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%)` }}
                                                             />
-                                                            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 truncate">
+                                                            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
                                                                 {preset.label}
                                                             </div>
                                                         </button>
@@ -2846,7 +2897,7 @@ export default function CardTemplates({
                                                 <InputLabel value="Upload Custom Background Art / Texture" />
                                                 <div className="mt-1 flex items-center gap-3">
                                                     <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-kardovo-navy hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition active:scale-95">
-                                                        <Upload className="w-3.5 h-3.5 text-cyan-400" />
+                                                        <Upload className="w-3.5 h-3.5 text-white" />
                                                         <span>Select Image File</span>
                                                         <input
                                                             type="file"
@@ -2894,14 +2945,14 @@ export default function CardTemplates({
                                                             key={texture.label}
                                                             type="button"
                                                             onClick={() => updateDirectConfig('bg_image', texture.url)}
-                                                            className="p-2 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-cyan-500 text-left transition flex items-center gap-2.5 group active:scale-95"
+                                                            className="p-2 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-emerald-500 text-left transition flex items-center gap-2.5 group active:scale-95"
                                                         >
                                                             <img 
                                                                 src={texture.url} 
                                                                 alt={texture.label} 
                                                                 className="w-7 h-7 rounded-lg object-cover border border-black/10 flex-shrink-0"
                                                             />
-                                                            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 group-hover:text-cyan-600 truncate">
+                                                            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
                                                                 {texture.label}
                                                             </div>
                                                         </button>
@@ -2913,7 +2964,7 @@ export default function CardTemplates({
                                             <div className="pt-2 border-t border-slate-100 dark:border-white/[0.08]">
                                                 <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                     <span>Backdrop Tint / Darkening Overlay</span>
-                                                    <span className="font-mono text-cyan-600 dark:text-cyan-400">
+                                                    <span className="font-mono text-emerald-600 dark:text-emerald-400">
                                                         {Math.round((form.data.elements_config?.bg_overlay_opacity ?? 0.35) * 100)}%
                                                     </span>
                                                 </div>
@@ -2924,7 +2975,7 @@ export default function CardTemplates({
                                                     step="0.05"
                                                     value={form.data.elements_config?.bg_overlay_opacity ?? 0.35}
                                                     onChange={(e) => updateDirectConfig('bg_overlay_opacity', parseFloat(e.target.value))}
-                                                    className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                    className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                                 />
                                             </div>
                                         </div>
@@ -2936,7 +2987,7 @@ export default function CardTemplates({
                             {inspectorTab === 'security' && (
                                 <div className="space-y-4 animate-fadeIn">
                                     <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <Clock className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                        <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                         <span>Gate Verification Code Typography &amp; Placement</span>
                                     </div>
 
@@ -2955,7 +3006,7 @@ export default function CardTemplates({
                                                 onChange={(e) => updateNestedConfig('card_number', 'hide_shadow', e.target.checked)}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-cyan-600" />
+                                            <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
                                         </label>
                                     </div>
 
@@ -2963,7 +3014,7 @@ export default function CardTemplates({
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{cardNumCfg.y}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{cardNumCfg.y}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2972,14 +3023,14 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={cardNumCfg.y}
                                                 onChange={(e) => updateNestedConfig('card_number', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
                                         <div>
                                             <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
                                                 <span>Horizontal Offset (X%)</span>
-                                                <span className="font-mono text-cyan-600 dark:text-cyan-400">{cardNumCfg.x ?? 50}%</span>
+                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{cardNumCfg.x ?? 50}%</span>
                                             </div>
                                             <input
                                                 type="range"
@@ -2988,7 +3039,7 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={cardNumCfg.x ?? 50}
                                                 onChange={(e) => updateNestedConfig('card_number', 'x', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
                                     </div>
@@ -3005,7 +3056,7 @@ export default function CardTemplates({
                                                         step="0.5"
                                                         value={cardNumCfg.fontSize ?? 9.5}
                                                         onChange={(e) => updateNestedConfig('card_number', 'fontSize', Math.max(6, parseFloat(e.target.value) || 6))}
-                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-cyan-600 dark:text-cyan-400"
+                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-emerald-600 dark:text-emerald-400"
                                                     />
                                                     <span className="text-[10px] text-slate-400">px</span>
                                                 </div>
@@ -3017,7 +3068,7 @@ export default function CardTemplates({
                                                 step="0.5"
                                                 value={cardNumCfg.fontSize ?? 9.5}
                                                 onChange={(e) => updateNestedConfig('card_number', 'fontSize', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-600"
+                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                                             />
                                         </div>
 
@@ -3060,7 +3111,7 @@ export default function CardTemplates({
                                                     type="checkbox"
                                                     checked={form.data.show_unique_code}
                                                     onChange={(e) => form.setData('show_unique_code', e.target.checked)}
-                                                    className="rounded text-cyan-600 focus:ring-cyan-500"
+                                                    className="rounded text-[#16A34A] focus:ring-[#16A34A]"
                                                 />
                                                 <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
                                                     Display Gate Code
@@ -3082,7 +3133,7 @@ export default function CardTemplates({
                                         className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition cursor-pointer"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
-                                        <span>Delete Custom Template</span>
+                                        <span>Delete Template</span>
                                     </button>
                                 ) : (
                                     <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
@@ -3093,15 +3144,24 @@ export default function CardTemplates({
                                 {canCustomize ? (
                                     <PrimaryButton 
                                         disabled={form.processing} 
-                                        className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white py-2.5 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs transition active:scale-95 ml-auto cursor-pointer"
+                                        className="text-white py-2.5 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs transition active:scale-95 ml-auto cursor-pointer"
                                     >
-                                        <Save className="w-3.5 h-3.5 text-slate-200 dark:text-white" />
-                                        <span>Save Template Configurations</span>
+                                        <Save className="w-3.5 h-3.5 text-white" />
+                                        <span>Save Template</span>
                                     </PrimaryButton>
                                 ) : (
                                     <button
                                         type="button"
-                                        onClick={() => alert('4K Card Studio design & artwork customization permissions are locked for your organizer account by platform governance.')}
+                                        onClick={() => setConfirmModal({
+                                            show: true,
+                                            title: 'Studio Customization Locked',
+                                            message: '4K Card Studio design & artwork customization permissions are locked for your organizer account by platform governance.',
+                                            warning: 'Please contact platform administrators to request template design permissions.',
+                                            confirmText: 'Understood',
+                                            type: 'warning',
+                                            loading: false,
+                                            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false })),
+                                        })}
                                         className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-200 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 font-bold text-xs border border-slate-300 dark:border-white/[0.08] cursor-not-allowed opacity-80 shadow-xs ml-auto"
                                         title="Template Customization Locked"
                                     >
@@ -3139,7 +3199,7 @@ export default function CardTemplates({
                                         type="text"
                                         value={testGuestName}
                                         onChange={(e) => setTestGuestName(e.target.value)}
-                                        className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-cyan-500 "
+                                        className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
                                         placeholder="Type guest name..."
                                     />
                                 </div>
@@ -3151,7 +3211,7 @@ export default function CardTemplates({
                                         type="text"
                                         value={testAllowance}
                                         onChange={(e) => setTestAllowance(e.target.value)}
-                                        className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-cyan-500 "
+                                        className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
                                         placeholder="e.g. DOUBLE ENTRY"
                                     />
                                 </div>
@@ -3182,15 +3242,17 @@ export default function CardTemplates({
                     </div>
                 </div>
                 </form>
+                    </>
+                )}
 
                 {/* Upload Custom Artwork Modal */}
                 <Modal show={uploadModalOpen} onClose={() => setUploadModalOpen(false)} maxWidth="md">
                     <form noValidate onSubmit={handleUploadSubmit} className="p-6 sm:p-7 space-y-4">
                         <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
                             <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                 <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
-                                    Import Custom 4K Artwork Asset
+                                    Add Template
                                 </h3>
                             </div>
                             <button
@@ -3217,7 +3279,7 @@ export default function CardTemplates({
                         )}
 
                         <div>
-                            <InputLabel value="Template Style Name *" />
+                            <InputLabel value="Template Name *" />
                             <TextInput
                                 className="block w-full text-xs font-bold mt-1"
                                 value={uploadForm.data.name}
@@ -3225,13 +3287,13 @@ export default function CardTemplates({
                                     uploadForm.setData('name', e.target.value);
                                     if (uploadForm.errors.name) uploadForm.clearErrors('name');
                                 }}
-                                placeholder="e.g. Traditional Wedding Gold & Blue"
+                                placeholder="e.g. Wedding Gold"
                             />
                             <InputError message={uploadForm.errors.name} className="mt-1" />
                         </div>
 
                         <div>
-                            <InputLabel value="Select High-Resolution Image (PNG, JPG, WEBP, SVG) *" />
+                            <InputLabel value="Card Image *" />
                             <div className="mt-1">
                                 <input
                                     type="file"
@@ -3256,7 +3318,7 @@ export default function CardTemplates({
                                         uploadForm.setData('image_file', file);
                                         if (uploadForm.errors.image_file) uploadForm.clearErrors('image_file');
                                     }}
-                                    className="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-slate-900 hover:file:bg-slate-800 dark:file:bg-cyan-600 dark:hover:file:bg-cyan-500 file:text-white cursor-pointer border border-slate-300 dark:border-white/[0.08] rounded-xl p-1 bg-white dark:bg-[#08121E]"
+                                    className="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#16A34A] hover:file:bg-[#15803D] file:text-white cursor-pointer border border-slate-300 dark:border-white/[0.08] rounded-xl p-1 bg-white dark:bg-[#08121E]"
                                 />
                             </div>
                             <InputError message={uploadForm.errors.image_file} className="mt-1" />
@@ -3274,7 +3336,7 @@ export default function CardTemplates({
                                                 {uploadedImgMeta ? `${uploadedImgMeta.width} × ${uploadedImgMeta.height} px` : 'Artwork Ready'}
                                             </span>
                                             {uploadedImgMeta && (
-                                                <span className="px-2 py-0.5 rounded bg-cyan-600/90 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs shadow-xs">
+                                                <span className="px-2 py-0.5 rounded bg-[#16A34A] text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs shadow-xs">
                                                     {uploadedImgMeta.orientation}
                                                 </span>
                                             )}
@@ -3293,15 +3355,18 @@ export default function CardTemplates({
                         </div>
 
                         <div>
-                            <InputLabel value="Choose Overlay Preset for this Flyer *" />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1.5">
-                                <button
-                                    type="button"
+                            <InputLabel value="Layout Type *" />
+                            <div className="space-y-2 mt-1.5">
+                                <div
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={() => {
                                         uploadForm.setData({
                                             ...uploadForm.data,
                                             overlay_mode: 'minimal',
                                             show_guest_name: true,
+                                            show_allowance_badge: true,
+                                            show_category_badge: true,
                                             show_qr: true,
                                             show_unique_code: true,
                                             show_headline: false,
@@ -3311,28 +3376,63 @@ export default function CardTemplates({
                                             show_venue: false,
                                         });
                                     }}
-                                    className={`p-3 rounded-2xl border text-left transition active:scale-95 flex flex-col justify-between cursor-pointer ${
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            uploadForm.setData({
+                                                ...uploadForm.data,
+                                                overlay_mode: 'minimal',
+                                                show_guest_name: true,
+                                                show_allowance_badge: true,
+                                                show_category_badge: true,
+                                                show_qr: true,
+                                                show_unique_code: true,
+                                                show_headline: false,
+                                                show_couple_names: false,
+                                                show_date: false,
+                                                show_quote: false,
+                                                show_venue: false,
+                                            });
+                                        }
+                                    }}
+                                    className={`p-3 rounded-2xl border text-left transition active:scale-[0.99] flex items-start gap-3 cursor-pointer ${
                                         uploadForm.data.overlay_mode !== 'full'
-                                            ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
-                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400'
+                                            ? 'border-[#16A34A] bg-[#16A34A]/10 text-slate-900 dark:text-white ring-1 ring-[#16A34A] shadow-xs'
+                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/[0.15]'
                                     }`}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-bold text-xs">Minimal Overlays</span>
-                                        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/70 dark:border-white/[0.08] px-2 py-0.5 rounded-full font-mono">Recommended</span>
+                                    <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
+                                        uploadForm.data.overlay_mode !== 'full'
+                                            ? 'border-[#16A34A] bg-[#16A34A]'
+                                            : 'border-slate-300 dark:border-white/[0.2]'
+                                    }`}>
+                                        {uploadForm.data.overlay_mode !== 'full' && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-950" />
+                                        )}
                                     </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
-                                        Only <strong>Guest Name + QR Code + Security Code</strong>. Ideal for designs with pre-printed event text.
-                                    </p>
-                                </button>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-xs text-slate-900 dark:text-white">Guest &amp; QR Only</span>
+                                            <span className="text-[10px] font-bold text-[#16A34A] bg-[#16A34A]/15 border border-[#16A34A]/25 px-2 py-0.5 rounded-full font-mono">
+                                                Recommended
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Guest name and QR code only. Best for finished card designs.
+                                        </p>
+                                    </div>
+                                </div>
 
-                                <button
-                                    type="button"
+                                <div
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={() => {
                                         uploadForm.setData({
                                             ...uploadForm.data,
                                             overlay_mode: 'full',
                                             show_guest_name: true,
+                                            show_allowance_badge: true,
+                                            show_category_badge: true,
                                             show_qr: true,
                                             show_unique_code: true,
                                             show_headline: true,
@@ -3342,19 +3442,47 @@ export default function CardTemplates({
                                             show_venue: true,
                                         });
                                     }}
-                                    className={`p-3 rounded-2xl border text-left transition active:scale-95 flex flex-col justify-between cursor-pointer ${
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            uploadForm.setData({
+                                                ...uploadForm.data,
+                                                overlay_mode: 'full',
+                                                show_guest_name: true,
+                                                show_allowance_badge: true,
+                                                show_category_badge: true,
+                                                show_qr: true,
+                                                show_unique_code: true,
+                                                show_headline: true,
+                                                show_couple_names: true,
+                                                show_date: true,
+                                                show_quote: true,
+                                                show_venue: true,
+                                            });
+                                        }
+                                    }}
+                                    className={`p-3 rounded-2xl border text-left transition active:scale-[0.99] flex items-start gap-3 cursor-pointer ${
                                         uploadForm.data.overlay_mode === 'full'
-                                            ? 'border-slate-900 dark:border-cyan-400 bg-white dark:bg-white/[0.06] text-slate-900 dark:text-white shadow-xs ring-1 ring-slate-900/15 dark:ring-cyan-400/30'
-                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400'
+                                            ? 'border-[#16A34A] bg-[#16A34A]/10 text-slate-900 dark:text-white ring-1 ring-[#16A34A] shadow-xs'
+                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/[0.15]'
                                     }`}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-bold text-xs">Full Invitation Suite</span>
+                                    <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
+                                        uploadForm.data.overlay_mode === 'full'
+                                            ? 'border-[#16A34A] bg-[#16A34A]'
+                                            : 'border-slate-300 dark:border-white/[0.2]'
+                                    }`}>
+                                        {uploadForm.data.overlay_mode === 'full' && (
+                                            <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-950" />
+                                        )}
                                     </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
-                                        Includes Titles, Dates, Quotes, and Venue text on top of decorative background frames.
-                                    </p>
-                                </button>
+                                    <div className="flex-1 min-w-0">
+                                        <span className="font-bold text-xs text-slate-900 dark:text-white">Full Details</span>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                            Includes title, date, venue, and QR code.
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -3366,17 +3494,17 @@ export default function CardTemplates({
                                 type="button"
                                 onClick={handleUploadSubmit}
                                 disabled={isUploadingArtwork || uploadForm.processing} 
-                                className="bg-slate-900 hover:bg-slate-800 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                                className="text-white py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
                             >
                                 {isUploadingArtwork || uploadForm.processing ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                        <span>Importing 4K Artwork...</span>
+                                        <span>Saving...</span>
                                     </>
                                 ) : (
                                     <>
                                         <Upload className="w-3.5 h-3.5" />
-                                        <span>Upload &amp; Create Template</span>
+                                        <span>Save Template</span>
                                     </>
                                 )}
                             </PrimaryButton>
@@ -3384,37 +3512,18 @@ export default function CardTemplates({
                     </form>
                 </Modal>
 
-                {/* Delete Confirmation Modal */}
-                <Modal show={deleteModalOpen} onClose={() => setDeleteModalOpen(false)} maxWidth="sm">
-                    <div className="p-6 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0">
-                                <AlertTriangle className="w-5 h-5" />
-                            </div>
-                            <div>
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
-                                    Delete Card Template
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                    This action cannot be undone.
-                                </p>
-                            </div>
-                        </div>
-
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                            Are you sure you want to permanently delete custom template <strong>"{templateToDelete?.name}"</strong>? Any linked events will automatically fallback to the default template.
-                        </p>
-
-                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
-                            <SecondaryButton onClick={() => setDeleteModalOpen(false)}>
-                                Cancel
-                            </SecondaryButton>
-                            <DangerButton onClick={confirmDeleteTemplate} className="py-2 px-4 text-xs font-bold">
-                                Delete Permanently
-                            </DangerButton>
-                        </div>
-                    </div>
-                </Modal>
+                <ConfirmationModal
+                    show={confirmModal.show}
+                    title={confirmModal.title}
+                    message={confirmModal.message}
+                    warning={confirmModal.warning}
+                    confirmText={confirmModal.confirmText}
+                    cancelText={confirmModal.cancelText}
+                    type={confirmModal.type}
+                    loading={confirmModal.loading}
+                    onConfirm={confirmModal.onConfirm}
+                    onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+                />
             </div>
         </KardovoAppLayout>
     );

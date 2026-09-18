@@ -26,6 +26,42 @@ import {
     Eye
 } from 'lucide-react';
 
+const CardScaleWrapper = ({ baseWidth, finalRatio, children }) => {
+    const containerRef = useRef(null);
+    const [scale, setScale] = useState(1);
+    
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const updateScale = () => {
+            if (containerRef.current) {
+                const w = containerRef.current.clientWidth;
+                if (w > 0) setScale(w / baseWidth);
+            }
+        };
+        updateScale();
+        const ro = new ResizeObserver(updateScale);
+        ro.observe(containerRef.current);
+        return () => ro.disconnect();
+    }, [baseWidth]);
+
+    const renderedHeight = finalRatio > 0 ? (baseWidth / finalRatio) * scale : 0;
+
+    return (
+        <div ref={containerRef} className="w-full relative flex justify-center" style={{ height: renderedHeight > 0 ? `${renderedHeight}px` : 'auto' }}>
+            <div style={{
+                width: `${baseWidth}px`,
+                height: finalRatio > 0 ? `${baseWidth / finalRatio}px` : 'auto',
+                transform: `scale(${scale})`,
+                transformOrigin: 'top center',
+                position: 'absolute',
+                top: 0
+            }}>
+                {children}
+            </div>
+        </div>
+    );
+};
+
 // Helper to determine if a hex color is dark
 function isColorDark(hex) {
     if (!hex || typeof hex !== 'string' || !hex.startsWith('#')) return false;
@@ -98,8 +134,9 @@ export default function PersonalisedCard({
     if (typeof configRatio === 'number') {
         computedRatioNum = configRatio;
     } else if (typeof configRatio === 'string' && configRatio.trim() !== '') {
-        if (configRatio.includes('/')) {
-            const parts = configRatio.split('/').map(n => parseFloat(n.trim()));
+        if (configRatio.includes('/') || configRatio.includes(':')) {
+            const delimiter = configRatio.includes('/') ? '/' : ':';
+            const parts = configRatio.split(delimiter).map(n => parseFloat(n.trim()));
             if (parts[0] && parts[1]) computedRatioNum = parts[0] / parts[1];
         } else if (!isNaN(parseFloat(configRatio))) {
             computedRatioNum = parseFloat(configRatio);
@@ -119,15 +156,21 @@ export default function PersonalisedCard({
     const isZamroth = isPredefinedZamroth;
 
     // Determine final aspect ratio (Priority: explicit config -> live measured image -> predefined template defaults -> 2:3)
-    const finalRatioNum = computedRatioNum || detectedImgRatio || (
-        isEngagement ? (800 / 1184) : (isZamroth ? (800 / 1200) : null)
+    let finalRatioNum = computedRatioNum || detectedImgRatio || (
+        isEngagement ? (800 / 1184) : (isZamroth ? (896 / 1200) : null)
     );
+    if (isZamroth && (!computedRatioNum || configRatio === '800 / 1200')) {
+        finalRatioNum = detectedImgRatio || (896 / 1200);
+    }
 
     const isLandscape = (finalRatioNum && finalRatioNum > 1.12) || elementsConfig.orientation === 'landscape';
     const isSquare = (finalRatioNum && finalRatioNum >= 0.92 && finalRatioNum <= 1.12) || elementsConfig.orientation === 'square';
 
+    const safeFinalRatio = finalRatioNum || (isEngagement ? (800 / 1184) : (isZamroth ? (896 / 1200) : (800 / 1200)));
+    const baseWidth = 410;
+
     // Exact CSS aspect ratio value
-    const cardAspectRatio = finalRatioNum ? `${finalRatioNum}` : (isEngagement ? '800 / 1184' : '800 / 1200');
+    const cardAspectRatio = finalRatioNum ? `${finalRatioNum}` : (isEngagement ? '800 / 1184' : (isZamroth ? '896 / 1200' : '800 / 1200'));
 
     // Dynamic width bounds based on orientation
     const cardMaxWidthClass = isLandscape 
@@ -145,7 +188,7 @@ export default function PersonalisedCard({
     const brandColorFrom = template?.brand_color_from || '#EBF4FF';
     const brandColorTo = template?.brand_color_to || '#C7E2FE';
     const headline = elementsConfig.headline_text || template?.headline || 'EXCLUSIVE INVITATION PASS';
-    const footerText = elementsConfig.footer_text || template?.footer_text || 'Secured & verified by KARDOVO';
+    const footerText = elementsConfig.footer_text || template?.footer_text || '';
 
     // Accent color logic
     const accentColor = template?.brand_color_to && template.brand_color_to.startsWith('#') && template.brand_color_to !== '#FFFFFF' 
@@ -469,6 +512,7 @@ export default function PersonalisedCard({
 
     return (
         <div className={`flex flex-col items-center ${className}`}>
+            <CardScaleWrapper baseWidth={baseWidth} finalRatio={safeFinalRatio}>
             
             {/* ═══════════════════════════════════════════════════════════════ */}
             {/* 1. CUSTOM ART / PHOTO PASS (Vertical 4K Poster)                 */}
@@ -695,8 +739,7 @@ export default function PersonalisedCard({
                                                 boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
                                             }}
                                         >
-                                            <div className="text-[8px] text-white/80 uppercase tracking-[0.22em] font-bold">INVITATION PASS ISSUED TO</div>
-                                            <div className="font-black font-serif tracking-wider uppercase mt-0.5 drop-shadow-sm truncate"
+                                            <div className="font-black font-serif tracking-wider uppercase drop-shadow-sm truncate"
                                                 style={{ 
                                                     color: nameCfg.color || '#FFFFFF', 
                                                     fontSize: `${parseFloat(nameCfg.fontSize) || 19}px`, 
@@ -717,7 +760,7 @@ export default function PersonalisedCard({
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
                                 style={{ 
                                     left: `${allowanceCfg.x ?? 50}%`, 
-                                    top: `${allowanceCfg.y ?? 78.5}%`, 
+                                    top: `${allowanceCfg.y ?? (finalRatioNum <= 0.62 ? 77.0 : 78.5)}%`, 
                                     width: isCleanAllowance ? 'auto' : (allowanceCfg.plaqueWidth ? `${allowanceCfg.plaqueWidth}%` : 'auto'),
                                 }}
                             >
@@ -785,7 +828,7 @@ export default function PersonalisedCard({
                         )}
 
                         {/* Footer Note */}
-                        {(elementsConfig.show_footer === true || Boolean(elementsConfig.footer_text || template?.footer_text)) && (
+                        {(elementsConfig.show_footer === true || template?.show_footer === true) && (
                             <div 
                                 className="absolute bottom-2 left-0 right-0 px-5 flex justify-between items-center text-[7.5px] tracking-wider pointer-events-none z-20 font-mono"
                                 style={{
@@ -948,7 +991,7 @@ export default function PersonalisedCard({
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
                                 style={{ 
                                     left: `${allowanceCfg.x ?? 50}%`, 
-                                    top: `${allowanceCfg.y ?? 78.5}%`, 
+                                    top: `${allowanceCfg.y ?? (finalRatioNum <= 0.62 ? 77.0 : 78.5)}%`, 
                                     width: isCleanAllowance ? 'auto' : (allowanceCfg.plaqueWidth ? `${allowanceCfg.plaqueWidth}%` : 'auto'),
                                 }}
                             >
@@ -997,7 +1040,7 @@ export default function PersonalisedCard({
                         {template?.show_qr !== false && elementsConfig.show_qr !== false && (
                             <div 
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all drop-shadow-md z-20"
-                                style={{ left: `${qrCfg.x ?? 50}%`, top: `${qrCfg.y ?? 86}%` }}
+                                style={{ left: `${qrCfg.x ?? 50}%`, top: `${qrCfg.y ?? (finalRatioNum <= 0.62 ? 84.5 : 86.5)}%` }}
                             >
                                 <div className="inline-block bg-white rounded-md overflow-hidden">
                                     {qrDataUrl ? (
@@ -1015,7 +1058,7 @@ export default function PersonalisedCard({
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
                                 style={{ 
                                     left: `${cardNumCfg.x ?? 50}%`, 
-                                    top: `${cardNumCfg.y ?? 96}%`, 
+                                    top: `${cardNumCfg.y ?? (finalRatioNum <= 0.62 ? 94.0 : 96.0)}%`, 
                                     color: cardNumCfg.color || '#FFFFFF', 
                                     fontSize: `${parseFloat(cardNumCfg.fontSize) || 9.5}px`, 
                                     fontFamily: cardNumCfg.fontFamily || 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
@@ -1029,7 +1072,7 @@ export default function PersonalisedCard({
                         )}
 
                         {/* 5. FOOTER NOTE */}
-                        {(elementsConfig.show_footer === true || Boolean(elementsConfig.footer_text || template?.footer_text)) && (
+                        {(elementsConfig.show_footer === true || template?.show_footer === true) && (
                             <div 
                                 className="absolute bottom-2 left-0 right-0 px-5 flex justify-between items-center text-[7.5px] tracking-wider pointer-events-none z-20 font-mono"
                                 style={{
@@ -1357,6 +1400,7 @@ export default function PersonalisedCard({
                     </div>
                 </div>
             )}
+            </CardScaleWrapper>
 
             {/* Interactive Action Bar */}
             {interactive && (

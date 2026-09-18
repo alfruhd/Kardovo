@@ -20,7 +20,8 @@ class EventController extends Controller
             return redirect()->route('scanner.index');
         }
 
-        $eventsQuery = Event::with(['cardTemplate', 'user'])
+        $eventsQuery = Event::accessibleBy($user)
+            ->with(['cardTemplate', 'user'])
             ->withCount([
                 'guests as total_guests',
                 'guests as will_attend_count' => function ($q) {
@@ -39,11 +40,6 @@ class EventController extends Controller
                     $q->where('status', '!=', 'draft');
                 },
             ]);
-
-        // If not system administrator, restrict to the user's own events
-        if (! $user->isAdmin()) {
-            $eventsQuery->where('user_id', $user->id);
-        }
 
         $events = $eventsQuery->latest('event_date')
             ->get()
@@ -70,7 +66,9 @@ class EventController extends Controller
             if (! $user->isAdmin()) {
                 $q->where('user_id', $user->id)->orWhereNull('user_id');
             }
-        })->get();
+        })
+            ->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id DESC')
+            ->get();
 
         $organizers = $user->isAdmin() ? User::whereIn('role', ['customer', 'admin'])->get(['id', 'name', 'email']) : [];
 
@@ -83,10 +81,66 @@ class EventController extends Controller
         ]);
     }
 
+    public function calendar(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->isScanner()) {
+            return redirect()->route('scanner.index');
+        }
+
+        $eventsQuery = Event::accessibleBy($user)
+            ->with(['cardTemplate', 'user'])
+            ->withCount([
+                'guests as total_guests',
+                'guests as will_attend_count' => function ($q) {
+                    $q->where('rsvp_status', 'attending');
+                },
+                'guests as will_not_attend_count' => function ($q) {
+                    $q->where('rsvp_status', 'declined');
+                },
+                'guests as pending_rsvp_count' => function ($q) {
+                    $q->where('rsvp_status', 'pending');
+                },
+                'guests as checkins_count' => function ($q) {
+                    $q->where('entries_used', '>', 0);
+                },
+            ]);
+
+        $events = $eventsQuery->orderBy('event_date', 'asc')
+            ->get()
+            ->map(function ($event) {
+                $total = $event->total_guests ?: 1;
+                $responded = $event->will_attend_count + $event->will_not_attend_count;
+                $responseRate = $event->total_guests > 0 ? round(($responded / $event->total_guests) * 100) : 0;
+                $attendanceRate = $event->total_guests > 0 ? round(($event->will_attend_count / $event->total_guests) * 100) : 0;
+
+                $event->response_rate = $responseRate;
+                $event->attendance_rate = $attendanceRate;
+
+                return $event;
+            });
+
+        $templates = CardTemplate::where(function ($q) use ($user) {
+            if (! $user->isAdmin()) {
+                $q->where('user_id', $user->id)->orWhereNull('user_id');
+            }
+        })->get();
+
+        $organizers = $user->isAdmin() ? User::whereIn('role', ['customer', 'admin'])->get(['id', 'name', 'email']) : [];
+
+        return Inertia::render('Customer/Calendar', [
+            'events' => $events,
+            'templates' => $templates,
+            'organizers' => $organizers,
+            'isAdmin' => $user->isAdmin(),
+        ]);
+    }
+
     public function show(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403, 'Unauthorized access to this event.');
         }
 
@@ -95,6 +149,7 @@ class EventController extends Controller
         // Query guests with search & filters
         $search = $request->input('search');
         $deliveryFilter = $request->input('delivery');
+        $channelFilter = $request->input('channel');
         $rsvpFilter = $request->input('rsvp');
         $categoryFilter = $request->input('category');
 
@@ -106,6 +161,12 @@ class EventController extends Controller
                     ->orWhere('phone', 'like', "%{$search}%")
                     ->orWhere('card_number', 'like', "%{$search}%")
                     ->orWhere('unique_code', 'like', "%{$search}%");
+            });
+        }
+
+        if ($channelFilter && $channelFilter !== 'all') {
+            $guestsQuery->whereHas('messages', function ($query) use ($channelFilter) {
+                $query->where('channel', $channelFilter);
             });
         }
 
@@ -123,19 +184,27 @@ class EventController extends Controller
 
         $guests = $guestsQuery->paginate(10)->withQueryString();
 
-        // Calculate event metrics for Stat Cards (matching Figure 4.1 in UI/UX spec)
-        $totalGuests = $event->guests()->count();
-        $messagesSent = $event->messages()->where('status', '!=', 'draft')->count() ?: $event->guests()->whereIn('delivery_status', ['sent', 'delivered'])->count();
-        $willAttendCount = $event->guests()->where('rsvp_status', 'attending')->count();
-        $liveCheckins = $event->guests()->where('entries_used', '>', 0)->sum('entries_used');
+        // Calculate event metrics in a single efficient query
+        $guestStats = $event->guests()
+            ->selectRaw('count(*) as total_guests, sum(case when rsvp_status = "attending" then 1 else 0 end) as will_attend, sum(entries_used) as live_checkins')
+            ->first();
+
+        $totalGuests = (int) ($guestStats->total_guests ?? 0);
+        $willAttendCount = (int) ($guestStats->will_attend ?? 0);
+        $liveCheckins = (int) ($guestStats->live_checkins ?? 0);
+        $messagesSent = $event->messages()->where('status', '!=', 'draft')->count();
 
         $recentScanLogs = ScanLog::where('event_id', $event->id)
             ->with('guest')
             ->latest('scanned_at')
+            ->take(50)
             ->get();
 
-        $templates = CardTemplate::where('user_id', $user->id)
-            ->orWhereNull('user_id')
+        $targetUserId = (! $user->isAdmin()) ? $user->id : ($event->user_id ?? $user->id);
+        $templates = CardTemplate::where(function ($q) use ($targetUserId) {
+            $q->where('user_id', $targetUserId)->orWhereNull('user_id');
+        })
+            ->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id DESC')
             ->get();
 
         return Inertia::render('Customer/EventDashboard', [
@@ -144,6 +213,7 @@ class EventController extends Controller
             'filters' => [
                 'search' => $search ?? '',
                 'delivery' => $deliveryFilter ?? 'all',
+                'channel' => $channelFilter ?? 'all',
                 'rsvp' => $rsvpFilter ?? 'all',
                 'category' => $categoryFilter ?? 'all',
             ],
@@ -175,8 +245,7 @@ class EventController extends Controller
         $rules = [
             'title' => 'required|string|min:3|max:255',
             'event_type' => 'required|string|max:100',
-            'event_date' => 'required|date',
-            'event_time' => 'nullable|string|max:100',
+            'event_date' => 'required|date|after_or_equal:today',
             'venue' => 'required|string|min:2|max:255',
             'city' => 'required|string|min:2|max:100',
             'description' => 'nullable|string',
@@ -192,7 +261,7 @@ class EventController extends Controller
             'title.min' => 'Event title must be at least 3 characters.',
             'event_date.required' => 'Event date is required.',
             'event_date.date' => 'Please provide a valid event date.',
-            'venue.required' => 'Venue location is required.',
+            'event_date.after_or_equal' => 'Event date cannot be in the past. Please select today or a future date.',
             'venue.min' => 'Venue location must be at least 2 characters.',
             'city.required' => 'City is required.',
             'city.min' => 'City must be at least 2 characters.',
@@ -213,7 +282,7 @@ class EventController extends Controller
     public function update(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403, 'Unauthorized to edit this event.');
         }
 
@@ -227,6 +296,7 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'card_template_id' => 'nullable|exists:card_templates,id',
             'status' => ['nullable', Rule::in(['active', 'draft', 'completed', 'cancelled'])],
+            'microsite_config' => 'nullable|array',
         ];
 
         if ($user->isAdmin()) {
@@ -258,7 +328,7 @@ class EventController extends Controller
     public function destroy(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403, 'Unauthorized to delete this event.');
         }
 
@@ -279,7 +349,7 @@ class EventController extends Controller
     public function destroyScanLog(Request $request, Event $event, ScanLog $scanLog)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin() && ! $user->isSubAdmin()) {
+        if ($user->isScanner() || ! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403, 'Unauthorized to delete this scan log.');
         }
 
@@ -295,7 +365,7 @@ class EventController extends Controller
     public function clearScanLogs(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin() && ! $user->isSubAdmin()) {
+        if ($user->isScanner() || ! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403, 'Unauthorized to clear gate activity logs.');
         }
 

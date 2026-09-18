@@ -49,15 +49,25 @@ class Guest extends Model
 
         static::creating(function ($guest) {
             if (empty($guest->card_number)) {
-                $guest->card_number = 'KDV-'.date('Y').'-'.str_pad(mt_rand(1000, 999999), 6, '0', STR_PAD_LEFT);
+                $guest->card_number = static::generateCardNumber();
             }
             if (empty($guest->unique_code)) {
-                $guest->unique_code = (string) mt_rand(10000000, 99999999);
+                $guest->unique_code = static::generateUniqueCode();
             }
             if (empty($guest->qr_token)) {
                 $guest->qr_token = Str::random(32);
             }
         });
+    }
+
+    public static function generateCardNumber(): string
+    {
+        return 'KDV-'.date('Y').'-'.str_pad((string) random_int(1000, 999999), 6, '0', STR_PAD_LEFT);
+    }
+
+    public static function generateUniqueCode(): string
+    {
+        return (string) random_int(10000000, 99999999);
     }
 
     public function getApiPhoneAttribute(): string

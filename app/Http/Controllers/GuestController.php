@@ -22,7 +22,7 @@ class GuestController extends Controller
     public function store(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403);
         }
 
@@ -54,7 +54,7 @@ class GuestController extends Controller
     public function import(Request $request, Event $event, GuestImportService $importService)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403);
         }
 
@@ -171,7 +171,7 @@ class GuestController extends Controller
     public function update(Request $request, Event $event, Guest $guest)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403);
         }
 
@@ -202,7 +202,7 @@ class GuestController extends Controller
     public function destroy(Request $request, Event $event, Guest $guest)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403);
         }
 
@@ -215,7 +215,7 @@ class GuestController extends Controller
     public function clearAll(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403, 'Unauthorized to clear attendees for this event.');
         }
 
@@ -239,7 +239,7 @@ class GuestController extends Controller
     public function exportCsv(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403);
         }
 
@@ -289,7 +289,7 @@ class GuestController extends Controller
     public function exportPdf(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403);
         }
 

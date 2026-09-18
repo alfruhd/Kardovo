@@ -6,6 +6,7 @@ use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class CardTemplateController extends Controller
@@ -31,6 +32,12 @@ class CardTemplateController extends Controller
             // Customer sees global master templates + their own personalized templates
             $templatesQuery->where(function ($q) use ($user) {
                 $q->whereNull('user_id')->orWhere('user_id', $user->id);
+                if ($user->isSubAdmin()) {
+                    $assignedCustomerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
+                    if (! empty($assignedCustomerIds)) {
+                        $q->orWhereIn('user_id', $assignedCustomerIds);
+                    }
+                }
             });
         } else {
             $templatesQuery->whereNull('user_id');
@@ -40,10 +47,8 @@ class CardTemplateController extends Controller
             ->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id DESC')
             ->get();
 
-        if ($user && $user->isAdmin()) {
-            $events = Event::with('user')->get();
-        } elseif ($user) {
-            $events = Event::where('user_id', $user->id)->get();
+        if ($user) {
+            $events = Event::accessibleBy($user)->with('user')->get();
         } else {
             $events = Event::all();
         }
@@ -132,6 +137,9 @@ class CardTemplateController extends Controller
 
         $template = CardTemplate::create($validated);
 
+        Cache::forget('card_templates_global');
+        Cache::forget("card_templates_user_{$user->id}");
+
         return redirect()->route('templates.index', ['template_id' => $template->id])
             ->with('success', "Custom artwork '{$template->name}' imported and created successfully!");
     }
@@ -143,9 +151,11 @@ class CardTemplateController extends Controller
             abort(401);
         }
 
-        // If this is another user's personal template, forbid
+        // If this is another user's personal template, forbid (unless sub-admin managing them)
         if ($cardTemplate->user_id && $cardTemplate->user_id !== $user->id && ! $user->isAdmin()) {
-            abort(403, 'Unauthorized to modify this template.');
+            if (! $user->isSubAdmin() || ! $user->assignedOrganizers()->where('users.id', $cardTemplate->user_id)->exists()) {
+                abort(403, 'Unauthorized to modify this template.');
+            }
         }
 
         if (! $user->isAdmin() && ! $user->canCustomizeTemplates()) {
@@ -210,6 +220,11 @@ class CardTemplateController extends Controller
         // System Administrator editing global template, or Customer editing their own template
         $cardTemplate->update($validated);
 
+        Cache::forget('card_templates_global');
+        if ($cardTemplate->user_id) {
+            Cache::forget("card_templates_user_{$cardTemplate->user_id}");
+        }
+
         return back()->with('success', "Card template '{$cardTemplate->name}' updated successfully.");
     }
 
@@ -226,7 +241,9 @@ class CardTemplateController extends Controller
         }
 
         if ($cardTemplate->user_id && $cardTemplate->user_id !== $user->id && ! $user->isAdmin()) {
-            abort(403, 'Unauthorized to delete this card template.');
+            if (! $user->isSubAdmin() || ! $user->assignedOrganizers()->where('users.id', $cardTemplate->user_id)->exists()) {
+                abort(403, 'Unauthorized to delete this card template.');
+            }
         }
 
         // Reassign any events currently using this template to the first available template
@@ -237,7 +254,13 @@ class CardTemplateController extends Controller
         }
 
         $templateName = $cardTemplate->name;
+        $templateUserId = $cardTemplate->user_id;
         $cardTemplate->delete();
+
+        Cache::forget('card_templates_global');
+        if ($templateUserId) {
+            Cache::forget("card_templates_user_{$templateUserId}");
+        }
 
         return back()->with('success', "Card template '{$templateName}' was deleted successfully.");
     }

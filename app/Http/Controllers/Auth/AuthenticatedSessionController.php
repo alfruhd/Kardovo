@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Models\User;
 use App\Notifications\TwoFactorCodeNotification;
+use App\Services\AuditLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -59,6 +60,8 @@ class AuthenticatedSessionController extends Controller
 
         // Clear any stale intended session URL (e.g. from previous gate scanner session)
         $request->session()->forget('url.intended');
+
+        AuditLogger::log('login_success', User::class, (string) $user->id, ['role' => $user->role], 'success', $user->id);
 
         if ($user->isScanner()) {
             return redirect()->route('scanner.index');
@@ -115,6 +118,11 @@ class AuthenticatedSessionController extends Controller
 
     public function destroy(Request $request): \Symfony\Component\HttpFoundation\Response
     {
+        $userId = Auth::id();
+        if ($userId) {
+            AuditLogger::log('logout', User::class, (string) $userId, null, 'success', $userId);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

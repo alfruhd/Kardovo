@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, useForm, router, usePage } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
+import EmptyEventState from '@/Components/EmptyEventState';
 import StatCard from '@/Components/StatCard';
 import StatusBadge from '@/Components/StatusBadge';
 import PersonalisedCard from '@/Components/PersonalisedCard';
@@ -11,6 +12,7 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import DangerButton from '@/Components/DangerButton';
+import ConfirmationModal from '@/Components/ConfirmationModal';
 import { 
     validateEmail, 
     validatePhone, 
@@ -22,7 +24,7 @@ import {
     X,
     Globe,
     Copy,
-    Palette,
+    Palette, TrendingUp, Zap,
     Utensils,
     AlertTriangle,
     Camera,
@@ -84,6 +86,7 @@ export default function EventDashboard({
     const canManageScanners = isAdmin || (user?.status !== 'suspended' && user?.effective_permissions?.can_manage_scanners !== false);
     const [search, setSearch] = useState(filters?.search || '');
     const [deliveryFilter, setDeliveryFilter] = useState(filters?.delivery || 'all');
+    const [channelFilter, setChannelFilter] = useState(filters?.channel || 'all');
     const [rsvpFilter, setRsvpFilter] = useState(filters?.rsvp || 'all');
     const [categoryFilter, setCategoryFilter] = useState(filters?.category || 'all');
 
@@ -96,9 +99,23 @@ export default function EventDashboard({
     const [cardPreviewModalOpen, setCardPreviewModalOpen] = useState(false);
     const [previewGuest, setPreviewGuest] = useState(null);
     const [editEventModalOpen, setEditEventModalOpen] = useState(false);
+    const [selectTemplateModalOpen, setSelectTemplateModalOpen] = useState(false);
+    const [selectedTemplateId, setSelectedTemplateId] = useState(event?.card_template_id || '');
+    const [savingTemplate, setSavingTemplate] = useState(false);
     const [clearGuestsModalOpen, setClearGuestsModalOpen] = useState(false);
     const [clearLogsModalOpen, setClearLogsModalOpen] = useState(false);
     const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+    const [confirmModal, setConfirmModal] = useState({
+        show: false,
+        title: '',
+        message: '',
+        warning: '',
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+        type: 'danger',
+        loading: false,
+        onConfirm: () => {},
+    });
     const exportDropdownRef = useRef(null);
 
     // Close export dropdown on outside click
@@ -114,16 +131,28 @@ export default function EventDashboard({
 
 
     // Edit Event Form
+    const [editEventTab, setEditEventTab] = useState('details'); // 'details' | 'microsite'
     const editEventForm = useForm({
         title: event?.title || '',
         event_type: event?.event_type || 'Wedding Reception',
         event_date: typeof event?.event_date === 'string' ? event.event_date.split('T')[0] : (event?.event_date || ''),
         event_time: event?.event_time || '',
         venue: event?.venue || '',
-        city: event?.city || 'Dar es Salaam',
+        city: event?.city || '',
         description: event?.description || '',
         card_template_id: event?.card_template_id || '',
         status: event?.status || 'active',
+        microsite_config: {
+            accent_color: event?.microsite_config?.accent_color || '#10b981',
+            cover_photo: event?.microsite_config?.cover_photo || '',
+            tagline: event?.microsite_config?.tagline || '',
+            dress_code: event?.microsite_config?.dress_code || '',
+            font_style: event?.microsite_config?.font_style || 'script',
+            show_countdown: event?.microsite_config?.show_countdown !== false,
+            rsvp_prompt: event?.microsite_config?.rsvp_prompt || 'Kindly confirm your attendance',
+            music_url: event?.microsite_config?.music_url || '',
+            programme: event?.microsite_config?.programme || [],
+        },
     });
 
     // Add Guest Form
@@ -169,6 +198,7 @@ export default function EventDashboard({
                 !editGuestModalOpen && 
                 !importModalOpen && 
                 !editEventModalOpen && 
+                !selectTemplateModalOpen &&
                 !cardPreviewModalOpen && 
                 typeof document !== 'undefined' && 
                 document.visibilityState === 'visible'
@@ -182,7 +212,32 @@ export default function EventDashboard({
         }, 4000);
 
         return () => clearInterval(interval);
-    }, [addGuestModalOpen, editGuestModalOpen, importModalOpen, editEventModalOpen, cardPreviewModalOpen]);
+    }, [addGuestModalOpen, editGuestModalOpen, importModalOpen, editEventModalOpen, selectTemplateModalOpen, cardPreviewModalOpen]);
+
+    const handleApplyTemplate = (templateId) => {
+        setSavingTemplate(true);
+        router.put(route('events.update', event?.id || 1), {
+            title: event?.title,
+            event_type: event?.event_type,
+            event_date: typeof event?.event_date === 'string' ? event.event_date.split('T')[0] : event?.event_date,
+            event_time: event?.event_time,
+            venue: event?.venue,
+            city: event?.city,
+            description: event?.description,
+            status: event?.status || 'active',
+            card_template_id: templateId || null,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setSelectTemplateModalOpen(false);
+                setSavingTemplate(false);
+                editEventForm.setData('card_template_id', templateId || '');
+            },
+            onError: () => {
+                setSavingTemplate(false);
+            }
+        });
+    };
 
     const handleEditEventSubmit = (e) => {
         e.preventDefault();
@@ -194,9 +249,21 @@ export default function EventDashboard({
     };
 
     const handleDeleteEvent = () => {
-        if (confirm(`Are you sure you want to permanently delete event "${event?.title || 'this event'}"?\n\nWARNING: This will permanently delete all guests (${stats?.total_guests || 0}), scannable passes, messages, and gate scan records.`)) {
-            router.delete(route('events.destroy', event?.id));
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Delete Event?',
+            message: `Delete "${event?.title || 'this event'}"? All guests and passes will be removed.`,
+            warning: 'This cannot be undone.',
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('events.destroy', event?.id), {
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const handleFilterSubmit = (e) => {
@@ -204,6 +271,7 @@ export default function EventDashboard({
         router.get(route('events.show', event?.id || 1), {
             search,
             delivery: deliveryFilter,
+            channel: channelFilter,
             rsvp: rsvpFilter,
             category: categoryFilter,
         }, { preserveState: true, replace: true });
@@ -316,24 +384,54 @@ export default function EventDashboard({
     };
 
     const handleDeleteGuest = (guest) => {
-        if (confirm(`Are you sure you want to remove ${guest.name} from this event?`)) {
-            router.delete(route('guests.destroy', [event?.id, guest?.id]));
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Remove Guest?',
+            message: `Remove "${guest.name}" from this event?`,
+            warning: 'Their pass will no longer work.',
+            confirmText: 'Remove',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('guests.destroy', [event?.id, guest?.id]), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const handleDeleteScanLog = (log) => {
         const guestName = log.guest?.name || 'Unregistered Guest';
-        if (confirm(`Are you sure you want to delete this gate activity log entry for "${guestName}"?`)) {
-            router.delete(route('events.destroyScanLog', [event?.id, log.id]), {
-                preserveScroll: true,
-            });
-        }
+        setConfirmModal({
+            show: true,
+            title: 'Delete Scan Log?',
+            message: `Delete scan record for "${guestName}"?`,
+            confirmText: 'Delete',
+            type: 'danger',
+            loading: false,
+            onConfirm: () => {
+                setConfirmModal(prev => ({ ...prev, loading: true }));
+                router.delete(route('events.destroyScanLog', [event?.id, log.id]), {
+                    preserveScroll: true,
+                    onFinish: () => setConfirmModal(prev => ({ ...prev, show: false, loading: false })),
+                });
+            }
+        });
     };
 
     const handleClearGuests = () => {
         const totalCount = guests?.total || 0;
         if (totalCount === 0) {
-            alert('There are no guests in this event to clear.');
+            setConfirmModal({
+                show: true,
+                title: 'No Guests',
+                message: 'There are no guests to clear.',
+                confirmText: 'OK',
+                type: 'info',
+                onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false })),
+            });
             return;
         }
         setClearGuestsModalOpen(true);
@@ -341,7 +439,14 @@ export default function EventDashboard({
 
     const handleClearScanLogs = () => {
         if (!recentScanLogs || recentScanLogs.length === 0) {
-            alert('There are no gate activity logs to clear.');
+            setConfirmModal({
+                show: true,
+                title: 'No Scan Logs',
+                message: 'There are no scan records to clear.',
+                confirmText: 'OK',
+                type: 'info',
+                onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false })),
+            });
             return;
         }
         setClearLogsModalOpen(true);
@@ -359,6 +464,22 @@ export default function EventDashboard({
         });
     };
 
+    if (!event || !event.id) {
+        return (
+            <KardovoAppLayout title="Event Details">
+                <Head title="Event Details - Kardovo" />
+                <div className="max-w-7xl mx-auto py-12 px-4">
+                    <EmptyEventState
+                        title="No Event Selected"
+                        description="Please select an event from the dashboard to view its details."
+                        buttonText="Go to Dashboard"
+                        buttonHref={route('dashboard')}
+                    />
+                </div>
+            </KardovoAppLayout>
+        );
+    }
+
     return (
         <KardovoAppLayout
             title={event?.title || 'Event Dashboard'}
@@ -369,10 +490,10 @@ export default function EventDashboard({
                         <button
                             type="button"
                             onClick={() => setImportModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] border border-slate-200/90 dark:border-white/[0.08] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
                             title="Bulk Import Excel or CSV Guest List"
                         >
-                            <FileSpreadsheet className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-400" />
                             <span className="hidden md:inline">Import Excel / CSV</span>
                             <span className="md:hidden">Import</span>
                         </button>
@@ -383,31 +504,55 @@ export default function EventDashboard({
                         <button
                             type="button"
                             onClick={() => setAddGuestModalOpen(true)}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:py-2 text-xs font-black text-white bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 sm:py-2 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                         >
-                            <Plus className="w-3.5 h-3.5 stroke-[3]" />
-                            <span>+ Add Guest</span>
+                            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                            <span>Add Guest</span>
                         </button>
                     ) : (
                         <button
                             type="button"
-                            onClick={() => alert('Guest registration and bulk spreadsheet import permissions are locked for your organizer account by platform governance.')}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-200/70 dark:bg-white/[0.06] border border-slate-300 dark:border-white/[0.08] rounded-xl cursor-not-allowed opacity-80 shadow-2xs"
+                            onClick={() => setConfirmModal({
+                                show: true,
+                                title: 'Feature Locked',
+                                message: 'Guest registration is currently disabled for this account.',
+                                confirmText: 'OK',
+                                type: 'warning',
+                                onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false })),
+                            })}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-bold text-slate-400 bg-white/[0.08] border border-white/[0.12] rounded-xl cursor-not-allowed opacity-80 shadow-2xs"
                             title="Guest imports locked by administration"
                         >
-                            <Lock className="w-3.5 h-3.5 text-slate-500" />
+                            <Lock className="w-3.5 h-3.5 text-slate-400" />
                             <span>Guest Reg. (Locked)</span>
                         </button>
                     )}
 
-                    {/* 3. Event Settings Button */}
+                    {/* 3. Template Picker Button */}
+                    {canCustomize && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSelectedTemplateId(event?.card_template_id || '');
+                                setSelectTemplateModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
+                            title="Select / Change Card Template"
+                        >
+                            <Palette className="w-3.5 h-3.5 text-emerald-400" />
+                            <span className="hidden md:inline">Card Template</span>
+                            <span className="md:hidden">Template</span>
+                        </button>
+                    )}
+
+                    {/* 4. Event Settings Button */}
                     <button
                         type="button"
                         onClick={() => setEditEventModalOpen(true)}
-                        className="p-1.5 sm:p-2 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.12] border border-slate-200/90 dark:border-white/[0.08] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
+                        className="p-1.5 sm:p-2 text-slate-200 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
                         title="Edit Event Details & Settings"
                     >
-                        <Edit className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                        <Edit className="w-4 h-4 text-emerald-400" />
                     </button>
                 </div>
             }
@@ -423,10 +568,10 @@ export default function EventDashboard({
                         subtitle="Invited attendees"
                         icon={Users}
                         titleColor="text-slate-900 dark:text-white"
-                        subtitleColor="text-cyan-600 dark:text-cyan-400 font-semibold"
-                        iconColor="text-cyan-600 dark:text-cyan-400"
-                        iconBg="bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500/20"
-                        hoverBorder="hover:border-cyan-500/40 dark:hover:border-cyan-500/40"
+                        subtitleColor="text-emerald-600 dark:text-emerald-400 font-semibold"
+                        iconColor="text-emerald-600 dark:text-emerald-400"
+                        iconBg="bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/20"
+                        hoverBorder="hover:border-emerald-500/40 dark:hover:border-emerald-500/40"
                     />
                     <StatCard
                         title="Messages Sent"
@@ -434,10 +579,10 @@ export default function EventDashboard({
                         subtitle={`${stats?.messages_sent || 0} dispatched passes`}
                         icon={Send}
                         titleColor="text-slate-900 dark:text-white"
-                        subtitleColor="text-cyan-600 dark:text-cyan-400 font-semibold"
-                        iconColor="text-cyan-600 dark:text-cyan-400"
-                        iconBg="bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500/20"
-                        hoverBorder="hover:border-cyan-500/40 dark:hover:border-cyan-500/40"
+                        subtitleColor="text-emerald-600 dark:text-emerald-400 font-semibold"
+                        iconColor="text-emerald-600 dark:text-emerald-400"
+                        iconBg="bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/20"
+                        hoverBorder="hover:border-emerald-500/40 dark:hover:border-emerald-500/40"
                     />
                     <StatCard
                         title="RSVP 'Will Attend'"
@@ -445,10 +590,10 @@ export default function EventDashboard({
                         subtitle={`${stats?.attendance_percent || 0}% response rate`}
                         icon={CheckCircle2}
                         titleColor="text-slate-900 dark:text-white"
-                        subtitleColor="text-cyan-600 dark:text-cyan-400 font-semibold"
-                        iconColor="text-cyan-600 dark:text-cyan-400"
-                        iconBg="bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500/20"
-                        hoverBorder="hover:border-cyan-500/40 dark:hover:border-cyan-500/40"
+                        subtitleColor="text-emerald-600 dark:text-emerald-400 font-semibold"
+                        iconColor="text-emerald-600 dark:text-emerald-400"
+                        iconBg="bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/20"
+                        hoverBorder="hover:border-emerald-500/40 dark:hover:border-emerald-500/40"
                     />
                     <StatCard
                         title="Checked In"
@@ -456,10 +601,10 @@ export default function EventDashboard({
                         subtitle="Live gate check-ins"
                         icon={QrCode}
                         titleColor="text-slate-900 dark:text-white"
-                        subtitleColor="text-cyan-600 dark:text-cyan-400 font-semibold"
-                        iconColor="text-cyan-600 dark:text-cyan-400"
-                        iconBg="bg-cyan-500/10 dark:bg-cyan-500/15 border-cyan-500/20"
-                        hoverBorder="hover:border-cyan-500/40 dark:hover:border-cyan-500/40"
+                        subtitleColor="text-emerald-600 dark:text-emerald-400 font-semibold"
+                        iconColor="text-emerald-600 dark:text-emerald-400"
+                        iconBg="bg-emerald-500/10 dark:bg-emerald-500/15 border-emerald-500/20"
+                        hoverBorder="hover:border-emerald-500/40 dark:hover:border-emerald-500/40"
                     />
                 </div>
 
@@ -470,41 +615,84 @@ export default function EventDashboard({
                             <button
                                 type="button"
                                 onClick={() => setAddGuestModalOpen(true)}
-                                className="py-2.5 px-3 rounded-xl bg-kardovo-navy dark:bg-cyan-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition"
+                                className="py-2.5 px-3 rounded-xl bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition cursor-pointer"
                             >
                                 <Plus className="w-3.5 h-3.5" />
-                                <span>+ Add Guest</span>
+                                <span>Add Guest</span>
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setImportModalOpen(true)}
-                                className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition border border-slate-200 dark:border-white/[0.08]"
+                                className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.08] text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition border border-slate-200 dark:border-white/[0.08] cursor-pointer"
                             >
-                                <Upload className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                <Upload className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                 <span>Import Excel</span>
                             </button>
                         </>
                     ) : null}
 
+                    {canCustomize && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setSelectedTemplateId(event?.card_template_id || '');
+                                setSelectTemplateModalOpen(true);
+                            }}
+                            className="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-white/[0.08] border border-slate-200 dark:border-white/[0.08] text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition cursor-pointer"
+                        >
+                            <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Card Template</span>
+                        </button>
+                    )}
+
                     {canBroadcast && (
                         <Link
                             href={route('messaging.index', { event_id: event.id })}
-                            className="py-2.5 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition"
+                            className="py-2.5 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition col-span-2 sm:col-span-1"
                         >
                             <Send className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                             <span>Broadcast</span>
                         </Link>
                     )}
+                </div>
 
-                    {canManageScanners && (
+                {/* 🎨 Assigned Card Template Banner */}
+                <div className="bg-white dark:bg-[#0B1524] rounded-2xl px-4 py-3 sm:px-5 sm:py-3.5 border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                            <Palette className="w-4 h-4" />
+                        </div>
+                        <div className="flex items-center gap-2 min-w-0 text-xs">
+                            <span className="text-slate-500 dark:text-slate-400 font-medium">Pass Template:</span>
+                            <span className="font-bold text-slate-900 dark:text-white truncate font-display">
+                                {event?.card_template?.name || event?.cardTemplate?.name || 'Default System Pass'}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+                        {canCustomize && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedTemplateId(event?.card_template_id || '');
+                                    setSelectTemplateModalOpen(true);
+                                }}
+                                className="px-3 py-1.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs flex items-center gap-1.5 shadow-xs active:scale-95 transition cursor-pointer"
+                            >
+                                <Palette className="w-3.5 h-3.5" />
+                                <span>Change Template</span>
+                            </button>
+                        )}
                         <Link
-                            href={route('scanner.index', { event_id: event.id })}
-                            className="py-2.5 px-3 rounded-xl bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200 dark:border-cyan-800/40 text-cyan-800 dark:text-cyan-300 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition"
+                            href={route('templates.index')}
+                            className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] text-slate-600 dark:text-slate-300 text-xs font-semibold flex items-center gap-1 transition"
+                            title="Open Pass Studio"
                         >
-                            <QrCode className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                            <span>Gate Scanner</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">Pass Studio</span>
                         </Link>
-                    )}
+                    </div>
                 </div>
 
                 {/* 2. Main Guest List Card with Filters & Table (Figure 4.1) */}
@@ -521,7 +709,7 @@ export default function EventDashboard({
                         </div>
 
                         {/* Search & Filters */}
-                        <form onSubmit={handleFilterSubmit} className="flex flex-wrap items-center gap-2.5">
+                        <form onSubmit={handleFilterSubmit} className="flex flex-wrap items-center justify-end gap-3 w-full md:w-auto mt-3 md:mt-0">
                             {/* Search Input */}
                             <div className="relative min-w-[200px]">
                                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
@@ -535,21 +723,45 @@ export default function EventDashboard({
                                 />
                             </div>
 
+                            
+                            {/* Channel Filter */}
+                            <select
+                                className="text-sm py-2 pl-3 pr-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm cursor-pointer hover:border-slate-300 outline-none"
+                                value={channelFilter}
+                                onChange={(e) => {
+                                    setChannelFilter(e.target.value);
+                                    router.get(route('events.show', event?.id || 1), {
+                                        search,
+                                        delivery: deliveryFilter,
+                                        channel: e.target.value,
+                                        rsvp: rsvpFilter,
+                                        category: categoryFilter,
+                                    }, { preserveState: true });
+                                }}
+                            >
+                                <option value="all">Channel: All</option>
+                                <option value="whatsapp">WhatsApp</option>
+                                <option value="sms">SMS</option>
+                            </select>
+
+
                             {/* Delivery Filter */}
                             <select
-                                className="text-xs py-2 pl-2.5 pr-7 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#08121E] text-slate-800 dark:text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 font-medium"
+                                className="text-sm py-2 pl-3 pr-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-sm cursor-pointer hover:border-slate-300 outline-none"
                                 value={deliveryFilter}
                                 onChange={(e) => {
                                     setDeliveryFilter(e.target.value);
                                     router.get(route('events.show', event?.id || 1), {
                                         search,
                                         delivery: e.target.value,
+                                        channel: channelFilter,
                                         rsvp: rsvpFilter,
                                         category: categoryFilter,
                                     }, { preserveState: true });
                                 }}
                             >
                                 <option value="all">Delivery: All</option>
+                                <option value="read">Read</option>
                                 <option value="delivered">Delivered</option>
                                 <option value="sent">Sent</option>
                                 <option value="draft">Draft</option>
@@ -557,231 +769,253 @@ export default function EventDashboard({
                             </select>
 
                             {/* RSVP Filter */}
-                            <select
-                                className="text-xs py-2 pl-2.5 pr-7 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#08121E] text-slate-800 dark:text-slate-200 focus:ring-cyan-500 focus:border-cyan-500 font-medium"
-                                value={rsvpFilter}
-                                onChange={(e) => {
-                                    setRsvpFilter(e.target.value);
-                                    router.get(route('events.show', event?.id || 1), {
-                                        search,
-                                        delivery: deliveryFilter,
-                                        rsvp: e.target.value,
-                                        category: categoryFilter,
-                                    }, { preserveState: true });
-                                }}
-                            >
-                                <option value="all">RSVP: All</option>
-                                <option value="attending">Will Attend</option>
-                                <option value="pending">Pending</option>
-                                <option value="declined">Will Not Attend</option>
-                            </select>
-
-                            {/* Export Options (CSV & PDF) */}
-                            {canExport ? (
-                                <div className="relative" ref={exportDropdownRef}>
-                                    <button
-                                        type="button"
-                                        onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] border border-slate-200/80 dark:border-white/[0.08] rounded-xl transition cursor-pointer shadow-2xs"
-                                        title="Export Attendee Manifest"
-                                    >
-                                        <Download className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
-                                        <span>Export</span>
-                                        <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${exportDropdownOpen ? 'rotate-180' : ''}`} />
-                                    </button>
-
-                                    {exportDropdownOpen && (
-                                        <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#0C1729] rounded-2xl shadow-xl border border-slate-200 dark:border-white/[0.08] p-1.5 z-50 animate-fadeIn space-y-0.5">
-                                            <a
-                                                href={route('guests.export', event?.id || 1)}
-                                                onClick={() => setExportDropdownOpen(false)}
-                                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
-                                            >
-                                                <FileSpreadsheet className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                                                <div>
-                                                    <div className="font-bold">Export as CSV (.csv)</div>
-                                                    <div className="text-[10px] text-slate-400 font-normal">Spreadsheet for Excel & Sheets</div>
-                                                </div>
-                                            </a>
-                                            <a
-                                                href={route('guests.exportPdf', event?.id || 1)}
-                                                onClick={() => setExportDropdownOpen(false)}
-                                                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
-                                            >
-                                                <FileText className="w-4 h-4 text-rose-600 dark:text-rose-400 flex-shrink-0" />
-                                                <div>
-                                                    <div className="font-bold">Export as PDF (.pdf)</div>
-                                                    <div className="text-[10px] text-slate-400 font-normal">Printable manifest & ledger</div>
-                                                </div>
-                                            </a>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => alert('Data and attendee manifest exporting is locked for your organizer account by platform governance.')}
-                                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.06] rounded-xl cursor-not-allowed opacity-75 shadow-2xs"
-                                    title="Data Exporting Locked"
+                            <div className="w-full sm:w-36">
+                                <select
+                                    value={rsvpFilter}
+                                    onChange={(e) => {
+                                        setRsvpFilter(e.target.value);
+                                        router.get(route('events.show', event?.id || 1), {
+                                            search,
+                                            delivery: deliveryFilter,
+                                            channel: channelFilter,
+                                            rsvp: e.target.value,
+                                            category: categoryFilter,
+                                        }, { preserveState: true });
+                                    }}
+                                    className="text-xs py-2 pl-2.5 pr-7 rounded-xl border border-slate-200 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#08121E] text-slate-800 dark:text-slate-200 focus:ring-emerald-500 focus:border-emerald-500 font-medium"
                                 >
-                                    <Lock className="w-3.5 h-3.5 text-slate-400" />
-                                    <span>Export (Locked)</span>
-                                </button>
-                            )}
+                                    <option value="all">All RSVP</option>
+                                    <option value="attending">Will Attend</option>
+                                    <option value="declined">Declined</option>
+                                    <option value="pending">Pending</option>
+                                </select>
+                            </div>
 
-                            {/* Clear All Guests (Far Right with Visual Boundary & Protection) */}
-                            {canImport && (guests?.total || 0) > 0 && (
-                                <div className="pl-2.5 border-l border-slate-200 dark:border-white/10 ml-auto xl:ml-2">
+                            {/* Secondary Actions (Export & Clear) */}
+                            <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+                                {/* Export Dropdown */}
+                                {canExport ? (
+                                    <div className="relative" ref={exportDropdownRef}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] border border-slate-200/80 dark:border-white/[0.08] rounded-xl transition cursor-pointer shadow-2xs"
+                                        >
+                                            <Download className="w-3.5 h-3.5" />
+                                            <span>Export</span>
+                                            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${exportDropdownOpen ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        {exportDropdownOpen && (
+                                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#0C1729] rounded-2xl shadow-xl border border-slate-200 dark:border-white/[0.08] p-1.5 z-50 animate-fadeIn space-y-0.5">
+                                                <a
+                                                    href={route('guests.export', event.id)}
+                                                    onClick={() => setExportDropdownOpen(false)}
+                                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                                >
+                                                    <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                                    <div className="flex flex-col">
+                                                        <span>Export as CSV</span>
+                                                        <span className="text-[10px] text-slate-400 font-normal">Standard comma-separated format</span>
+                                                    </div>
+                                                </a>
+                                                <a
+                                                    href={route('guests.exportPdf', event.id)}
+                                                    onClick={() => setExportDropdownOpen(false)}
+                                                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.06] rounded-xl transition text-left cursor-pointer"
+                                                >
+                                                    <FileText className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                                                    <div className="flex flex-col">
+                                                        <span>Export Printable PDF</span>
+                                                        <span className="text-[10px] text-slate-400 font-normal">Formatted attendee roster</span>
+                                                    </div>
+                                                </a>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
                                     <button
                                         type="button"
-                                        onClick={handleClearGuests}
-                                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-600 border border-rose-200 dark:border-rose-900/50 rounded-xl transition active:scale-95 shadow-2xs cursor-pointer group"
-                                        title="Permanently clear all attendees from this event"
+                                        disabled
+                                        title="Export disabled by admin"
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.06] rounded-xl cursor-not-allowed opacity-75 shadow-2xs"
                                     >
-                                        <Trash2 className="w-3.5 h-3.5 text-rose-500 group-hover:text-white transition" />
-                                        <span>Clear All Guests</span>
+                                        <Lock className="w-3.5 h-3.5" />
+                                        <span>Export</span>
                                     </button>
-                                </div>
-                            )}
+                                )}
+
+                                {/* Clear All Guests Button */}
+                                {isAdmin && guests?.total > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setClearGuestsModalOpen(true)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-600 border border-rose-200 dark:border-rose-900/50 rounded-xl transition active:scale-95 shadow-2xs cursor-pointer group"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                        <span className="hidden sm:inline">Clear List</span>
+                                    </button>
+                                )}
+                            </div>
                         </form>
                     </div>
 
-                    {/* Zebra Striped Data Table with Sticky Header */}
-                    <div className="overflow-x-auto overflow-y-auto max-h-[520px] lg:max-h-[580px] scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700">
-                        <table className="w-full text-left text-xs border-collapse min-w-[760px]">
+                    {/* Table View */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-slate-50/95 dark:bg-[#08121E]/95 text-[10.5px] uppercase font-extrabold tracking-wider text-slate-500 dark:text-slate-400 border-b border-slate-200 dark:border-white/[0.08] sticky top-0 z-20 backdrop-blur-md shadow-xs">
-                                    <th className="py-3 px-4 font-extrabold">Guest Name</th>
-                                    <th className="py-3 px-4 font-extrabold">Phone Number</th>
-                                    <th className="py-3 px-4 font-extrabold">Category</th>
-                                    <th className="py-3 px-4 font-extrabold">Card Number</th>
-                                    <th className="py-3 px-4 font-extrabold">Delivery</th>
-                                    <th className="py-3 px-4 font-extrabold">RSVP</th>
-                                    <th className="py-3 px-4 font-extrabold">Entries</th>
-                                    <th className="py-3 px-4 font-extrabold text-right">Actions</th>
+                                    <th className="py-3 px-4 sm:px-6">Guest Info</th>
+                                    <th className="py-3 px-4 sm:px-6">Pass Category</th>
+                                    <th className="py-3 px-4 sm:px-6">Card #</th>
+                                    <th className="py-3 px-4 sm:px-6">Pass Status</th>
+                                    <th className="py-3 px-4 sm:px-6">RSVP Status</th>
+                                    <th className="py-3 px-4 sm:px-6">Gate Access</th>
+                                    <th className="py-3 px-4 sm:px-6 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06]">
-                                {(guests?.data || []).length === 0 ? (
-                                    <tr>
-                                        <td colSpan="8" className="text-center py-12 text-slate-400 dark:text-slate-500">
-                                            <Users className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-600" />
-                                            <p className="font-semibold text-slate-700 dark:text-slate-300">No guests found matching filters</p>
-                                            <p className="text-[11px] mt-1">Try resetting filters or click "+ Add Guest" / "Import Excel" to add attendees.</p>
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    (guests?.data || []).map((guest, idx) => (
+                            <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] text-xs">
+                                {guests?.data?.length > 0 ? (
+                                    guests.data.map((guest, idx) => (
                                         <tr 
-                                            key={guest.id}
-                                            className={`hover:bg-cyan-50/30 dark:hover:bg-white/[0.04] transition-colors ${idx % 2 === 1 ? 'bg-slate-50/40 dark:bg-white/[0.02]' : 'bg-white dark:bg-transparent'}`}
+                                            key={guest.id} 
+                                            className={`hover:bg-emerald-50/30 dark:hover:bg-white/[0.04] transition-colors ${idx % 2 === 1 ? 'bg-slate-50/40 dark:bg-white/[0.02]' : 'bg-white dark:bg-transparent'}`}
                                         >
-                                            {/* Name */}
-                                            <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                                                <button
-                                                    onClick={() => handleOpenPreview(guest)}
-                                                    className="hover:text-cyan-600 dark:hover:text-cyan-400 text-left flex items-center gap-1.5 group cursor-pointer"
-                                                >
+                                            {/* Column 1: Guest Info */}
+                                            <td className="py-3.5 px-4 sm:px-6">
+                                                <div className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                                                     <span>{guest.name}</span>
-                                                    <ExternalLink className="w-3 h-3 text-slate-300 dark:text-slate-600 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition" />
-                                                </button>
+                                                </div>
+                                                <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
+                                                    {guest.phone}
+                                                </div>
                                             </td>
 
-                                            {/* Phone */}
-                                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 font-mono">
-                                                {guest.phone}
+                                            {/* Column 2: Category Badge */}
+                                            <td className="py-3.5 px-4 sm:px-6">
+                                                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                                    {guest.category || 'Single Entry'}
+                                                </span>
                                             </td>
 
-                                            {/* Category */}
-                                            <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300 font-semibold">
-                                                {guest.category}
+                                            {/* Column 3: Card # */}
+                                            <td className="py-3.5 px-4 sm:px-6 font-mono text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                                                {guest.card_number || '---'}
                                             </td>
 
-                                            {/* Card Number & Code */}
-                                            <td className="py-3.5 px-4 font-mono text-[11px] text-slate-700 dark:text-slate-300">
-                                                <div className="font-bold">{guest.card_number}</div>
-                                                <div className="text-[10px] text-slate-400 dark:text-slate-500">Code: {guest.unique_code}</div>
-                                            </td>
-
-                                            {/* Delivery Status Badge */}
-                                            <td className="py-3.5 px-4 whitespace-nowrap">
+                                            {/* Column 4: Pass Status */}
+                                            <td className="py-3.5 px-4 sm:px-6">
                                                 <StatusBadge status={guest.delivery_status} />
                                             </td>
 
-                                            {/* RSVP Status Badge */}
-                                            <td className="py-3.5 px-4 whitespace-nowrap">
+                                            {/* Column 5: RSVP Status */}
+                                            <td className="py-3.5 px-4 sm:px-6">
                                                 <StatusBadge status={guest.rsvp_status} />
                                             </td>
 
-                                            {/* Entries Used / Max */}
-                                            <td className="py-3.5 px-4">
+                                            {/* Column 6: Gate Access Scans */}
+                                            <td className="py-3.5 px-4 sm:px-6 font-mono">
                                                 <div className="flex items-center gap-1.5">
-                                                    <span className={`font-mono font-bold text-xs ${guest.entries_used >= guest.max_entries ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white'}`}>
-                                                        {guest.entries_used}/{guest.max_entries}
+                                                    <span className={`font-black ${guest.entries_used >= guest.max_entries ? 'text-rose-600 dark:text-rose-400' : 'text-slate-900 dark:text-white'}`}>
+                                                        {guest.entries_used || 0}
                                                     </span>
-                                                    {guest.entries_used > 0 && (
-                                                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold">
-                                                            In
-                                                        </span>
+                                                    <span className="text-slate-400">/</span>
+                                                    <span className="text-slate-500 dark:text-slate-400 font-bold">{guest.max_entries || 1}</span>
+                                                    {guest.entries_used >= guest.max_entries && (
+                                                        <span className="text-[10px] px-1.5 py-0.2 rounded bg-rose-100 dark:bg-rose-950/60 text-rose-800 dark:text-rose-300 font-bold">Max</span>
                                                     )}
                                                 </div>
                                             </td>
 
-                                            {/* Actions */}
-                                            <td className="py-3.5 px-4 text-right">
-                                                <div className="flex items-center justify-end gap-1.5">
+                                            {/* Column 7: Actions */}
+                                            <td className="py-3.5 px-4 sm:px-6 text-right">
+                                                <div className="flex items-center justify-end gap-1">
                                                     <button
-                                                        onClick={() => handleOpenPreview(guest)}
-                                                        className="p-1.5 text-slate-400 hover:text-cyan-600 dark:hover:text-cyan-400 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.08] transition"
-                                                        title="View Personalised Pass"
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setPreviewGuest(guest);
+                                                            setCardPreviewModalOpen(true);
+                                                        }}
+                                                        className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.08] transition cursor-pointer"
+                                                        title="Live Preview Pass"
                                                     >
-                                                        <Eye className="w-3.5 h-3.5" />
+                                                        <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button
-                                                        onClick={() => handleSendSingle(guest)}
-                                                        className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.08] transition"
-                                                        title="Send WhatsApp Invitation"
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setSelectedGuest(guest);
+                                                            editForm.setData({
+                                                                name: guest.name,
+                                                                phone: guest.phone,
+                                                                email: guest.email || '',
+                                                                category: guest.category || 'Single Entry',
+                                                                max_entries: guest.max_entries || 1,
+                                                                entries_used: guest.entries_used || 0,
+                                                                delivery_status: guest.delivery_status || 'draft',
+                                                                rsvp_status: guest.rsvp_status || 'pending',
+                                                                notes: guest.notes || '',
+                                                            });
+                                                            setEditGuestModalOpen(true);
+                                                        }}
+                                                        className="p-1.5 text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.08] transition cursor-pointer"
+                                                        title="Edit Guest Pass"
                                                     >
-                                                        <MessageSquare className="w-3.5 h-3.5" />
+                                                        <Edit className="w-4 h-4" />
                                                     </button>
+                                                    {guest.qr_token && (
+                                                        <a
+                                                            href={`/card/${guest.qr_token}`}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.08] transition"
+                                                            title="Direct Pass URL"
+                                                        >
+                                                            <ExternalLink className="w-4 h-4" />
+                                                        </a>
+                                                    )}
                                                     <button
-                                                        onClick={() => openEditModal(guest)}
-                                                        className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.08] transition"
-                                                        title="Edit Guest"
+                                                        type="button"
+                                                        onClick={() => handleDeleteGuest(guest.id, guest.name)}
+                                                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+                                                        title="Revoke & Delete Pass"
                                                     >
-                                                        <Edit className="w-3.5 h-3.5" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteGuest(guest)}
-                                                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-950/40 transition"
-                                                        title="Delete Guest"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        <Trash2 className="w-4 h-4" />
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
                                     ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" className="py-12 text-center text-slate-500 dark:text-slate-400">
+                                            <Users className="w-10 h-10 mx-auto text-slate-300 dark:text-slate-600 mb-2 stroke-[1.5]" />
+                                            <p className="font-bold text-sm text-slate-700 dark:text-slate-300">No guests found</p>
+                                            <p className="text-xs mt-1">Try changing filters or import guests to populate the roster.</p>
+                                        </td>
+                                    </tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
 
-                    {/* Pagination Bar */}
-                    {guests?.links?.length > 3 && (
-                        <div className="p-4 border-t border-slate-100 dark:border-white/[0.08] flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                            <div>
-                                Showing <strong className="text-slate-900 dark:text-white">{guests?.from || 0}</strong> to <strong className="text-slate-900 dark:text-white">{guests?.to || 0}</strong> of <strong className="text-slate-900 dark:text-white">{guests?.total || 0}</strong> results
+                    {/* Pagination */}
+                    {guests?.links && guests.links.length > 3 && (
+                        <div className="p-4 border-t border-slate-100 dark:border-white/[0.08] flex items-center justify-between">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
+                                Showing <span className="font-bold text-slate-900 dark:text-white">{guests.from || 0}</span> to <span className="font-bold text-slate-900 dark:text-white">{guests.to || 0}</span> of <span className="font-bold text-slate-900 dark:text-white">{guests.total || 0}</span> passes
                             </div>
                             <div className="flex items-center gap-1">
-                                {(guests?.links || []).map((link, i) => (
-                                    <Link
+                                {guests.links.map((link, i) => (
+                                    <button
                                         key={i}
-                                        href={link.url || '#'}
+                                        type="button"
+                                        disabled={!link.url}
+                                        onClick={() => link.url && router.visit(link.url, { preserveScroll: true })}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
-                                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold ${
+                                        className={`px-3 py-1.5 text-xs rounded-xl border transition cursor-pointer ${
                                             link.active 
-                                                ? 'bg-cyan-600 text-white border-cyan-600' 
+                                                ? 'bg-[#16A34A] text-white border-[#16A34A] font-bold' 
                                                 : (!link.url ? 'text-slate-300 dark:text-slate-600 border-slate-200 dark:border-white/[0.08] cursor-not-allowed' : 'text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/[0.08] hover:bg-slate-50 dark:hover:bg-white/[0.06]')
                                         }`}
                                     />
@@ -791,56 +1025,65 @@ export default function EventDashboard({
                     )}
                 </div>
 
-                {/* 3. Recent Gate Check-in Logs */}
-                {recentScanLogs.length > 0 && (
+                {/* 3. Live Gate Activity Log Stream */}
+                {recentScanLogs && recentScanLogs.length > 0 && (
                     <div className="bg-white dark:bg-[#0B1524] rounded-3xl border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 shadow-card">
-                        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-                            <h3 className="text-sm font-black text-slate-900 dark:text-white font-display flex items-center gap-2">
-                                <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                <span>Live Gate Activity Log</span>
-                            </h3>
+                        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-white/[0.08]">
                             <div className="flex items-center gap-2">
+                                <QrCode className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                <h3 className="text-sm font-black text-slate-900 dark:text-white font-display">
+                                    Live Gate Admission Feed
+                                </h3>
                                 <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 font-mono px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08]">
-                                    Showing all {recentScanLogs.length} {recentScanLogs.length === 1 ? 'scan' : 'scans'}
+                                    {recentScanLogs.length} scans
                                 </span>
+                            </div>
+
+                            {isAdmin && (
                                 <button
                                     type="button"
-                                    onClick={handleClearScanLogs}
+                                    onClick={() => setClearLogsModalOpen(true)}
                                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 hover:text-white hover:bg-rose-600 dark:hover:bg-rose-600 border border-rose-200 dark:border-rose-900/50 rounded-xl transition active:scale-95 shadow-xs cursor-pointer"
-                                    title="Clear all gate activity scan logs for this event"
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
-                                    <span>Clear All Logs</span>
+                                    <span>Clear Logs</span>
                                 </button>
-                            </div>
+                            )}
                         </div>
 
-                        <div className="space-y-2 max-h-[320px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 pr-1">
+                        <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
                             {recentScanLogs.map((log) => (
                                 <div key={log.id} className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.08] text-xs">
                                     <div className="flex items-center gap-3">
-                                        <StatusBadge status={log.status} />
+                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                                            log.status === 'valid' ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/15 text-rose-600 dark:text-rose-400'
+                                        }`}>
+                                            {log.status === 'valid' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                                        </div>
                                         <div>
-                                            <span className="font-bold text-slate-900 dark:text-white">
-                                                {log.guest?.name || 'Unknown / Unregistered Guest'}
-                                            </span>
-                                            <span className="text-slate-500 dark:text-slate-400 ml-2 font-medium">
-                                                ({log.gate_label} by {log.scanner_name || 'Gate Scanner'})
-                                            </span>
+                                            <div className="font-bold text-slate-900 dark:text-white">
+                                                {log.guest_name || 'Guest'}
+                                            </div>
+                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono flex items-center gap-2">
+                                                <span>Scanner: {log.scanner_name || 'Gate Scanner'}</span>
+                                                <span>•</span>
+                                                <span>{log.scanned_at ? new Date(log.scanned_at).toLocaleString() : 'Just now'}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-slate-500 dark:text-slate-400 font-mono text-[11px]">
-                                            {new Date(log.scanned_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDeleteScanLog(log)}
-                                            className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition active:scale-95 cursor-pointer"
-                                            title="Delete gate activity entry"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
+
+                                    <div className="flex items-center gap-2">
+                                        <StatusBadge status={log.status === 'valid' ? 'admitted' : 'rejected'} />
+                                        {isAdmin && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteLog(log.id)}
+                                                className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition active:scale-95 cursor-pointer"
+                                                title="Delete this scan log"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -849,404 +1092,119 @@ export default function EventDashboard({
                 )}
             </div>
 
-            {/* Modal: Import Guests */}
-            <Modal show={importModalOpen} onClose={() => setImportModalOpen(false)} maxWidth="2xl">
-                <form onSubmit={handleImportSubmit} className="p-6 sm:p-7 space-y-5">
-                    {/* Header */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-white/[0.08] pb-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-800 dark:text-cyan-300 text-[10.5px] font-mono font-extrabold uppercase">
-                                    Excel &amp; CSV Bulk Ingestion
-                                </span>
-                            </div>
-                            <h3 className="text-xl font-black text-slate-900 dark:text-white font-display">
-                                Import Attendees into {event?.title || 'Event'}
-                            </h3>
-                        </div>
-
-                        {/* Download Sample Templates */}
-                        <div className="flex items-center gap-2">
-                            <a
-                                href={route('guests.sampleTemplate') + '?format=xlsx'}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 border border-emerald-300 dark:border-emerald-800/50 rounded-xl transition shadow-xs"
-                                title="Download sample Excel spreadsheet template"
-                            >
-                                <FileSpreadsheet className="w-3.5 h-3.5" />
-                                <span>.xlsx Template</span>
-                            </a>
-                            <a
-                                href={route('guests.sampleTemplate') + '?format=csv'}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 border border-slate-200 dark:border-white/[0.08] rounded-xl transition shadow-xs"
-                                title="Download sample CSV template"
-                            >
-                                <Download className="w-3.5 h-3.5" />
-                                <span>.csv Template</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    {/* Mode Switcher Tabs */}
-                    <div className="flex rounded-2xl bg-slate-100 dark:bg-white/[0.04] p-1 border border-slate-200/80 dark:border-white/[0.08]">
-                        <button
-                            type="button"
-                            onClick={() => setImportMode('excel')}
-                            className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-                                importMode === 'excel'
-                                    ? 'bg-white dark:bg-[#0B1524] text-cyan-800 dark:text-cyan-300 shadow-sm border border-slate-200/90 dark:border-cyan-500/40'
-                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                            }`}
-                        >
-                            <FileSpreadsheet className="w-4 h-4" />
-                            <span>Upload Excel / CSV Spreadsheet</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setImportMode('paste')}
-                            className={`flex-1 py-2 px-4 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 ${
-                                importMode === 'paste'
-                                    ? 'bg-white dark:bg-[#0B1524] text-cyan-800 dark:text-cyan-300 shadow-sm border border-slate-200/90 dark:border-cyan-500/40'
-                                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
-                            }`}
-                        >
-                            <FileText className="w-4 h-4" />
-                            <span>Paste Table / CSV Text</span>
+            
+            
+            {/* Modal: Import Excel / Paste Roster Portal */}
+            <Modal show={importModalOpen} onClose={() => setImportModalOpen(false)} maxWidth="md">
+                <form onSubmit={handleImportSubmit} className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Import Guests</h3>
+                        <button type="button" onClick={() => setImportModalOpen(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition">
+                            <X className="w-5 h-5" />
                         </button>
                     </div>
 
-                    {/* System Acceptance Conditions Notice */}
-                    <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-cyan-950/30 border border-blue-200/80 dark:border-cyan-800/40 text-xs text-slate-700 dark:text-slate-300 space-y-2">
-                        <div className="font-bold text-kardovo-blue-dark dark:text-cyan-300 flex items-center gap-1.5">
-                            <Info className="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" />
-                            <span>System Acceptance Conditions:</span>
-                        </div>
-                        <ul className="text-[11px] space-y-1 text-slate-600 dark:text-slate-300 list-disc list-inside">
-                            <li><strong className="text-slate-900 dark:text-white">Required Column:</strong> <code>Guest Name</code> (e.g. <em>Name</em>, <em>Full Name</em>, <em>Attendee</em>). Rows with blank names are skipped.</li>
-                            <li><strong className="text-slate-900 dark:text-white">Phone Normalization:</strong> Numbers with <code>+</code> or spaces (e.g. <code>+255 712 345 678</code> or <code>0712 345 678</code>) are automatically sanitized into digits-only API format (<code>255712345678</code>).</li>
-                            <li><strong className="text-slate-900 dark:text-white">Supported Columns:</strong> <code>Guest Name</code>, <code>Phone</code>, <code>Category</code>, <code>Max Entries</code>.</li>
-                            <li><strong className="text-slate-900 dark:text-white">Supported Formats:</strong> <code>.xlsx</code>, <code>.xls</code>, <code>.csv</code>, <code>.tsv</code>, <code>.txt</code> (max 10MB).</li>
-                        </ul>
+                    <div className="flex gap-2 mb-6">
+                        <button type="button" onClick={() => setImportMode('excel')} className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${importMode === 'excel' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-500/50 dark:bg-emerald-500/10 dark:text-emerald-400' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'}`}>Upload File</button>
+                        <button type="button" onClick={() => setImportMode('paste')} className={`flex-1 py-2 text-sm font-medium rounded-lg border transition-colors ${importMode === 'paste' ? 'border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-500/50 dark:bg-emerald-500/10 dark:text-emerald-400' : 'border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'}`}>Paste Text</button>
                     </div>
 
-                    {/* Import Inputs */}
                     {importMode === 'excel' ? (
-                        <div className="space-y-3">
-                            <InputLabel value="Select Excel (.xlsx, .xls) or CSV File *" />
-                            <div className="relative border-2 border-dashed border-slate-300 dark:border-white/[0.08] hover:border-cyan-500 dark:hover:border-cyan-400 rounded-2xl p-6 text-center transition bg-slate-50/50 dark:bg-white/[0.02]">
-                                <input
-                                    type="file"
-                                    accept=".xlsx,.xls,.csv,.tsv,.txt"
-                                    onChange={(e) => importForm.setData('file', e.target.files[0])}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    required={!importForm.data.file}
-                                />
-                                <div className="flex flex-col items-center justify-center space-y-2 pointer-events-none">
-                                    <div className="w-12 h-12 rounded-2xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center">
-                                        <FileSpreadsheet className="w-6 h-6" />
-                                    </div>
-                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                        {importForm.data.file ? (
-                                            <span className="text-cyan-700 dark:text-cyan-300 flex items-center gap-1.5 justify-center">
-                                                <FileCheck className="w-4 h-4 text-emerald-500" />
-                                                <span>{importForm.data.file.name}</span>
-                                                <span className="text-[10.5px] font-mono text-slate-400">({(importForm.data.file.size / 1024).toFixed(1)} KB)</span>
-                                            </span>
-                                        ) : (
-                                            <span>Click to choose or drag &amp; drop an Excel (.xlsx, .xls) or CSV file</span>
-                                        )}
-                                    </div>
-                                    <p className="text-[11px] text-slate-400">
-                                        Accepts Microsoft Excel (.xlsx, .xls) and Comma-Separated Values (.csv)
-                                    </p>
-                                </div>
+                        <div className="space-y-4">
+                            <div>
+                                <InputLabel value="Select Excel or CSV File" />
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 mb-3 leading-relaxed">
+                                    Please upload an Excel (.xlsx, .xls) or CSV file. The file should have columns for <strong>Name</strong> and <strong>Phone</strong> (other columns like Category are optional).
+                                </p>
+                                <input type="file" className="block w-full text-sm text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 dark:file:bg-emerald-500/10 dark:file:text-emerald-400 dark:hover:file:bg-emerald-500/20 transition-colors cursor-pointer" accept=".xlsx,.xls,.csv" onChange={(e) => importForm.setData('file', e.target.files[0])} />
+                                <InputError message={importForm.errors.file} className="mt-1" />
                             </div>
-                            <InputError message={importForm.errors.file} className="mt-1" />
                         </div>
                     ) : (
-                        <div>
-                            <InputLabel value="Paste Guest List (Format: Name, Phone, Category, Max Entries)" />
-                            <textarea
-                                rows={6}
-                                className="mt-1 block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-2xl text-xs font-mono shadow-xs focus:border-cyan-500 focus:ring-cyan-500"
-                                placeholder={`Alfred Mashauri, +255 754 123 456, VIP Pass, 2
-Neema Mbwana, 0712 345 678, Double Entry, 2
-Baraka Simba, 255765112233, Single Entry, 1`}
-                                value={importForm.data.raw_text}
-                                onChange={(e) => importForm.setData('raw_text', e.target.value)}
-                                required={importMode === 'paste'}
-                            />
-                            <InputError message={importForm.errors.raw_text} className="mt-1" />
+                        <div className="space-y-4">
+                            <div>
+                                <InputLabel value="Paste Guest List (Name, Phone)" />
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 mb-3 leading-relaxed">
+                                    Paste your guest list with one guest per line. Separate the name and phone number using a comma.
+                                </p>
+                                <textarea className="w-full border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 focus:border-emerald-500 dark:focus:border-emerald-500 rounded-lg shadow-sm min-h-[120px] text-sm p-3" placeholder="e.g.&#10;Neema Mbwana, 0712 345 678&#10;Baraka Juma, +255 789 123 456" value={importForm.data.raw_text} onChange={(e) => importForm.setData('raw_text', e.target.value)}></textarea>
+                                <InputError message={importForm.errors.raw_text} className="mt-1" />
+                            </div>
                         </div>
                     )}
 
-                    {/* Defaults for Missing Columns */}
-                    <div className="pt-2 border-t border-slate-100 dark:border-white/[0.08] space-y-2">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* Option 1: Default Category */}
-                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] flex flex-col justify-between gap-3">
-                                <div>
-                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                                        <span>Default Category</span>
-                                        <span className="text-[10px] text-slate-400 font-normal">(Fallback)</span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                                        Applied if your file only contains names and phone numbers.
-                                    </p>
-                                </div>
-                                <select
-                                    className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-bold py-2.5 px-3 focus:border-cyan-500 focus:ring-cyan-500 shadow-2xs cursor-pointer"
-                                    value={importForm.data.default_category}
-                                    onChange={(e) => importForm.setData('default_category', e.target.value)}
-                                >
-                                    <option value="Single Entry">Single Entry</option>
-                                    <option value="Double Entry">Double Entry</option>
-                                    <option value="VIP Pass">VIP Pass</option>
-                                    <option value="VVIP Pass">VVIP Pass</option>
-                                    <option value="Special Guest">Special Guest</option>
-                                </select>
-                            </div>
-
-                            {/* Option 2: Default Allowed Entries */}
-                            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] flex flex-col justify-between gap-3">
-                                <div>
-                                    <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                                        <span>Default Allowed Entries</span>
-                                        <span className="text-[10px] text-slate-400 font-normal">(Fallback)</span>
-                                    </div>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                                        Scans allowed at gate (1 = Single Entry, 2 = Double Entry).
-                                    </p>
-                                </div>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="20"
-                                    className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-bold py-2.5 px-3 focus:border-cyan-500 focus:ring-cyan-500 shadow-2xs font-mono"
-                                    value={importForm.data.default_max_entries}
-                                    onChange={(e) => importForm.setData('default_max_entries', e.target.value)}
-                                />
-                            </div>
+                    <div className="grid grid-cols-2 gap-4 mt-6">
+                        <div>
+                            <InputLabel value="Default Category" />
+                            <TextInput type="text" className="block w-full mt-1 text-sm py-2 px-3 rounded-lg" placeholder="e.g. Regular" value={importForm.data.default_category} onChange={(e) => importForm.setData('default_category', e.target.value)} />
+                        </div>
+                        <div>
+                            <InputLabel value="Allowed Entries" />
+                            <TextInput type="number" min="1" className="block w-full mt-1 text-sm py-2 px-3 rounded-lg" value={importForm.data.default_max_entries} onChange={(e) => importForm.setData('default_max_entries', e.target.value)} />
                         </div>
                     </div>
 
-                    {/* Modal Footer */}
-                    <div className="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
-                        <SecondaryButton onClick={() => setImportModalOpen(false)}>
-                            Cancel
-                        </SecondaryButton>
-                        <PrimaryButton 
-                            disabled={importForm.processing || (importMode === 'excel' && !importForm.data.file) || (importMode === 'paste' && !importForm.data.raw_text.trim())} 
-                            className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
-                        >
-                            <Upload className="w-3.5 h-3.5" />
-                            <span>{importForm.processing ? 'Processing Import...' : 'Execute Import'}</span>
+                    <div className="flex justify-end gap-3 mt-8">
+                        <SecondaryButton onClick={() => setImportModalOpen(false)} className="!rounded-lg !py-2 !px-4 text-sm cursor-pointer">Cancel</SecondaryButton>
+                        <PrimaryButton disabled={importForm.processing} className="!rounded-lg !py-2 !px-4 text-sm gap-1.5 cursor-pointer">
+                            <Check className="w-4 h-4" />
+                            <span>Import Guests</span>
                         </PrimaryButton>
                     </div>
                 </form>
             </Modal>
-
-            {/* Modal: Add Single Guest Portal */}
-            <Modal show={addGuestModalOpen} onClose={() => setAddGuestModalOpen(false)} maxWidth="lg">
-                <form onSubmit={handleAddGuestSubmit} className="p-6 sm:p-7 space-y-5">
-                    {/* Header */}
-                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/[0.08] pb-4">
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-800 dark:text-cyan-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
-                                    <Sparkles className="w-3 h-3" />
-                                    <span>Pass Provisioning Portal</span>
-                                </span>
-                            </div>
-                            <h3 className="text-xl font-black text-slate-900 dark:text-white font-display">
-                                Add Attendee Pass
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                Generates a unique 4K invitation pass, scannable QR token &amp; security gate code.
-                            </p>
-                        </div>
-
-                        <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 flex items-center justify-center flex-shrink-0">
-                            <Plus className="w-5 h-5 stroke-[2.5]" />
-                        </div>
+{/* Modal: Add Single Guest Portal */}
+            <Modal show={addGuestModalOpen} onClose={() => setAddGuestModalOpen(false)} maxWidth="sm">
+                <form onSubmit={handleAddGuestSubmit} className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Add Guest</h3>
+                        <button type="button" onClick={() => setAddGuestModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition">
+                            <X className="w-5 h-5" />
+                        </button>
                     </div>
 
                     <div className="space-y-4">
-                        {/* 1. Guest Name */}
                         <div>
-                            <InputLabel value="Attendee Full Name *" />
-                            <div className="relative mt-1">
-                                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                <TextInput
-                                    type="text"
-                                    className="block w-full text-xs font-bold pl-10 py-2.5 rounded-2xl"
-                                    placeholder="e.g. Neema Mbwana"
-                                    value={addForm.data.name}
-                                    onChange={(e) => {
-                                        addForm.setData('name', e.target.value);
-                                        if (addClientErrors.name) setAddClientErrors(prev => ({ ...prev, name: undefined }));
-                                    }}
-                                    hasError={Boolean(addClientErrors.name || addForm.errors.name)}
-                                    isValid={Boolean(addForm.data.name.trim().length >= 2)}
-                                    required
-                                    autoFocus
-                                />
-                            </div>
+                            <InputLabel value="Full Name" />
+                            <TextInput type="text" className="block w-full mt-1 text-sm py-2 px-3 rounded-lg" placeholder="e.g. John Doe" value={addForm.data.name} onChange={(e) => { addForm.setData('name', e.target.value); if (addClientErrors.name) setAddClientErrors(prev => ({ ...prev, name: undefined })); }} required autoFocus />
                             <InputError message={addClientErrors.name || addForm.errors.name} className="mt-1" />
                         </div>
 
-                        {/* 2. Phone Number with Auto-Sanitization Indicator */}
                         <div>
-                            <div className="flex items-center justify-between">
-                                <InputLabel value="Phone Number (WhatsApp & SMS) *" />
-                                {addForm.data.phone && validatePhone(addForm.data.phone) ? (
-                                    <span className="text-[10.5px] font-mono text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                                        <Check className="w-3 h-3 stroke-[3]" />
-                                        <span>Verified phone format</span>
-                                    </span>
-                                ) : (
-                                    <span className="text-[10px] font-mono text-slate-400">
-                                        E.164 or local format
-                                    </span>
-                                )}
-                            </div>
-                            <div className="relative mt-1">
-                                <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                                <TextInput
-                                    type="text"
-                                    className="block w-full text-xs font-mono font-bold pl-10 py-2.5 rounded-2xl"
-                                    placeholder="0712 345 678 or +255 712 345 678"
-                                    value={addForm.data.phone}
-                                    onChange={(e) => {
-                                        addForm.setData('phone', e.target.value);
-                                        if (addClientErrors.phone) setAddClientErrors(prev => ({ ...prev, phone: undefined }));
-                                    }}
-                                    hasError={Boolean(addClientErrors.phone || addForm.errors.phone)}
-                                    isValid={Boolean(addForm.data.phone.trim() && validatePhone(addForm.data.phone))}
-                                    required
-                                />
-                            </div>
-                            {addForm.data.phone && (
-                                <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-mono mt-1">
-                                    Normalized Destination: <span className="font-bold text-cyan-600 dark:text-cyan-400">{addForm.data.phone.replace(/[^0-9]/g, '').replace(/^0/, '255') || '---'}</span>
-                                </p>
-                            )}
+                            <InputLabel value="Phone Number" />
+                            <TextInput type="text" className="block w-full mt-1 text-sm py-2 px-3 rounded-lg" placeholder="e.g. 0712345678" value={addForm.data.phone} onChange={(e) => { addForm.setData('phone', e.target.value); if (addClientErrors.phone) setAddClientErrors(prev => ({ ...prev, phone: undefined })); }} required />
                             <InputError message={addClientErrors.phone || addForm.errors.phone} className="mt-1" />
                         </div>
 
-                        {/* 3. Pass Category Quick Select Capsules */}
-                        <div className="space-y-2">
-                            <InputLabel value="Invitation Pass Category *" />
-                            <div className="grid grid-cols-3 gap-2">
-                                {[
-                                    { name: 'Single Entry', entries: 1, label: 'Single Entry (1x)' },
-                                    { name: 'Double Entry', entries: 2, label: 'Double Entry (2x)' },
-                                    { name: 'VIP Pass', entries: 2, label: 'VIP Pass (2x)' },
-                                    { name: 'VVIP Pass', entries: 3, label: 'VVIP Pass (3x)' },
-                                    { name: 'Special Guest', entries: 1, label: 'Special Guest' },
-                                    { name: 'Custom', entries: addForm.data.max_entries || 1, label: 'Custom Category' },
-                                ].map((cat) => {
-                                    const isSelected = addForm.data.category === cat.name;
-                                    return (
-                                        <button
-                                            key={cat.name}
-                                            type="button"
-                                            onClick={() => {
-                                                addForm.setData({
-                                                    ...addForm.data,
-                                                    category: cat.name === 'Custom' ? (addForm.data.category || 'Special Pass') : cat.name,
-                                                    max_entries: cat.entries
-                                                });
-                                            }}
-                                            className={`p-2.5 rounded-xl border text-xs font-bold text-center transition cursor-pointer active:scale-95 flex flex-col items-center justify-center ${
-                                                isSelected
-                                                    ? 'bg-cyan-50 dark:bg-cyan-950/60 border-cyan-500 dark:border-cyan-400 text-cyan-900 dark:text-cyan-100 shadow-sm ring-1 ring-cyan-500/30'
-                                                    : 'bg-white dark:bg-[#0B1524] border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 hover:border-slate-300'
-                                            }`}
-                                        >
-                                            <span className="truncate">{cat.name}</span>
-                                            <span className="text-[10px] font-mono text-slate-400 mt-0.5">{cat.entries}x scan</span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* 4. Category Name Text & Allowed Gate Entries */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <InputLabel value="Category Label (Printed on Pass)" />
-                                <TextInput
-                                    type="text"
-                                    className="block w-full text-xs font-bold py-2.5 rounded-xl mt-1"
-                                    value={addForm.data.category}
-                                    onChange={(e) => addForm.setData('category', e.target.value)}
-                                    placeholder="e.g. Single Entry, VIP Pass"
-                                    required
-                                />
+                                <InputLabel value="Category" />
+                                <TextInput type="text" className="block w-full mt-1 text-sm py-2 px-3 rounded-lg" placeholder="e.g. VIP" value={addForm.data.category} onChange={(e) => addForm.setData('category', e.target.value)} />
                             </div>
                             <div>
-                                <InputLabel value="Allowed Gate Entries (1 - 20) *" />
-                                <TextInput
-                                    type="number"
-                                    min="1"
-                                    max="20"
-                                    className="block w-full text-xs font-bold font-mono py-2.5 rounded-xl mt-1"
-                                    value={addForm.data.max_entries}
-                                    onChange={(e) => addForm.setData('max_entries', parseInt(e.target.value) || 1)}
-                                    required
-                                />
+                                <InputLabel value="Entries" />
+                                <TextInput type="number" min="1" className="block w-full mt-1 text-sm py-2 px-3 rounded-lg" value={addForm.data.max_entries} onChange={(e) => addForm.setData('max_entries', parseInt(e.target.value) || 1)} />
                             </div>
-                        </div>
-
-                        {/* 5. Live Pass Preview Capsule */}
-                        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] flex items-center justify-between">
-                            <div className="flex items-center gap-3 min-w-0">
-                                <div className="w-9 h-9 rounded-xl bg-kardovo-navy dark:bg-cyan-600 text-white font-black text-sm flex items-center justify-center flex-shrink-0 shadow-xs">
-                                    {(addForm.data.name || 'G').charAt(0).toUpperCase()}
-                                </div>
-                                <div className="min-w-0">
-                                    <div className="text-xs font-black text-slate-900 dark:text-white truncate">
-                                        {addForm.data.name || 'Guest Name Preview'}
-                                    </div>
-                                    <div className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2 mt-0.5">
-                                        <span className="text-cyan-700 dark:text-cyan-400 font-bold">{addForm.data.category || 'Single Entry'}</span>
-                                        <span>•</span>
-                                        <span>{addForm.data.max_entries || 1}x Admittance</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-extrabold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 flex-shrink-0">
-                                <ShieldCheck className="w-3 h-3" />
-                                <span>Secured Pass</span>
-                            </span>
                         </div>
                     </div>
 
-                    {/* Modal Footer */}
-                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
-                        <SecondaryButton onClick={() => setAddGuestModalOpen(false)}>
-                            Cancel
-                        </SecondaryButton>
-                        <PrimaryButton 
-                            disabled={addForm.processing || !addForm.data.name.trim() || !addForm.data.phone.trim()} 
-                            className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
-                        >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>{addForm.processing ? 'Provisioning Pass...' : 'Create & Issue Pass'}</span>
+                    <div className="flex justify-end gap-3 mt-8">
+                        <SecondaryButton onClick={() => setAddGuestModalOpen(false)} className="!rounded-lg !py-2 !px-4 text-sm cursor-pointer">Cancel</SecondaryButton>
+                        <PrimaryButton disabled={addForm.processing} className="!rounded-lg !py-2 !px-4 text-sm gap-1.5 cursor-pointer">
+                            <Plus className="w-4 h-4" />
+                            <span>Save Guest</span>
                         </PrimaryButton>
                     </div>
                 </form>
             </Modal>
-
-            {/* Modal: Edit Guest Pass */}
+{/* Modal: Edit Guest Pass */}
             <Modal show={editGuestModalOpen} onClose={() => setEditGuestModalOpen(false)} maxWidth="lg">
-                <form onSubmit={handleEditSubmit} className="p-6 sm:p-7 space-y-5">
+                <form onSubmit={handleEditSubmit} className="p-6 sm:p-7 space-y-5 overflow-y-auto max-h-[90vh]">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/[0.08] pb-4">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-800 dark:text-cyan-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
                                     <Edit className="w-3 h-3" />
                                     <span>Manage Guest Pass</span>
                                 </span>
@@ -1353,6 +1311,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     <option value="draft">Draft (Unsent)</option>
                                     <option value="sent">Sent</option>
                                     <option value="delivered">Delivered</option>
+                                    <option value="read">Read</option>
                                     <option value="failed">Failed</option>
                                 </select>
                             </div>
@@ -1391,7 +1350,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                         </SecondaryButton>
                         <PrimaryButton 
                             disabled={editForm.processing || !editForm.data.name.trim() || !editForm.data.phone.trim()} 
-                            className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
+                            className="text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
                         >
                             <Check className="w-3.5 h-3.5" />
                             <span>{editForm.processing ? 'Saving Changes...' : 'Update Guest Pass'}</span>
@@ -1406,7 +1365,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                     <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/[0.08]">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-800 dark:text-cyan-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
                                     <Sparkles className="w-3 h-3" />
                                     <span>Live Pass Rendering</span>
                                 </span>
@@ -1442,7 +1401,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     href={`/card/${previewGuest?.qr_token || ''}`}
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="font-mono text-cyan-600 dark:text-cyan-400 font-bold hover:underline flex items-center gap-1"
+                                    className="font-mono text-emerald-600 dark:text-emerald-400 font-bold hover:underline flex items-center gap-1"
                                 >
                                     <span>/card/{(previewGuest?.qr_token || '').substring(0, 16)}...</span>
                                     <ExternalLink className="w-3.5 h-3.5" />
@@ -1453,14 +1412,119 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                 </div>
             </Modal>
 
+            {/* Modal: Select Card Template */}
+            <Modal show={selectTemplateModalOpen} onClose={() => setSelectTemplateModalOpen(false)} maxWidth="md">
+                <div className="p-5 sm:p-6 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/[0.08] pb-3.5">
+                        <div>
+                            <h3 className="text-lg font-black text-slate-900 dark:text-white font-display">
+                                Select Template
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                Choose a card template for this event.
+                            </p>
+                        </div>
+
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                            <Palette className="w-4 h-4" />
+                        </div>
+                    </div>
+
+                    {/* Template List: Just list the titles */}
+                    <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                        {/* 1. Default System Pass */}
+                        <div
+                            onClick={() => setSelectedTemplateId('')}
+                            className={`px-4 py-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
+                                selectedTemplateId === '' || selectedTemplateId === null || selectedTemplateId === undefined
+                                    ? 'border-[#16A34A] bg-emerald-500/5 dark:bg-emerald-500/10'
+                                    : 'border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#08121E] hover:border-slate-300 dark:hover:border-white/[0.15]'
+                            }`}
+                        >
+                            <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
+                                Default System Pass
+                            </span>
+                            <div className={`w-4 h-4 rounded-full flex items-center justify-center border transition flex-shrink-0 ${
+                                selectedTemplateId === '' || selectedTemplateId === null || selectedTemplateId === undefined
+                                    ? 'bg-[#16A34A] border-[#16A34A] text-white'
+                                    : 'border-slate-300 dark:border-slate-600'
+                            }`}>
+                                {(selectedTemplateId === '' || selectedTemplateId === null || selectedTemplateId === undefined) && (
+                                    <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                )}
+                            </div>
+                        </div>
+
+                        {/* 2. Custom & Preset Templates */}
+                        {templates && templates.map((tmpl) => {
+                            const isSelected = String(selectedTemplateId) === String(tmpl.id);
+                            return (
+                                <div
+                                    key={tmpl.id}
+                                    onClick={() => setSelectedTemplateId(tmpl.id)}
+                                    className={`px-4 py-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
+                                        isSelected
+                                            ? 'border-[#16A34A] bg-emerald-500/5 dark:bg-emerald-500/10'
+                                            : 'border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#08121E] hover:border-slate-300 dark:hover:border-white/[0.15]'
+                                    }`}
+                                >
+                                    <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white truncate">
+                                        {tmpl.name}
+                                    </span>
+                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center border transition flex-shrink-0 ${
+                                        isSelected
+                                            ? 'bg-[#16A34A] border-[#16A34A] text-white'
+                                            : 'border-slate-300 dark:border-slate-600'
+                                    }`}>
+                                        {isSelected && (
+                                            <Check className="w-2.5 h-2.5 stroke-[3]" />
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Pass Studio Link Helper */}
+                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.06] text-xs">
+                        <span className="text-slate-500 dark:text-slate-400">
+                            Need a new template?
+                        </span>
+                        <Link
+                            href={route('templates.index')}
+                            className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline inline-flex items-center gap-1"
+                        >
+                            <span>Open Pass Studio</span>
+                            <ExternalLink className="w-3 h-3" />
+                        </Link>
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
+                        <SecondaryButton onClick={() => setSelectTemplateModalOpen(false)}>
+                            Cancel
+                        </SecondaryButton>
+                        <PrimaryButton
+                            onClick={() => handleApplyTemplate(selectedTemplateId)}
+                            disabled={savingTemplate}
+                            className="text-xs font-bold gap-1.5 cursor-pointer"
+                        >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>{savingTemplate ? 'Saving...' : 'Save'}</span>
+                        </PrimaryButton>
+                    </div>
+                </div>
+            </Modal>
+
             {/* Modal: Edit Event Details & Settings */}
             <Modal show={editEventModalOpen} onClose={() => setEditEventModalOpen(false)} maxWidth="lg">
-                <form onSubmit={handleEditEventSubmit} className="p-6 sm:p-7 space-y-5">
+                <form onSubmit={handleEditEventSubmit} className="p-6 sm:p-7 space-y-5 overflow-y-auto max-h-[85vh]">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/[0.08] pb-4">
                         <div>
                             <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2.5 py-0.5 rounded-full bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 text-cyan-800 dark:text-cyan-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
+                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
                                     <Settings className="w-3 h-3" />
                                     <span>Event Governance</span>
                                 </span>
@@ -1479,8 +1543,25 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                         <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0">
                             <Calendar className="w-5 h-5" />
                         </div>
+
                     </div>
 
+                    {/* Tab Switcher */}
+                    <div className="flex gap-1 bg-slate-100 dark:bg-white/[0.05] rounded-xl p-1">
+                        {[{ key: 'details', label: 'Event Details', icon: Settings }, { key: 'microsite', label: 'Microsite', icon: Sparkles }].map(({ key, label, icon: Icon }) => (
+                            <button
+                                key={key}
+                                type="button"
+                                onClick={() => setEditEventTab(key)}
+                                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${editEventTab === key ? 'bg-white dark:bg-white/10 text-slate-900 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                            >
+                                <Icon className="w-3.5 h-3.5" />
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {editEventTab === 'details' && (
                     <div className="space-y-4">
                         {/* Event Title */}
                         <div>
@@ -1489,6 +1570,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                 id="edit_event_title"
                                 type="text"
                                 className="block w-full text-xs font-bold py-2.5 rounded-2xl mt-1"
+                                placeholder="e.g. Neema & Baraka — Wedding Reception"
                                 value={editEventForm.data.title}
                                 onChange={(e) => editEventForm.setData('title', e.target.value)}
                                 required
@@ -1502,7 +1584,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                 <InputLabel htmlFor="edit_event_type" value="Event Type *" />
                                 <select
                                     id="edit_event_type"
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-cyan-500 focus:ring-cyan-500 shadow-2xs cursor-pointer"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
                                     value={editEventForm.data.event_type}
                                     onChange={(e) => editEventForm.setData('event_type', e.target.value)}
                                     required
@@ -1549,7 +1631,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                 <InputLabel htmlFor="edit_event_status" value="Event Status" />
                                 <select
                                     id="edit_event_status"
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-cyan-500 focus:ring-cyan-500 shadow-2xs cursor-pointer"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
                                     value={editEventForm.data.status}
                                     onChange={(e) => editEventForm.setData('status', e.target.value)}
                                 >
@@ -1569,6 +1651,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     id="edit_venue"
                                     type="text"
                                     className="block w-full text-xs font-semibold py-2.5 rounded-2xl mt-1"
+                                    placeholder="e.g. Serena Hotel, Kibo Hall"
                                     value={editEventForm.data.venue}
                                     onChange={(e) => editEventForm.setData('venue', e.target.value)}
                                     required
@@ -1582,6 +1665,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     id="edit_city"
                                     type="text"
                                     className="block w-full text-xs font-semibold py-2.5 rounded-2xl mt-1"
+                                    placeholder="e.g. Dar es Salaam"
                                     value={editEventForm.data.city}
                                     onChange={(e) => editEventForm.setData('city', e.target.value)}
                                 />
@@ -1593,7 +1677,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                             <div>
                                 <InputLabel value="Assigned Pass Artwork Template" />
                                 <select
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-cyan-500 focus:ring-cyan-500 shadow-2xs cursor-pointer"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
                                     value={editEventForm.data.card_template_id}
                                     onChange={(e) => editEventForm.setData('card_template_id', e.target.value)}
                                 >
@@ -1613,13 +1697,251 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                             <textarea
                                 id="edit_description"
                                 rows={2}
-                                className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-medium p-3 focus:border-cyan-500 focus:ring-cyan-500 shadow-2xs"
+                                className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-medium p-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs"
                                 placeholder="Additional details or notes..."
                                 value={editEventForm.data.description}
                                 onChange={(e) => editEventForm.setData('description', e.target.value)}
                             />
                         </div>
                     </div>
+                    )}
+
+                    {/* ── Microsite Tab ── */}
+                    {editEventTab === 'microsite' && (
+                    <div className="space-y-5">
+                        {/* Info Banner */}
+                        <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                                <Palette className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div>
+                                <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Customise Your Microsite</h4>
+                                <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5 leading-relaxed">
+                                    Personalize the interactive landing page your guests will see.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Visuals & Branding */}
+                        <div className="space-y-4 p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01]">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Sparkles className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                <h4 className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Visuals & Branding</h4>
+                            </div>
+
+                            <div>
+                                <InputLabel htmlFor="ms_cover_photo" value="Hero Background URL" />
+                                <TextInput
+                                    id="ms_cover_photo"
+                                    type="url"
+                                    className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
+                                    placeholder="https://example.com/wedding-photo.jpg"
+                                    value={editEventForm.data.microsite_config.cover_photo}
+                                    onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, cover_photo: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <InputLabel value="Accent Color" />
+                                    <div className="flex items-center gap-2 mt-1 relative">
+                                        <input
+                                            type="color"
+                                            value={editEventForm.data.microsite_config.accent_color}
+                                            onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, accent_color: e.target.value })}
+                                            className="w-10 h-10 rounded-xl border border-slate-200 dark:border-white/10 cursor-pointer p-0.5 bg-white dark:bg-[#0B1524]"
+                                        />
+                                        <TextInput
+                                            type="text"
+                                            className="flex-1 text-xs font-mono py-2.5 rounded-xl bg-white dark:bg-[#0B1524] uppercase"
+                                            value={editEventForm.data.microsite_config.accent_color}
+                                            onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, accent_color: e.target.value })}
+                                            placeholder="#10B981"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <InputLabel value="Typography" />
+                                    <select
+                                        className="mt-1 block w-full rounded-xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white text-xs py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
+                                        value={editEventForm.data.microsite_config.font_style}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, font_style: e.target.value })}
+                                    >
+                                        <option value="script">Script / Elegant</option>
+                                        <option value="serif">Classic Serif</option>
+                                        <option value="modern">Modern Sans</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Content & Settings */}
+                        <div className="space-y-4 p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01]">
+                            <div className="flex items-center gap-2 mb-1">
+                                <TrendingUp className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                <h4 className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Content & Copy</h4>
+                            </div>
+
+                            <div>
+                                <InputLabel htmlFor="ms_tagline" value="Tagline / Subtitle" />
+                                <TextInput
+                                    id="ms_tagline"
+                                    type="text"
+                                    className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
+                                    placeholder="e.g. Together with their families..."
+                                    value={editEventForm.data.microsite_config.tagline}
+                                    onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, tagline: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <div>
+                                    <InputLabel htmlFor="ms_dress_code" value="Dress Code" />
+                                    <TextInput
+                                        id="ms_dress_code"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
+                                        placeholder="e.g. Black Tie"
+                                        value={editEventForm.data.microsite_config.dress_code}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, dress_code: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <InputLabel htmlFor="ms_rsvp_prompt" value="RSVP Prompt" />
+                                    <TextInput
+                                        id="ms_rsvp_prompt"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
+                                        placeholder="Confirm Attendance"
+                                        value={editEventForm.data.microsite_config.rsvp_prompt}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, rsvp_prompt: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Special Features */}
+                        <div className="space-y-4 p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01]">
+                            <div className="flex items-center gap-2 mb-1">
+                                <Zap className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                <h4 className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Special Features</h4>
+                            </div>
+                            
+                            <div>
+                                <InputLabel htmlFor="ms_music" value="Background Music URL (Optional)" />
+                                <TextInput
+                                    id="ms_music"
+                                    type="url"
+                                    className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
+                                    placeholder="https://example.com/song.mp3"
+                                    value={editEventForm.data.microsite_config.music_url}
+                                    onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, music_url: e.target.value })}
+                                />
+                            </div>
+                            
+                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-white dark:bg-[#0B1524] border border-slate-200 dark:border-white/[0.06]">
+                                <div>
+                                    <div className="text-xs font-bold text-slate-800 dark:text-white">Countdown Timer</div>
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Show live timer on hero banner</div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={editEventForm.data.microsite_config.show_countdown}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, show_countdown: e.target.checked })}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Programme / Timeline */}
+                        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01]">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+                                    <h4 className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Programme / Timeline</h4>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const prog = [...(editEventForm.data.microsite_config.programme || []), { time: '', title: '', note: '' }];
+                                        editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
+                                    }}
+                                    className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline cursor-pointer flex items-center gap-1 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-lg transition"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add Item
+                                </button>
+                            </div>
+                            
+                            {(editEventForm.data.microsite_config.programme || []).length === 0 && (
+                                <div className="flex flex-col items-center justify-center p-6 text-center bg-white dark:bg-[#0B1524] rounded-xl border border-slate-200 dark:border-white/[0.06] border-dashed">
+                                    <Calendar className="w-6 h-6 text-slate-300 dark:text-slate-600 mb-2" />
+                                    <p className="text-xs text-slate-500 font-medium">No timeline items yet.</p>
+                                    <p className="text-[10px] text-slate-400 mt-1">Add your event schedule to guide your guests.</p>
+                                </div>
+                            )}
+                            
+                            <div className="space-y-4">
+                                {(editEventForm.data.microsite_config.programme || []).map((item, i) => (
+                                    <div key={i} className="flex flex-col gap-3 bg-white dark:bg-[#0B1524] rounded-xl p-3 border border-slate-200 dark:border-white/[0.06] shadow-sm relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const prog = editEventForm.data.microsite_config.programme.filter((_, idx) => idx !== i);
+                                                editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
+                                            }}
+                                            className="absolute top-2 right-2 text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 dark:bg-white/[0.02] dark:hover:bg-rose-500/10 p-1.5 rounded-lg transition cursor-pointer"
+                                            title="Remove item"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                        
+                                        <div className="w-full pr-8">
+                                            <InputLabel value="Time" className="!text-[10px] uppercase mb-1" />
+                                            <input
+                                                type="text"
+                                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 text-xs font-mono font-bold px-2.5 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-emerald-500 focus:border-emerald-500"
+                                                placeholder="6:00 PM"
+                                                value={item.time}
+                                                onChange={(e) => {
+                                                    const prog = editEventForm.data.microsite_config.programme.map((it, idx) => idx === i ? { ...it, time: e.target.value } : it);
+                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="w-full">
+                                            <InputLabel value="Activity" className="!text-[10px] uppercase mb-1" />
+                                            <input
+                                                type="text"
+                                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 text-xs font-bold px-2.5 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-emerald-500 focus:border-emerald-500"
+                                                placeholder="Reception & Dinner"
+                                                value={item.title}
+                                                onChange={(e) => {
+                                                    const prog = editEventForm.data.microsite_config.programme.map((it, idx) => idx === i ? { ...it, title: e.target.value } : it);
+                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="w-full">
+                                            <input
+                                                type="text"
+                                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-transparent text-xs px-2.5 py-2 text-slate-600 dark:text-slate-300 placeholder-slate-400 focus:ring-emerald-500 focus:border-emerald-500"
+                                                placeholder="Optional extra details..."
+                                                value={item.note}
+                                                onChange={(e) => {
+                                                    const prog = editEventForm.data.microsite_config.programme.map((it, idx) => idx === i ? { ...it, note: e.target.value } : it);
+                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    )}
 
                     {/* Modal Footer with Danger Delete Option */}
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
@@ -1641,7 +1963,7 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                             </SecondaryButton>
                             <PrimaryButton 
                                 disabled={editEventForm.processing || !editEventForm.data.title.trim()} 
-                                className="bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
+                                className="text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
                             >
                                 <Check className="w-3.5 h-3.5" />
                                 <span>{editEventForm.processing ? 'Saving...' : 'Save Event Changes'}</span>
@@ -1652,33 +1974,27 @@ Baraka Simba, 255765112233, Single Entry, 1`}
             </Modal>
 
             {/* Modal: Safety Confirmation for Clear All Guests */}
-            <Modal show={clearGuestsModalOpen} onClose={() => setClearGuestsModalOpen(false)} maxWidth="md">
-                <div className="p-6 space-y-4">
-                    <div className="flex items-center gap-3.5 text-rose-600 dark:text-rose-400">
-                        <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 flex items-center justify-center flex-shrink-0">
-                            <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+            <Modal show={clearGuestsModalOpen} onClose={() => setClearGuestsModalOpen(false)} maxWidth="sm">
+                <div className="p-5 sm:p-6 space-y-4">
+                    <div className="flex items-start gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 flex items-center justify-center flex-shrink-0 border border-rose-500/20">
+                            <Trash2 className="w-5 h-5" />
                         </div>
-                        <div>
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white font-display">
-                                Clear All Attendees?
+                        <div className="flex-1 pt-0.5">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                                Clear All Guests?
                             </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                This action is permanent and cannot be undone.
+                            <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                                Delete all {(guests?.total || 0).toLocaleString()} guest passes from "{event?.title}"?
+                            </p>
+                            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                                This cannot be undone.
                             </p>
                         </div>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-900 dark:text-rose-200 space-y-2">
-                        <p className="font-semibold">
-                            You are about to permanently delete all <strong className="font-mono text-rose-700 dark:text-rose-300 font-black">{(guests?.total || 0).toLocaleString()}</strong> attendee pass(es) from <span className="font-bold">"{event?.title}"</span>.
-                        </p>
-                        <p className="text-[11px] text-rose-700/90 dark:text-rose-300/90">
-                            This will also revoke all scannable QR codes, gate entry passes, and clear associated gate scan records.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
-                        <SecondaryButton onClick={() => setClearGuestsModalOpen(false)}>
+                    <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+                        <SecondaryButton onClick={() => setClearGuestsModalOpen(false)} className="!rounded-xl !py-2 !px-4 text-xs font-semibold cursor-pointer">
                             Cancel
                         </SecondaryButton>
                         <DangerButton
@@ -1688,43 +2004,36 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     onSuccess: () => setClearGuestsModalOpen(false),
                                 });
                             }}
-                            className="text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
+                            className="!rounded-xl !py-2 !px-4 text-xs font-bold gap-1.5 cursor-pointer"
                         >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Yes, Permanently Clear All</span>
+                            <span>Clear All</span>
                         </DangerButton>
                     </div>
                 </div>
             </Modal>
 
             {/* Modal: Safety Confirmation for Clear Gate Activity Logs */}
-            <Modal show={clearLogsModalOpen} onClose={() => setClearLogsModalOpen(false)} maxWidth="md">
-                <div className="p-6 space-y-4">
-                    <div className="flex items-center gap-3.5 text-rose-600 dark:text-rose-400">
-                        <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-900/50 flex items-center justify-center flex-shrink-0">
-                            <AlertTriangle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+            <Modal show={clearLogsModalOpen} onClose={() => setClearLogsModalOpen(false)} maxWidth="sm">
+                <div className="p-5 sm:p-6 space-y-4">
+                    <div className="flex items-start gap-3.5">
+                        <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 flex items-center justify-center flex-shrink-0 border border-rose-500/20">
+                            <Trash2 className="w-5 h-5" />
                         </div>
-                        <div>
-                            <h3 className="text-lg font-black text-slate-900 dark:text-white font-display">
-                                Clear Gate Activity Logs?
+                        <div className="flex-1 pt-0.5">
+                            <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight">
+                                Clear Gate Logs?
                             </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
-                                Reset scan history and admission audit logs for this event.
+                            <p className="mt-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                                Delete all {recentScanLogs.length} scan records for "{event?.title}"?
+                            </p>
+                            <p className="mt-2 text-xs font-medium text-rose-600 dark:text-rose-400">
+                                This cannot be undone.
                             </p>
                         </div>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/[0.08] text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
-                        <p>
-                            This will remove all <strong className="font-mono text-slate-900 dark:text-white">{recentScanLogs.length}</strong> gate audit scan entries from the live gate activity stream for <span className="font-bold">"{event?.title}"</span>.
-                        </p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                            Note: Attendee pass limits and check-in counts remain stored on the guest records.
-                        </p>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
-                        <SecondaryButton onClick={() => setClearLogsModalOpen(false)}>
+                    <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-white/[0.06]">
+                        <SecondaryButton onClick={() => setClearLogsModalOpen(false)} className="!rounded-xl !py-2 !px-4 text-xs font-semibold cursor-pointer">
                             Cancel
                         </SecondaryButton>
                         <DangerButton
@@ -1734,14 +2043,26 @@ Baraka Simba, 255765112233, Single Entry, 1`}
                                     onSuccess: () => setClearLogsModalOpen(false),
                                 });
                             }}
-                            className="text-xs font-black uppercase tracking-wider gap-2 cursor-pointer"
+                            className="!rounded-xl !py-2 !px-4 text-xs font-bold gap-1.5 cursor-pointer"
                         >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Clear Gate Logs</span>
+                            <span>Clear Logs</span>
                         </DangerButton>
                     </div>
                 </div>
             </Modal>
+
+            <ConfirmationModal
+                show={confirmModal.show}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                warning={confirmModal.warning}
+                confirmText={confirmModal.confirmText}
+                cancelText={confirmModal.cancelText}
+                type={confirmModal.type}
+                loading={confirmModal.loading}
+                onConfirm={confirmModal.onConfirm}
+                onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+            />
         </KardovoAppLayout>
     );
 }

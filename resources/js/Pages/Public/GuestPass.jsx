@@ -1,364 +1,523 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Head, router } from '@inertiajs/react';
 import PersonalisedCard from '@/Components/PersonalisedCard';
 import KardovoLogo from '@/Components/KardovoLogo';
 import confetti from 'canvas-confetti';
-import { useTheme } from '@/Hooks/useTheme';
-import { 
-    Check, 
-    X, 
-    Calendar, 
-    MapPin, 
-    Clock, 
-    ShieldCheck, 
-    Download, 
-    Printer, 
-    Share2,
-    CheckCircle2,
-    AlertCircle,
-    PartyPopper,
-    Layers,
+import {
+    Check,
+    X,
+    Calendar,
+    MapPin,
+    Clock,
+    ShieldCheck,
     Sparkles,
-    Sun,
-    Moon
+    ExternalLink,
+    CheckCircle2,
+    XCircle,
+    Music,
+    Volume2,
+    VolumeX,
+    ChevronDown,
+    QrCode,
 } from 'lucide-react';
 
-export default function GuestPass({ guest, event, template, allTemplates = [], isDemo = false }) {
-    const templatesList = allTemplates.length > 0 ? allTemplates : (template ? [template] : []);
-    const [selectedTemplate, setSelectedTemplate] = useState(template || templatesList[0] || null);
-    const [isSwitching, setIsSwitching] = useState(false);
+// ─── Falling Petals Canvas ─────────────────────────────────────────────────
+function PetalCanvas({ color = '#10b981' }) {
+    const canvasRef = useRef(null);
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        let animId;
+        const petals = Array.from({ length: 18 }, () => ({
+            x: Math.random() * window.innerWidth,
+            y: Math.random() * -window.innerHeight,
+            size: 6 + Math.random() * 10,
+            speed: 0.6 + Math.random() * 1.2,
+            drift: (Math.random() - 0.5) * 1.2,
+            rotation: Math.random() * 360,
+            rotationSpeed: (Math.random() - 0.5) * 2,
+            opacity: 0.4 + Math.random() * 0.4,
+        }));
+
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        resize();
+        window.addEventListener('resize', resize);
+
+        const draw = () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            petals.forEach(p => {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate((p.rotation * Math.PI) / 180);
+                ctx.globalAlpha = p.opacity;
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.ellipse(0, 0, p.size, p.size / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                p.y += p.speed;
+                p.x += p.drift;
+                p.rotation += p.rotationSpeed;
+                if (p.y > canvas.height + 20) {
+                    p.y = -20;
+                    p.x = Math.random() * canvas.width;
+                }
+            });
+            animId = requestAnimationFrame(draw);
+        };
+        draw();
+        return () => {
+            cancelAnimationFrame(animId);
+            window.removeEventListener('resize', resize);
+        };
+    }, [color]);
+
+    return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none z-10" />;
+}
+
+// ─── Countdown Timer ───────────────────────────────────────────────────────
+function Countdown({ eventDate, accentColor }) {
+    const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: false });
+
+    useEffect(() => {
+        const calc = () => {
+            const diff = new Date(eventDate) - new Date();
+            if (diff <= 0) { setTimeLeft(t => ({ ...t, expired: true })); return; }
+            setTimeLeft({
+                days: Math.floor(diff / 86400000),
+                hours: Math.floor((diff % 86400000) / 3600000),
+                minutes: Math.floor((diff % 3600000) / 60000),
+                seconds: Math.floor((diff % 60000) / 1000),
+                expired: false,
+            });
+        };
+        calc();
+        const timer = setInterval(calc, 1000);
+        return () => clearInterval(timer);
+    }, [eventDate]);
+
+    if (timeLeft.expired) return null;
+
+    const units = [
+        { label: 'Days', value: timeLeft.days },
+        { label: 'Hours', value: timeLeft.hours },
+        { label: 'Minutes', value: timeLeft.minutes },
+        { label: 'Seconds', value: timeLeft.seconds },
+    ];
+
+    return (
+        <div className="flex gap-3 sm:gap-5 justify-center mt-6">
+            {units.map(({ label, value }) => (
+                <div key={label} className="text-center">
+                    <div
+                        className="w-14 sm:w-18 h-14 sm:h-18 rounded-2xl flex items-center justify-center text-2xl sm:text-3xl font-black text-white shadow-lg"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.2)' }}
+                    >
+                        {String(value).padStart(2, '0')}
+                    </div>
+                    <div className="text-[10px] sm:text-xs font-bold text-white/70 mt-1.5 uppercase tracking-widest">{label}</div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
+// ─── Scroll Reveal Hook ────────────────────────────────────────────────────
+function useScrollReveal() {
+    const ref = useRef(null);
+    const [visible, setVisible] = useState(false);
+    useEffect(() => {
+        if (!ref.current) return;
+        const obs = new IntersectionObserver(
+            ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+            { threshold: 0.15 }
+        );
+        obs.observe(ref.current);
+        return () => obs.disconnect();
+    }, []);
+    return [ref, visible];
+}
+
+function RevealSection({ children, delay = 0 }) {
+    const [ref, visible] = useScrollReveal();
+    return (
+        <div
+            ref={ref}
+            className="transition-all duration-700"
+            style={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? 'translateY(0)' : 'translateY(40px)',
+                transitionDelay: `${delay}ms`,
+            }}
+        >
+            {children}
+        </div>
+    );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────
+export default function GuestPass({ guest, event, template, isDemo = false, micrositeConfig = null }) {
     const [submitting, setSubmitting] = useState(false);
-    const [rsvpSubmitted, setRsvpSubmitted] = useState(guest?.rsvp_status !== 'pending' ? guest?.rsvp_status : null);
-    const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0 });
-    const [isHovered, setIsHovered] = useState(false);
-    const { theme, isDark, toggleTheme } = useTheme();
+    const [rsvpSubmitted, setRsvpSubmitted] = useState(
+        guest?.rsvp_status !== 'pending' ? guest?.rsvp_status : null
+    );
+    const [heroLoaded, setHeroLoaded] = useState(false);
+    const [audioPlaying, setAudioPlaying] = useState(false);
+    const audioRef = useRef(null);
+
+    const cfg = micrositeConfig || {};
+    const accentColor = cfg.accent_color || '#10b981';
+    const coverPhoto = cfg.cover_photo || null;
+    const tagline = cfg.tagline || '';
+    const showCountdown = cfg.show_countdown !== false;
+    const programme = cfg.programme || [];
+    const musicUrl = cfg.music_url || null;
+    const rsvpPrompt = cfg.rsvp_prompt || 'Kindly confirm your attendance';
+    const fontStyle = cfg.font_style || 'script'; // 'script' | 'serif' | 'modern'
+    const dressCode = cfg.dress_code || '';
 
     const isDemoMode = Boolean(isDemo) || (typeof window !== 'undefined' && (
-        window.location.pathname === '/demo/pass' || 
+        window.location.pathname === '/demo/pass' ||
         new URLSearchParams(window.location.search).get('demo') === '1' ||
         guest?.qr_token === 'kdv_demo_pass_preview'
     ));
 
+    useEffect(() => {
+        const timer = setTimeout(() => setHeroLoaded(true), 100);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Music
+    useEffect(() => {
+        if (!audioRef.current || !musicUrl) return;
+        audioRef.current.volume = 0.4;
+    }, [musicUrl]);
+
+    const toggleAudio = () => {
+        if (!audioRef.current) return;
+        if (audioPlaying) { audioRef.current.pause(); setAudioPlaying(false); }
+        else { audioRef.current.play().then(() => setAudioPlaying(true)).catch(() => {}); }
+    };
+
     const handleRsvp = (status) => {
-        // Pure client-side interactive sandbox preview if in demo mode
         if (isDemoMode) {
             setRsvpSubmitted(status);
-            if (status === 'attending') {
-                confetti({
-                    particleCount: 80,
-                    spread: 70,
-                    origin: { y: 0.6 }
-                });
-            }
+            if (status === 'attending') fireConfetti();
             return;
         }
-
         setSubmitting(true);
-        router.post(route('guest.rsvp', guest.qr_token), {
-            status: status,
-        }, {
+        router.post(route('guest.rsvp', guest.qr_token), { status }, {
             preserveScroll: true,
             onSuccess: () => {
                 setSubmitting(false);
                 setRsvpSubmitted(status);
-                if (status === 'attending') {
-                    confetti({
-                        particleCount: 80,
-                        spread: 70,
-                        origin: { y: 0.6 }
-                    });
-                }
+                if (status === 'attending') fireConfetti();
             },
             onError: () => setSubmitting(false),
         });
     };
 
-    const handleSelectTemplate = (tpl) => {
-        if (tpl.id === selectedTemplate?.id) return;
-        setIsSwitching(true);
-        setTimeout(() => {
-            setSelectedTemplate(tpl);
-            setIsSwitching(false);
-        }, 160);
+    const fireConfetti = () => {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors: [accentColor, '#ffffff', '#fbbf24'] });
+        setTimeout(() => confetti({ particleCount: 60, angle: 60, spread: 55, origin: { x: 0 }, colors: [accentColor, '#ffffff'] }), 300);
+        setTimeout(() => confetti({ particleCount: 60, angle: 120, spread: 55, origin: { x: 1 }, colors: [accentColor, '#ffffff'] }), 500);
     };
 
-    const handleMouseMove = (e) => {
-        const card = e.currentTarget;
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left - rect.width / 2;
-        const y = e.clientY - rect.top - rect.height / 2;
-        const rotateX = -(y / (rect.height / 2)) * 7;
-        const rotateY = (x / (rect.width / 2)) * 7;
-        setTilt({ rotateX, rotateY });
-    };
+    const formattedDate = event?.event_date
+        ? new Date(event.event_date).toLocaleDateString('en-GB', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        })
+        : 'Date to be announced';
 
-    const handleMouseLeave = () => {
-        setIsHovered(false);
-        setTilt({ rotateX: 0, rotateY: 0 });
-    };
+    const mapsQuery = encodeURIComponent([event?.venue, event?.city].filter(Boolean).join(', '));
+    const mapsUrl = mapsQuery ? `https://www.google.com/maps/search/?api=1&query=${mapsQuery}` : null;
+
+    const fontClass = fontStyle === 'serif'
+        ? 'font-serif'
+        : fontStyle === 'modern'
+            ? 'font-sans tracking-tight'
+            : 'font-display'; // script/display
+
+    const heroStyle = coverPhoto
+        ? { backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.6) 100%), url('${coverPhoto}')`, backgroundSize: 'cover', backgroundPosition: 'center' }
+        : { background: `linear-gradient(135deg, ${accentColor}ee 0%, ${accentColor}99 50%, #0f172a 100%)` };
 
     return (
-        <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-[#F4F6F9] dark:bg-[#070D18] py-6 sm:py-8 px-4 sm:px-6 lg:px-10 font-sans text-slate-800 dark:text-slate-100 flex flex-col justify-between relative overflow-x-hidden transition-colors duration-300">
-            <Head title={`Invitation Pass: ${event?.title} - ${guest?.name}`} />
+        <div className="min-h-screen bg-slate-50 font-sans overflow-x-hidden">
+            <Head title={`Invitation: ${event?.title || 'Event'} — ${guest?.name || 'Guest'}`} />
 
-            {/* 🌓 Floating Light / Dark Mode Toggle Button */}
-            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-50">
-                <button
-                    type="button"
-                    onClick={toggleTheme}
-                    className="px-3.5 py-2 rounded-2xl bg-white/80 dark:bg-[#0B1524]/80 backdrop-blur-xl border border-slate-200/90 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 transition-all duration-200 active:scale-95 flex items-center gap-2 shadow-lg hover:shadow-xl group cursor-pointer"
-                    title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                >
-                    {isDark ? (
-                        <>
-                            <Sun className="w-4 h-4 text-amber-400 group-hover:rotate-45 transition-transform duration-300" />
-                            <span className="text-xs font-bold font-mono">Light</span>
-                        </>
-                    ) : (
-                        <>
-                            <Moon className="w-4 h-4 text-cyan-600 group-hover:-rotate-12 transition-transform duration-300" />
-                            <span className="text-xs font-bold font-mono">Dark</span>
-                        </>
+            {/* Audio element */}
+            {musicUrl && <audio ref={audioRef} src={musicUrl} loop preload="none" />}
+
+            {/* ─── HERO ─────────────────────────────────────────────── */}
+            <section className="relative min-h-screen flex flex-col items-center justify-center text-center overflow-hidden" style={heroStyle}>
+                {/* Animated petals */}
+                <PetalCanvas color={accentColor} />
+
+                {/* Floating controls */}
+                <div className="absolute top-5 right-5 z-30 flex items-center gap-2">
+                    {musicUrl && (
+                        <button
+                            onClick={toggleAudio}
+                            className="w-9 h-9 rounded-full flex items-center justify-center bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30 transition"
+                            title={audioPlaying ? 'Pause music' : 'Play music'}
+                        >
+                            {audioPlaying ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                        </button>
                     )}
-                </button>
-            </div>
+                </div>
 
-            {/* Ambient Background Radial Glows */}
-            <div className="absolute -top-40 -left-40 w-[550px] h-[550px] bg-cyan-500/10 blur-[130px] rounded-full pointer-events-none" />
-            <div className="absolute -bottom-40 -right-40 w-[550px] h-[550px] bg-blue-600/10 blur-[130px] rounded-full pointer-events-none" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/5 blur-[120px] rounded-full pointer-events-none" />
+                {/* Kardovo badge top-left */}
+                <div className="absolute top-5 left-5 z-30">
+                    <div className="flex items-center gap-2 bg-white/15 backdrop-blur-md rounded-full px-3 py-1.5 border border-white/20">
+                        <div className="w-4 h-4 rounded-full bg-white/80 flex items-center justify-center">
+                            <span className="text-[7px] font-black text-slate-800">K</span>
+                        </div>
+                        <span className="text-[10px] font-bold text-white/80 tracking-wider">KARDOVO</span>
+                    </div>
+                </div>
 
-            {/* Main Balanced 2-Column Responsive Container (Fits without scroll on desktop) */}
-            <div className="w-full max-w-6xl mx-auto flex-1 flex flex-col justify-center relative z-10 py-2">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
-                    
-                    {/* ═══════════════════════════════════════════════════════════ */}
-                    {/* LEFT COLUMN: BRAND, 3D TEMPLATE SELECTOR & RSVP CONTROLS    */}
-                    {/* ═══════════════════════════════════════════════════════════ */}
-                    <div className="lg:col-span-6 space-y-4 sm:space-y-5">
-                        
-                        {/* Brand & Section Title */}
-                        <div className="space-y-1 text-left">
-                            <div className="flex flex-wrap items-center gap-2">
-                                <KardovoLogo light={isDark} showText={true} />
-                                {isDemoMode ? (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-800 dark:text-amber-300 font-mono text-[10.5px] font-extrabold uppercase tracking-wider">
-                                        <Sparkles className="w-3 h-3" />
-                                        <span>Demo Pass Template Sandbox</span>
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-600 dark:text-cyan-400 font-mono text-[10.5px] font-extrabold uppercase tracking-wider">
-                                        <Sparkles className="w-3 h-3" />
-                                        <span>Interactive Invitation Pass</span>
-                                    </span>
+                {/* Hero Content */}
+                <div
+                    className="relative z-20 px-6 max-w-2xl transition-all duration-1000"
+                    style={{ opacity: heroLoaded ? 1 : 0, transform: heroLoaded ? 'translateY(0)' : 'translateY(30px)' }}
+                >
+                    {tagline && (
+                        <p className="text-white/70 text-xs sm:text-sm tracking-[0.25em] uppercase font-medium mb-4">
+                            {tagline}
+                        </p>
+                    )}
+
+                    <h1
+                        className={`text-4xl sm:text-6xl lg:text-7xl text-white leading-tight mb-2 ${fontClass}`}
+                        style={{ textShadow: '0 2px 20px rgba(0,0,0,0.4)' }}
+                    >
+                        {event?.title || 'You\'re Invited'}
+                    </h1>
+
+                    {guest?.name && (
+                        <p className="text-white/90 text-base sm:text-lg font-medium mt-3">
+                            Dear <span className="font-bold" style={{ color: accentColor === '#10b981' ? '#6ee7b7' : 'white' }}>{guest.name}</span>
+                        </p>
+                    )}
+
+                    <div className="flex items-center justify-center gap-2 mt-4 text-white/80 text-sm font-medium">
+                        <Calendar className="w-4 h-4" />
+                        <span>{formattedDate}</span>
+                    </div>
+
+                    {event?.venue && (
+                        <div className="flex items-center justify-center gap-2 mt-1.5 text-white/70 text-sm">
+                            <MapPin className="w-4 h-4" />
+                            <span>{event.venue}</span>
+                        </div>
+                    )}
+
+                    {/* Countdown */}
+                    {showCountdown && event?.event_date && (
+                        <Countdown eventDate={event.event_date} accentColor={accentColor} />
+                    )}
+                </div>
+
+                {/* Scroll cue */}
+                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 animate-bounce">
+                    <span className="text-white/50 text-[10px] tracking-widest uppercase">Scroll</span>
+                    <ChevronDown className="w-5 h-5 text-white/50" />
+                </div>
+            </section>
+
+            {/* ─── MAIN CONTENT ────────────────────────────────────── */}
+            <main className="max-w-2xl mx-auto px-4 sm:px-6 py-12 space-y-12">
+
+                {/* ── Event Details Card ── */}
+                <RevealSection>
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div className="h-1.5 w-full" style={{ backgroundColor: accentColor }} />
+                        <div className="p-6 sm:p-8 space-y-4">
+                            <h2 className="text-lg font-black text-slate-900">Event Details</h2>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentColor + '20' }}>
+                                        <Calendar className="w-4 h-4" style={{ color: accentColor }} />
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Date</div>
+                                        <div className="text-sm font-bold text-slate-900">{formattedDate}</div>
+                                    </div>
+                                </div>
+
+                                {event?.event_time && (
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentColor + '20' }}>
+                                            <Clock className="w-4 h-4" style={{ color: accentColor }} />
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Time</div>
+                                            <div className="text-sm font-bold text-slate-900">{event.event_time}</div>
+                                        </div>
+                                    </div>
                                 )}
-                            </div>
-                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight mt-1">
-                                {event?.title || 'Exclusive Digital Pass'}
-                            </h2>
-                        </div>
 
-                        {/* 1. FLOATING 3D TEMPLATE CAROUSEL DECK */}
-                        {templatesList.length > 1 && (
-                            <div className="bg-white/90 dark:bg-[#0B1524]/90 backdrop-blur-xl p-3.5 sm:p-4 rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-xl space-y-2.5 transition-colors duration-300">
-                                <div className="flex items-center justify-between px-1">
-                                    <div className="flex items-center gap-1.5 font-black text-slate-900 dark:text-white text-xs font-display">
-                                        <Layers className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                                        <span>Select Pass Style (3D Preview)</span>
+                                {event?.venue && (
+                                    <div className="flex items-start gap-3 sm:col-span-2">
+                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentColor + '20' }}>
+                                            <MapPin className="w-4 h-4" style={{ color: accentColor }} />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Venue</div>
+                                            <div className="text-sm font-bold text-slate-900">{event.venue}{event.city ? `, ${event.city}` : ''}</div>
+                                            {mapsUrl && (
+                                                <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1 text-xs font-bold mt-1 hover:underline transition"
+                                                    style={{ color: accentColor }}
+                                                >
+                                                    <ExternalLink className="w-3 h-3" /> View on Google Maps
+                                                </a>
+                                            )}
+                                        </div>
                                     </div>
-                                    <span className="text-[10px] font-mono text-cyan-700 dark:text-cyan-300 font-bold bg-cyan-50 dark:bg-cyan-950/60 border border-cyan-200 dark:border-cyan-800/40 px-2 py-0.5 rounded-full">
-                                        {templatesList.length} Variations
-                                    </span>
-                                </div>
+                                )}
 
-                                {/* Floating 3D Cards Row */}
-                                <div className="grid grid-cols-3 gap-2 pt-1">
-                                    {templatesList.map((tpl, idx) => {
-                                        const isSelected = selectedTemplate?.id === tpl.id;
-                                        const isCustom = tpl.template_type === 'custom_art' && tpl.image_path;
-
-                                        return (
-                                            <button
-                                                key={tpl.id || idx}
-                                                type="button"
-                                                onClick={() => handleSelectTemplate(tpl)}
-                                                className={`relative group rounded-2xl p-1.5 transition-all duration-300 text-left cursor-pointer active:scale-95 flex flex-col justify-between ${
-                                                    isSelected
-                                                        ? 'ring-2 ring-cyan-500 dark:ring-cyan-400 bg-cyan-50/90 dark:bg-cyan-950/70 shadow-[0_12px_30px_rgba(6,182,212,0.3)] scale-[1.04] border border-cyan-300 dark:border-cyan-700 -translate-y-1'
-                                                        : 'bg-slate-50 dark:bg-white/[0.04] hover:bg-slate-100 dark:hover:bg-white/[0.08] border border-slate-200/80 dark:border-white/[0.08] hover:border-cyan-400/40 hover:-translate-y-0.5 hover:shadow-md'
-                                                }`}
-                                            >
-                                                {/* Miniature Artwork */}
-                                                <div className="w-full h-18 sm:h-20 rounded-xl overflow-hidden relative mb-1.5 shadow-sm bg-slate-950 border border-slate-200/80 dark:border-white/[0.08]">
-                                                    {isCustom ? (
-                                                        <img
-                                                            src={tpl.image_path}
-                                                            alt={tpl.name}
-                                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                                        />
-                                                    ) : (
-                                                        <div
-                                                            className="w-full h-full flex flex-col items-center justify-center p-1 text-center"
-                                                            style={{
-                                                                background: 'linear-gradient(170deg, #0D1B2A 0%, #0A1622 35%, #060E1A 65%, #0B1E35 100%)',
-                                                            }}
-                                                        >
-                                                            <div className="w-4 h-4 rounded-full bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center mb-0.5">
-                                                                <Sparkles className="w-2.5 h-2.5 text-cyan-400" />
-                                                            </div>
-                                                            <span className="text-[7.5px] font-black text-white uppercase tracking-wider leading-tight">
-                                                                {tpl.headline || 'SIGNATURE'}
-                                                            </span>
-                                                        </div>
-                                                    )}
-
-                                                    {/* Active Checkmark Pill */}
-                                                    {isSelected && (
-                                                        <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center shadow-md animate-fadeIn">
-                                                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                                                        </span>
-                                                    )}
-
-                                                    <span className="absolute bottom-1 left-1 px-1.5 py-0.2 rounded-md text-[6.5px] font-extrabold uppercase bg-black/80 text-white backdrop-blur-xs">
-                                                        {isCustom ? 'Custom Art' : 'Signature'}
-                                                    </span>
-                                                </div>
-
-                                                {/* Card Title */}
-                                                <div className="text-[9.5px] font-bold text-slate-900 dark:text-white truncate leading-tight">
-                                                    {tpl.name.split('(')[0].trim()}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 2. RSVP INTERACTIVE ACTION CARD */}
-                        <div className="bg-white dark:bg-[#0B1524] rounded-3xl p-4 sm:p-5 border border-slate-200/90 dark:border-white/[0.08] shadow-xl text-center space-y-2.5 transition-colors duration-300">
-                            <div className="flex items-center justify-between text-xs font-black text-kardovo-navy dark:text-white uppercase tracking-wider font-display">
-                                <span className="flex items-center gap-1.5">
-                                    <PartyPopper className="w-4 h-4 text-emerald-500" />
-                                    <span>Confirm Attendance</span>
-                                </span>
-                                <span className="text-[10px] text-slate-400 font-mono font-bold capitalize">
-                                    {guest?.allowance_label || 'Pass Issued'}
-                                </span>
-                            </div>
-
-                            {/* Interactive RSVP Buttons */}
-                            <div className="grid grid-cols-2 gap-2.5 pt-0.5">
-                                <button
-                                    type="button"
-                                    disabled={submitting}
-                                    onClick={() => handleRsvp('attending')}
-                                    className={`py-2.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition active:scale-[0.98] cursor-pointer ${
-                                        rsvpSubmitted === 'attending'
-                                            ? 'bg-emerald-600 text-white ring-2 ring-emerald-400 shadow-md'
-                                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                    }`}
-                                >
-                                    <Check className="w-4 h-4" />
-                                    <span>{rsvpSubmitted === 'attending' ? '✓ Will Attend' : 'Will Attend'}</span>
-                                </button>
-
-                                <button
-                                    type="button"
-                                    disabled={submitting}
-                                    onClick={() => handleRsvp('declined')}
-                                    className={`py-2.5 px-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition active:scale-[0.98] cursor-pointer ${
-                                        rsvpSubmitted === 'declined'
-                                            ? 'bg-red-700 text-white ring-2 ring-red-400 shadow-md'
-                                            : 'bg-slate-100 dark:bg-white/[0.05] hover:bg-red-50 dark:hover:bg-red-950/40 text-slate-700 dark:text-slate-300 hover:text-red-700 dark:hover:text-red-400 border border-slate-200 dark:border-white/[0.08]'
-                                    }`}
-                                >
-                                    <X className="w-4 h-4" />
-                                    <span>{rsvpSubmitted === 'declined' ? '✕ Will Not Attend' : 'Will Not Attend'}</span>
-                                </button>
-                            </div>
-
-                            {/* Status Feedback Message */}
-                            {rsvpSubmitted && (
-                                <div className={`p-2 rounded-xl text-[11.5px] font-semibold mt-1 border ${
-                                    rsvpSubmitted === 'attending' 
-                                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50' 
-                                        : 'bg-slate-50 dark:bg-slate-900/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
-                                }`}>
-                                    {isDemoMode ? (
-                                        rsvpSubmitted === 'attending'
-                                            ? '🎉 Demo RSVP Simulated: Will Attend (Sandbox preview: no logs or notifications sent).'
-                                            : 'Demo RSVP Simulated: Will Not Attend (Sandbox preview: no logs or notifications sent).'
-                                    ) : (
-                                        rsvpSubmitted === 'attending'
-                                            ? '🎉 Attendance confirmed! Present your pass at the gate.'
-                                            : 'Thank you for letting us know you cannot make it.'
-                                    )}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* 3. EVENT INFORMATION & DIRECTIONS */}
-                        <div className="bg-white dark:bg-[#0B1524] rounded-3xl p-4 sm:p-4.5 border border-slate-200/90 dark:border-white/[0.08] shadow-card space-y-2 text-xs transition-colors duration-300">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-600 dark:text-slate-300">
-                                <div className="flex items-start gap-2">
-                                    <Calendar className="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0 mt-0.5" />
-                                    <div className="truncate">
-                                        <div className="font-bold text-slate-800 dark:text-slate-100 text-[11px]">Date &amp; Schedule</div>
-                                        <div className="text-[11px] truncate">{event?.event_date ? new Date(event.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '14 Sep 2026'} • {event?.event_time || '4:00 PM'}</div>
+                                {dressCode && (
+                                    <div className="flex items-start gap-3 sm:col-span-2">
+                                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: accentColor + '20' }}>
+                                            <Sparkles className="w-4 h-4" style={{ color: accentColor }} />
+                                        </div>
+                                        <div>
+                                            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-0.5">Dress Code</div>
+                                            <div className="text-sm font-bold text-slate-900">{dressCode}</div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
-                                    <div className="truncate">
-                                        <div className="font-bold text-slate-800 dark:text-slate-100 text-[11px]">Venue Location</div>
-                                        <div className="text-[11px] truncate">{event?.venue || 'Kunduchi Beach'}, {event?.city || 'Dar es Salaam'}</div>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     </div>
+                </RevealSection>
 
-                    {/* ═══════════════════════════════════════════════════════════ */}
-                    {/* RIGHT COLUMN: 3D FLOATING 4K PASS CANVAS STAGE              */}
-                    {/* ═══════════════════════════════════════════════════════════ */}
-                    <div className="lg:col-span-6 flex flex-col items-center justify-center">
-                        <div 
-                            className="w-full max-w-[440px] lg:max-w-[620px] flex justify-center perspective-[1200px] select-none"
-                            onMouseMove={(e) => {
-                                setIsHovered(true);
-                                handleMouseMove(e);
-                            }}
-                            onMouseLeave={handleMouseLeave}
-                        >
-                            <div 
-                                className={`w-full flex justify-center transition-all duration-300 ease-out ${
-                                    isSwitching ? 'opacity-0 scale-95 rotate-y-6' : 'opacity-100 scale-100 rotate-y-0'
-                                }`}
-                                style={{
-                                    transform: isHovered 
-                                        ? `perspective(1200px) rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) translateY(-4px) scale(1.01)` 
-                                        : 'perspective(1200px) rotateX(0deg) rotateY(0deg) translateY(0px) scale(1)',
-                                    transformStyle: 'preserve-3d',
-                                    filter: isHovered ? 'drop-shadow(0 25px 35px rgba(0,0,0,0.35))' : 'drop-shadow(0 15px 25px rgba(0,0,0,0.25))',
-                                }}
-                            >
+                {/* ── Programme / Timeline ── */}
+                {programme.length > 0 && (
+                    <RevealSection delay={100}>
+                        <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-8">
+                            <h2 className="text-lg font-black text-slate-900 mb-6">Programme</h2>
+                            <div className="relative pl-6">
+                                <div className="absolute left-0 top-1 bottom-1 w-px bg-slate-100" />
+                                <div className="space-y-6">
+                                    {programme.map((item, i) => (
+                                        <div key={i} className="relative">
+                                            <div className="absolute -left-[25px] top-1 w-3 h-3 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: accentColor }} />
+                                            <div className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: accentColor }}>
+                                                {item.time}
+                                            </div>
+                                            <div className="text-sm font-bold text-slate-900">{item.title}</div>
+                                            {item.note && <div className="text-xs text-slate-500 mt-0.5">{item.note}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </RevealSection>
+                )}
+
+                {/* ── Digital Pass ── */}
+                <RevealSection delay={150}>
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div className="h-1.5 w-full" style={{ backgroundColor: accentColor }} />
+                        <div className="p-6 sm:p-8">
+                            <div className="flex items-center gap-2 mb-6">
+                                <QrCode className="w-4 h-4" style={{ color: accentColor }} />
+                                <h2 className="text-lg font-black text-slate-900">Your Digital Pass</h2>
+                            </div>
+
+                            <div className="flex flex-col items-center">
                                 <PersonalisedCard
                                     guest={guest}
                                     event={event}
-                                    template={selectedTemplate}
-                                    interactive={true}
+                                    template={template}
+                                    className="w-full max-w-sm"
                                 />
+                            </div>
+
+                            {/* Pass Meta */}
+                            <div className="mt-6 grid grid-cols-2 gap-3">
+                                <div className="bg-slate-50 rounded-2xl p-3 text-center">
+                                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Pass Number</div>
+                                    <div className="text-xs font-black text-slate-800 font-mono">{guest?.card_number || '—'}</div>
+                                </div>
+                                <div className="bg-slate-50 rounded-2xl p-3 text-center">
+                                    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-1">Entry</div>
+                                    <div className="text-xs font-black text-slate-800">{guest?.category || guest?.allowance_label || 'Standard'}</div>
+                                </div>
+                            </div>
+
+                            <div className="mt-3 flex items-center gap-2 text-xs text-slate-400 justify-center">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                <span>This pass is unique to {guest?.name || 'you'} and cannot be transferred</span>
                             </div>
                         </div>
                     </div>
+                </RevealSection>
 
+                {/* ── RSVP Section ── */}
+                <RevealSection delay={200}>
+                    <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+                        <div className="h-1.5 w-full" style={{ backgroundColor: accentColor }} />
+                        <div className="p-6 sm:p-8 text-center">
+                            {rsvpSubmitted === null ? (
+                                <>
+                                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: accentColor + '20' }}>
+                                        <CheckCircle2 className="w-7 h-7" style={{ color: accentColor }} />
+                                    </div>
+                                    <h2 className="text-xl font-black text-slate-900 mb-1">RSVP</h2>
+                                    <p className="text-sm text-slate-500 mb-6">{rsvpPrompt}</p>
+
+                                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                                        <button
+                                            onClick={() => handleRsvp('attending')}
+                                            disabled={submitting}
+                                            className="flex-1 sm:flex-none sm:min-w-[160px] flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-black text-sm text-white shadow-lg active:scale-95 transition-all duration-150 disabled:opacity-60 cursor-pointer"
+                                            style={{ backgroundColor: accentColor }}
+                                        >
+                                            <Check className="w-4 h-4 stroke-[2.5]" />
+                                            Will Attend
+                                        </button>
+                                        <button
+                                            onClick={() => handleRsvp('declined')}
+                                            disabled={submitting}
+                                            className="flex-1 sm:flex-none sm:min-w-[160px] flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl font-black text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all duration-150 disabled:opacity-60 cursor-pointer"
+                                        >
+                                            <X className="w-4 h-4 stroke-[2.5]" />
+                                            Cannot Attend
+                                        </button>
+                                    </div>
+                                </>
+                            ) : rsvpSubmitted === 'attending' ? (
+                                <div className="py-4">
+                                    <CheckCircle2 className="w-12 h-12 mx-auto mb-4" style={{ color: accentColor }} />
+                                    <h2 className="text-xl font-black text-slate-900 mb-1">See you there! 🎉</h2>
+                                    <p className="text-sm text-slate-500">Your attendance has been confirmed. We look forward to celebrating with you!</p>
+                                </div>
+                            ) : (
+                                <div className="py-4">
+                                    <XCircle className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+                                    <h2 className="text-xl font-black text-slate-900 mb-1">We'll miss you</h2>
+                                    <p className="text-sm text-slate-500">Thank you for letting us know. Your response has been recorded.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </RevealSection>
+            </main>
+
+            {/* ─── FOOTER ────────────────────────────────────────────── */}
+            <footer className="text-center py-8 px-4">
+                <div className="flex items-center justify-center gap-2 opacity-50">
+                    <KardovoLogo light={false} showText={false} />
+                    <span className="text-[11px] font-bold font-mono text-slate-400 tracking-widest uppercase">Powered by Kardovo</span>
                 </div>
-            </div>
-
-            {/* Public Footer */}
-            <footer className="text-center text-[10.5px] text-slate-400 dark:text-slate-500 font-medium relative z-10 py-1">
-                <p>Secured by KARDOVO Access Control Systems • Multi-Tenant Pass Engine</p>
             </footer>
         </div>
     );

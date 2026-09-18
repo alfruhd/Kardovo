@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class SystemSetting extends Model
 {
@@ -17,13 +18,22 @@ class SystemSetting extends Model
 
     public static function get(string $key, $default = null)
     {
-        $setting = static::where('key', $key)->first();
+        return Cache::remember("system_setting:{$key}", 3600, function () use ($key, $default) {
+            $setting = static::where('key', $key)->first();
 
-        return $setting ? ($setting->value ?? $default) : $default;
+            return $setting ? ($setting->value ?? $default) : $default;
+        });
     }
 
     public static function set(string $key, $value): static
     {
+        Cache::forget("system_setting:{$key}");
+
         return static::updateOrCreate(['key' => $key], ['value' => $value]);
+    }
+
+    public static function forget(string $key): void
+    {
+        Cache::forget("system_setting:{$key}");
     }
 }

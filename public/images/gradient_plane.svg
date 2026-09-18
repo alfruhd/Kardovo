@@ -1,0 +1,17 @@
+
+<svg width="200" height="200" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="planeGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#16A34A" />
+      <stop offset="100%" stop-color="#0B2545" />
+    </linearGradient>
+    <linearGradient id="planeGradientDark" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#15803D" />
+      <stop offset="100%" stop-color="#061324" />
+    </linearGradient>
+  </defs>
+  <!-- Main Body -->
+  <path d="M476 17.6L14.1 230.7c-20 9.2-19.4 37.6.9 46l119.5 50.1 262.3-193.3c11.9-8.7 26.6 6.3 17.6 18l-189 217.4v107.5c0 23.6 28.5 35 44.8 17.9l71.1-74.4 121.2 50.8c18.5 7.8 39.5-4.2 43.1-24.1L510.3 43.5c4.1-23.1-18.4-42.5-34.3-25.9z" fill="url(#planeGradient)" />
+  <!-- Shadow/Fold -->
+  <path d="M134.5 326.8l201.2 84.4L510.3 43.5c4.1-23.1-18.4-42.5-34.3-25.9L134.5 326.8z" fill="url(#planeGradientDark)" opacity="0.4" />
+</svg>

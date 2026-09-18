@@ -29,14 +29,24 @@ class DatabaseSeeder extends Seeder
             'company' => 'Kardovo HQ',
         ]);
 
-        // 2. Customer Organiser Account (Alfred)
+        // 2. Customer Organiser Account (Alfred - Has Events)
         $customer = User::create([
             'name' => 'Alfred M.',
-            'email' => 'alfred@kardovo.com',
+            'email' => 'alfredido6@gmail.com',
             'password' => Hash::make('password'),
             'role' => 'customer',
             'phone' => '+255 754 123 456',
             'company' => 'Kardovo Events & Media Ltd',
+        ]);
+
+        // 2b. New Customer Organiser Account (Neema - 0 Events)
+        $newCustomer = User::create([
+            'name' => 'Neema K.',
+            'email' => 'neworganizer@kardovo.com',
+            'password' => Hash::make('password'),
+            'role' => 'customer',
+            'phone' => '+255 714 555 777',
+            'company' => 'Serengeti Events Hub',
         ]);
 
         // 3. Scanner Accounts
@@ -47,16 +57,6 @@ class DatabaseSeeder extends Seeder
             'role' => 'scanner',
             'phone' => '+255 712 345 678',
             'gate_label' => 'Gate 1 — Main VIP Entrance',
-            'customer_id' => $customer->id,
-        ]);
-
-        $scanner2 = User::create([
-            'name' => 'Amina Gatekeeper',
-            'email' => 'scanner2@kardovo.com',
-            'password' => Hash::make('password'),
-            'role' => 'scanner',
-            'phone' => '+255 713 987 654',
-            'gate_label' => 'Gate 2 — North Wing Entrance',
             'customer_id' => $customer->id,
         ]);
 
@@ -124,6 +124,7 @@ class DatabaseSeeder extends Seeder
             'show_unique_code' => true,
             'footer_text' => 'We invite you to witness the beginning of our forever',
             'elements_config' => [
+                'aspect_ratio' => '896 / 1200',
                 'headline_text' => 'WEDDING INVITATION',
                 'couple_names' => 'Zamroth & Husna',
                 'date_month' => 'JANUARY',
@@ -448,19 +449,31 @@ class DatabaseSeeder extends Seeder
         // 7. System Gateway Settings
         SystemSetting::set('whatsapp_gateway', [
             'provider' => 'Meta WhatsApp Cloud API',
-            'phone_number_id' => '108492019482910',
-            'waba_id' => '94820194820184',
+            'phone_number_id' => '1279030741967769',
+            'waba_id' => '1637762521386686',
             'api_version' => 'v20.0',
+            'access_token' => 'EAAG...verified_token',
+            'sender_number' => '+255 700 000 000',
             'status' => 'Connected (Operational)',
             'auto_reply_confirmation' => true,
             'default_template_name' => 'kardovo_invitation_v1',
         ]);
 
         SystemSetting::set('sms_gateway', [
-            'provider' => 'NextSMS / Africa\'s Talking',
+            'provider' => 'Beem Africa / NextSMS',
             'sender_id' => 'KARDOVO',
+            'country_code' => '255767749919',
+            'api_endpoint' => 'asdasdasd',
             'status' => 'Active',
             'balance' => '12,450 TZS',
+        ]);
+
+        SystemSetting::set('azampay_gateway', [
+            'app_name' => 'Kardovo',
+            'environment' => 'sandbox',
+            'client_id' => '—',
+            'client_secret' => '••••••••',
+            'status' => 'Pending Configuration',
         ]);
 
         SystemSetting::set('platform_info', [
@@ -468,5 +481,7 @@ class DatabaseSeeder extends Seeder
             'organization' => 'Kardovo Access Systems',
             'default_city' => 'Dar es Salaam, Tanzania',
         ]);
+
+        $this->call(PackageSeeder::class);
     }
 }

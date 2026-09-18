@@ -24,22 +24,16 @@ class ScannerController extends Controller
         }
 
         // 1. Get events accessible to this user
-        if ($user->isAdmin()) {
-            $events = Event::latest()->get();
-        } elseif ($user->isScanner()) {
-            $events = Event::where('user_id', $user->customer_id ?? $user->id)->latest()->get();
-            if ($events->isEmpty()) {
-                $events = Event::latest()->get();
-            }
-        } else {
-            $events = Event::where('user_id', $user->id)->latest()->get();
-            if ($events->isEmpty()) {
-                $events = Event::latest()->get();
-            }
-        }
+        $events = Event::accessibleBy($user)->latest()->get();
 
-        $activeEventId = $request->input('event_id', $events->first()?->id);
-        $activeEvent = $activeEventId ? Event::find($activeEventId) : $events->first();
+        $activeEventId = $request->input('event_id');
+        $activeEvent = null;
+        if ($activeEventId) {
+            $activeEvent = $events->firstWhere('id', (int) $activeEventId);
+        }
+        if (! $activeEvent) {
+            $activeEvent = $events->first();
+        }
 
         $gateLabel = $user->gate_label ?? 'Gate 1 — Main VIP Entrance';
 
@@ -50,8 +44,10 @@ class ScannerController extends Controller
             'total_rejected_scans' => ScanLog::where('event_id', $activeEvent->id)->where('status', 'rejected')->count(),
         ] : null;
 
-        // Staff personal audit history across events
+        // Staff personal audit history strictly restricted to accessible events
+        $allowedEventIds = $events->pluck('id');
         $myScanHistory = ScanLog::where('scanner_id', $user->id)
+            ->whereIn('event_id', $allowedEventIds)
             ->with(['guest', 'event'])
             ->latest('scanned_at')
             ->take(30)
@@ -107,6 +103,23 @@ class ScannerController extends Controller
         $rawCode = trim($validated['qr_code']);
         $gateLabel = $validated['gate_label'] ?? ($user->gate_label ?? 'Main Gate');
         $autoSwitch = (bool) ($validated['auto_switch'] ?? false);
+
+        // Enforce strict event access isolation: organizers can ONLY scan passes for their own events
+        if ($user->isAdmin() || $user->isSubAdmin()) {
+            $isAuthorized = Event::where('id', $eventId)->exists();
+        } elseif ($user->isScanner()) {
+            $customerId = $user->customer_id ?? $user->id;
+            $isAuthorized = Event::where('id', $eventId)->where('user_id', $customerId)->exists();
+        } else {
+            $isAuthorized = Event::where('id', $eventId)->where('user_id', $user->id)->exists();
+        }
+
+        if (! $isAuthorized) {
+            return response()->json([
+                'status' => 'rejected',
+                'reason' => 'Access Denied: You do not have permission to scan passes for this event.',
+            ], 403);
+        }
 
         // Robust token normalization: handle URLs, paths, query strings, and plain codes
         $cleanToken = preg_replace('/\?.*$/', '', $rawCode);
@@ -168,19 +181,65 @@ class ScannerController extends Controller
         };
 
         // Atomic transaction with pessimistic row-locking to guarantee 100% race-condition prevention across concurrent devices
-        return DB::transaction(function () use ($user, $eventId, $rawCode, $gateLabel, $autoSwitch, $matchGuestClosure) {
-            // 1. Try matching within the specified event first
+        return DB::transaction(function () use ($user, $eventId, $rawCode, $gateLabel, $autoSwitch, $matchGuestClosure, $trimmed, $upper, $lower) {
+            // 1. FAST PATH: Direct B-Tree indexed exact lookup (sub-millisecond hit)
             $guest = Guest::where('event_id', $eventId)
-                ->tap($matchGuestClosure)
+                ->where(function ($q) use ($trimmed, $upper, $lower) {
+                    $q->where('qr_token', $trimmed)
+                        ->orWhere('qr_token', $lower)
+                        ->orWhere('qr_token', $upper)
+                        ->orWhere('unique_code', $trimmed)
+                        ->orWhere('unique_code', $upper)
+                        ->orWhere('card_number', $trimmed)
+                        ->orWhere('card_number', $upper);
+                })
                 ->lockForUpdate()
                 ->first();
 
-            // 2. If not found in current event, search across all events
+            // 2. SLOW PATH FALLBACK: If not found, try fuzzy/normalized matching
             if (! $guest) {
-                $guestOther = Guest::with('event')
+                $guest = Guest::where('event_id', $eventId)
                     ->tap($matchGuestClosure)
                     ->lockForUpdate()
                     ->first();
+            }
+
+            // 3. If not found in current event, search ONLY within other events owned by THIS organizer
+            if (! $guest) {
+                if ($user->isAdmin() || $user->isSubAdmin()) {
+                    $otherEventIds = Event::where('id', '!=', $eventId)->pluck('id');
+                } elseif ($user->isScanner()) {
+                    $customerId = $user->customer_id ?? $user->id;
+                    $otherEventIds = Event::where('user_id', $customerId)->where('id', '!=', $eventId)->pluck('id');
+                } else {
+                    $otherEventIds = Event::where('user_id', $user->id)->where('id', '!=', $eventId)->pluck('id');
+                }
+
+                $guestOther = null;
+                if ($otherEventIds->isNotEmpty()) {
+                    // Try fast-path in other events first
+                    $guestOther = Guest::with('event')
+                        ->whereIn('event_id', $otherEventIds)
+                        ->where(function ($q) use ($trimmed, $upper, $lower) {
+                            $q->where('qr_token', $trimmed)
+                                ->orWhere('qr_token', $lower)
+                                ->orWhere('qr_token', $upper)
+                                ->orWhere('unique_code', $trimmed)
+                                ->orWhere('unique_code', $upper)
+                                ->orWhere('card_number', $trimmed)
+                                ->orWhere('card_number', $upper);
+                        })
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $guestOther) {
+                        $guestOther = Guest::with('event')
+                            ->whereIn('event_id', $otherEventIds)
+                            ->tap($matchGuestClosure)
+                            ->lockForUpdate()
+                            ->first();
+                    }
+                }
 
                 if (! $guestOther) {
                     $rejectionReason = 'Invalid or unrecognised pass / code';
@@ -251,7 +310,7 @@ class ScannerController extends Controller
             if ($guest->entries_used >= $guest->max_entries) {
                 $lastScan = $guest->scanLogs()->latest()->first();
                 $lastScanInfo = $lastScan
-                    ? "at {$lastScan->scanned_at->format('h:i A')} by {$lastScan->scanner_name} ({$lastScan->gate_label})"
+                    ? "at {$lastScan->scanned_at->format('h:i A - d M Y')} by {$lastScan->scanner_name} ({$lastScan->gate_label})"
                     : 'earlier';
 
                 ScanLog::create([
@@ -268,7 +327,7 @@ class ScannerController extends Controller
 
                 return response()->json([
                     'status' => 'rejected',
-                    'reason' => "Pass already fully checked-in ({$guest->entries_used}/{$guest->max_entries}). Scanned {$lastScanInfo}.",
+                    'reason' => "Already Checked-in ({$guest->entries_used}/{$guest->max_entries})",
                     'guest' => [
                         'id' => $guest->id,
                         'name' => $guest->name,
@@ -315,7 +374,7 @@ class ScannerController extends Controller
                 ],
                 'event_id' => $guest->event_id,
                 'event_title' => $guest->event?->title,
-                'scanned_at' => $scanLog->scanned_at->format('h:i:s A'),
+                'scanned_at' => $scanLog->scanned_at->format('h:i:s A - d M Y'),
                 'gate_label' => $gateLabel,
             ]);
         });

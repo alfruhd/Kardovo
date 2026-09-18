@@ -27,21 +27,15 @@ class MessagingController extends Controller
             }
         }
 
-        $eventsQuery = Event::withCount(['guests', 'messages'])->with(['user']);
-        if (! $user->isAdmin()) {
-            $eventsQuery->where('user_id', $user->id);
-        }
+        $eventsQuery = Event::accessibleBy($user)->withCount(['guests', 'messages'])->with(['user']);
         $events = $eventsQuery->latest('event_date')->get();
 
         $selectedEventId = $request->input('event_id', $events->first()?->id);
         $selectedEvent = null;
 
         if ($selectedEventId) {
-            $selectedEventQuery = Event::with(['cardTemplate', 'guests', 'user']);
-            if (! $user->isAdmin()) {
-                $selectedEventQuery->where('user_id', $user->id);
-            }
-            $selectedEvent = $selectedEventQuery->find($selectedEventId) ?: ($events->first() ? Event::with(['cardTemplate', 'guests', 'user'])->find($events->first()->id) : null);
+            $selectedEventQuery = Event::accessibleBy($user)->with(['cardTemplate', 'guests', 'user']);
+            $selectedEvent = $selectedEventQuery->find($selectedEventId) ?: ($events->first() ? Event::accessibleBy($user)->with(['cardTemplate', 'guests', 'user'])->find($events->first()->id) : null);
         }
 
         $messagesQuery = Message::with(['guest', 'event', 'event.user'])->latest();
@@ -104,7 +98,7 @@ class MessagingController extends Controller
     public function updateEventTemplate(Request $request, Event $event)
     {
         $user = $request->user();
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403, 'Unauthorized to modify this event.');
         }
 
@@ -119,10 +113,11 @@ class MessagingController extends Controller
 
     public function sendBroadcast(Request $request)
     {
+        set_time_limit(300); // Allow up to 5 minutes for bulk broadcasts
         $user = $request->user();
 
         if (! $user->isAdmin() && ! $user->canSendBroadcasts()) {
-            return back()->with('error', 'Campaign broadcasting & message dispatch permissions are disabled for your organizer account. Please contact system administration.');
+            return back()->with('error', 'Broadcast permissions disabled.');
         }
 
         $validated = $request->validate([
@@ -130,6 +125,7 @@ class MessagingController extends Controller
             'card_template_id' => 'nullable|exists:card_templates,id',
             'channel' => 'required|in:whatsapp,sms',
             'campaign_type' => 'nullable|in:pass_invitation,pass_only,text_only,text_rsvp',
+            'include_pass_link' => 'nullable|boolean',
             'target_filter' => 'required|in:all,draft,failed,pending_rsvp,custom',
             'selected_guest_ids' => 'nullable|array',
             'selected_guest_ids.*' => 'integer|exists:guests,id',
@@ -140,7 +136,7 @@ class MessagingController extends Controller
         ]);
 
         $event = Event::findOrFail($validated['event_id']);
-        if ($event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403);
         }
 
@@ -160,13 +156,14 @@ class MessagingController extends Controller
         }
 
         $campaignType = $validated['campaign_type'] ?? 'pass_invitation';
+        $includePassLink = $request->boolean('include_pass_link', false);
 
         $guestsQuery = $event->guests();
 
         if ($validated['target_filter'] === 'custom' || (! empty($validated['selected_guest_ids']) && $validated['target_filter'] !== 'all' && $validated['target_filter'] !== 'draft' && $validated['target_filter'] !== 'failed' && $validated['target_filter'] !== 'pending_rsvp')) {
             $selectedIds = $validated['selected_guest_ids'] ?? [];
             if (empty($selectedIds)) {
-                return back()->with('error', 'Please select at least one individual recipient from the guest list.');
+                return back()->with('error', 'Please select at least one recipient.');
             }
             $guestsQuery->whereIn('id', $selectedIds);
         } elseif (! empty($validated['selected_guest_ids'])) {
@@ -183,7 +180,7 @@ class MessagingController extends Controller
         $guests = $guestsQuery->get();
 
         if ($guests->isEmpty()) {
-            return back()->with('error', 'No recipients matching the selected target filter or selection.');
+            return back()->with('error', 'No matching recipients found.');
         }
 
         $channel = $validated['channel'];
@@ -195,14 +192,14 @@ class MessagingController extends Controller
             $quota = $eventOwner->getMessageQuotaStats();
             $rem = $quota['whatsapp_remaining'] ?? 0;
 
-            return back()->with('error', "WhatsApp Dispatch Quota Exceeded! You are attempting to dispatch {$recipientCount} messages, but your account only has {$rem} WhatsApp message(s) remaining out of {$eventOwner->max_whatsapp_limit}. Please contact platform administration to upgrade your quota.");
+            return back()->with('error', "WhatsApp Quota Exceeded! (Need: {$recipientCount}, Remaining: {$rem})");
         }
 
         if ($channel === 'sms' && ! $eventOwner->canSendSms($recipientCount)) {
             $quota = $eventOwner->getMessageQuotaStats();
             $rem = $quota['sms_remaining'] ?? 0;
 
-            return back()->with('error', "SMS Dispatch Quota Exceeded! You are attempting to dispatch {$recipientCount} SMS messages, but your account only has {$rem} SMS remaining out of {$eventOwner->max_sms_limit}. Please contact platform administration to upgrade your quota.");
+            return back()->with('error', "SMS Quota Exceeded! (Need: {$recipientCount}, Remaining: {$rem})");
         }
 
         $sentCount = 0;
@@ -261,20 +258,29 @@ class MessagingController extends Controller
             }
 
             $bodyToSend = $caption;
+            if ($includePassLink && $guest && ! str_contains($bodyToSend, '/card/')) {
+                $token = $guest->qr_token ?? $guest->unique_code ?? $guest->id;
+                $pUrl = rtrim($baseUrl, '/').'/card/'.$token;
+                if ($channel === 'whatsapp') {
+                    $bodyToSend .= "\n\n🎟️ *Digital Pass & RSVP:* {$pUrl}";
+                } else {
+                    $bodyToSend .= "\n\n🎟️ Digital Pass & RSVP: {$pUrl}";
+                }
+            }
 
             // Normalize phone: digits only, no + sign, no spaces (e.g. 255712345678)
             $cleanPhone = PhoneNormalizer::cleanForApi($guest->phone);
 
             if ($channel === 'whatsapp') {
-                $sendResult = $this->sendMetaWhatsAppMessage($cleanPhone, $bodyToSend, $guest, $campaignType, $activeTemplate, $baseUrl);
+                $sendResult = $this->sendMetaWhatsAppMessage($cleanPhone, $bodyToSend, $guest, $campaignType, $activeTemplate, $baseUrl, $includePassLink);
             } else {
                 // SMS dispatch (simulated/provider)
-                $sendResult = ['success' => true, 'simulated' => true];
+                $sendResult = ['success' => true, 'simulated' => true, 'sent_text' => $bodyToSend];
             }
 
             $isSuccess = $sendResult['success'];
             $status = $isSuccess ? 'sent' : 'failed';
-            $recordedBody = $bodyToSend;
+            $recordedBody = $sendResult['sent_text'] ?? $bodyToSend;
 
             if (! $isSuccess && ! empty($sendResult['error_message'])) {
                 $recordedBody .= ' [Error: '.$sendResult['error_message'].']';
@@ -303,20 +309,21 @@ class MessagingController extends Controller
         $typeLabel = in_array($campaignType, ['text_only', 'text_rsvp']) ? 'text broadcast' : 'invitation pass';
 
         if ($failedCount > 0 && $sentCount > 0) {
-            return back()->with('warning', "Dispatched {$sentCount} {$channel} {$typeLabel} messages. ({$failedCount} failed. Check Delivery Logs or Meta developer settings for recipient whitelisting).");
+            return back()->with('warning', "Sent {$sentCount} messages. Failed {$failedCount}.");
         } elseif ($failedCount > 0 && $sentCount === 0) {
             $firstErr = $failedErrors[0] ?? 'Provider API Error';
 
-            return back()->with('error', "WhatsApp dispatch failed: {$firstErr}. Please verify WhatsApp Gateway credentials in Settings.");
+            return back()->with('error', "Dispatch failed: {$firstErr}");
         }
 
-        return back()->with('success', "Dispatched {$sentCount} {$channel} {$typeLabel} messages successfully!");
+        return back()->with('success', "Sent {$sentCount} messages successfully!");
     }
 
     public function sendSingle(Request $request, Guest $guest)
     {
+        set_time_limit(120);
         $user = $request->user();
-        if ($guest->event->user_id !== $user->id && ! $user->isAdmin()) {
+        if (! Event::accessibleBy($user)->where('id', $guest->event_id)->exists()) {
             abort(403);
         }
 
@@ -330,13 +337,13 @@ class MessagingController extends Controller
         if ($channel === 'whatsapp' && ! $eventOwner->canSendWhatsApp(1)) {
             $quota = $eventOwner->getMessageQuotaStats();
 
-            return back()->with('error', "WhatsApp dispatch quota reached ({$eventOwner->max_whatsapp_limit} messages limit). Contact administration to increase quota.");
+            return back()->with('error', 'WhatsApp limit reached.');
         }
 
         if ($channel === 'sms' && ! $eventOwner->canSendSms(1)) {
             $quota = $eventOwner->getMessageQuotaStats();
 
-            return back()->with('error', "SMS dispatch quota reached ({$eventOwner->max_sms_limit} SMS limit). Contact administration to increase quota.");
+            return back()->with('error', 'SMS limit reached.');
         }
 
         // Resolve public base URL for links (handling tunnels, proxies, and configured webhooks)
@@ -411,7 +418,8 @@ class MessagingController extends Controller
         ?Guest $guest = null,
         string $campaignType = 'pass_invitation',
         ?CardTemplate $template = null,
-        ?string $baseUrl = null
+        ?string $baseUrl = null,
+        bool $includePassLink = false
     ): array {
         $gateway = SystemSetting::get('whatsapp_gateway', []);
         $accessToken = trim($gateway['access_token'] ?? '');
@@ -429,11 +437,19 @@ class MessagingController extends Controller
                             ! str_starts_with($accessToken, 'EAAGkdv_prod_access_token_live');
 
         if (! $isLiveConfigured) {
+            $textToSend = $messageBody;
+            if ($includePassLink && $guest && ! str_contains($textToSend, '/card/')) {
+                $token = $guest->qr_token ?? $guest->unique_code ?? $guest->id;
+                $pUrl = rtrim($baseUrl, '/').'/card/'.$token;
+                $textToSend .= "\n\n🎟️ *Digital Pass & RSVP:* {$pUrl}";
+            }
+
             // In local/simulated sandbox without credentials, record successful simulated dispatch
             return [
                 'success' => true,
                 'simulated' => true,
                 'message_id' => 'sim_'.uniqid(),
+                'sent_text' => $textToSend,
             ];
         }
 
@@ -467,13 +483,14 @@ class MessagingController extends Controller
 
             if ($useInteractive) {
                 $token = $guest->qr_token ?? $guest->unique_code ?? $guest->id;
+                // Embed Kardovo branding in body text so it is always visible.
+                // WhatsApp suppresses the footer field when an image header is present,
+                // so we include the label directly in the message body instead.
+                $bodyWithBranding = $messageBody."\n\n_Kardovo_";
                 $interactivePayload = [
                     'type' => 'button',
                     'body' => [
-                        'text' => $messageBody,
-                    ],
-                    'footer' => [
-                        'text' => 'Kardovo',
+                        'text' => $bodyWithBranding,
                     ],
                     'action' => [
                         'buttons' => [
@@ -579,16 +596,17 @@ class MessagingController extends Controller
                         'success' => true,
                         'simulated' => false,
                         'message_id' => $msgId,
+                        'sent_text' => $messageBody,
                     ];
                 }
             }
 
             // Standard Text Message Payload (Fallback with direct RSVP & Pass link)
             $textToSend = $messageBody;
-            if ($guest && ! str_contains($textToSend, '/card/')) {
+            if ($includePassLink && $guest && ! str_contains($textToSend, '/card/')) {
                 $token = $guest->qr_token ?? $guest->unique_code ?? $guest->id;
                 $pUrl = rtrim($baseUrl, '/').'/card/'.$token;
-                $textToSend .= "\n\n🎟️ *Digital Pass & RSVP:* {$pUrl}\n_Reply *1* (Attending) or *2* (Decline)_";
+                $textToSend .= "\n\n🎟️ *Digital Pass & RSVP:* {$pUrl}";
             }
 
             $payload = [
@@ -614,6 +632,7 @@ class MessagingController extends Controller
                     'success' => true,
                     'simulated' => false,
                     'message_id' => $msgId,
+                    'sent_text' => $textToSend,
                 ];
             }
 

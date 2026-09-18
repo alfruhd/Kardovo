@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Head, Link, usePage, router } from '@inertiajs/react';
 import jsQR from 'jsqr';
+import EmptyEventState from '@/Components/EmptyEventState';
 import { 
     QrCode, 
     CheckCircle2, 
@@ -66,10 +67,8 @@ export default function ScannerApp({
         ? route('dashboard') 
         : route('profile.edit');
 
-    const portalName = isAdmin 
+    const portalName = (isAdmin || isSubAdmin) 
         ? 'Admin Portal' 
-        : isSubAdmin 
-        ? 'Sub-Admin Hub' 
         : isCustomer 
         ? 'Organizer Events' 
         : 'My Profile';
@@ -86,6 +85,14 @@ export default function ScannerApp({
     const [cameraPermissionDenied, setCameraPermissionDenied] = useState(false);
     const [stats, setStats] = useState(initialStats || {});
     const [scanHistory, setScanHistory] = useState(initialHistory || []);
+
+    useEffect(() => {
+        setStats(initialStats || {});
+    }, [initialStats]);
+
+    useEffect(() => {
+        setScanHistory(initialHistory || []);
+    }, [initialHistory]);
 
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -383,8 +390,8 @@ export default function ScannerApp({
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-100 bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] border border-slate-200/80 dark:border-white/[0.08] shadow-2xs transition active:scale-95 group cursor-pointer"
                                 title={`Return to ${portalName}`}
                             >
-                                <ArrowLeft className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400 group-hover:-translate-x-0.5 transition-transform stroke-[2.5]" />
-                                <span>{isAdmin ? 'Admin Portal' : isSubAdmin ? 'Sub-Admin Hub' : 'My Events'}</span>
+                                <ArrowLeft className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 group-hover:-translate-x-0.5 transition-transform stroke-[2.5]" />
+                                <span>{(isAdmin || isSubAdmin) ? 'Admin Portal' : 'My Events'}</span>
                             </Link>
                         ) : (
                             <div className="flex items-center gap-2">
@@ -415,7 +422,7 @@ export default function ScannerApp({
                             className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08] transition cursor-pointer"
                             title={soundEnabled ? "Mute audio chimes" : "Enable audio chimes"}
                         >
-                            {soundEnabled ? <Volume2 className="w-4 h-4 text-cyan-600 dark:text-cyan-400" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
+                            {soundEnabled ? <Volume2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
                         </button>
 
                         {/* Scan History Audit Log */}
@@ -435,17 +442,17 @@ export default function ScannerApp({
                             className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.08] transition cursor-pointer"
                             title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
                         >
-                            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-cyan-600" />}
+                            {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-emerald-600" />}
                         </button>
 
                         {/* Profile Link (for Portal users) or Logout (for Gate Staff) */}
                         {!isScannerOnly ? (
                             <Link
                                 href={route('profile.edit')}
-                                className="p-2 rounded-xl text-slate-500 hover:text-cyan-600 dark:text-slate-400 dark:hover:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/40 transition flex items-center justify-center cursor-pointer ml-0.5"
+                                className="p-2 rounded-xl text-slate-500 hover:text-emerald-600 dark:text-slate-400 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition flex items-center justify-center cursor-pointer ml-0.5"
                                 title="My Profile & Security Settings"
                             >
-                                <User className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                                <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                             </Link>
                         ) : (
                             <button
@@ -460,38 +467,55 @@ export default function ScannerApp({
                     </div>
                 </div>
 
-                {/* Row 2: Active Event & Gate Information Card */}
-                <div className="flex items-center justify-between gap-3 bg-slate-50 dark:bg-[#0B1524] rounded-2xl p-3 border border-slate-200/90 dark:border-white/[0.08] shadow-xs">
+                {/* Row 2: Active Event Title & Arrow Dropdown */}
+                <div className="flex items-center justify-between gap-3 pt-1 border-t border-slate-100 dark:border-white/[0.05]">
                     <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-400">
-                            <span>{gateLabel}</span>
-                        </div>
-                        <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white truncate mt-0.5 font-display">
-                            {activeEvent?.title || events[0]?.title || 'No Active Event'}
+                        <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-display leading-snug break-words">
+                            {events.find(e => String(e.id) === String(selectedEventId))?.title || activeEvent?.title || events[0]?.title || 'No Active Event'}
                         </h2>
                     </div>
 
                     {events.length > 1 && (
-                        <select
-                            className="bg-white dark:bg-[#07111D] border border-slate-300 hover:border-cyan-500 dark:border-white/[0.15] dark:hover:border-cyan-400 text-xs py-1.5 px-2.5 rounded-xl text-slate-800 dark:text-slate-100 font-bold focus:ring-2 focus:ring-cyan-500/30 focus:border-cyan-500 shadow-xs cursor-pointer transition max-w-[150px] truncate"
-                            value={selectedEventId}
-                            onChange={(e) => {
-                                setSelectedEventId(e.target.value);
-                                router.visit(`/scanner?event_id=${e.target.value}`);
-                            }}
-                        >
-                            {events.map((evt) => (
-                                <option key={evt.id} value={evt.id}>
-                                    {evt.title}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative flex-shrink-0" title="Switch Event">
+                            <div className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] border border-slate-200/80 dark:border-white/[0.08] text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white flex items-center justify-center transition cursor-pointer shadow-2xs">
+                                <ChevronDown className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <select
+                                value={selectedEventId}
+                                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                                onChange={(e) => {
+                                    const newEventId = e.target.value;
+                                    setSelectedEventId(newEventId);
+                                    router.get(route('scanner.index'), { event_id: newEventId }, { 
+                                        preserveState: true, 
+                                        preserveScroll: true 
+                                    });
+                                }}
+                            >
+                                {events.map((evt) => (
+                                    <option key={evt.id} value={evt.id} className="bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white font-medium">
+                                        {evt.title}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     )}
                 </div>
             </header>
 
             {/* ════════════ 2. VIEWFINDER SCANNING ZONE ════════════ */}
-            <main className="flex-1 relative flex flex-col items-center justify-center p-5 min-h-[380px]">
+            {events.length === 0 ? (
+                <main className="flex-1 flex items-center justify-center p-6">
+                    <EmptyEventState
+                        title="No Event Selected"
+                        description="Please select an event from the dashboard or create a new one to manage messaging and broadcast passes."
+                        buttonText="Go to Dashboard"
+                        buttonHref={route('dashboard')}
+                    />
+                </main>
+            ) : (
+                <>
+                    <main className="flex-1 relative flex flex-col items-center justify-center p-5 min-h-[380px]">
                 
                 {/* Framed Camera Viewport */}
                 <div className="w-full max-w-[340px] aspect-square rounded-3xl overflow-hidden shadow-2xl bg-black relative border-2 border-slate-800 flex items-center justify-center group">
@@ -508,25 +532,25 @@ export default function ScannerApp({
                     {/* Tech Viewfinder Bracket Corners */}
                     <div className="absolute inset-5 pointer-events-none z-10 flex flex-col justify-between">
                         <div className="flex justify-between">
-                            <div className="w-9 h-9 border-t-[3.5px] border-l-[3.5px] border-kardovo-blue-light rounded-tl-xl shadow-[0_0_12px_rgba(0,163,255,0.7)]" />
-                            <div className="w-9 h-9 border-t-[3.5px] border-r-[3.5px] border-kardovo-blue-light rounded-tr-xl shadow-[0_0_12px_rgba(0,163,255,0.7)]" />
+                            <div className="w-9 h-9 border-t-[3.5px] border-l-[3.5px] border-emerald-500 rounded-tl-xl shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
+                            <div className="w-9 h-9 border-t-[3.5px] border-r-[3.5px] border-emerald-500 rounded-tr-xl shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
                         </div>
                         <div className="flex justify-between">
-                            <div className="w-9 h-9 border-b-[3.5px] border-l-[3.5px] border-kardovo-blue-light rounded-bl-xl shadow-[0_0_12px_rgba(0,163,255,0.7)]" />
-                            <div className="w-9 h-9 border-b-[3.5px] border-r-[3.5px] border-kardovo-blue-light rounded-br-xl shadow-[0_0_12px_rgba(0,163,255,0.7)]" />
+                            <div className="w-9 h-9 border-b-[3.5px] border-l-[3.5px] border-emerald-500 rounded-bl-xl shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
+                            <div className="w-9 h-9 border-b-[3.5px] border-r-[3.5px] border-emerald-500 rounded-br-xl shadow-[0_0_12px_rgba(16,185,129,0.7)]" />
                         </div>
                     </div>
 
                     {/* Animated Scanning Laser Line */}
                     {!scanResult && cameraActive && (
-                        <div className="absolute left-6 right-6 h-[2.5px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_16px_rgba(6,182,212,1)] animate-pulse pointer-events-none z-10 top-1/2 -translate-y-1/2" />
+                        <div className="absolute left-6 right-6 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_16px_rgba(16,185,129,1)] animate-pulse pointer-events-none z-10 top-1/2 -translate-y-1/2" />
                     )}
 
                     {/* Fallback Placeholder when Camera is inactive */}
                     {!cameraActive && (
                         <div className="p-6 text-center z-0 flex flex-col items-center space-y-3">
                             <div className="w-14 h-14 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 shadow-inner">
-                                <Camera className="w-7 h-7 text-kardovo-blue-light" />
+                                <Camera className="w-7 h-7 text-emerald-400" />
                             </div>
                             <div>
                                 <h4 className="text-sm font-bold text-slate-200">
@@ -534,14 +558,14 @@ export default function ScannerApp({
                                 </h4>
                                 <p className="text-xs text-slate-400 mt-1 max-w-[220px]">
                                     {cameraPermissionDenied 
-                                        ? 'Please allow camera permission in your browser or enter the 8-digit unique pass code manually.' 
+                                        ? 'Please allow camera permission in your browser or enter the pass code manually.' 
                                         : 'Point camera directly at the guest QR pass to verify access.'}
                                 </p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowManualModal(true)}
-                                className="px-4 py-2 bg-kardovo-blue-dark hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md transition"
+                                className="px-4 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md transition active:scale-95 cursor-pointer"
                             >
                                 <Keyboard className="w-3.5 h-3.5" />
                                 <span>Manual Code Entry</span>
@@ -574,7 +598,7 @@ export default function ScannerApp({
                                 <div>
                                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/70 border border-emerald-400/40 text-[11px] font-black uppercase tracking-widest text-emerald-300">
                                         <ShieldCheck className="w-3.5 h-3.5" />
-                                        ACCESS GRANTED • ADMIT GUEST
+                                        ACCESS GRANTED
                                     </div>
                                     <h2 className="text-2xl font-black text-white mt-2 font-display">
                                         {scanResult.guest?.name}
@@ -679,7 +703,7 @@ export default function ScannerApp({
                                 <div>
                                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-900/70 border border-rose-400/40 text-[11px] font-black uppercase tracking-widest text-rose-300">
                                         <X className="w-3.5 h-3.5" />
-                                        ACCESS REJECTED • DO NOT ADMIT
+                                        ACCESS REJECTED
                                     </div>
                                     <h2 className="text-xl font-black text-white mt-2 font-display">
                                         {scanResult.reason || 'Invalid or Exceeded Pass'}
@@ -693,7 +717,7 @@ export default function ScannerApp({
 
                                 <div className="p-3.5 bg-black/45 rounded-2xl border border-white/10 text-xs text-slate-300">
                                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                                        This invitation pass has either already been scanned for entry or has exceeded maximum quota. Direct the attendee to event security or help desk.
+                                        Pass already scanned or quota exceeded.
                                     </p>
                                 </div>
 
@@ -734,10 +758,10 @@ export default function ScannerApp({
                     <button
                         type="button"
                         onClick={() => setShowManualModal(true)}
-                        className="flex-1 py-3 px-4 rounded-2xl bg-kardovo-navy hover:bg-slate-900 text-white border border-slate-800 hover:border-cyan-400/60 dark:bg-cyan-600 dark:hover:bg-cyan-500 dark:text-slate-950 dark:border-cyan-400/40 font-black text-xs flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all active:scale-95 ring-0 hover:ring-2 hover:ring-cyan-500/25 cursor-pointer"
+                        className="flex-1 py-3 px-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition active:scale-95 cursor-pointer"
                     >
-                        <Keyboard className="w-4 h-4 text-cyan-400 dark:text-slate-950 stroke-[2.5]" />
-                        <span>Manual 8-Digit Code Entry</span>
+                        <Keyboard className="w-4 h-4 text-white stroke-[2.5]" />
+                        <span>Manual Pass Code Entry</span>
                     </button>
 
                     {sampleGuests.length > 0 && (
@@ -746,12 +770,12 @@ export default function ScannerApp({
                             onClick={() => setShowSimulator(!showSimulator)}
                             className={`p-3 rounded-2xl text-xs font-bold transition flex items-center justify-center cursor-pointer active:scale-95 shadow-xs ${
                                 showSimulator 
-                                    ? 'bg-amber-100 dark:bg-amber-500/25 border-2 border-amber-500 text-amber-900 dark:text-amber-200 shadow-sm ring-2 ring-amber-500/20' 
-                                    : 'bg-white hover:bg-slate-50 dark:bg-[#0B1524] dark:hover:bg-white/[0.08] border border-slate-200 hover:border-amber-400 dark:border-white/[0.08] dark:hover:border-amber-400 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white ring-0 hover:ring-2 hover:ring-amber-500/20'
+                                    ? 'bg-emerald-100 dark:bg-emerald-500/25 border-2 border-emerald-500 text-emerald-900 dark:text-emerald-200 shadow-sm ring-2 ring-emerald-500/20' 
+                                    : 'bg-white hover:bg-slate-50 dark:bg-[#0B1524] dark:hover:bg-white/[0.08] border border-slate-200 hover:border-emerald-500 dark:border-white/[0.08] dark:hover:border-emerald-500 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'
                             }`}
                             title="Toggle Test Pass Simulator"
                         >
-                            <Zap className="w-4 h-4 text-amber-500" />
+                            <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                         </button>
                     )}
                 </div>
@@ -761,8 +785,8 @@ export default function ScannerApp({
                     <div className="p-3 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] space-y-2 animate-fadeIn shadow-lg">
                         <div className="flex items-center justify-between">
                             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                                <Zap className="w-3 h-3 text-amber-500" />
-                                <span>Quick Test Scan (Simulate Real Guest Pass)</span>
+                                <Zap className="w-3 h-3 text-emerald-500" />
+                                <span>Quick Test Pass Simulator</span>
                             </span>
                             <button 
                                 onClick={() => setShowSimulator(false)} 
@@ -795,13 +819,15 @@ export default function ScannerApp({
                     </div>
                 )}
             </footer>
+                </>
+            )}
 
             {/* ════════════ 5. MODAL: MANUAL CODE ENTRY ════════════ */}
             <Modal show={showManualModal} onClose={() => setShowManualModal(false)} maxWidth="sm">
                 <form onSubmit={handleManualSubmit} className="p-6 bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white rounded-3xl border border-slate-200/90 dark:border-white/[0.08] shadow-2xl">
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-200/80 dark:border-white/[0.08]">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.08]">
                         <div className="flex items-center gap-2">
-                            <Keyboard className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                            <Keyboard className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                             <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
                                 Manual Pass Verification
                             </h3>
@@ -817,13 +843,13 @@ export default function ScannerApp({
 
                     <div className="mt-4 space-y-3">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                            Enter the <strong className="text-slate-800 dark:text-slate-200">Card Number</strong> (e.g. <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">KDV-2026-004821</span> or <span className="font-mono font-bold text-cyan-600 dark:text-cyan-400">004821</span>), <strong className="text-slate-800 dark:text-slate-200">8-digit code</strong> (e.g. <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">29841872</span>), or attendee phone number.
+                            Enter the <strong className="text-slate-800 dark:text-slate-200">Card Number</strong>, <strong className="text-slate-800 dark:text-slate-200">8-digit pass code</strong>, or attendee phone number.
                         </p>
 
                         <input
                             type="text"
                             placeholder="e.g. KDV-2026-004821 or 29841872..."
-                            className="w-full bg-slate-50 hover:bg-white focus:bg-white dark:bg-[#07111D] border border-slate-300 hover:border-slate-400 dark:border-white/[0.15] focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/25 rounded-2xl px-4 py-3 text-base text-slate-900 dark:text-white placeholder-slate-400 font-mono tracking-widest text-center shadow-xs transition uppercase"
+                            className="w-full bg-slate-50 hover:bg-white focus:bg-white dark:bg-[#07111D] border border-slate-300 hover:border-slate-400 dark:border-white/[0.15] focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/25 rounded-2xl px-4 py-3 text-base text-slate-900 dark:text-white placeholder-slate-400 font-mono tracking-widest text-center shadow-xs transition uppercase"
                             value={manualCode}
                             onChange={(e) => setManualCode(e.target.value)}
                             autoFocus
@@ -834,14 +860,14 @@ export default function ScannerApp({
                         <button
                             type="button"
                             onClick={() => setShowManualModal(false)}
-                            className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-300 bg-white hover:bg-slate-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] border border-slate-200 hover:border-slate-300 dark:border-white/[0.08] rounded-xl transition shadow-xs ring-0 hover:ring-2 hover:ring-slate-300/30 cursor-pointer active:scale-95"
+                            className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-300 bg-white hover:bg-slate-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] border border-slate-200 hover:border-slate-300 dark:border-white/[0.08] rounded-xl transition shadow-xs cursor-pointer active:scale-95"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={!manualCode.trim()}
-                            className="px-5 py-2 text-xs font-black text-white bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 disabled:opacity-40 rounded-xl border border-slate-800 hover:border-cyan-400 transition shadow-md ring-0 hover:ring-2 hover:ring-cyan-500/25 cursor-pointer active:scale-95"
+                            className="px-5 py-2 text-xs font-black text-white bg-[#16A34A] hover:bg-[#15803D] disabled:opacity-40 rounded-xl transition shadow-sm active:scale-95 cursor-pointer"
                         >
                             Verify Pass
                         </button>
@@ -904,11 +930,6 @@ export default function ScannerApp({
                                                 <div className="text-[9.5px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
                                                     {item.event_title} • <span className="font-mono text-slate-700 dark:text-slate-300">{item.card_number}</span>
                                                 </div>
-                                                {item.rejection_reason && (
-                                                    <div className="text-[9.5px] text-rose-600 dark:text-rose-400 font-semibold truncate mt-0.5">
-                                                        {item.rejection_reason}
-                                                    </div>
-                                                )}
                                             </div>
                                         </div>
 

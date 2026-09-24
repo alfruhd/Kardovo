@@ -1539,10 +1539,10 @@ export default function Messaging({
                 )}
 
                 {/* ── Invitation Pass Modal ── */}
-                <Modal show={showPassModal} onClose={() => setShowPassModal(false)} maxWidth="2xl">
-                    <div className="p-5 sm:p-6 bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-white/[0.08] shadow-2xl">
-                        <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100 dark:border-white/[0.08]">
-                            <div className="flex items-center flex-wrap justify-end gap-2.5 mt-3 sm:mt-0">
+                <Modal show={showPassModal} onClose={() => setShowPassModal(false)} maxWidth="lg">
+                    <div className="p-4 sm:p-6 bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-white/[0.08] shadow-2xl">
+                        <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-slate-100 dark:border-white/[0.08]">
+                            <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center">
                                     <Sparkles className="w-4 h-4 text-cyan-500" />
                                 </div>
@@ -1570,13 +1570,13 @@ export default function Messaging({
                             </button>
                         </div>
 
-                        <div className="flex justify-center py-2 max-h-[75vh] overflow-y-auto">
+                        <div className="flex justify-center py-2 max-h-[78vh] overflow-y-auto">
                             <PersonalisedCard
                                 guest={sampleGuest}
                                 event={selectedEvent}
                                 template={template}
                                 interactive={true}
-                                className="w-full flex justify-center"
+                                className="w-full max-w-[420px]"
                             />
                         </div>
                     </div>

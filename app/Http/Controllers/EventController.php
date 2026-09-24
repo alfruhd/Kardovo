@@ -7,6 +7,7 @@ use App\Models\Event;
 use App\Models\ScanLog;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -153,7 +154,7 @@ class EventController extends Controller
         $rsvpFilter = $request->input('rsvp');
         $categoryFilter = $request->input('category');
 
-        $guestsQuery = $event->guests()->latest();
+        $guestsQuery = $event->guests()->with('messages')->latest();
 
         if ($search) {
             $guestsQuery->where(function ($q) use ($search) {
@@ -165,9 +166,17 @@ class EventController extends Controller
         }
 
         if ($channelFilter && $channelFilter !== 'all') {
-            $guestsQuery->whereHas('messages', function ($query) use ($channelFilter) {
-                $query->where('channel', $channelFilter);
-            });
+            if ($channelFilter === 'both') {
+                $guestsQuery->whereHas('messages', function ($query) {
+                    $query->where('channel', 'whatsapp');
+                })->whereHas('messages', function ($query) {
+                    $query->where('channel', 'sms');
+                });
+            } else {
+                $guestsQuery->whereHas('messages', function ($query) use ($channelFilter) {
+                    $query->where('channel', $channelFilter);
+                });
+            }
         }
 
         if ($deliveryFilter && $deliveryFilter !== 'all') {
@@ -182,34 +191,11 @@ class EventController extends Controller
             $guestsQuery->where('category', $categoryFilter);
         }
 
-        $guests = $guestsQuery->paginate(10)->withQueryString();
-
-        // Calculate event metrics in a single efficient query
-        $guestStats = $event->guests()
-            ->selectRaw('count(*) as total_guests, sum(case when rsvp_status = "attending" then 1 else 0 end) as will_attend, sum(entries_used) as live_checkins')
-            ->first();
-
-        $totalGuests = (int) ($guestStats->total_guests ?? 0);
-        $willAttendCount = (int) ($guestStats->will_attend ?? 0);
-        $liveCheckins = (int) ($guestStats->live_checkins ?? 0);
-        $messagesSent = $event->messages()->where('status', '!=', 'draft')->count();
-
-        $recentScanLogs = ScanLog::where('event_id', $event->id)
-            ->with('guest')
-            ->latest('scanned_at')
-            ->take(50)
-            ->get();
-
         $targetUserId = (! $user->isAdmin()) ? $user->id : ($event->user_id ?? $user->id);
-        $templates = CardTemplate::where(function ($q) use ($targetUserId) {
-            $q->where('user_id', $targetUserId)->orWhereNull('user_id');
-        })
-            ->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id DESC')
-            ->get();
 
         return Inertia::render('Customer/EventDashboard', [
             'event' => $event,
-            'guests' => $guests,
+            'guests' => fn () => $guestsQuery->paginate(20)->withQueryString(),
             'filters' => [
                 'search' => $search ?? '',
                 'delivery' => $deliveryFilter ?? 'all',
@@ -217,15 +203,29 @@ class EventController extends Controller
                 'rsvp' => $rsvpFilter ?? 'all',
                 'category' => $categoryFilter ?? 'all',
             ],
-            'stats' => [
-                'total_guests' => $totalGuests,
-                'messages_sent' => $messagesSent,
-                'will_attend' => $willAttendCount,
-                'live_checkins' => $liveCheckins,
-                'attendance_percent' => $totalGuests > 0 ? round(($willAttendCount / $totalGuests) * 100) : 0,
-            ],
-            'recentScanLogs' => $recentScanLogs,
-            'templates' => $templates,
+            'stats' => function () use ($event) {
+                $guestStats = $event->guests()
+                    ->selectRaw('count(*) as total_guests, sum(case when rsvp_status = "attending" then 1 else 0 end) as will_attend, sum(entries_used) as live_checkins')
+                    ->first();
+                $totalGuests = (int) ($guestStats->total_guests ?? 0);
+                $willAttendCount = (int) ($guestStats->will_attend ?? 0);
+
+                return [
+                    'total_guests' => $totalGuests,
+                    'messages_sent' => $event->messages()->where('status', '!=', 'draft')->count(),
+                    'will_attend' => $willAttendCount,
+                    'live_checkins' => (int) ($guestStats->live_checkins ?? 0),
+                    'attendance_percent' => $totalGuests > 0 ? round(($willAttendCount / $totalGuests) * 100) : 0,
+                ];
+            },
+            'recentScanLogs' => fn () => ScanLog::where('event_id', $event->id)
+                ->with(['guest', 'scanner'])
+                ->latest('scanned_at')
+                ->take(50)
+                ->get(),
+            'templates' => fn () => CardTemplate::where(function ($q) use ($targetUserId) {
+                $q->where('user_id', $targetUserId)->orWhereNull('user_id');
+            })->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id DESC')->get(),
         ]);
     }
 
@@ -297,6 +297,8 @@ class EventController extends Controller
             'card_template_id' => 'nullable|exists:card_templates,id',
             'status' => ['nullable', Rule::in(['active', 'draft', 'completed', 'cancelled'])],
             'microsite_config' => 'nullable|array',
+            'microsite_config_files' => 'nullable|array',
+            'microsite_config_files.*' => 'nullable|file|max:10240', // max 10MB
         ];
 
         if ($user->isAdmin()) {
@@ -320,7 +322,61 @@ class EventController extends Controller
             unset($validated['status']);
         }
 
+        // Handle uploaded files
+        if ($request->hasFile('microsite_config_files')) {
+            $config = $validated['microsite_config'] ?? $event->microsite_config ?? [];
+            foreach ($request->file('microsite_config_files') as $key => $file) {
+                if ($file) {
+                    $path = $file->store('microsite', 'public');
+                    $config[$key] = Storage::url($path);
+                }
+            }
+            $validated['microsite_config'] = $config;
+        }
+
+        // Normalise microsite_config values that may arrive as strings from FormData
+        if (isset($validated['microsite_config']) && is_array($validated['microsite_config'])) {
+            $cfg = &$validated['microsite_config'];
+
+            // Cast boolean strings → actual booleans
+            $boolKeys = [
+                'show_intro_animation', 'show_countdown',
+                'show_couple_section', 'show_reception_section',
+                'show_dress_code_section', 'show_services_section',
+                'show_committee_section', 'show_map_section',
+            ];
+            foreach ($boolKeys as $boolKey) {
+                if (array_key_exists($boolKey, $cfg)) {
+                    $cfg[$boolKey] = filter_var($cfg[$boolKey], FILTER_VALIDATE_BOOLEAN);
+                }
+            }
+
+            // Decode JSON-stringified arrays
+            foreach (['programme', 'wedding_committee', 'dress_code_swatches', 'services'] as $arrKey) {
+                if (isset($cfg[$arrKey]) && is_string($cfg[$arrKey])) {
+                    $decoded = json_decode($cfg[$arrKey], true);
+                    if (is_array($decoded)) {
+                        $cfg[$arrKey] = $decoded;
+                    }
+                }
+            }
+
+            // Merge with existing config so unset optional fields are preserved
+            $validated['microsite_config'] = array_merge(
+                $event->microsite_config ?? [],
+                $cfg
+            );
+        }
+
         $event->update($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Event '{$event->title}' updated successfully.",
+                'event' => $event->fresh(['cardTemplate', 'user']),
+            ]);
+        }
 
         return back()->with('success', "Event '{$event->title}' updated successfully.");
     }

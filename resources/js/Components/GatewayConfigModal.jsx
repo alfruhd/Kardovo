@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useForm } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
@@ -39,6 +39,14 @@ export default function GatewayConfigModal({
     initialTab = 'whatsapp' 
 }) {
     const [activeTab, setActiveTab] = useState(initialTab);
+
+    useEffect(() => {
+        if (show) {
+            setActiveTab(initialTab);
+            setTestResult(null);
+        }
+    }, [initialTab, show]);
+
     const [showWhatsAppToken, setShowWhatsAppToken] = useState(false);
     const [showSmsSecret, setShowSmsSecret] = useState(false);
     const [copiedWebhook, setCopiedWebhook] = useState(false);

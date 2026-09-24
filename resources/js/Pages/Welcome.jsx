@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 import { 
     CheckCircle2, Sparkles, Smartphone, QrCode, MessageCircle, 
     Users, BarChart3, Clock, ShieldCheck, ChevronRight, HandCoins, ChartPie, Globe 
-, Send, Play, ArrowRight, Moon, Sun } from "lucide-react";
+, Send, Play, ArrowRight, Moon, Sun, ExternalLink } from "lucide-react";
 import Login from './Auth/Login';
 import Modal from '@/Components/Modal';
 import KardovoLogo from '@/Components/KardovoLogo';
@@ -362,6 +362,7 @@ const translations = {
         "en": "Custom Web Page for your entire event.",
         "sw": "Tovuti (Web Page) maalum kwa ajili ya tukio lako lote."
     },
+    
     "Chagua Kifurushi": {
         "en": "Choose Plan",
         "sw": "Chagua Kifurushi"
@@ -1477,14 +1478,14 @@ export default function Welcome({ auth }) {
                                     <li className="flex items-start gap-3 text-slate-500 text-xs mt-2 bg-slate-50 p-3 rounded-xl"><span className="font-bold text-slate-700">{t("Kumbuka:")}</span> {t("Utalipia Tsh 35,000 ya Scanner siku ya tukio au upewe App bure ujiscanie.")}</li>
                                 </ul>
                                 <button onClick={() => openAuthModal('register')} className="block w-full mt-auto py-3.5 text-center rounded-xl bg-slate-100 text-slate-800 font-bold hover:bg-slate-200 transition-colors cursor-pointer">
-                                    Chagua Kifurushi
+                                    {t("Chagua Kifurushi")}
                                 </button>
                             </div>
 
                             {/* Standard (Featured) */}
                             <div className="bg-[#0B2545] rounded-[2.5rem] p-8 border border-[#173860] shadow-2xl scroll-animate transform lg:-translate-y-4 relative z-10 text-white flex flex-col h-full">
                                 <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#16A34A] text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg border border-[#16A34A]">
-                                    Pendekezo
+                                    {t("Pendekezo")}
                                 </div>
                                 <h4 className="text-sm font-black text-blue-300 uppercase tracking-widest mb-2">Standard</h4>
                                 <div className="mb-6 flex items-baseline gap-1">
@@ -1498,7 +1499,7 @@ export default function Welcome({ auth }) {
                                     <li className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" /> {t("Ujumbe wa shukrani baadaye")}</li>
                                 </ul>
                                 <button onClick={() => openAuthModal('register')} className="block w-full mt-auto py-4 text-center rounded-xl bg-white text-[#0B2545] font-black hover:bg-slate-50 transition-colors shadow-lg cursor-pointer">
-                                    Chagua Kifurushi
+                                    {t("Chagua Kifurushi")}
                                 </button>
                             </div>
 
@@ -1515,7 +1516,7 @@ export default function Welcome({ auth }) {
                                     <li className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-kardovo-blue-light flex-shrink-0" /> {t("Ujumbe kukumbusha michango")}</li>
                                 </ul>
                                 <button onClick={() => openAuthModal('register')} className="block w-full mt-auto py-3.5 text-center rounded-xl bg-slate-100 text-slate-800 font-bold hover:bg-slate-200 transition-colors cursor-pointer">
-                                    Chagua Kifurushi
+                                    {t("Chagua Kifurushi")}
                                 </button>
                             </div>
 
@@ -1531,12 +1532,19 @@ export default function Welcome({ auth }) {
                                     <li className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-kardovo-blue-light flex-shrink-0" /> {t("Minimum order: Kadi 200")}</li>
                                     <li className="flex items-start gap-3"><CheckCircle2 className="w-5 h-5 text-kardovo-blue-light flex-shrink-0" /> {t("Tovuti (Web Page) maalum kwa ajili ya tukio lako lote.")}</li>
                                 </ul>
-                                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 mb-4 text-center">
-                                    <p className="text-slate-500 text-sm font-medium">{t("Mfano:")}</p>
-                                    <p className="text-[#0B2545] text-sm font-bold">kardovo.co.tz/kj/A8L0001</p>
-                                </div>
+                                <a 
+                                    href="/kj/A8L0001" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="block bg-slate-50 hover:bg-slate-100/80 rounded-xl p-3 border border-slate-100 mb-4 text-center transition-colors cursor-pointer group"
+                                >
+                                    <p className="text-slate-500 text-sm font-medium mb-1">{t("Mfano:")}</p>
+                                    <p className="text-[#0B2545] text-sm font-bold group-hover:text-emerald-700 transition-colors">
+                                        kardovo.co.tz/kj/A8L0001
+                                    </p>
+                                </a>
                                 <button onClick={() => openAuthModal('register')} className="block w-full mt-auto py-3.5 text-center rounded-xl bg-slate-100 text-slate-800 font-bold hover:bg-slate-200 transition-colors cursor-pointer">
-                                    Chagua Kifurushi
+                                    {t("Chagua Kifurushi")}
                                 </button>
                             </div>
                         </div>

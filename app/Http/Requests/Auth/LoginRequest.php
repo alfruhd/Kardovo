@@ -2,10 +2,13 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
+use App\Services\PhoneNormalizer;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -28,7 +31,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -42,13 +45,41 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        $loginInput = trim($this->input('email') ?? $this->input('login') ?? '');
+        $password = (string) $this->input('password');
+        $remember = $this->boolean('remember');
+
+        $user = null;
+
+        if (filter_var($loginInput, FILTER_VALIDATE_EMAIL)) {
+            $user = User::where('email', strtolower($loginInput))->first();
+        } else {
+            // Attempt to match by phone number in various formats
+            $cleanPhone = PhoneNormalizer::cleanForApi($loginInput);
+            $query = User::where(function ($q) use ($loginInput, $cleanPhone) {
+                $q->where('phone', $loginInput)
+                    ->orWhere('phone', $cleanPhone)
+                    ->orWhere('phone', '+'.$cleanPhone);
+
+                if (! empty($cleanPhone) && strlen($cleanPhone) >= 9) {
+                    $last9 = substr($cleanPhone, -9);
+                    $q->orWhere('phone', 'like', "%{$last9}")
+                        ->orWhere('email', "{$cleanPhone}@phone.kardovo.com");
+                }
+            });
+
+            $user = $query->first();
+        }
+
+        if (! $user || ! Hash::check($password, $user->password)) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
         }
+
+        Auth::login($user, $remember);
 
         RateLimiter::clear($this->throttleKey());
     }

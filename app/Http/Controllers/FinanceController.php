@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\FinancialBill;
 use App\Models\FinancialTransaction;
 use App\Models\User;
+use App\Notifications\BillReminderNotification;
 use App\Services\ExchangeRateService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -29,13 +31,7 @@ class FinanceController extends Controller
 
         $query = FinancialTransaction::with(['user:id,name,email,company', 'event:id,title,venue,event_date']);
 
-        if ($period === '30days') {
-            $query->where('transaction_date', '>=', now()->subDays(30)->startOfDay());
-        } elseif ($period === '90days') {
-            $query->where('transaction_date', '>=', now()->subDays(90)->startOfDay());
-        } elseif ($period === 'this_year') {
-            $query->whereYear('transaction_date', now()->year);
-        }
+        $this->applyPeriodFilter($query, $request);
 
         $allPeriodTransactions = (clone $query)->get();
 
@@ -203,6 +199,64 @@ class FinanceController extends Controller
 
         $transactions = $query->orderBy('transaction_date', 'desc')->get();
 
+        // ─── Billed Expenses & Accounts Payable (AP) ───
+        $allBills = FinancialBill::with('transaction')
+            ->orderByRaw("CASE WHEN status = 'overdue' THEN 1 WHEN status = 'pending' THEN 2 ELSE 3 END")
+            ->orderBy('due_date', 'asc')
+            ->get();
+
+        $today = Carbon::today();
+        foreach ($allBills as $b) {
+            if ($b->status === 'pending' && Carbon::parse($b->due_date)->isPast() && ! Carbon::parse($b->due_date)->isToday()) {
+                $b->status = 'overdue';
+                $b->saveQuietly();
+            }
+        }
+
+        $pendingOrOverdueBills = $allBills->whereIn('status', ['pending', 'overdue']);
+        $totalPendingPayables = (float) $pendingOrOverdueBills->sum('amount');
+        $overdueBills = $allBills->where('status', 'overdue');
+        $overdueCount = $overdueBills->count();
+        $overdueAmount = (float) $overdueBills->sum('amount');
+
+        $dueThisWeekBills = $allBills->filter(function ($b) use ($today) {
+            if ($b->status !== 'pending') {
+                return false;
+            }
+            $d = Carbon::parse($b->due_date);
+
+            return $d->gte($today) && $d->lte($today->copy()->addDays(7));
+        });
+        $dueThisWeekCount = $dueThisWeekBills->count();
+        $dueThisWeekAmount = (float) $dueThisWeekBills->sum('amount');
+
+        $reminders = [
+            'overdue_count' => $overdueCount,
+            'overdue_amount' => $overdueAmount,
+            'due_this_week_count' => $dueThisWeekCount,
+            'due_this_week_amount' => $dueThisWeekAmount,
+            'total_pending_payables' => $totalPendingPayables,
+            'critical_alerts' => $overdueBills->concat($dueThisWeekBills)->map(function ($b) use ($today) {
+                $dueDate = Carbon::parse($b->due_date);
+                $isOverdue = $dueDate->isPast() && ! $dueDate->isToday();
+                $diff = (int) $today->diffInDays($dueDate, false);
+
+                return [
+                    'id' => $b->id,
+                    'bill_number' => $b->bill_number,
+                    'vendor_name' => $b->vendor_name,
+                    'title' => $b->title,
+                    'amount' => (float) $b->amount,
+                    'category' => $b->category,
+                    'due_date' => $b->due_date ? Carbon::parse($b->due_date)->format('Y-m-d') : null,
+                    'is_overdue' => $isOverdue,
+                    'days_remaining' => $diff,
+                    'reminder_enabled' => (bool) $b->reminder_enabled,
+                    'reminded_at' => $b->reminded_at?->format('Y-m-d H:i'),
+                ];
+            })->values()->toArray(),
+        ];
+
         $organizers = User::where('role', 'customer')->select('id', 'name', 'email', 'company')->get();
         $events = Event::select('id', 'title', 'user_id')->get();
         $fxData = ExchangeRateService::getRateData();
@@ -219,6 +273,9 @@ class FinanceController extends Controller
                 'pending_income' => $pendingIncome,
                 'pending_expenses' => $pendingExpenses,
                 'total_transactions_count' => $allPeriodTransactions->count(),
+                'total_pending_payables' => $totalPendingPayables,
+                'overdue_bills_count' => $overdueCount,
+                'due_this_week_count' => $dueThisWeekCount,
             ],
             'fx_rate' => $fxData,
             'income_by_category' => $incomeByCategory,
@@ -228,10 +285,15 @@ class FinanceController extends Controller
             'monthly_cashflow' => $monthlyCashflow,
             'available_years' => $availableYears,
             'transactions' => $transactions,
+            'bills' => $allBills,
+            'reminders' => $reminders,
             'organizers' => $organizers,
             'events' => $events,
             'filters' => [
                 'period' => $period,
+                'from' => $request->input('from', ''),
+                'to' => $request->input('to', ''),
+                'period_label' => $this->getPeriodLabel($request),
                 'year' => $selectedYear,
                 'type' => $typeFilter,
                 'category' => $categoryFilter,
@@ -309,6 +371,183 @@ class FinanceController extends Controller
         $transaction->delete();
 
         return back()->with('success', "Transaction {$num} permanently removed from financial ledger.");
+    }
+
+    public function storeBill(Request $request)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'vendor_name' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:50',
+            'amount' => 'required|numeric|min:1',
+            'currency' => 'nullable|string|max:10',
+            'bill_date' => 'required|date',
+            'due_date' => 'required|date',
+            'is_recurring' => 'boolean',
+            'recurrence_period' => 'nullable|in:monthly,quarterly,yearly',
+            'payment_method_intended' => 'nullable|string|max:50',
+            'vendor_account_reference' => 'nullable|string|max:100',
+            'reminder_enabled' => 'boolean',
+            'reminder_days_before' => 'integer|min:0|max:60',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $validated['bill_number'] = FinancialBill::generateBillNumber();
+        $validated['currency'] = $validated['currency'] ?? 'TZS';
+        $validated['status'] = Carbon::parse($validated['due_date'])->isPast() && ! Carbon::parse($validated['due_date'])->isToday() ? 'overdue' : 'pending';
+
+        $bill = FinancialBill::create($validated);
+
+        return back()->with('success', "Billed expense {$bill->bill_number} for {$bill->vendor_name} created.");
+    }
+
+    public function updateBill(Request $request, FinancialBill $bill)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'vendor_name' => 'required|string|max:255',
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:50',
+            'amount' => 'required|numeric|min:1',
+            'currency' => 'nullable|string|max:10',
+            'bill_date' => 'required|date',
+            'due_date' => 'required|date',
+            'is_recurring' => 'boolean',
+            'recurrence_period' => 'nullable|in:monthly,quarterly,yearly',
+            'payment_method_intended' => 'nullable|string|max:50',
+            'vendor_account_reference' => 'nullable|string|max:100',
+            'reminder_enabled' => 'boolean',
+            'reminder_days_before' => 'integer|min:0|max:60',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($bill->status !== 'paid') {
+            $validated['status'] = Carbon::parse($validated['due_date'])->isPast() && ! Carbon::parse($validated['due_date'])->isToday() ? 'overdue' : 'pending';
+        }
+
+        $bill->update($validated);
+
+        return back()->with('success', "Billed expense {$bill->bill_number} updated.");
+    }
+
+    public function payBill(Request $request, FinancialBill $bill)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'payment_method' => 'required|string|max:50',
+            'reference' => 'nullable|string|max:100',
+            'payment_date' => 'nullable|date',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $paymentDate = ! empty($validated['payment_date']) ? Carbon::parse($validated['payment_date']) : now();
+        $paymentMethod = $validated['payment_method'];
+        $ref = $validated['reference'] ?? $bill->bill_number;
+
+        // 1. Create matching completed expense in FinancialTransaction ledger
+        $transaction = FinancialTransaction::create([
+            'transaction_number' => FinancialTransaction::generateTransactionNumber(),
+            'type' => 'expense',
+            'category' => $bill->category,
+            'title' => "Bill Settlement: {$bill->vendor_name} ({$bill->title})",
+            'amount' => $bill->amount,
+            'currency' => $bill->currency,
+            'payment_method' => $paymentMethod,
+            'reference' => $ref,
+            'status' => 'completed',
+            'transaction_date' => $paymentDate,
+            'notes' => "Settlement for {$bill->bill_number}. ".($validated['notes'] ?? ''),
+        ]);
+
+        // 2. Mark current bill as paid
+        $bill->update([
+            'status' => 'paid',
+            'financial_transaction_id' => $transaction->id,
+        ]);
+
+        // 3. If recurring, automatically spawn the next cycle's pending bill!
+        $nextBillMsg = '';
+        if ($bill->is_recurring && $bill->recurrence_period) {
+            $nextBillDate = Carbon::parse($bill->bill_date);
+            $nextDueDate = Carbon::parse($bill->due_date);
+
+            if ($bill->recurrence_period === 'monthly') {
+                $nextBillDate = $nextBillDate->addMonth();
+                $nextDueDate = $nextDueDate->addMonth();
+            } elseif ($bill->recurrence_period === 'quarterly') {
+                $nextBillDate = $nextBillDate->addMonths(3);
+                $nextDueDate = $nextDueDate->addMonths(3);
+            } elseif ($bill->recurrence_period === 'yearly') {
+                $nextBillDate = $nextBillDate->addYear();
+                $nextDueDate = $nextDueDate->addYear();
+            }
+
+            $nextBill = FinancialBill::create([
+                'bill_number' => FinancialBill::generateBillNumber(),
+                'vendor_name' => $bill->vendor_name,
+                'title' => $bill->title,
+                'category' => $bill->category,
+                'amount' => $bill->amount,
+                'currency' => $bill->currency,
+                'bill_date' => $nextBillDate,
+                'due_date' => $nextDueDate,
+                'status' => 'pending',
+                'is_recurring' => true,
+                'recurrence_period' => $bill->recurrence_period,
+                'payment_method_intended' => $bill->payment_method_intended,
+                'vendor_account_reference' => $bill->vendor_account_reference,
+                'reminder_enabled' => $bill->reminder_enabled,
+                'reminder_days_before' => $bill->reminder_days_before,
+                'notes' => $bill->notes,
+            ]);
+
+            $nextBillMsg = " Next recurring cycle ({$nextBill->bill_number}) scheduled for {$nextDueDate->format('M d, Y')}.";
+        }
+
+        return back()->with('success', "Bill {$bill->bill_number} marked as paid and logged to financial ledger ({$transaction->transaction_number}).{$nextBillMsg}");
+    }
+
+    public function destroyBill(Request $request, FinancialBill $bill)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin()) {
+            abort(403);
+        }
+
+        $num = $bill->bill_number;
+        $bill->delete();
+
+        return back()->with('success', "Billed expense {$num} deleted.");
+    }
+
+    public function remindBill(Request $request, FinancialBill $bill)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin()) {
+            abort(403);
+        }
+
+        try {
+            $user->notify(new BillReminderNotification($bill));
+            $bill->update(['reminded_at' => now()]);
+
+            return back()->with('success', "Due-date reminder alert dispatched to {$user->email} for {$bill->bill_number}.");
+        } catch (\Throwable $e) {
+            return back()->with('error', "Could not send email reminder: {$e->getMessage()}");
+        }
     }
 
     public function export(Request $request): StreamedResponse
@@ -407,13 +646,7 @@ class FinanceController extends Controller
         // Standard Ledger CSV
         $query = FinancialTransaction::with(['user:id,name,email,company', 'event:id,title']);
 
-        if ($period === '30days') {
-            $query->where('transaction_date', '>=', now()->subDays(30)->startOfDay());
-        } elseif ($period === '90days') {
-            $query->where('transaction_date', '>=', now()->subDays(90)->startOfDay());
-        } elseif ($period === 'this_year') {
-            $query->whereYear('transaction_date', now()->year);
-        }
+        $this->applyPeriodFilter($query, $request);
 
         if ($typeFilter !== 'all') {
             $query->where('type', $typeFilter);
@@ -496,13 +729,7 @@ class FinanceController extends Controller
         $period = $request->input('period', 'all');
         $query = FinancialTransaction::with(['user:id,name,email,company', 'event:id,title']);
 
-        if ($period === '30days') {
-            $query->where('transaction_date', '>=', now()->subDays(30)->startOfDay());
-        } elseif ($period === '90days') {
-            $query->where('transaction_date', '>=', now()->subDays(90)->startOfDay());
-        } elseif ($period === 'this_year') {
-            $query->whereYear('transaction_date', now()->year);
-        }
+        $this->applyPeriodFilter($query, $request);
 
         $transactions = $query->orderBy('transaction_date', 'desc')->get();
 
@@ -599,6 +826,7 @@ class FinanceController extends Controller
 
         $pdf = Pdf::loadView('pdf.financial_report', [
             'period' => $period,
+            'period_label' => $this->getPeriodLabel($request),
             'metrics' => [
                 'gross_revenue' => $grossRevenue,
                 'total_expenses' => $totalExpenses,
@@ -620,5 +848,48 @@ class FinanceController extends Controller
         $filename = "Kardovo_Financial_Statement_{$period}_".date('Y-m-d').'.pdf';
 
         return $pdf->download($filename);
+    }
+
+    protected function applyPeriodFilter($query, Request $request): void
+    {
+        $period = $request->input('period', 'all');
+        $from = $request->input('from') ?: $request->input('start_date');
+        $to = $request->input('to') ?: $request->input('end_date');
+
+        if ($period === '7days' || $period === 'weekly') {
+            $query->where('transaction_date', '>=', now()->subDays(7)->startOfDay());
+        } elseif ($period === '30days' || $period === 'monthly') {
+            $query->where('transaction_date', '>=', now()->subDays(30)->startOfDay());
+        } elseif ($period === '90days' || $period === 'quarterly') {
+            $query->where('transaction_date', '>=', now()->subDays(90)->startOfDay());
+        } elseif ($period === 'half_year' || $period === 'semi_annual' || $period === '180days') {
+            $query->where('transaction_date', '>=', now()->subDays(180)->startOfDay());
+        } elseif ($period === 'this_year' || $period === 'annual') {
+            $query->whereYear('transaction_date', now()->year);
+        } elseif ($period === 'custom') {
+            if ($from) {
+                $query->where('transaction_date', '>=', Carbon::parse($from)->startOfDay());
+            }
+            if ($to) {
+                $query->where('transaction_date', '<=', Carbon::parse($to)->endOfDay());
+            }
+        }
+    }
+
+    protected function getPeriodLabel(Request $request): string
+    {
+        $period = $request->input('period', 'all');
+        $from = $request->input('from') ?: $request->input('start_date');
+        $to = $request->input('to') ?: $request->input('end_date');
+
+        return match ($period) {
+            '7days', 'weekly' => 'Weekly (Past 7 Days)',
+            '30days', 'monthly' => 'Monthly (Past 30 Days)',
+            '90days', 'quarterly' => 'Quarterly (Past 90 Days)',
+            'half_year', 'semi_annual', '180days' => 'Semi-Annual (Past 6 Months)',
+            'this_year', 'annual' => 'Annual (Year '.now()->year.')',
+            'custom' => 'Custom Period ('.($from ? Carbon::parse($from)->format('M d, Y') : 'Start').' to '.($to ? Carbon::parse($to)->format('M d, Y') : 'End').')',
+            default => 'All Time',
+        };
     }
 }

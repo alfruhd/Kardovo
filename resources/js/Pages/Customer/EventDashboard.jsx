@@ -65,8 +65,85 @@ import {
     Crown,
     FileCheck,
     Settings,
-    Lock
+    Lock,
+    Phone
 } from 'lucide-react';
+
+const MediaInput = ({ id, label, placeholder, configKey, editEventForm, accept = "image/*", helper }) => {
+    const file = editEventForm.data.microsite_config_files?.[configKey];
+    const currentValue = editEventForm.data.microsite_config?.[configKey] || '';
+
+    return (
+        <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+                <InputLabel htmlFor={id} value={label} className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                {file ? (
+                    <span className="text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                        File Selected
+                    </span>
+                ) : (
+                    <span className="text-[10.5px] text-slate-400 dark:text-slate-500">URL or Upload</span>
+                )}
+            </div>
+
+            <div className="flex items-center gap-2">
+                <div className="relative flex-1 min-w-0">
+                    <TextInput
+                        id={id}
+                        type="text"
+                        readOnly={Boolean(file)}
+                        className={`block w-full text-xs py-2.5 px-3 rounded-xl bg-white dark:bg-[#08121E] transition-all ${
+                            file ? 'bg-emerald-50/60 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 font-medium border-emerald-300 dark:border-emerald-600/40 pr-8' : ''
+                        }`}
+                        placeholder={placeholder}
+                        value={file ? file.name : currentValue}
+                        onChange={(e) => {
+                            editEventForm.setData('microsite_config', {
+                                ...editEventForm.data.microsite_config,
+                                [configKey]: e.target.value
+                            });
+                        }}
+                    />
+                    {file && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                editEventForm.setData('microsite_config_files', {
+                                    ...(editEventForm.data.microsite_config_files || {}),
+                                    [configKey]: null
+                                });
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-rose-100 hover:text-rose-600 text-slate-500 flex items-center justify-center text-[10px] transition cursor-pointer"
+                            title="Clear file selection"
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+
+                <label className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-xs font-bold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/[0.06] dark:hover:bg-white/[0.12] text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/[0.08] cursor-pointer transition active:scale-95 shadow-2xs">
+                    <Upload className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>{file ? 'Change' : 'Import'}</span>
+                    <input
+                        type="file"
+                        className="hidden"
+                        accept={accept}
+                        onChange={(e) => {
+                            const selected = e.target.files?.[0];
+                            if (selected) {
+                                editEventForm.setData('microsite_config_files', {
+                                    ...(editEventForm.data.microsite_config_files || {}),
+                                    [configKey]: selected
+                                });
+                            }
+                        }}
+                    />
+                </label>
+            </div>
+            {helper && <p className="text-[10px] text-slate-400 dark:text-slate-500">{helper}</p>}
+        </div>
+    );
+};
 
 export default function EventDashboard({ 
     event = {}, 
@@ -143,16 +220,45 @@ export default function EventDashboard({
         card_template_id: event?.card_template_id || '',
         status: event?.status || 'active',
         microsite_config: {
-            accent_color: event?.microsite_config?.accent_color || '#10b981',
+            show_intro_animation: event?.microsite_config?.show_intro_animation !== false,
+            intro_video_url: event?.microsite_config?.intro_video_url || '',
+            intro_poster_url: event?.microsite_config?.intro_poster_url || '',
+            couple_monogram: event?.microsite_config?.couple_monogram || '',
             cover_photo: event?.microsite_config?.cover_photo || '',
-            tagline: event?.microsite_config?.tagline || '',
-            dress_code: event?.microsite_config?.dress_code || '',
-            font_style: event?.microsite_config?.font_style || 'script',
-            show_countdown: event?.microsite_config?.show_countdown !== false,
-            rsvp_prompt: event?.microsite_config?.rsvp_prompt || 'Kindly confirm your attendance',
+            theme_color: event?.microsite_config?.theme_color || '#3A4634',
+            accent_color: event?.microsite_config?.accent_color || '#5C4033',
             music_url: event?.microsite_config?.music_url || '',
+            show_countdown: event?.microsite_config?.show_countdown !== false,
+            primary_name: event?.microsite_config?.primary_name || '',
+            secondary_name: event?.microsite_config?.secondary_name || '',
+            couple_title: event?.microsite_config?.couple_title || '',
+            event_date_formatted: event?.microsite_config?.event_date_formatted || '',
+            host_honor_text: event?.microsite_config?.host_honor_text || '',
+            invitation_text: event?.microsite_config?.invitation_text || '',
+            reception_title: event?.microsite_config?.reception_title || '',
+            reception_subtitle: event?.microsite_config?.reception_subtitle || '',
+            reception_time_badge: event?.microsite_config?.reception_time_badge || '',
+            dress_code_theme: event?.microsite_config?.dress_code_theme || '',
+            dress_code_image: event?.microsite_config?.dress_code_image || '',
+            mc_name: event?.microsite_config?.mc_name || '',
+            mc_badge: event?.microsite_config?.mc_badge || 'Master of Ceremonies',
+            mc_bio: event?.microsite_config?.mc_bio || '',
+            mc_photo: event?.microsite_config?.mc_photo || '',
+            mc_hashtag: event?.microsite_config?.mc_hashtag || '',
+            wedding_committee: event?.microsite_config?.wedding_committee || [],
             programme: event?.microsite_config?.programme || [],
+            google_maps_embed_url: event?.microsite_config?.google_maps_embed_url || '',
+            google_maps_link: event?.microsite_config?.google_maps_link || '',
+            adults_only_note: event?.microsite_config?.adults_only_note || '',
+            show_services: event?.microsite_config?.show_services !== false,
+            services_badge: event?.microsite_config?.services_badge || '',
+            services_title: event?.microsite_config?.services_title || '',
+            services: event?.microsite_config?.services || [
+                { name: 'Catering & Dining', provider: 'Gourmet Bites Catering', note: 'A lavish multi-course buffet' },
+                { name: 'Cocktails & Beverages', provider: 'The Tipsy Bartender', note: 'Signature drinks & mocktails' },
+            ],
         },
+        microsite_config_files: {},
     });
 
     // Add Guest Form
@@ -241,11 +347,25 @@ export default function EventDashboard({
 
     const handleEditEventSubmit = (e) => {
         e.preventDefault();
-        editEventForm.put(route('events.update', event?.id || 1), {
-            onSuccess: () => {
-                setEditEventModalOpen(false);
-            }
-        });
+        const hasFiles = Object.values(editEventForm.data.microsite_config_files || {}).some(Boolean);
+        if (hasFiles) {
+            editEventForm.transform((data) => ({
+                ...data,
+                _method: 'put',
+            })).post(route('events.update', event?.id || 1), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setEditEventModalOpen(false);
+                }
+            });
+        } else {
+            editEventForm.put(route('events.update', event?.id || 1), {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setEditEventModalOpen(false);
+                }
+            });
+        }
     };
 
     const handleDeleteEvent = () => {
@@ -1518,7 +1638,7 @@ export default function EventDashboard({
             </Modal>
 
             {/* Modal: Edit Event Details & Settings */}
-            <Modal show={editEventModalOpen} onClose={() => setEditEventModalOpen(false)} maxWidth="lg">
+            <Modal show={editEventModalOpen} onClose={() => setEditEventModalOpen(false)} maxWidth="3xl">
                 <form onSubmit={handleEditEventSubmit} className="p-6 sm:p-7 space-y-5 overflow-y-auto max-h-[85vh]">
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/[0.08] pb-4">
@@ -1709,140 +1829,173 @@ export default function EventDashboard({
                     {/* ── Microsite Tab ── */}
                     {editEventTab === 'microsite' && (
                     <div className="space-y-5">
-                        {/* Info Banner */}
-                        <div className="flex items-start gap-3 p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20">
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                                <Palette className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        {/* Status / Quick Notice */}
+                        <div className="flex items-center justify-between p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                                    <Sparkles className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">Guest Microsite Experience</h4>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        Customize the digital wedding invitation website and atmosphere.
+                                    </p>
+                                </div>
                             </div>
-                            <div>
-                                <h4 className="text-xs font-bold text-emerald-800 dark:text-emerald-300">Customise Your Microsite</h4>
-                                <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400/80 mt-0.5 leading-relaxed">
-                                    Personalize the interactive landing page your guests will see.
-                                </p>
-                            </div>
+                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/20">
+                                Live Minisite
+                            </span>
                         </div>
 
-                        {/* Visuals & Branding */}
-                        <div className="space-y-4 p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01]">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Sparkles className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                <h4 className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Visuals & Branding</h4>
+                        {/* 1. Pre-Card Opening Experience (Envelope & Video) */}
+                        <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C1525] shadow-xs space-y-4">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                        <Sparkles className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                            Intro & Opening Animation
+                                        </h4>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Interactive gold wax seal & envelope video intro for guests.
+                                        </p>
+                                    </div>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={editEventForm.data.microsite_config.show_intro_animation}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, show_intro_animation: e.target.checked })}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                                </label>
                             </div>
 
-                            <div>
-                                <InputLabel htmlFor="ms_cover_photo" value="Hero Background URL" />
-                                <TextInput
-                                    id="ms_cover_photo"
-                                    type="url"
-                                    className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
-                                    placeholder="https://example.com/wedding-photo.jpg"
-                                    value={editEventForm.data.microsite_config.cover_photo}
-                                    onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, cover_photo: e.target.value })}
-                                />
-                            </div>
+                            {editEventForm.data.microsite_config.show_intro_animation && (
+                                <>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                                        <MediaInput
+                                            id="ms_intro_video"
+                                            label="Intro Video (MP4)"
+                                            placeholder="https://.../video.mp4"
+                                            configKey="intro_video_url"
+                                            editEventForm={editEventForm}
+                                            accept="video/mp4,video/*"
+                                            helper="Plays when guest taps the sealed envelope."
+                                        />
+                                        <MediaInput
+                                            id="ms_intro_poster"
+                                            label="Poster / Static Envelope"
+                                            placeholder="/images/rsvp/blank_seal_envelope.jpg"
+                                            configKey="intro_poster_url"
+                                            editEventForm={editEventForm}
+                                            accept="image/*"
+                                            helper="Shown as the thumbnail before video loads."
+                                        />
+                                    </div>
 
-                            <div className="space-y-4">
+                                    {/* Wax Seal Monogram */}
+                                    <div className="pt-1">
+                                        <InputLabel htmlFor="ms_monogram" value="Wax Seal Monogram" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                        <TextInput
+                                            id="ms_monogram"
+                                            type="text"
+                                            className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                            placeholder="e.g. BJ — leave blank to use your intro video"
+                                            maxLength={4}
+                                            value={editEventForm.data.microsite_config.couple_monogram}
+                                            onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, couple_monogram: e.target.value.toUpperCase() })}
+                                        />
+                                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 leading-relaxed">
+                                            When set, generates a gold wax seal with your initials engraved on an ivory envelope — replacing the intro video.
+                                        </p>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* 2. Visuals, Theme & Atmosphere */}
+                        <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C1525] shadow-xs space-y-4">
+                            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                                <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                    <Palette className="w-4 h-4" />
+                                </div>
                                 <div>
-                                    <InputLabel value="Accent Color" />
-                                    <div className="flex items-center gap-2 mt-1 relative">
+                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                        Visuals & Atmosphere
+                                    </h4>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        Hero imagery, background soundtrack, and custom luxury palette.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <MediaInput
+                                    id="ms_cover_photo"
+                                    label="Hero Cover Photo"
+                                    placeholder="https://.../cover-photo.jpg"
+                                    configKey="cover_photo"
+                                    editEventForm={editEventForm}
+                                    accept="image/*"
+                                    helper="Main portrait banner at the top of the microsite."
+                                />
+                                <MediaInput
+                                    id="ms_music"
+                                    label="Background Music (MP3)"
+                                    placeholder="https://.../audio.mp3"
+                                    configKey="music_url"
+                                    editEventForm={editEventForm}
+                                    accept="audio/*"
+                                    helper="Optional soft ambient soundtrack for visitors."
+                                />
+
+                                <div>
+                                    <InputLabel value="Theme Background Color" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <div className="flex items-center gap-2 mt-1.5">
+                                        <input
+                                            type="color"
+                                            value={editEventForm.data.microsite_config.theme_color}
+                                            onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, theme_color: e.target.value })}
+                                            className="w-10 h-10 rounded-xl border border-slate-200 dark:border-white/10 cursor-pointer p-0.5 bg-white dark:bg-[#08121E]"
+                                        />
+                                        <TextInput
+                                            type="text"
+                                            className="flex-1 text-xs font-mono py-2 px-3 rounded-xl bg-white dark:bg-[#08121E] uppercase"
+                                            value={editEventForm.data.microsite_config.theme_color}
+                                            onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, theme_color: e.target.value })}
+                                            placeholder="#3A4634"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <InputLabel value="Accent Highlight Color" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <div className="flex items-center gap-2 mt-1.5">
                                         <input
                                             type="color"
                                             value={editEventForm.data.microsite_config.accent_color}
                                             onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, accent_color: e.target.value })}
-                                            className="w-10 h-10 rounded-xl border border-slate-200 dark:border-white/10 cursor-pointer p-0.5 bg-white dark:bg-[#0B1524]"
+                                            className="w-10 h-10 rounded-xl border border-slate-200 dark:border-white/10 cursor-pointer p-0.5 bg-white dark:bg-[#08121E]"
                                         />
                                         <TextInput
                                             type="text"
-                                            className="flex-1 text-xs font-mono py-2.5 rounded-xl bg-white dark:bg-[#0B1524] uppercase"
+                                            className="flex-1 text-xs font-mono py-2 px-3 rounded-xl bg-white dark:bg-[#08121E] uppercase"
                                             value={editEventForm.data.microsite_config.accent_color}
                                             onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, accent_color: e.target.value })}
-                                            placeholder="#10B981"
+                                            placeholder="#5C4033"
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <InputLabel value="Typography" />
-                                    <select
-                                        className="mt-1 block w-full rounded-xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white text-xs py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
-                                        value={editEventForm.data.microsite_config.font_style}
-                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, font_style: e.target.value })}
-                                    >
-                                        <option value="script">Script / Elegant</option>
-                                        <option value="serif">Classic Serif</option>
-                                        <option value="modern">Modern Sans</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Content & Settings */}
-                        <div className="space-y-4 p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01]">
-                            <div className="flex items-center gap-2 mb-1">
-                                <TrendingUp className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                <h4 className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Content & Copy</h4>
                             </div>
 
-                            <div>
-                                <InputLabel htmlFor="ms_tagline" value="Tagline / Subtitle" />
-                                <TextInput
-                                    id="ms_tagline"
-                                    type="text"
-                                    className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
-                                    placeholder="e.g. Together with their families..."
-                                    value={editEventForm.data.microsite_config.tagline}
-                                    onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, tagline: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="space-y-4">
+                            <div className="pt-2 flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/70 dark:border-white/[0.05]">
                                 <div>
-                                    <InputLabel htmlFor="ms_dress_code" value="Dress Code" />
-                                    <TextInput
-                                        id="ms_dress_code"
-                                        type="text"
-                                        className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
-                                        placeholder="e.g. Black Tie"
-                                        value={editEventForm.data.microsite_config.dress_code}
-                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, dress_code: e.target.value })}
-                                    />
-                                </div>
-                                <div>
-                                    <InputLabel htmlFor="ms_rsvp_prompt" value="RSVP Prompt" />
-                                    <TextInput
-                                        id="ms_rsvp_prompt"
-                                        type="text"
-                                        className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
-                                        placeholder="Confirm Attendance"
-                                        value={editEventForm.data.microsite_config.rsvp_prompt}
-                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, rsvp_prompt: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Special Features */}
-                        <div className="space-y-4 p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01]">
-                            <div className="flex items-center gap-2 mb-1">
-                                <Zap className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                <h4 className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Special Features</h4>
-                            </div>
-                            
-                            <div>
-                                <InputLabel htmlFor="ms_music" value="Background Music URL (Optional)" />
-                                <TextInput
-                                    id="ms_music"
-                                    type="url"
-                                    className="block w-full text-xs py-2.5 rounded-xl mt-1 bg-white dark:bg-[#0B1524]"
-                                    placeholder="https://example.com/song.mp3"
-                                    value={editEventForm.data.microsite_config.music_url}
-                                    onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, music_url: e.target.value })}
-                                />
-                            </div>
-                            
-                            <div className="flex items-center justify-between p-3.5 rounded-xl bg-white dark:bg-[#0B1524] border border-slate-200 dark:border-white/[0.06]">
-                                <div>
-                                    <div className="text-xs font-bold text-slate-800 dark:text-white">Countdown Timer</div>
-                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Show live timer on hero banner</div>
+                                    <div className="text-xs font-bold text-slate-800 dark:text-white">Live Countdown Timer</div>
+                                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Show dynamic days, hours, and minutes remaining on hero banner</div>
                                 </div>
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
@@ -1856,89 +2009,601 @@ export default function EventDashboard({
                             </div>
                         </div>
 
-                        {/* Programme / Timeline */}
-                        <div className="p-4 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-slate-50/50 dark:bg-white/[0.01]">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                                    <h4 className="text-[11px] font-bold text-slate-800 dark:text-white uppercase tracking-wider">Programme / Timeline</h4>
+                        {/* 3. Couple Names & Formal Invitation */}
+                        <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C1525] shadow-xs space-y-4">
+                            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                                <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                                    <Heart className="w-4 h-4" />
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        const prog = [...(editEventForm.data.microsite_config.programme || []), { time: '', title: '', note: '' }];
-                                        editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
-                                    }}
-                                    className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 hover:underline cursor-pointer flex items-center gap-1 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-1 rounded-lg transition"
-                                >
-                                    <Plus className="w-3.5 h-3.5" /> Add Item
-                                </button>
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                        Couple Names & Invitation Note
+                                    </h4>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        Header names, formal family honor request, and heartfelt wording.
+                                    </p>
+                                </div>
                             </div>
-                            
-                            {(editEventForm.data.microsite_config.programme || []).length === 0 && (
-                                <div className="flex flex-col items-center justify-center p-6 text-center bg-white dark:bg-[#0B1524] rounded-xl border border-slate-200 dark:border-white/[0.06] border-dashed">
-                                    <Calendar className="w-6 h-6 text-slate-300 dark:text-slate-600 mb-2" />
-                                    <p className="text-xs text-slate-500 font-medium">No timeline items yet.</p>
-                                    <p className="text-[10px] text-slate-400 mt-1">Add your event schedule to guide your guests.</p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <InputLabel htmlFor="ms_pname" value="Primary Partner Name" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_pname"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="e.g. Khadija"
+                                        value={editEventForm.data.microsite_config.primary_name}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, primary_name: e.target.value })}
+                                    />
                                 </div>
-                            )}
-                            
-                            <div className="space-y-4">
-                                {(editEventForm.data.microsite_config.programme || []).map((item, i) => (
-                                    <div key={i} className="flex flex-col gap-3 bg-white dark:bg-[#0B1524] rounded-xl p-3 border border-slate-200 dark:border-white/[0.06] shadow-sm relative">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                const prog = editEventForm.data.microsite_config.programme.filter((_, idx) => idx !== i);
-                                                editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
-                                            }}
-                                            className="absolute top-2 right-2 text-slate-400 hover:text-rose-500 bg-slate-50 hover:bg-rose-50 dark:bg-white/[0.02] dark:hover:bg-rose-500/10 p-1.5 rounded-lg transition cursor-pointer"
-                                            title="Remove item"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                        
-                                        <div className="w-full pr-8">
-                                            <InputLabel value="Time" className="!text-[10px] uppercase mb-1" />
+
+                                <div>
+                                    <InputLabel htmlFor="ms_sname" value="Secondary Partner Name" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_sname"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="e.g. Janja"
+                                        value={editEventForm.data.microsite_config.secondary_name}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, secondary_name: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="ms_ctitle" value="Header Display Title" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_ctitle"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="e.g. Khadija & Janja"
+                                        value={editEventForm.data.microsite_config.couple_title}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, couple_title: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="ms_date_formatted" value="Hero Date Display (Spaced)" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_date_formatted"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="09 . 05 . 2026"
+                                        value={editEventForm.data.microsite_config.event_date_formatted}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, event_date_formatted: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                    <InputLabel htmlFor="ms_host_honor" value="Family & Host Honor Request" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_host_honor"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="The family of Prof & Mrs Idris Kikula cordially request the honour of your presence"
+                                        value={editEventForm.data.microsite_config.host_honor_text}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, host_honor_text: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                    <InputLabel htmlFor="ms_invitation_text" value="Ceremony / Invitation Note" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <textarea
+                                        id="ms_invitation_text"
+                                        rows={2}
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E] border-slate-300 dark:border-white/10"
+                                        placeholder="at the wedding ceremony of their son, Babu Kikula & Jasmine Mndeme."
+                                        value={editEventForm.data.microsite_config.invitation_text}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, invitation_text: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 4. Reception & Programme Timeline */}
+                        <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C1525] shadow-xs space-y-4">
+                            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                                <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                    <Utensils className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                        Reception & Timeline
+                                    </h4>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        Venue location card details and schedule of events.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <InputLabel htmlFor="ms_reception_title" value="Reception Venue Title" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_reception_title"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="e.g. OASIS Village & Club"
+                                        value={editEventForm.data.microsite_config.reception_title}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, reception_title: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="ms_reception_time" value="Time Badge / Human Date" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_reception_time"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="Saturday, 9th May 2026, 5:30 PM"
+                                        value={editEventForm.data.microsite_config.reception_time_badge}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, reception_time_badge: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                    <InputLabel htmlFor="ms_reception_sub" value="Subtitle / Dinner Note" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_reception_sub"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="A reception dinner and evening of celebration."
+                                        value={editEventForm.data.microsite_config.reception_subtitle}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, reception_subtitle: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Programme Timeline List */}
+                            <div className="pt-2">
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                                        <Clock className="w-3.5 h-3.5 text-emerald-500" />
+                                        Event Schedule ({editEventForm.data.microsite_config.programme?.length || 0})
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const prog = [...(editEventForm.data.microsite_config.programme || []), { time: '5:30 PM', title: '', note: '' }];
+                                            editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
+                                        }}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 rounded-lg transition cursor-pointer"
+                                    >
+                                        <Plus className="w-3.5 h-3.5" /> Add Timeline Item
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2.5">
+                                    {(editEventForm.data.microsite_config.programme || []).map((item, i) => (
+                                        <div key={i} className="flex flex-col sm:flex-row items-start sm:items-center gap-2 p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
                                             <input
                                                 type="text"
-                                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 text-xs font-mono font-bold px-2.5 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-emerald-500 focus:border-emerald-500"
-                                                placeholder="6:00 PM"
+                                                className="w-full sm:w-28 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#08121E] text-xs font-bold px-2.5 py-1.5 text-slate-900 dark:text-white"
+                                                placeholder="5:30 PM"
                                                 value={item.time}
                                                 onChange={(e) => {
                                                     const prog = editEventForm.data.microsite_config.programme.map((it, idx) => idx === i ? { ...it, time: e.target.value } : it);
                                                     editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
                                                 }}
                                             />
-                                        </div>
-                                        <div className="w-full">
-                                            <InputLabel value="Activity" className="!text-[10px] uppercase mb-1" />
                                             <input
                                                 type="text"
-                                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/20 text-xs font-bold px-2.5 py-2 text-slate-900 dark:text-white placeholder-slate-400 focus:ring-emerald-500 focus:border-emerald-500"
-                                                placeholder="Reception & Dinner"
+                                                className="w-full sm:flex-1 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#08121E] text-xs font-semibold px-2.5 py-1.5 text-slate-900 dark:text-white"
+                                                placeholder="Title (e.g. Cocktail hour & Reception)"
                                                 value={item.title}
                                                 onChange={(e) => {
                                                     const prog = editEventForm.data.microsite_config.programme.map((it, idx) => idx === i ? { ...it, title: e.target.value } : it);
                                                     editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
                                                 }}
                                             />
-                                        </div>
-                                        <div className="w-full">
                                             <input
                                                 type="text"
-                                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-transparent text-xs px-2.5 py-2 text-slate-600 dark:text-slate-300 placeholder-slate-400 focus:ring-emerald-500 focus:border-emerald-500"
-                                                placeholder="Optional extra details..."
-                                                value={item.note}
+                                                className="w-full sm:flex-1 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#08121E] text-xs px-2.5 py-1.5 text-slate-600 dark:text-slate-300"
+                                                placeholder="Location / Note"
+                                                value={item.note || ''}
                                                 onChange={(e) => {
                                                     const prog = editEventForm.data.microsite_config.programme.map((it, idx) => idx === i ? { ...it, note: e.target.value } : it);
                                                     editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
                                                 }}
                                             />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const prog = editEventForm.data.microsite_config.programme.filter((_, idx) => idx !== i);
+                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, programme: prog });
+                                                }}
+                                                className="self-end sm:self-auto p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
+                                                title="Remove item"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 5. Dress Code & Master of Ceremonies (MC) */}
+                        <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C1525] shadow-xs space-y-4">
+                            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                                <div className="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                                    <User className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                        Dress Code & Master of Ceremonies
+                                    </h4>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        Attire guidelines with moodboard photo, and MC introduction profile.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <InputLabel htmlFor="ms_dress_theme" value="Dress Code Theme / Note" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_dress_theme"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="e.g. Soft Beige, Olive Green, Deep Black"
+                                        value={editEventForm.data.microsite_config.dress_code_theme}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, dress_code_theme: e.target.value })}
+                                    />
+                                </div>
+
+                                <MediaInput
+                                    id="ms_dress_image"
+                                    label="Dress Code Moodboard / Image"
+                                    placeholder="https://.../dresscode.jpeg"
+                                    configKey="dress_code_image"
+                                    editEventForm={editEventForm}
+                                    accept="image/*"
+                                    helper="Palette / fashion guide photo for guests."
+                                />
+
+                                <div>
+                                    <InputLabel htmlFor="ms_mc_name" value="MC Name" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_mc_name"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="e.g. Mc MishieBomba"
+                                        value={editEventForm.data.microsite_config.mc_name}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, mc_name: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="ms_mc_badge" value="MC Badge / Title" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_mc_badge"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="Master of Ceremonies"
+                                        value={editEventForm.data.microsite_config.mc_badge}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, mc_badge: e.target.value })}
+                                    />
+                                </div>
+
+                                <MediaInput
+                                    id="ms_mc_photo"
+                                    label="MC Portrait Photo"
+                                    placeholder="https://.../mc.jpeg"
+                                    configKey="mc_photo"
+                                    editEventForm={editEventForm}
+                                    accept="image/*"
+                                    helper="Official photo of your Master of Ceremonies."
+                                />
+
+                                <div>
+                                    <InputLabel htmlFor="ms_mc_hashtag" value="Event Hashtag" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_mc_hashtag"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="#BABUANDJASMINE2026"
+                                        value={editEventForm.data.microsite_config.mc_hashtag}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, mc_hashtag: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                    <InputLabel htmlFor="ms_mc_bio" value="MC Introduction Bio" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <textarea
+                                        id="ms_mc_bio"
+                                        rows={2}
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E] border-slate-300 dark:border-white/10"
+                                        placeholder="Bringing energy, elegance, and a seamless flow to the celebration..."
+                                        value={editEventForm.data.microsite_config.mc_bio}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, mc_bio: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 6. Venue, Interactive Map & Etiquette */}
+                        <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C1525] shadow-xs space-y-4">
+                            <div className="flex items-center gap-2.5 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                                <div className="w-7 h-7 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                                    <MapPin className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                        Map Location & Etiquette
+                                    </h4>
+                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                        Interactive Google Maps directions and adults-only guidelines.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <InputLabel htmlFor="ms_map_embed" value="Google Maps Embed URL (Iframe src)" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_map_embed"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="https://www.google.com/maps/embed?pb=..."
+                                        value={editEventForm.data.microsite_config.google_maps_embed_url}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, google_maps_embed_url: e.target.value })}
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="ms_map_link" value="Direct Google Maps Link (for 'Open in Maps' Button)" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <TextInput
+                                        id="ms_map_link"
+                                        type="text"
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                        placeholder="https://maps.app.goo.gl/..."
+                                        value={editEventForm.data.microsite_config.google_maps_link}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, google_maps_link: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="sm:col-span-2">
+                                    <InputLabel htmlFor="ms_adults_note" value="Adults-Only / Child Policy Notice" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                    <textarea
+                                        id="ms_adults_note"
+                                        rows={2}
+                                        className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E] border-slate-300 dark:border-white/10"
+                                        placeholder="While we love your little ones, our celebration will be an adult-only occasion..."
+                                        value={editEventForm.data.microsite_config.adults_only_note}
+                                        onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, adults_only_note: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 7. Wedding Committee / Key Contacts */}
+                        <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C1525] shadow-xs space-y-4">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                        <Phone className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                            Committee Contacts
+                                        </h4>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Organizers and phone numbers for guests to call.
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const comm = [...(editEventForm.data.microsite_config.wedding_committee || []), { name: '', phone: '' }];
+                                        editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, wedding_committee: comm });
+                                    }}
+                                    className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 rounded-xl transition cursor-pointer"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add Contact
+                                </button>
+                            </div>
+
+                            {(editEventForm.data.microsite_config.wedding_committee || []).length === 0 ? (
+                                <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-500 rounded-xl border border-dashed border-slate-200 dark:border-white/10">
+                                    No committee members added yet. Click &quot;Add Contact&quot; to list contact persons.
+                                </div>
+                            ) : (
+                                <div className="space-y-2.5">
+                                    {(editEventForm.data.microsite_config.wedding_committee || []).map((person, i) => (
+                                        <div key={i} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05]">
+                                            <input
+                                                type="text"
+                                                className="flex-1 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#08121E] text-xs font-semibold px-3 py-1.5 text-slate-900 dark:text-white"
+                                                placeholder="Name (e.g. Tenna Kikula)"
+                                                value={person.name}
+                                                onChange={(e) => {
+                                                    const comm = editEventForm.data.microsite_config.wedding_committee.map((it, idx) => idx === i ? { ...it, name: e.target.value } : it);
+                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, wedding_committee: comm });
+                                                }}
+                                            />
+                                            <input
+                                                type="text"
+                                                className="flex-1 rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#08121E] text-xs font-mono font-bold px-3 py-1.5 text-slate-900 dark:text-white"
+                                                placeholder="Phone (e.g. 0753371116)"
+                                                value={person.phone}
+                                                onChange={(e) => {
+                                                    const comm = editEventForm.data.microsite_config.wedding_committee.map((it, idx) => idx === i ? { ...it, phone: e.target.value } : it);
+                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, wedding_committee: comm });
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const comm = editEventForm.data.microsite_config.wedding_committee.filter((_, idx) => idx !== i);
+                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, wedding_committee: comm });
+                                                }}
+                                                className="p-1.5 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
+                                                title="Remove contact"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 8. Featured Services & Event Partners */}
+                        <div className="p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.06] bg-white dark:bg-[#0C1525] shadow-xs space-y-4">
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.06]">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                        <Utensils className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                                            Featured Services & Partners
+                                        </h4>
+                                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            Highlight catering, cocktails, decor, and vendor partners on your microsite.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <label className="relative inline-flex items-center cursor-pointer" title="Toggle section visibility">
+                                        <input
+                                            type="checkbox"
+                                            checked={editEventForm.data.microsite_config.show_services !== false}
+                                            onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, show_services: e.target.checked })}
+                                            className="sr-only peer"
+                                        />
+                                        <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:bg-emerald-500 transition-colors after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {editEventForm.data.microsite_config.show_services !== false && (
+                                <div className="space-y-4">
+                                    {/* Section Heading Titles */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <div>
+                                            <InputLabel htmlFor="ms_services_badge" value="Section Badge / Eyebrow" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                            <TextInput
+                                                id="ms_services_badge"
+                                                type="text"
+                                                className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                                placeholder="Featured Services"
+                                                value={editEventForm.data.microsite_config.services_badge || ''}
+                                                onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, services_badge: e.target.value })}
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <InputLabel htmlFor="ms_services_title" value="Section Main Title" className="text-xs font-semibold text-slate-700 dark:text-slate-300" />
+                                            <TextInput
+                                                id="ms_services_title"
+                                                type="text"
+                                                className="block w-full text-xs py-2.5 px-3 rounded-xl mt-1.5 bg-white dark:bg-[#08121E]"
+                                                placeholder="Our Event Partners"
+                                                value={editEventForm.data.microsite_config.services_title || ''}
+                                                onChange={(e) => editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, services_title: e.target.value })}
+                                            />
                                         </div>
                                     </div>
-                                ))}
-                            </div>
+
+                                    {/* Partners List */}
+                                    <div className="pt-2">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                                                <Utensils className="w-3.5 h-3.5 text-amber-500" />
+                                                Partner Services ({(editEventForm.data.microsite_config.services || []).length})
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const current = editEventForm.data.microsite_config.services || [];
+                                                    editEventForm.setData('microsite_config', {
+                                                        ...editEventForm.data.microsite_config,
+                                                        services: [...current, { name: '', provider: '', note: '' }]
+                                                    });
+                                                }}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 rounded-xl transition cursor-pointer"
+                                            >
+                                                <Plus className="w-3.5 h-3.5" /> Add Service
+                                            </button>
+                                        </div>
+
+                                        {(editEventForm.data.microsite_config.services || []).length === 0 ? (
+                                            <div className="p-4 text-center text-xs text-slate-400 dark:text-slate-500 rounded-xl border border-dashed border-slate-200 dark:border-white/10">
+                                                No services added yet. Click &quot;Add Service&quot; to highlight catering, cocktails, decor, etc.
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {(editEventForm.data.microsite_config.services || []).map((srv, idx) => (
+                                                    <div key={idx} className="p-3 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.05] space-y-2.5">
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                                                Service #{idx + 1}
+                                                            </span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const updated = (editEventForm.data.microsite_config.services || []).filter((_, i) => i !== idx);
+                                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, services: updated });
+                                                                }}
+                                                                className="p-1 text-slate-400 hover:text-rose-500 rounded-lg hover:bg-rose-50 dark:hover:bg-rose-500/10 transition cursor-pointer"
+                                                                title="Remove service"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                                            <div>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#08121E] text-xs font-semibold px-3 py-1.5 text-slate-900 dark:text-white"
+                                                                    placeholder="Category (e.g. Catering & Dining)"
+                                                                    value={srv.name || ''}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...(editEventForm.data.microsite_config.services || [])];
+                                                                        updated[idx] = { ...updated[idx], name: e.target.value };
+                                                                        editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, services: updated });
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <input
+                                                                    type="text"
+                                                                    className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#08121E] text-xs font-semibold px-3 py-1.5 text-slate-900 dark:text-white"
+                                                                    placeholder="Provider (e.g. Gourmet Bites Catering)"
+                                                                    value={srv.provider || ''}
+                                                                    onChange={(e) => {
+                                                                        const updated = [...(editEventForm.data.microsite_config.services || [])];
+                                                                        updated[idx] = { ...updated[idx], provider: e.target.value };
+                                                                        editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, services: updated });
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        </div>
+
+                                                        <div>
+                                                            <input
+                                                                type="text"
+                                                                className="w-full rounded-lg border border-slate-200 dark:border-white/10 bg-white dark:bg-[#08121E] text-xs px-3 py-1.5 text-slate-600 dark:text-slate-300"
+                                                                placeholder="Note / Details (e.g. A lavish multi-course buffet)"
+                                                                value={srv.note || ''}
+                                                                onChange={(e) => {
+                                                                    const updated = [...(editEventForm.data.microsite_config.services || [])];
+                                                                    updated[idx] = { ...updated[idx], note: e.target.value };
+                                                                    editEventForm.setData('microsite_config', { ...editEventForm.data.microsite_config, services: updated });
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                     )}

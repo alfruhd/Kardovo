@@ -22,6 +22,23 @@ class AdminController extends Controller
 {
     public function dashboard(Request $request)
     {
+        $tab = $request->query('tab');
+        if ($tab === 'users') {
+            return redirect()->route('admin.users', $request->only(['category', 'sub']));
+        }
+        if ($tab === 'logs') {
+            return redirect()->route('admin.logs');
+        }
+        if ($tab === 'gateways') {
+            return redirect()->route('admin.gateways');
+        }
+        if ($tab === 'events') {
+            return redirect()->route('events.index');
+        }
+        if ($tab === 'templates') {
+            return redirect()->route('templates.index');
+        }
+
         $user = $request->user();
         if (! $user->isAdmin() && ! $user->isSubAdmin()) {
             abort(403, 'Administrative access required.');
@@ -269,6 +286,199 @@ class AdminController extends Controller
         ]);
     }
 
+    public function users(Request $request)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin() && ! $user->isSubAdmin()) {
+            abort(403, 'Administrative access required.');
+        }
+
+        $isSuperAdmin = $user->isAdmin();
+        $isSubAdmin = $user->isSubAdmin();
+
+        $attachCustomerQuotas = function ($customersCollection) {
+            $customerIds = $customersCollection->pluck('id')->filter()->all();
+            if (empty($customerIds)) {
+                return $customersCollection;
+            }
+
+            $messageCounts = Message::join('events', 'messages.event_id', '=', 'events.id')
+                ->whereIn('events.user_id', $customerIds)
+                ->selectRaw('events.user_id, messages.channel, count(*) as total')
+                ->groupBy('events.user_id', 'messages.channel')
+                ->get()
+                ->groupBy('user_id');
+
+            return $customersCollection->map(function ($c) use ($messageCounts) {
+                $c->effective_permissions = $c->effective_permissions;
+                $userCounts = $messageCounts->get($c->id, collect());
+                $waUsed = (int) ($userCounts->firstWhere('channel', 'whatsapp')->total ?? 0);
+                $smsUsed = (int) ($userCounts->firstWhere('channel', 'sms')->total ?? 0);
+
+                $c->message_quotas = [
+                    'whatsapp_limit' => $c->max_whatsapp_limit,
+                    'whatsapp_used' => $waUsed,
+                    'whatsapp_remaining' => is_null($c->max_whatsapp_limit) ? null : max(0, $c->max_whatsapp_limit - $waUsed),
+                    'sms_limit' => $c->max_sms_limit,
+                    'sms_used' => $smsUsed,
+                    'sms_remaining' => is_null($c->max_sms_limit) ? null : max(0, $c->max_sms_limit - $smsUsed),
+                ];
+
+                return $c;
+            });
+        };
+
+        if ($isSuperAdmin) {
+            $rawCustomers = User::whereIn('role', ['customer', 'sub_admin'])
+                ->withCount(['events', 'scanners'])
+                ->latest()
+                ->get();
+            $customers = $attachCustomerQuotas($rawCustomers);
+
+            $gateStaff = User::where('role', 'scanner')
+                ->with(['customer'])
+                ->withCount(['scans as total_scans_count'])
+                ->withCount(['scans as granted_scans_count' => function ($q) {
+                    $q->where('status', 'granted');
+                }])
+                ->withCount(['scans as rejected_scans_count' => function ($q) {
+                    $q->where('status', 'rejected');
+                }])
+                ->latest()
+                ->get();
+
+            $subAdmins = User::where('role', 'sub_admin')
+                ->with(['assignedOrganizers:id,name,email,company', 'assignedEvents:id,title,event_date,venue,user_id'])
+                ->withCount(['assignedOrganizers', 'assignedEvents'])
+                ->latest()
+                ->get();
+
+            $allEvents = Event::select('id', 'title', 'event_date', 'venue', 'user_id')->latest()->get();
+        } else {
+            $assignedCustomerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
+            $assignedEventIds = $user->assignedEvents()->pluck('events.id')->toArray();
+
+            $rawCustomers = User::whereIn('id', $assignedCustomerIds)
+                ->withCount(['events', 'scanners'])
+                ->latest()
+                ->get();
+            $customers = $attachCustomerQuotas($rawCustomers);
+
+            $allEvents = Event::whereIn('id', $assignedEventIds)
+                ->orWhereIn('user_id', $assignedCustomerIds)
+                ->select('id', 'title', 'event_date', 'venue', 'user_id')
+                ->latest()
+                ->get();
+
+            $scopedCustomerIds = array_unique(array_merge($assignedCustomerIds, $allEvents->pluck('user_id')->filter()->toArray()));
+
+            $gateStaff = User::where('role', 'scanner')
+                ->whereIn('customer_id', $scopedCustomerIds)
+                ->with(['customer'])
+                ->withCount(['scans as total_scans_count'])
+                ->withCount(['scans as granted_scans_count' => function ($q) {
+                    $q->where('status', 'granted');
+                }])
+                ->withCount(['scans as rejected_scans_count' => function ($q) {
+                    $q->where('status', 'rejected');
+                }])
+                ->latest()
+                ->get();
+
+            $subAdmins = collect([]);
+        }
+
+        return Inertia::render('Admin/Users', [
+            'isSuperAdmin' => $isSuperAdmin,
+            'isSubAdmin' => $isSubAdmin,
+            'customers' => $customers,
+            'gateStaff' => $gateStaff,
+            'subAdmins' => $subAdmins,
+            'allEvents' => $allEvents,
+        ]);
+    }
+
+    public function logs(Request $request)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin() && ! $user->isSubAdmin()) {
+            abort(403, 'Administrative access required.');
+        }
+
+        $recentScanLogs = ScanLog::with(['guest', 'event', 'scanner'])
+            ->latest('scanned_at')
+            ->take(100)
+            ->get()
+            ->map(function ($log) {
+                return [
+                    'id' => $log->id,
+                    'status' => $log->status,
+                    'guest_name' => $log->guest?->name ?? 'Unregistered Pass',
+                    'card_number' => $log->guest?->card_number ?? 'N/A',
+                    'event_title' => $log->event?->title ?? 'General Event',
+                    'scanner_name' => $log->scanner_name ?? ($log->scanner?->name ?? 'Gatekeeper'),
+                    'gate_label' => $log->gate_label ?? 'Main Gate',
+                    'scanned_at' => $log->scanned_at ? $log->scanned_at->format('h:i:s A - d M Y') : 'Recent',
+                    'rejection_reason' => $log->rejection_reason,
+                ];
+            });
+
+        return Inertia::render('Admin/Logs', [
+            'isSuperAdmin' => $user->isAdmin(),
+            'isSubAdmin' => $user->isSubAdmin(),
+            'recentScanLogs' => $recentScanLogs,
+        ]);
+    }
+
+    public function gateways(Request $request)
+    {
+        $user = $request->user();
+        if (! $user->isAdmin() && ! $user->isSubAdmin()) {
+            abort(403, 'Administrative access required.');
+        }
+
+        $whatsappGateway = SystemSetting::get('whatsapp_gateway', [
+            'provider' => 'Meta WhatsApp Cloud API',
+            'phone_number_id' => '108492019482910',
+            'waba_id' => '94820194820184',
+            'api_version' => 'v20.0',
+            'access_token' => 'EAAG...kdv_prod_token_live',
+            'sender_number' => '+255 700 000 000',
+            'webhook_url' => url('/api/webhooks/whatsapp'),
+            'verify_token' => 'kardovo_verify_token_2026',
+            'status' => 'Connected (Operational)',
+        ]);
+
+        $smsGateway = SystemSetting::get('sms_gateway', [
+            'provider' => 'NextSMS Tanzania',
+            'sender_id' => 'KARDOVO',
+            'api_key' => 'nextsms_live_api_key',
+            'api_secret' => '••••••••••••••••',
+            'api_endpoint' => 'https://messaging-service.co.tz/api/sms/v1/text/single',
+            'balance' => '12,450 TZS',
+            'country_code' => '+255',
+            'status' => 'Active',
+        ]);
+
+        $azampayGateway = SystemSetting::get('azampay_gateway', [
+            'provider' => 'AzamPay',
+            'app_name' => 'Kardovo',
+            'client_id' => '',
+            'client_secret' => '',
+            'environment' => 'sandbox',
+            'status' => 'Pending Configuration',
+        ]);
+
+        return Inertia::render('Admin/Gateways', [
+            'isSuperAdmin' => $user->isAdmin(),
+            'gateways' => [
+                'whatsapp' => $whatsappGateway,
+                'sms' => $smsGateway,
+                'azampay' => $azampayGateway,
+            ],
+        ]);
+    }
+
     public function updateGateway(Request $request)
     {
         $user = $request->user();
@@ -483,8 +693,8 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|min:2|max:255',
-            'email' => 'required|email|unique:users,email',
-            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,20}$/'],
+            'email' => 'nullable|email|unique:users,email',
+            'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,25}$/'],
             'company' => 'nullable|string|max:255',
             'password' => ['required', 'string', Password::defaults()],
             'role' => 'nullable|string|in:customer,sub_admin,admin,scanner',
@@ -500,16 +710,24 @@ class AdminController extends Controller
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
         ]);
 
+        if (empty($validated['email']) && empty($validated['phone'])) {
+            return back()->withErrors(['email' => 'Please provide either an email address or a phone number for the organizer.']);
+        }
+
         if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
+            if (empty($validated['email'])) {
+                $cleanDigits = PhoneNormalizer::cleanForApi($validated['phone']);
+                $validated['email'] = "{$cleanDigits}@phone.kardovo.com";
+            }
         }
 
         $validated['role'] = $validated['role'] ?? 'customer';
         $validated['status'] = $validated['status'] ?? 'active';
         $validated['permissions'] = array_merge(User::defaultPermissions(), $validated['permissions'] ?? []);
         $validated['password'] = Hash::make($validated['password']);
-        $validated['max_whatsapp_limit'] = isset($validated['max_whatsapp_limit']) && $validated['max_whatsapp_limit'] !== '' ? (int) $validated['max_whatsapp_limit'] : null;
-        $validated['max_sms_limit'] = isset($validated['max_sms_limit']) && $validated['max_sms_limit'] !== '' ? (int) $validated['max_sms_limit'] : null;
+        $validated['max_whatsapp_limit'] = isset($validated['max_whatsapp_limit']) && $validated['max_whatsapp_limit'] !== '' ? (int) $validated['max_whatsapp_limit'] : 0;
+        $validated['max_sms_limit'] = isset($validated['max_sms_limit']) && $validated['max_sms_limit'] !== '' ? (int) $validated['max_sms_limit'] : 0;
         $validated['max_events_limit'] = isset($validated['max_events_limit']) && $validated['max_events_limit'] !== '' ? (int) $validated['max_events_limit'] : null;
 
         $newUser = User::create($validated);
@@ -553,7 +771,7 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'name' => 'required|string|min:2|max:255',
-            'email' => 'required|email|unique:users,email,'.$customer->id,
+            'email' => 'nullable|email|unique:users,email,'.$customer->id,
             'phone' => ['nullable', 'string', 'max:25', 'regex:/^\+?[0-9\s\-().]{7,25}$/'],
             'company' => 'nullable|string|max:255',
             'password' => ['nullable', 'string', Password::defaults()],
@@ -570,8 +788,16 @@ class AdminController extends Controller
             'phone.regex' => 'Please provide a valid phone number (e.g. +255 712 345 678).',
         ]);
 
+        if (empty($validated['email']) && empty($validated['phone'])) {
+            return back()->withErrors(['email' => 'Please provide either an email address or a phone number for the organizer.']);
+        }
+
         if (! empty($validated['phone'])) {
             $validated['phone'] = PhoneNormalizer::formatDisplay($validated['phone']);
+            if (empty($validated['email'])) {
+                $cleanDigits = PhoneNormalizer::cleanForApi($validated['phone']);
+                $validated['email'] = "{$cleanDigits}@phone.kardovo.com";
+            }
         }
 
         // Prevent self-demotion or self-suspension of current Super Admin

@@ -51,6 +51,7 @@ export default function Login({ status, canResetPassword, asModal = false, initi
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
         password_confirmation: '',
         remember: true,
@@ -301,7 +302,7 @@ export default function Login({ status, canResetPassword, asModal = false, initi
                                             className="block w-full text-xs font-mono font-bold pl-10 py-2.5 rounded-2xl"
                                             autoComplete="name"
                                             onChange={(e) => setData('name', e.target.value)}
-                                            placeholder="John Doe"
+                                            placeholder="e.g. Salim Juma"
                                             required={!isLogin}
                                         />
                                     </div>
@@ -310,22 +311,53 @@ export default function Login({ status, canResetPassword, asModal = false, initi
                             )}
 
                             <div>
-                                <InputLabel htmlFor="email" value="Email Address *" />
+                                <div className="flex items-center justify-between">
+                                    <InputLabel htmlFor="email" value={isLogin ? "Email or Phone Number *" : "Email Address"} />
+                                    {!isLogin && <span className="text-[10px] text-slate-400">Optional if phone entered</span>}
+                                </div>
                                 <div className="relative mt-1">
-                                    <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                    {(!data.email || data.email.includes('@')) ? (
+                                        <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                    ) : (
+                                        <Smartphone className="w-4 h-4 text-emerald-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                    )}
                                     <TextInput
                                         id="email"
-                                        type="email"
+                                        type="text"
                                         name="email"
                                         value={data.email}
                                         className="block w-full text-xs font-mono font-bold pl-10 py-2.5 rounded-2xl"
                                         autoComplete="username"
                                         onChange={(e) => handleEmailChange(e.target.value)}
-                                        placeholder="name@company.com"
-                                        required
+                                        placeholder={isLogin ? "name@email.com or 07XXXXXXXX" : "name@email.com"}
+                                        required={isLogin || !data.phone}
                                     />
                                 </div>
                             </div>
+
+                            {!isLogin && (
+                                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                                    <div className="flex items-center justify-between">
+                                        <InputLabel htmlFor="phone" value="Phone Number" />
+                                        <span className="text-[10px] text-slate-400">Optional if email entered</span>
+                                    </div>
+                                    <div className="relative mt-1">
+                                        <Smartphone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                                        <TextInput
+                                            id="phone"
+                                            type="tel"
+                                            name="phone"
+                                            value={data.phone}
+                                            className="block w-full text-xs font-mono font-bold pl-10 py-2.5 rounded-2xl"
+                                            autoComplete="tel"
+                                            onChange={(e) => setData('phone', e.target.value)}
+                                            placeholder="07XXXXXXXX or +255 7XX XXX XXX"
+                                            required={!data.email}
+                                        />
+                                    </div>
+                                    {errors.phone && <p className="mt-1 text-[10px] text-rose-500">{errors.phone}</p>}
+                                </div>
+                            )}
 
                             <div>
                                 <InputLabel htmlFor="password" value="Password *" />
@@ -386,19 +418,27 @@ export default function Login({ status, canResetPassword, asModal = false, initi
                                 </div>
                             )}
 
-                            {isLogin && <div className="flex items-center justify-between pt-1">
-                                <label className="flex items-center cursor-pointer select-none">
-                                    <Checkbox
-                                        name="remember"
-                                        checked={data.remember}
-                                        onChange={(e) => setData('remember', e.target.checked)}
-                                        className="rounded-lg text-cyan-600 focus:ring-cyan-500"
-                                    />
-                                    <span className="ms-2 text-xs text-slate-600  font-semibold">
-                                        Remember this device
-                                    </span>
-                                </label>
-                            </div>}
+                            {isLogin && (
+                                <div className="flex items-center justify-between pt-1">
+                                    <label className="flex items-center cursor-pointer select-none">
+                                        <Checkbox
+                                            name="remember"
+                                            checked={data.remember}
+                                            onChange={(e) => setData('remember', e.target.checked)}
+                                            className="rounded-lg text-emerald-600 focus:ring-emerald-500"
+                                        />
+                                        <span className="ms-2 text-xs text-slate-600 dark:text-slate-400 font-semibold">
+                                            Remember this device
+                                        </span>
+                                    </label>
+                                    <Link
+                                        href={route('password.request')}
+                                        className="text-xs font-bold text-[#16A34A] hover:text-[#15803D] dark:text-emerald-400 dark:hover:text-emerald-300 hover:underline cursor-pointer transition"
+                                    >
+                                        Forgot password?
+                                    </Link>
+                                </div>
+                            )}
 
                             <div className="pt-2">
                                 <PrimaryButton 

@@ -48,16 +48,19 @@ class PublicGuestController extends Controller
             return CardTemplate::whereNull('user_id')->orderBy('id', 'asc')->get();
         });
 
+        $config = $this->resolveMicrositeConfig($event, $demoGuest);
+
         return Inertia::render('Public/GuestPass', [
             'guest' => $demoGuest,
             'event' => $demoEvent,
             'template' => $event?->cardTemplate ?? $allTemplates->first() ?? null,
             'allTemplates' => $allTemplates,
             'isDemo' => true,
+            'micrositeConfig' => $config,
         ]);
     }
 
-    public function showCard(Request $request, string $token)
+    public function showCard(Request $request, string $token = 'demo')
     {
         $isDemo = $request->boolean('demo') || $token === 'demo' || str_contains($token, 'demo');
 
@@ -80,14 +83,106 @@ class PublicGuestController extends Controller
                 ->get();
         });
 
+        $config = $this->resolveMicrositeConfig($guest->event, $guest);
+
         return Inertia::render('Public/GuestPass', [
             'guest' => $guest,
             'event' => $guest->event,
             'template' => $guest->event->cardTemplate,
             'allTemplates' => $allTemplates,
             'isDemo' => $isDemo,
-            'micrositeConfig' => $guest->event->microsite_config ?? null,
+            'micrositeConfig' => $config,
         ]);
+    }
+
+    /**
+     * Resolve microsite configuration merging event custom settings with rich luxury defaults.
+     */
+    protected function resolveMicrositeConfig(?Event $event, $guest = null): array
+    {
+        $eventDate = $event?->event_date;
+        $dateFormatted = $eventDate ? $eventDate->format('d . m . Y') : '09 . 05 . 2026';
+        $fullDateHuman = $eventDate ? $eventDate->format('l, jS F Y') : 'Saturday, 9th May 2026';
+        $timeStr = $event?->event_time ?: '5:30 PM';
+        $venueStr = $event?->venue ?: 'OASIS Village & Club - Mbezi Beach';
+
+        $defaults = [
+            'theme_color' => '#3a4634',
+            'background_color' => '#3a4634',
+            'accent_color' => '#5C4033',
+            'font_style' => 'script',
+            'show_countdown' => true,
+            'show_intro_animation' => true,
+            'intro_video_url' => 'https://www.kadijanja.co.tz/images/rsvp/cover/baja.mp4',
+            'intro_poster_url' => 'https://www.kadijanja.co.tz/images/rsvp/cover/baja.png',
+            'intro_button_text' => 'Open Invitation',
+            'cover_photo' => 'https://www.kadijanja.co.tz/images/rsvp/header/baja.jpeg',
+            'music_url' => 'https://www.kadijanja.co.tz/assets/wedding-background-music.mp3',
+            'primary_name' => 'Baraka',
+            'secondary_name' => 'Neema',
+            'couple_title' => 'Baraka & Neema',
+            'event_date_formatted' => $dateFormatted,
+            'host_honor_text' => 'The families of Mr & Mrs Simba cordially request the honour of your presence',
+            'invitation_text' => "at the wedding ceremony of their children,\nBaraka Simba & Neema Mndeme.",
+            'reception_title' => $venueStr,
+            'reception_subtitle' => 'A reception dinner and evening of celebration.',
+            'reception_time_badge' => "{$fullDateHuman}, {$timeStr}",
+            'programme' => [
+                ['time' => '4:00 PM', 'title' => 'Guest Arrival', 'note' => 'Mocktails and soft music.'],
+                ['time' => '5:00 PM', 'title' => 'Couple Entrance', 'note' => 'The celebration begins.'],
+                ['time' => '5:30 PM', 'title' => 'Dinner is Served', 'note' => 'A lavish buffet.'],
+                ['time' => '7:00 PM', 'title' => 'Speeches & Toasts', 'note' => 'Words from family.'],
+                ['time' => '8:00 PM', 'title' => 'Cake Cutting', 'note' => 'First dance to follow.'],
+                ['time' => '11:00 PM', 'title' => 'Farewell', 'note' => 'Thank you for coming!'],
+            ],
+            'dress_code_title' => 'Dress Code',
+            'dress_code_theme' => 'Soft Beige, Light Ivory / Off White, Muted Sage Green, Olive Green and Deep Black / Charcoal',
+            'dress_code_image' => 'https://www.kadijanja.co.tz/images/dressing-code/waja.jpeg',
+            'dress_code_swatches' => [
+                ['name' => 'Light Ivory', 'color' => '#edeade'],
+                ['name' => 'Muted Sage Green', 'color' => '#a3b18a'],
+                ['name' => 'Olive Green', 'color' => '#588157'],
+                ['name' => 'Deep Black', 'color' => '#1b1b1b'],
+            ],
+            'mc_name' => 'Mc MishieBomba',
+            'mc_badge' => 'Master of Ceremonies',
+            'mc_bio' => 'Bringing energy, elegance, and a seamless flow to the celebration. We are honored to have GuruB guide us through this special evening.',
+            'mc_photo' => 'https://www.kadijanja.co.tz/images/rsvp/mc/mc_mishi.jpeg',
+            'mc_hashtag' => '#BARAKAANDNEEMA2026',
+            'wedding_committee' => [
+                ['name' => 'Tenna Simba', 'phone' => '0753371116'],
+                ['name' => 'Dr Aman Simba', 'phone' => '0689632093'],
+            ],
+            'venue_name' => 'OASIS Village & Club',
+            'venue_address' => 'OASIS Village & Club, Mbezi Beach, Dar es Salaam, Tanzania',
+            'google_maps_embed_url' => 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d4003.811687197711!2d39.21885857504168!3d-6.704313793291326!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x185c51976672d47f%3A0xe3ac56e0d281274a!2sOasis%20Village%20and%20Club!5e1!3m2!1sen!2stz!4v1777563837703!5m2!1sen!2stz',
+            'google_maps_link' => 'https://maps.app.goo.gl/dQNq4jdmardAEHMq8',
+            'adults_only_note' => 'While we love your little ones, our celebration will be an adult-only occasion. We hope you will enjoy a night off to celebrate with us!',
+            'rsvp_prompt' => 'Will you attend?',
+            'footer_text' => 'Baraka & Neema',
+
+            // Section Toggles
+            'show_couple_section' => true,
+            'show_reception_section' => true,
+            'show_dress_code_section' => true,
+            'show_services_section' => false,
+            'show_committee_section' => true,
+            'show_map_section' => true,
+
+            // Services
+            'services' => [
+                ['name' => 'Catering & Dining', 'description' => 'Exquisite culinary experience by our Executive Chef.'],
+                ['name' => 'Cocktails & Beverages', 'description' => 'Signature drinks and premium open bar.'],
+            ],
+        ];
+
+        $eventConfig = $event?->microsite_config ?? [];
+        if (! is_array($eventConfig)) {
+            $eventConfig = [];
+        }
+
+        // Deep merge: non-empty eventConfig overrides defaults
+        return array_merge($defaults, array_filter($eventConfig, fn ($v) => ! is_null($v) && $v !== ''));
     }
 
     public function submitRsvp(Request $request, string $token)
@@ -106,12 +201,19 @@ class PublicGuestController extends Controller
 
         $validated = $request->validate([
             'status' => 'required|in:attending,declined',
+            'message' => 'nullable|string|max:1000',
         ]);
 
-        $guest->update([
+        $updateData = [
             'rsvp_status' => $validated['status'],
             'rsvp_at' => now(),
-        ]);
+        ];
+
+        if (! empty($validated['message'])) {
+            $updateData['notes'] = trim($validated['message']);
+        }
+
+        $guest->update($updateData);
 
         $event = $guest->event;
         $eventDateStr = $event->event_date ? $event->event_date->format('D, j M Y') : 'Upcoming';

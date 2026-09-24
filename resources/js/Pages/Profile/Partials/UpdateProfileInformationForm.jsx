@@ -70,7 +70,7 @@ export default function UpdateProfileInformation({
             if (!value || !value.trim()) {
                 errs.email = 'Email address is required.';
             } else if (!validateEmail(value)) {
-                errs.email = 'Please provide a valid email address (e.g. name@company.com).';
+                errs.email = 'Please provide a valid email address (e.g. name@email.com).';
             } else {
                 delete errs.email;
             }
@@ -349,7 +349,7 @@ export default function UpdateProfileInformation({
                                 isValid={Boolean(touched.email && !clientErrors.email && validateEmail(data.email))}
                                 required
                                 autoComplete="username"
-                                placeholder="name@company.com"
+                                placeholder="name@email.com"
                             />
                         </div>
                         <InputError className="mt-1.5" message={(touched.email && clientErrors.email) || errors.email} />

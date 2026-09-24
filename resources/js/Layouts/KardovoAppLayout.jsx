@@ -22,7 +22,11 @@ import {
     CircleDollarSign,
     LayoutDashboard,
     Ticket,
-    Wallet
+    Wallet,
+    Users,
+    Activity,
+    Server,
+    ShieldCheck
 } from 'lucide-react';
 import KardovoLogo from '@/Components/KardovoLogo';
 import { useTheme } from '@/Hooks/useTheme';
@@ -34,7 +38,11 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
         if (typeof window !== 'undefined') {
-            return localStorage.getItem('kardovo_sidebar_collapsed') === 'true';
+            const saved = localStorage.getItem('kardovo_sidebar_collapsed');
+            if (saved !== null) {
+                return saved === 'true';
+            }
+            return window.innerWidth >= 768 && window.innerWidth < 1024;
         }
         return false;
     });
@@ -141,7 +149,9 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
     const isSuspended = user?.status === 'suspended';
     const perms = user?.effective_permissions || {};
 
-    const currentUrl = typeof window !== 'undefined' ? window.location.pathname : '';
+    const page = usePage();
+    const pageUrl = page.url || (typeof window !== 'undefined' ? window.location.pathname + window.location.search : '');
+    const currentUrl = typeof window !== 'undefined' ? window.location.pathname : (pageUrl ? pageUrl.split('?')[0] : '');
 
     const safeRoute = (name, fallback = '#') => {
         try {
@@ -151,163 +161,455 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
         }
     };
 
-    const navItems = [
-        {
-            name: 'Dashboard',
-            href: safeRoute('dashboard', '/dashboard'),
-            icon: LayoutDashboard,
-            active: currentUrl === '/dashboard',
-            show: !isAdmin && !isSubAdmin && !isScanner,
-        },
-        {
-            name: 'Admin Portal',
-            href: safeRoute('admin.dashboard', '/admin'),
-            icon: Shield,
-            active: (currentUrl === '/admin' || currentUrl.startsWith('/admin')) && !currentUrl.startsWith('/admin/finance') && !currentUrl.startsWith('/admin/audit-logs'),
-            show: isAdmin || isSubAdmin,
-        },
-        {
-            name: 'Calendar',
-            href: safeRoute('calendar.index', '/calendar'),
-            icon: Calendar,
-            active: currentUrl === '/calendar' || currentUrl.startsWith('/calendar'),
-            show: !isScanner,
-        },
-        {
-            name: 'Payment',
-            href: safeRoute('organizer.wallet.index', '/organizer/pricing'),
-            icon: Wallet,
-            active: currentUrl.startsWith('/organizer/pricing'),
-            show: !isScanner && !isAdmin && !isSubAdmin,
-        },
-        {
-            name: 'Card Templates',
-            href: safeRoute('templates.index', '/templates'),
-            icon: Palette,
-            active: currentUrl === '/templates' || currentUrl.startsWith('/templates'),
-            show: !isScanner && (isAdmin || isSubAdmin || (!isSuspended && perms.can_customize_templates !== false)),
-        },
-        {
-            name: isAdmin ? 'All Events' : 'My Events',
-            href: safeRoute('events.index', '/events'),
-            icon: Ticket,
-            active: currentUrl === '/events' || currentUrl.startsWith('/events'),
-            show: !isScanner,
-        },
-        {
-            name: 'Messaging Hub',
-            href: safeRoute('messaging.index', '/messaging'),
-            icon: MessageSquare,
-            active: currentUrl.startsWith('/messaging'),
-            show: !isScanner && (isAdmin || isSubAdmin || (!isSuspended && perms.can_send_broadcasts !== false)),
-        },
-        {
-            name: 'Gate Scanner',
-            href: safeRoute('scanner.index', '/scanner'),
-            icon: QrCode,
-            active: currentUrl.startsWith('/scanner'),
-            show: isScanner || isAdmin || isSubAdmin || (!isSuspended && perms.can_manage_scanners !== false),
-        },
-        {
-            name: 'Financial Analysis',
-            href: safeRoute('admin.finance', '/admin/finance'),
-            icon: CircleDollarSign,
-            active: currentUrl.startsWith('/admin/finance'),
-            show: isAdmin,
-        },
-        {
-            name: 'Audit Logs',
-            href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
-            icon: Shield,
-            active: currentUrl.startsWith('/admin/audit-logs'),
-            show: isAdmin || isSubAdmin,
-        },
-        {
-            name: 'Account Profile',
-            href: safeRoute('profile.edit', '/profile'),
-            icon: UserIcon,
-            active: currentUrl.startsWith('/profile'),
-            show: true,
-        },
-    ].filter(item => item.show);
+    let navCategories = [];
+
+    if (isAdmin) {
+        navCategories = [
+            {
+                title: 'Governance',
+                items: [
+                    {
+                        name: 'Admin Portal',
+                        href: safeRoute('admin.dashboard', '/admin'),
+                        icon: Shield,
+                        active: (pageUrl === '/admin' || pageUrl === '/admin/') && !pageUrl.includes('?'),
+                    },
+                    {
+                        name: 'Users',
+                        href: safeRoute('admin.users', '/admin/users'),
+                        icon: Users,
+                        active: pageUrl.startsWith('/admin/users') || (pageUrl.startsWith('/admin') && (pageUrl.includes('tab=users') || pageUrl.includes('category='))),
+                    },
+                    {
+                        name: 'Admin Logs',
+                        href: safeRoute('admin.logs', '/admin/logs'),
+                        icon: Activity,
+                        active: pageUrl.startsWith('/admin/logs') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=logs')),
+                    },
+                    {
+                        name: 'Gateways',
+                        href: safeRoute('admin.gateways', '/admin/gateways'),
+                        icon: Server,
+                        active: pageUrl.startsWith('/admin/gateways') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=gateways')),
+                    },
+                    {
+                        name: 'Audit Logs',
+                        href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
+                        icon: ShieldCheck,
+                        active: pageUrl.startsWith('/admin/audit-logs'),
+                    },
+                ],
+            },
+            {
+                title: 'Operations',
+                items: [
+                    {
+                        name: 'Events',
+                        href: safeRoute('events.index', '/events'),
+                        icon: Ticket,
+                        active: pageUrl === '/events' || pageUrl.startsWith('/events'),
+                    },
+                    {
+                        name: 'Templates',
+                        href: safeRoute('templates.index', '/templates'),
+                        icon: Palette,
+                        active: pageUrl === '/templates' || pageUrl.startsWith('/templates'),
+                    },
+                    {
+                        name: 'Gate Scanner',
+                        href: safeRoute('scanner.index', '/scanner'),
+                        icon: QrCode,
+                        active: pageUrl.startsWith('/scanner'),
+                    },
+                    {
+                        name: 'Messaging Hub',
+                        href: safeRoute('messaging.index', '/messaging'),
+                        icon: MessageSquare,
+                        active: pageUrl.startsWith('/messaging'),
+                    },
+                    {
+                        name: 'Calendar',
+                        href: safeRoute('calendar.index', '/calendar'),
+                        icon: Calendar,
+                        active: pageUrl === '/calendar' || pageUrl.startsWith('/calendar'),
+                    },
+                ],
+            },
+            {
+                title: 'Finance & Settings',
+                items: [
+                    {
+                        name: 'Financial Analysis',
+                        href: safeRoute('admin.finance', '/admin/finance'),
+                        icon: CircleDollarSign,
+                        active: pageUrl.startsWith('/admin/finance'),
+                    },
+                    {
+                        name: 'Account Profile',
+                        href: safeRoute('profile.edit', '/profile'),
+                        icon: UserIcon,
+                        active: pageUrl.startsWith('/profile'),
+                    },
+                ],
+            },
+        ];
+    } else if (isSubAdmin) {
+        navCategories = [
+            {
+                title: 'Governance',
+                items: [
+                    {
+                        name: 'Admin Portal',
+                        href: safeRoute('admin.dashboard', '/admin'),
+                        icon: Shield,
+                        active: (pageUrl === '/admin' || pageUrl === '/admin/') && !pageUrl.includes('?'),
+                    },
+                    {
+                        name: 'Users',
+                        href: safeRoute('admin.users', '/admin/users'),
+                        icon: Users,
+                        active: pageUrl.startsWith('/admin/users') || (pageUrl.startsWith('/admin') && (pageUrl.includes('tab=users') || pageUrl.includes('category='))),
+                    },
+                    {
+                        name: 'Admin Logs',
+                        href: safeRoute('admin.logs', '/admin/logs'),
+                        icon: Activity,
+                        active: pageUrl.startsWith('/admin/logs') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=logs')),
+                    },
+                    {
+                        name: 'Audit Logs',
+                        href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
+                        icon: ShieldCheck,
+                        active: pageUrl.startsWith('/admin/audit-logs'),
+                    },
+                ],
+            },
+            {
+                title: 'Operations',
+                items: [
+                    {
+                        name: 'Events',
+                        href: safeRoute('events.index', '/events'),
+                        icon: Ticket,
+                        active: pageUrl === '/events' || pageUrl.startsWith('/events'),
+                    },
+                    {
+                        name: 'Templates',
+                        href: safeRoute('templates.index', '/templates'),
+                        icon: Palette,
+                        active: pageUrl === '/templates' || pageUrl.startsWith('/templates'),
+                    },
+                    {
+                        name: 'Gate Scanner',
+                        href: safeRoute('scanner.index', '/scanner'),
+                        icon: QrCode,
+                        active: pageUrl.startsWith('/scanner'),
+                    },
+                    {
+                        name: 'Messaging Hub',
+                        href: safeRoute('messaging.index', '/messaging'),
+                        icon: MessageSquare,
+                        active: pageUrl.startsWith('/messaging'),
+                    },
+                    {
+                        name: 'Calendar',
+                        href: safeRoute('calendar.index', '/calendar'),
+                        icon: Calendar,
+                        active: pageUrl === '/calendar' || pageUrl.startsWith('/calendar'),
+                    },
+                ],
+            },
+            {
+                title: 'Settings',
+                items: [
+                    {
+                        name: 'Account Profile',
+                        href: safeRoute('profile.edit', '/profile'),
+                        icon: UserIcon,
+                        active: pageUrl.startsWith('/profile'),
+                    },
+                ],
+            },
+        ];
+    } else if (isScanner) {
+        navCategories = [
+            {
+                title: 'Operations',
+                items: [
+                    {
+                        name: 'Gate Scanner',
+                        href: safeRoute('scanner.index', '/scanner'),
+                        icon: QrCode,
+                        active: pageUrl.startsWith('/scanner'),
+                    },
+                ],
+            },
+            {
+                title: 'Account',
+                items: [
+                    {
+                        name: 'Account Profile',
+                        href: safeRoute('profile.edit', '/profile'),
+                        icon: UserIcon,
+                        active: pageUrl.startsWith('/profile'),
+                    },
+                ],
+            },
+        ];
+    } else {
+        navCategories = [
+            {
+                title: 'Events & Planning',
+                items: [
+                    {
+                        name: 'Dashboard',
+                        href: safeRoute('dashboard', '/dashboard'),
+                        icon: LayoutDashboard,
+                        active: pageUrl === '/dashboard',
+                    },
+                    {
+                        name: 'My Events',
+                        href: safeRoute('events.index', '/events'),
+                        icon: Ticket,
+                        active: pageUrl === '/events' || pageUrl.startsWith('/events'),
+                    },
+                    {
+                        name: 'Calendar',
+                        href: safeRoute('calendar.index', '/calendar'),
+                        icon: Calendar,
+                        active: pageUrl === '/calendar' || pageUrl.startsWith('/calendar'),
+                    },
+                ],
+            },
+            {
+                title: 'Studio & Access',
+                items: [
+                    {
+                        name: 'Card Templates',
+                        href: safeRoute('templates.index', '/templates'),
+                        icon: Palette,
+                        active: pageUrl === '/templates' || pageUrl.startsWith('/templates'),
+                        show: !isSuspended && perms.can_customize_templates !== false,
+                    },
+                    {
+                        name: 'Messaging Hub',
+                        href: safeRoute('messaging.index', '/messaging'),
+                        icon: MessageSquare,
+                        active: pageUrl.startsWith('/messaging'),
+                        show: !isSuspended && perms.can_send_broadcasts !== false,
+                    },
+                    {
+                        name: 'Gate Scanner',
+                        href: safeRoute('scanner.index', '/scanner'),
+                        icon: QrCode,
+                        active: pageUrl.startsWith('/scanner'),
+                        show: !isSuspended && perms.can_manage_scanners !== false,
+                    },
+                ].filter((item) => item.show !== false),
+            },
+            {
+                title: 'Billing & Account',
+                items: [
+                    {
+                        name: 'Payments',
+                        href: safeRoute('organizer.wallet.index', '/organizer/pricing'),
+                        icon: Wallet,
+                        active: pageUrl.startsWith('/organizer/pricing'),
+                    },
+                    {
+                        name: 'Account Profile',
+                        href: safeRoute('profile.edit', '/profile'),
+                        icon: UserIcon,
+                        active: pageUrl.startsWith('/profile'),
+                    },
+                ],
+            },
+        ];
+    }
+
+    // 📱 Phone Fixed Bottom Navigation Items (Instagram / WhatsApp layout)
+    let bottomNavItems = [];
+    if (isAdmin) {
+        bottomNavItems = [
+            {
+                name: 'Portal',
+                href: safeRoute('admin.dashboard', '/admin'),
+                icon: Shield,
+                active: (pageUrl === '/admin' || pageUrl === '/admin/') && !pageUrl.includes('?'),
+            },
+            {
+                name: 'Users',
+                href: safeRoute('admin.users', '/admin/users'),
+                icon: Users,
+                active: pageUrl.startsWith('/admin/users') || (pageUrl.startsWith('/admin') && (pageUrl.includes('tab=users') || pageUrl.includes('category='))),
+            },
+            {
+                name: 'Logs',
+                href: safeRoute('admin.logs', '/admin/logs'),
+                icon: Activity,
+                active: pageUrl.startsWith('/admin/logs') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=logs')),
+            },
+            {
+                name: 'Gateways',
+                href: safeRoute('admin.gateways', '/admin/gateways'),
+                icon: Server,
+                active: pageUrl.startsWith('/admin/gateways') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=gateways')),
+            },
+            {
+                name: 'More',
+                isMenuToggle: true,
+                icon: Menu,
+                active: sidebarOpen,
+            },
+        ];
+    } else if (isSubAdmin) {
+        bottomNavItems = [
+            {
+                name: 'Portal',
+                href: safeRoute('admin.dashboard', '/admin'),
+                icon: Shield,
+                active: (pageUrl === '/admin' || pageUrl === '/admin/') && !pageUrl.includes('?'),
+            },
+            {
+                name: 'Users',
+                href: safeRoute('admin.users', '/admin/users'),
+                icon: Users,
+                active: pageUrl.startsWith('/admin/users') || (pageUrl.startsWith('/admin') && (pageUrl.includes('tab=users') || pageUrl.includes('category='))),
+            },
+            {
+                name: 'Events',
+                href: safeRoute('events.index', '/events'),
+                icon: Ticket,
+                active: pageUrl === '/events' || pageUrl.startsWith('/events'),
+            },
+            {
+                name: 'Logs',
+                href: safeRoute('admin.logs', '/admin/logs'),
+                icon: Activity,
+                active: pageUrl.startsWith('/admin/logs'),
+            },
+            {
+                name: 'More',
+                isMenuToggle: true,
+                icon: Menu,
+                active: sidebarOpen,
+            },
+        ];
+    } else if (isScanner) {
+        bottomNavItems = [
+            {
+                name: 'Scanner',
+                href: safeRoute('scanner.index', '/scanner'),
+                icon: QrCode,
+                active: pageUrl.startsWith('/scanner'),
+            },
+            {
+                name: 'Profile',
+                href: safeRoute('profile.edit', '/profile'),
+                icon: UserIcon,
+                active: pageUrl.startsWith('/profile'),
+            },
+            {
+                name: 'More',
+                isMenuToggle: true,
+                icon: Menu,
+                active: sidebarOpen,
+            },
+        ];
+    } else {
+        // Customer / Organiser
+        bottomNavItems = [
+            {
+                name: 'Dashboard',
+                href: safeRoute('dashboard', '/dashboard'),
+                icon: LayoutDashboard,
+                active: pageUrl === '/dashboard',
+            },
+            {
+                name: 'Events',
+                href: safeRoute('events.index', '/events'),
+                icon: Ticket,
+                active: pageUrl === '/events' || pageUrl.startsWith('/events'),
+            },
+            {
+                name: 'Studio',
+                href: safeRoute('templates.index', '/templates'),
+                icon: Palette,
+                active: pageUrl === '/templates' || pageUrl.startsWith('/templates'),
+            },
+            {
+                name: 'Scanner',
+                href: safeRoute('scanner.index', '/scanner'),
+                icon: QrCode,
+                active: pageUrl.startsWith('/scanner'),
+            },
+            {
+                name: 'More',
+                isMenuToggle: true,
+                icon: Menu,
+                active: sidebarOpen,
+            },
+        ];
+    }
 
     return (
         <div className="min-h-screen bg-[#F1F5F9] dark:bg-[#0F172A] flex flex-col md:flex-row text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
             
-            {/* 📱 MOBILE TWO-DECK SYSTEM */}
-            {/* 📱 MOBILE TWO-DECK SYSTEM */}
-            <div className="md:hidden sticky top-0 z-40 bg-[#0B2545] text-white border-b border-[#173860] shadow-md transition-colors duration-200">
-                {/* 1. TOP DECK: Global Navigation, Brand, Theme & Profile */}
-                <div className="px-3.5 h-[60px] flex items-center justify-between border-b border-[#173860]">
-                    {/* Left: Menu Button & Brand */}
-                    <div className="flex items-center gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setSidebarOpen(!sidebarOpen)}
-                            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-white shadow-2xs active:scale-90 transition-all duration-200 cursor-pointer"
-                            aria-label="Open Navigation Menu"
-                        >
-                            {sidebarOpen ? (
-                                <X className="w-4.5 h-4.5 text-rose-400" />
-                            ) : (
-                                <Menu className="w-4.5 h-4.5 text-emerald-400" />
-                            )}
-                        </button>
-
-                        <Link href="/dashboard" className="flex items-center">
-                            <KardovoLogo light={true} showText={true} size="lg" imgClassName="h-9 w-9" />
+            {/* 📱 MOBILE SLEEK TOPBAR (Minimalist & Dynamic) */}
+            <div className="md:hidden sticky top-0 z-30 bg-[#0B2545] text-white border-b border-[#173860] shadow-sm">
+                <div className="px-3.5 h-13 flex items-center justify-between">
+                    {/* Left: Brand + Section Title */}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                        <Link href="/dashboard" className="flex-shrink-0 flex items-center">
+                            <KardovoLogo light={true} showText={false} imgClassName="h-7 w-7" />
                         </Link>
+                        <div className="h-4 w-px bg-white/20 flex-shrink-0" />
+                        <h1 className="text-xs font-bold text-white uppercase tracking-wider font-display truncate max-w-[130px] xs:max-w-[170px] sm:max-w-xs">
+                            {title || 'Dashboard'}
+                        </h1>
                     </div>
 
-                    {/* Right: Theme Toggle & Profile */}
-                    <div className="flex items-center gap-2">
+                    {/* Right: Actions, Theme Toggle & Profile Avatar */}
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                        {headerActions && (
+                            <div className="flex items-center gap-1.5 scale-90 sm:scale-100 origin-right">
+                                {headerActions}
+                            </div>
+                        )}
+
                         <button
                             type="button"
                             onClick={toggleTheme}
-                            className="w-10 h-10 rounded-2xl flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-amber-400 shadow-2xs active:scale-90 transition-all duration-200 cursor-pointer"
+                            className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-amber-400 active:scale-90 transition-all duration-150 cursor-pointer"
                             title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                         >
                             {isDark ? (
-                                <Sun className="w-4.5 h-4.5 text-amber-400" />
+                                <Sun className="w-4 h-4 text-amber-400" />
                             ) : (
-                                <Moon className="w-4.5 h-4.5 text-emerald-300" />
+                                <Moon className="w-4 h-4 text-emerald-300" />
                             )}
                         </button>
 
                         <Link
                             href={route('profile.edit')}
-                            className={`w-10 h-10 rounded-2xl overflow-hidden flex items-center justify-center shadow-2xs active:scale-90 transition-all duration-200 cursor-pointer ${
+                            className={`w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center active:scale-90 transition-all duration-150 cursor-pointer ${
                                 currentUrl === '/profile'
-                                    ? 'border-2 border-[#16A34A] ring-2 ring-emerald-500/30'
-                                    : 'border border-white/[0.15] hover:border-emerald-400/50 bg-white/[0.08] hover:bg-white/[0.14]'
+                                    ? 'border-2 border-[#16A34A] ring-1 ring-emerald-500/30'
+                                    : 'border border-white/[0.15] hover:border-emerald-400/50 bg-white/[0.08]'
                             }`}
-                            title={user?.name ? `${user.name} — Profile & Settings` : "Account Profile & Settings"}
+                            title={user?.name ? `${user.name} — Profile` : "Profile"}
                         >
                             {user?.avatar ? (
                                 <img 
-                                    src={user.avatar}
+                                    src={user.avatar} 
                                     alt={user.name || 'Profile'} 
-                                    className="w-full h-full object-cover"
+                                    className="w-full h-full object-cover" 
                                 />
                             ) : (
-                                <UserIcon className="w-4.5 h-4.5 text-slate-200" />
+                                <UserIcon className="w-4 h-4 text-slate-200" />
                             )}
                         </Link>
                     </div>
-                </div>
-                <div className="px-3.5 py-2.5 flex items-center justify-between gap-2 min-h-[44px] bg-[#07192F] border-b border-[#173860]">
-                    <div className="min-w-0 flex-1 flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 animate-pulse shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
-                        <h1 className="text-xs sm:text-sm font-black text-white uppercase tracking-wider font-display truncate">
-                            {title || 'Dashboard'}
-                        </h1>
-                    </div>
-
-                    {headerActions && (
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                            {headerActions}
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -316,9 +618,9 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 fixed inset-y-0 left-0 z-50 bg-[#0B2545] text-slate-200 flex flex-col justify-between transition-all duration-300 ease-in-out border-r border-[#173860] dark:border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5)]
                 md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex-shrink-0
                 ${sidebarCollapsed ? 'md:w-20' : 'md:w-64'}
-                ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0'}
+                ${sidebarOpen ? 'translate-x-0 w-72 sm:w-80' : '-translate-x-full md:translate-x-0'}
             `}>
-                <div>
+                <div className="flex flex-col flex-1 min-h-0">
                     <button
                         type="button"
                         onClick={toggleSidebarCollapse}
@@ -332,11 +634,20 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         )}
                     </button>
 
-                    {/* Brand Logo in Sidebar */}
+                    {/* Brand Logo & Close button in Sidebar */}
                     <div className={`p-4 border-b border-[#173860] dark:border-white/[0.06] flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
-                        <Link href="/dashboard" className="flex items-center">
+                        <Link href="/dashboard" onClick={() => setSidebarOpen(false)} className="flex items-center">
                             <KardovoLogo light={true} showText={!sidebarCollapsed} size="md" />
                         </Link>
+                        {/* Mobile Close Button */}
+                        <button
+                            type="button"
+                            onClick={() => setSidebarOpen(false)}
+                            className="md:hidden w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] text-slate-300 hover:text-white transition active:scale-90 cursor-pointer"
+                            aria-label="Close Navigation Menu"
+                        >
+                            <X className="w-4 h-4 text-slate-300" />
+                        </button>
                     </div>
 
                     {user?.company && !sidebarCollapsed && (
@@ -347,28 +658,42 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         </div>
                     )}
 
-                    {/* Navigation Links with High-End Active Styling */}
-                    <nav className="p-3 space-y-1.5 flex-1">
-                        {navItems.map((item) => {
-                            const Icon = item.icon;
-                            return (
-                                <Link
-                                    key={item.name}
-                                    href={item.href}
-                                    onClick={() => setSidebarOpen(false)}
-                                    title={sidebarCollapsed ? item.name : undefined}
-                                    className={`
-                                        flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3.5 py-2.5'} rounded-xl text-xs font-semibold transition-all duration-150 relative group active:scale-[0.98]
-                                        ${item.active 
-                                            ? 'bg-[#16A34A] text-white font-bold shadow-sm border border-[#16A34A]' 
-                                            : 'text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.08] border border-transparent'}
-                                    `}
-                                >
-                                    <Icon className={`w-4 h-4 transition-colors duration-150 flex-shrink-0 ${item.active ? 'text-white' : 'text-slate-400 group-hover:text-emerald-300'}`} />
-                                    {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
-                                </Link>
-                            );
-                        })}
+                    {/* Navigation Links with High-End Categorized Styling */}
+                    <nav className="p-3 space-y-2 flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700/50">
+                        {navCategories.map((group, groupIdx) => (
+                            <div key={group.title || groupIdx} className="space-y-1">
+                                {groupIdx > 0 && (
+                                    <div className="my-2.5 mx-1 border-t border-white/[0.08]" />
+                                )}
+                                {!sidebarCollapsed && group.title && (
+                                    <div className="px-3 pt-1 pb-1 text-[9.5px] font-bold uppercase tracking-widest text-slate-400/70 font-mono select-none">
+                                        {group.title}
+                                    </div>
+                                )}
+                                <div className="space-y-0.5">
+                                    {group.items.map((item) => {
+                                        const Icon = item.icon;
+                                        return (
+                                            <Link
+                                                key={item.name}
+                                                href={item.href}
+                                                onClick={() => setSidebarOpen(false)}
+                                                title={sidebarCollapsed ? item.name : undefined}
+                                                className={`
+                                                    flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2'} rounded-xl text-xs font-semibold transition-all duration-150 relative group active:scale-[0.98]
+                                                    ${item.active 
+                                                        ? 'bg-[#16A34A] text-white font-bold shadow-xs border border-[#16A34A]' 
+                                                        : 'text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.08] border border-transparent'}
+                                                `}
+                                            >
+                                                <Icon className={`w-4 h-4 transition-colors duration-150 flex-shrink-0 ${item.active ? 'text-white' : 'text-slate-400 group-hover:text-emerald-300'}`} />
+                                                {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
+                                            </Link>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
                     </nav>
                 </div>
 
@@ -449,7 +774,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
             )}
 
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-w-0 relative">
+            <main className="flex-1 flex flex-col min-w-0 relative pb-24 md:pb-6">
                 
                 {/* Top Edge Hover Trigger Strip (Detects hover at the very top of the window) */}
                 <div 
@@ -589,10 +914,71 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 )}
 
                 {/* Main Content View */}
-                <div className="p-3.5 sm:p-6 flex-1 max-w-7xl mx-auto w-full">
+                <div className="p-3.5 sm:p-6 max-w-7xl mx-auto w-full">
                     {children}
                 </div>
             </main>
+
+            {/* 📱 WHATSAPP / INSTAGRAM STYLE MOBILE BOTTOM NAVIGATION BAR */}
+            <nav 
+                aria-label="Mobile Navigation"
+                className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B2545]/95 dark:bg-[#07192F]/95 backdrop-blur-xl border-t border-[#173860] dark:border-white/[0.08] shadow-[0_-4px_25px_rgba(0,0,0,0.35)] px-2 pt-1.5 pb-[max(env(safe-area-inset-bottom),0.5rem)] flex items-center justify-around transition-all duration-200"
+            >
+                {bottomNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = item.active;
+
+                    if (item.isMenuToggle) {
+                        return (
+                            <button
+                                key={item.name}
+                                type="button"
+                                onClick={() => setSidebarOpen(!sidebarOpen)}
+                                className="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-150 active:scale-90 group cursor-pointer focus:outline-none"
+                                aria-label="Toggle Navigation Menu"
+                            >
+                                <div className={`relative px-3 py-1 rounded-full transition-all duration-200 ${
+                                    sidebarOpen ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'
+                                }`}>
+                                    {sidebarOpen ? (
+                                        <X className="w-5 h-5 stroke-[2.5] text-rose-400" />
+                                    ) : (
+                                        <Icon className="w-5 h-5 stroke-[2]" />
+                                    )}
+                                </div>
+                                <span className={`text-[10px] tracking-tight mt-0.5 ${
+                                    sidebarOpen ? 'font-black text-rose-400' : 'font-semibold text-slate-400 group-hover:text-slate-200'
+                                }`}>
+                                    {sidebarOpen ? 'Close' : 'More'}
+                                </span>
+                            </button>
+                        );
+                    }
+
+                    return (
+                        <Link
+                            key={item.name}
+                            href={item.href}
+                            onClick={() => setSidebarOpen(false)}
+                            className="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-150 active:scale-90 group cursor-pointer focus:outline-none"
+                        >
+                            <div className={`relative px-3 py-1 rounded-full transition-all duration-200 ${
+                                isActive ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'
+                            }`}>
+                                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5] text-emerald-400' : 'stroke-[2]'}`} />
+                                {isActive && (
+                                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                                )}
+                            </div>
+                            <span className={`text-[10px] tracking-tight mt-0.5 ${
+                                isActive ? 'font-black text-emerald-400' : 'font-semibold text-slate-400 group-hover:text-slate-200'
+                            }`}>
+                                {item.name}
+                            </span>
+                        </Link>
+                    );
+                })}
+            </nav>
 
             <CreateEventModal />
         </div>

@@ -227,7 +227,7 @@ class WhatsAppWebhookTest extends TestCase
 
     public function test_broadcast_uses_public_webhook_base_url_and_updates_event_template()
     {
-        $user = User::factory()->create(['role' => 'customer']);
+        $user = User::factory()->create(['role' => 'customer', 'max_whatsapp_limit' => 100, 'max_sms_limit' => 100]);
         $template = CardTemplate::create([
             'user_id' => $user->id,
             'name' => 'Custom Art Luxury Pass',

@@ -37,6 +37,11 @@ class FinancialTransaction extends Model
         return $this->belongsTo(Event::class);
     }
 
+    public function bill()
+    {
+        return $this->hasOne(FinancialBill::class, 'financial_transaction_id');
+    }
+
     /**
      * Generate unique transaction code.
      */

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
@@ -34,6 +36,15 @@ class AppServiceProvider extends ServiceProvider
                 ->mixedCase()
                 ->numbers()
                 ->symbols();
+        });
+
+        ResetPassword::toMailUsing(function ($notifiable, $token) {
+            return (new MailMessage)
+                ->subject('Kardovo Security: Your Password Reset Code is '.$token)
+                ->view('emails.password_reset_code', [
+                    'userName' => $notifiable->name ?? 'there',
+                    'code' => $token,
+                ]);
         });
     }
 }

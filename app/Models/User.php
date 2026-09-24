@@ -233,9 +233,14 @@ class User extends Authenticatable
 
     public function canSendWhatsApp(int $quantity = 1): bool
     {
-        if (is_null($this->max_whatsapp_limit)) {
+        if ($this->isAdmin() || $this->has_payment_override) {
             return true;
         }
+
+        if (is_null($this->max_whatsapp_limit)) {
+            return false;
+        }
+
         $used = $this->whatsappSentCount();
 
         return ($used + $quantity) <= $this->max_whatsapp_limit;
@@ -243,9 +248,14 @@ class User extends Authenticatable
 
     public function canSendSms(int $quantity = 1): bool
     {
-        if (is_null($this->max_sms_limit)) {
+        if ($this->isAdmin() || $this->has_payment_override) {
             return true;
         }
+
+        if (is_null($this->max_sms_limit)) {
+            return false;
+        }
+
         $used = $this->smsSentCount();
 
         return ($used + $quantity) <= $this->max_sms_limit;
@@ -256,13 +266,26 @@ class User extends Authenticatable
         $waUsed = $this->whatsappSentCount();
         $smsUsed = $this->smsSentCount();
 
+        $unlimited = $this->isAdmin() || $this->has_payment_override;
+
         return [
             'whatsapp_limit' => $this->max_whatsapp_limit,
             'whatsapp_used' => $waUsed,
-            'whatsapp_remaining' => is_null($this->max_whatsapp_limit) ? null : max(0, $this->max_whatsapp_limit - $waUsed),
+            'whatsapp_remaining' => is_null($this->max_whatsapp_limit) ? ($unlimited ? null : 0) : max(0, $this->max_whatsapp_limit - $waUsed),
             'sms_limit' => $this->max_sms_limit,
             'sms_used' => $smsUsed,
-            'sms_remaining' => is_null($this->max_sms_limit) ? null : max(0, $this->max_sms_limit - $smsUsed),
+            'sms_remaining' => is_null($this->max_sms_limit) ? ($unlimited ? null : 0) : max(0, $this->max_sms_limit - $smsUsed),
         ];
+    }
+
+    public function addMessageQuotas(int $whatsappMessages, int $smsMessages): void
+    {
+        $currentWa = (int) ($this->max_whatsapp_limit ?? 0);
+        $currentSms = (int) ($this->max_sms_limit ?? 0);
+
+        $this->update([
+            'max_whatsapp_limit' => $currentWa + $whatsappMessages,
+            'max_sms_limit' => $currentSms + $smsMessages,
+        ]);
     }
 }

@@ -35,8 +35,11 @@ class TwoFactorController extends Controller
         }
 
         // Mask email: e.g. al***@domain.com
-        $emailParts = explode('@', $user->email);
-        $maskedEmail = substr($emailParts[0], 0, 2).'••••@'.($emailParts[1] ?? 'kardovo.com');
+        $maskedEmail = null;
+        if (! str_ends_with($user->email, '@phone.kardovo.com')) {
+            $emailParts = explode('@', $user->email);
+            $maskedEmail = substr($emailParts[0], 0, 2).'••••@'.($emailParts[1] ?? 'kardovo.com');
+        }
 
         // Mask phone: e.g. +255 7•••• 1234
         $maskedPhone = null;

@@ -482,6 +482,9 @@ class DatabaseSeeder extends Seeder
             'default_city' => 'Dar es Salaam, Tanzania',
         ]);
 
-        $this->call(PackageSeeder::class);
+        $this->call([
+            PackageSeeder::class,
+            FinancialTransactionSeeder::class,
+        ]);
     }
 }

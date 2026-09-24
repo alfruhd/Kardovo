@@ -22,6 +22,7 @@ use Inertia\Inertia;
 
 // Public Guest Routes (WhatsApp & SMS 1-tap card & RSVP)
 Route::get('/demo/pass', [PublicGuestController::class, 'showDemoPass'])->name('guest.demoPass');
+Route::get('/kj/{token?}', [PublicGuestController::class, 'showCard'])->middleware('throttle:300,1')->name('guest.kj');
 Route::get('/card/{token}', [PublicGuestController::class, 'showCard'])->middleware('throttle:300,1')->name('guest.card');
 Route::post('/card/{token}/rsvp', [PublicGuestController::class, 'submitRsvp'])->middleware('throttle:60,1')->name('guest.rsvp');
 
@@ -81,6 +82,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Admin Portal
     Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+    Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
+    Route::get('/admin/logs', [AdminController::class, 'logs'])->name('admin.logs');
+    Route::get('/admin/gateways', [AdminController::class, 'gateways'])->name('admin.gateways');
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.auditLogs');
     Route::post('/admin/gateway', [AdminController::class, 'updateGateway'])->name('admin.gateway');
     Route::post('/admin/gateway/test', [AdminController::class, 'testGateway'])->name('admin.gateway.test');
@@ -106,6 +110,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/admin/finance/export-pdf', [FinanceController::class, 'exportPdf'])->name('admin.finance.exportPdf');
     Route::post('/admin/finance/exchange-rate/refresh', [FinanceController::class, 'refreshExchangeRate'])->name('admin.finance.exchangeRate.refresh');
     Route::post('/admin/finance/exchange-rate/update', [FinanceController::class, 'updateExchangeRate'])->name('admin.finance.exchangeRate.update');
+    Route::post('/admin/finance/bills', [FinanceController::class, 'storeBill'])->name('admin.finance.bills.store');
+    Route::put('/admin/finance/bills/{bill}', [FinanceController::class, 'updateBill'])->name('admin.finance.bills.update');
+    Route::post('/admin/finance/bills/{bill}/pay', [FinanceController::class, 'payBill'])->name('admin.finance.bills.pay');
+    Route::delete('/admin/finance/bills/{bill}', [FinanceController::class, 'destroyBill'])->name('admin.finance.bills.destroy');
+    Route::post('/admin/finance/bills/{bill}/remind', [FinanceController::class, 'remindBill'])->name('admin.finance.bills.remind');
 
     // Organizer Pricing & Direct Payments
     Route::get('/organizer/pricing', [PaymentController::class, 'index'])->name('organizer.wallet.index');

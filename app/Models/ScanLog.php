@@ -23,6 +23,15 @@ class ScanLog extends Model
         'entries_used_at_scan' => 'integer',
     ];
 
+    protected $appends = [
+        'guest_name',
+    ];
+
+    public function getGuestNameAttribute(): ?string
+    {
+        return $this->guest?->name;
+    }
+
     public function event()
     {
         return $this->belongsTo(Event::class);

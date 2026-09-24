@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Models\CardTemplate;
 use App\Models\Event;
+use App\Models\FinancialTransaction;
 use App\Models\Guest;
+use App\Models\Package;
 use App\Models\User;
+use App\Services\AzampayService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -468,5 +471,280 @@ class KardovoPlatformTest extends TestCase
             'password' => 'password',
         ]);
         $loginResponse->assertRedirect(route('admin.dashboard'));
+    }
+
+    public function test_admin_independent_pages_and_tab_redirects(): void
+    {
+        $admin = User::where('role', 'admin')->first() ?? User::factory()->create(['role' => 'admin']);
+
+        // 1. Users page loads with Inertia component Admin/Users
+        $usersResponse = $this->actingAs($admin)->get(route('admin.users'));
+        $usersResponse->assertStatus(200);
+        $usersResponse->assertInertia(fn ($page) => $page->component('Admin/Users'));
+
+        // 2. Logs page loads with Inertia component Admin/Logs
+        $logsResponse = $this->actingAs($admin)->get(route('admin.logs'));
+        $logsResponse->assertStatus(200);
+        $logsResponse->assertInertia(fn ($page) => $page->component('Admin/Logs'));
+
+        // 3. Gateways page loads with Inertia component Admin/Gateways
+        $gatewaysResponse = $this->actingAs($admin)->get(route('admin.gateways'));
+        $gatewaysResponse->assertStatus(200);
+        $gatewaysResponse->assertInertia(fn ($page) => $page->component('Admin/Gateways'));
+
+        // 4. Legacy tab redirects
+        $this->actingAs($admin)->get('/admin?tab=users')->assertRedirect(route('admin.users'));
+        $this->actingAs($admin)->get('/admin?tab=logs')->assertRedirect(route('admin.logs'));
+        $this->actingAs($admin)->get('/admin?tab=gateways')->assertRedirect(route('admin.gateways'));
+        $this->actingAs($admin)->get('/admin?tab=events')->assertRedirect(route('events.index'));
+        $this->actingAs($admin)->get('/admin?tab=templates')->assertRedirect(route('templates.index'));
+    }
+
+    public function test_package_purchase_anti_tampering_and_per_card_quotas(): void
+    {
+        $organizer = User::factory()->create([
+            'role' => 'customer',
+            'max_whatsapp_limit' => 0,
+            'max_sms_limit' => 0,
+        ]);
+
+        $basicPkg = Package::firstOrCreate(
+            ['name' => 'Basic'],
+            ['price' => 1000, 'description' => '1,000 Tsh per card', 'is_active' => true]
+        );
+
+        $executivePkg = Package::firstOrCreate(
+            ['name' => 'Executive'],
+            ['price' => 2500, 'description' => '2,500 Tsh per card', 'is_active' => true]
+        );
+
+        // 1. Executive package requires minimum 200 cards
+        $failResponse = $this->actingAs($organizer)->post(route('organizer.pricing.purchase'), [
+            'package_id' => $executivePkg->id,
+            'provider' => 'Mpesa',
+            'mobileNumber' => '0767000000',
+            'guests_count' => 50,
+        ]);
+        $failResponse->assertSessionHasErrors('guests_count');
+
+        // 2. Anti-tampering check: even if malicious client sends amount = 10, the server calculates strictly from package price
+        // Mock AzampayService so direct M-Pesa push test doesn't hit external network
+        $this->mock(AzampayService::class, function ($mock) {
+            $mock->shouldReceive('mnCheckout')->andReturn(['success' => true, 'message' => 'USSD sent']);
+        });
+
+        $cardsCount = 100;
+        $expectedTotal = (float) $basicPkg->price * $cardsCount; // 1000 * 100 = 100,000 TZS
+
+        $response = $this->actingAs($organizer)->post(route('organizer.pricing.purchase'), [
+            'package_id' => $basicPkg->id,
+            'provider' => 'Mpesa',
+            'mobileNumber' => '0767000000',
+            'guests_count' => $cardsCount,
+            'amount' => 5, // Attempted tamper - must be ignored!
+            'price' => 1,  // Attempted tamper - must be ignored!
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+
+        $transaction = FinancialTransaction::where('user_id', $organizer->id)
+            ->where('category', 'package_purchase')
+            ->latest('id')
+            ->first();
+
+        $this->assertNotNull($transaction);
+        // Assert server computed price matches verified package price
+        $this->assertEquals($expectedTotal, (float) $transaction->amount);
+        $this->assertStringContainsString((string) $cardsCount, $transaction->title);
+
+        // Assert 1 card = 1 WhatsApp + 1 SMS message metadata in notes
+        $meta = json_decode($transaction->notes, true);
+        $this->assertIsArray($meta);
+        $this->assertEquals($cardsCount, $meta['cards_count']);
+        $this->assertEquals($cardsCount, $meta['whatsapp_messages_included']);
+        $this->assertEquals($cardsCount, $meta['sms_messages_included']);
+        $this->assertEquals((float) $basicPkg->price, (float) $meta['verified_unit_price']);
+
+        // 3. Webhook completes payment and credits 1 WhatsApp + 1 SMS per card to user
+        $webhookResponse = $this->postJson(route('webhooks.azampay'), [
+            'transactionid' => 'AZM-TEST-12345',
+            'externalId' => $transaction->transaction_number,
+            'mnoReference' => 'MNO-REF-998877',
+            'message' => 'Transaction Completed Successfully',
+        ]);
+        $webhookResponse->assertStatus(200);
+
+        $organizer->refresh();
+        $this->assertEquals($cardsCount, $organizer->max_whatsapp_limit);
+        $this->assertEquals($cardsCount, $organizer->max_sms_limit);
+    }
+
+    public function test_organizer_signup_and_signin_with_phone_and_admin_management(): void
+    {
+        // 1. Organizer signs up with only a phone number
+        $signupResponse = $this->post(route('register'), [
+            'name' => 'Phone Organizer',
+            'phone' => '0789123456',
+            'password' => 'Str0ngP@ssw0rd!2026',
+            'password_confirmation' => 'Str0ngP@ssw0rd!2026',
+        ]);
+        $signupResponse->assertRedirect(route('two-factor.index'));
+
+        $user = User::where('name', 'Phone Organizer')->first();
+        $this->assertNotNull($user);
+        $this->assertEquals('customer', $user->role);
+        $this->assertStringContainsString('phone.kardovo.com', $user->email);
+        $this->assertStringContainsString('789 123 456', $user->phone);
+
+        // 2. Organizer logs in using their local phone number
+        $loginResponseLocal = $this->post(route('login'), [
+            'email' => '0789123456',
+            'password' => 'Str0ngP@ssw0rd!2026',
+        ]);
+        $loginResponseLocal->assertRedirect();
+        $this->assertAuthenticatedAs($user);
+
+        // Log out
+        $this->post(route('logout'));
+        $this->assertGuest();
+
+        // 3. Organizer logs in using international format
+        $loginResponseIntl = $this->post(route('login'), [
+            'email' => '+255 789 123 456',
+            'password' => 'Str0ngP@ssw0rd!2026',
+        ]);
+        $loginResponseIntl->assertRedirect();
+        $this->assertAuthenticatedAs($user);
+
+        // 4. Admin creates an organizer with phone number
+        $admin = User::where('role', 'admin')->first() ?? User::factory()->create(['role' => 'admin']);
+        $adminCreateResponse = $this->actingAs($admin)->post(route('admin.storeCustomer'), [
+            'name' => 'VIP Organizer Phone',
+            'phone' => '0754987654',
+            'password' => 'AdminP@ss123!Safe',
+            'role' => 'customer',
+        ]);
+        $adminCreateResponse->assertSessionHasNoErrors();
+
+        $createdOrganizer = User::where('name', 'VIP Organizer Phone')->first();
+        $this->assertNotNull($createdOrganizer);
+        $this->assertStringContainsString('754 987 654', $createdOrganizer->phone);
+
+        // 5. Admin updates the organizer's phone number
+        $adminUpdateResponse = $this->actingAs($admin)->put(route('admin.updateCustomer', $createdOrganizer->id), [
+            'name' => 'VIP Organizer Updated',
+            'phone' => '0765112233',
+            'role' => 'customer',
+        ]);
+        $adminUpdateResponse->assertSessionHasNoErrors();
+
+        $createdOrganizer->refresh();
+        $this->assertStringContainsString('765 112 233', $createdOrganizer->phone);
+    }
+
+    public function test_zero_quota_on_registration_and_blocked_messaging_until_package_payment(): void
+    {
+        // 1. Register a new user
+        $regResponse = $this->post('/register', [
+            'name' => 'Zero Quota Organizer',
+            'email' => 'zero@kardovo.test',
+            'phone' => '0712345678',
+            'password' => 'Str0ngP@ssw0rd!2026',
+            'password_confirmation' => 'Str0ngP@ssw0rd!2026',
+        ]);
+        $regResponse->assertRedirect();
+
+        $organizer = User::where('name', 'Zero Quota Organizer')->first();
+        $this->assertNotNull($organizer);
+        $this->assertSame(0, $organizer->max_whatsapp_limit);
+        $this->assertSame(0, $organizer->max_sms_limit);
+        $this->assertFalse($organizer->canSendWhatsApp());
+        $this->assertFalse($organizer->canSendSms());
+
+        // 2. Create an event with a guest
+        $event = Event::create([
+            'user_id' => $organizer->id,
+            'title' => 'Zero Quota Test Gala',
+            'event_type' => 'Gala',
+            'event_date' => now()->addDays(5)->toDateString(),
+            'venue' => 'Serena Hotel',
+            'city' => 'Dar es Salaam',
+            'status' => 'active',
+        ]);
+
+        $guest = Guest::create([
+            'event_id' => $event->id,
+            'name' => 'Alice Guest',
+            'phone' => '+255712000000',
+            'category' => 'General',
+            'max_entries' => 1,
+            'entries_used' => 0,
+        ]);
+
+        // 3. Attempt single message send - must be blocked because WhatsApp quota is 0
+        $singleWaResponse = $this->actingAs($organizer)->post(route('messaging.sendSingle', $guest->id), [
+            'channel' => 'whatsapp',
+        ]);
+        $singleWaResponse->assertSessionHas('error');
+        $this->assertStringContainsString('quota', strtolower(session('error')));
+
+        // 4. Attempt broadcast message send - must be blocked because WhatsApp quota is 0
+        $broadcastWaResponse = $this->actingAs($organizer)->post(route('messaging.broadcast'), [
+            'event_id' => $event->id,
+            'channel' => 'whatsapp',
+            'target_filter' => 'all',
+        ]);
+        $broadcastWaResponse->assertSessionHas('error');
+        $this->assertStringContainsString('Quota Exceeded', session('error'));
+
+        // 5. User purchases package (e.g. 50 cards @ 1000 = 50,000)
+        $pkg = Package::firstOrCreate(
+            ['name' => 'Standard Package'],
+            ['price' => 1000, 'description' => '1,000 Tsh per card', 'is_active' => true]
+        );
+
+        $this->mock(AzampayService::class, function ($mock) {
+            $mock->shouldReceive('mnCheckout')->andReturn(['success' => true, 'message' => 'USSD sent']);
+        });
+
+        $cardsCount = 50;
+        $purchaseResponse = $this->actingAs($organizer)->post(route('organizer.pricing.purchase'), [
+            'package_id' => $pkg->id,
+            'provider' => 'Mpesa',
+            'mobileNumber' => '0767000000',
+            'guests_count' => $cardsCount,
+        ]);
+        $purchaseResponse->assertSessionHasNoErrors();
+
+        $transaction = FinancialTransaction::where('user_id', $organizer->id)
+            ->where('category', 'package_purchase')
+            ->latest('id')
+            ->first();
+        $this->assertNotNull($transaction);
+
+        // 6. Azampay webhook triggers and successfully credits quotas
+        $webhookResponse = $this->postJson(route('webhooks.azampay'), [
+            'transactionid' => 'AZM-TEST-ZERO-TO-QUOTA',
+            'externalId' => $transaction->transaction_number,
+            'mnoReference' => 'MNO-REF-112233',
+            'message' => 'Transaction Completed Successfully',
+        ]);
+        $webhookResponse->assertStatus(200);
+
+        // 7. Verify quotas are credited according to payment (50 cards = 50 WhatsApp + 50 SMS)
+        $organizer->refresh();
+        $this->assertEquals(50, $organizer->max_whatsapp_limit);
+        $this->assertEquals(50, $organizer->max_sms_limit);
+        $this->assertTrue($organizer->canSendWhatsApp());
+        $this->assertTrue($organizer->canSendSms());
+        $this->assertTrue($organizer->canSendWhatsApp(50));
+        $this->assertFalse($organizer->canSendWhatsApp(51));
+
+        $stats = $organizer->getMessageQuotaStats();
+        $this->assertEquals(50, $stats['whatsapp_limit']);
+        $this->assertEquals(50, $stats['whatsapp_remaining']);
+        $this->assertEquals(50, $stats['sms_limit']);
+        $this->assertEquals(50, $stats['sms_remaining']);
     }
 }

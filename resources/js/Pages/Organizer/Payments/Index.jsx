@@ -460,7 +460,13 @@ function PaymentPage({ packages, transactions, has_event }) {
 
     const handleSelectPkg = (pkg) => {
         setSelectedPkg(pkg.id);
-        setData('package_id', pkg.id);
+        const isExecutive = (pkg.name || '').toLowerCase().includes('executive');
+        const minCount = isExecutive ? 200 : 1;
+        setData(prev => ({
+            ...prev,
+            package_id: pkg.id,
+            guests_count: Math.max(prev.guests_count || 1, minCount),
+        }));
     };
 
     const submitPurchase = (e) => {

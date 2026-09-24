@@ -37,6 +37,9 @@ class Guest extends Model
         'entries_remaining',
         'allowance_label',
         'api_phone',
+        'whatsapp_status',
+        'sms_status',
+        'channel_statuses',
     ];
 
     protected static function booted()
@@ -62,7 +65,7 @@ class Guest extends Model
 
     public static function generateCardNumber(): string
     {
-        return 'KDV-'.date('Y').'-'.str_pad((string) random_int(1000, 999999), 6, '0', STR_PAD_LEFT);
+        return 'KDV-'.str_pad((string) random_int(1000, 999999), 6, '0', STR_PAD_LEFT);
     }
 
     public static function generateUniqueCode(): string
@@ -108,5 +111,36 @@ class Guest extends Model
         }
 
         return "{$this->max_entries} Entries";
+    }
+
+    public function getWhatsappStatusAttribute(): ?string
+    {
+        if ($this->relationLoaded('messages')) {
+            return $this->messages->where('channel', 'whatsapp')->first()?->status;
+        }
+
+        return $this->messages()->where('channel', 'whatsapp')->value('status');
+    }
+
+    public function getSmsStatusAttribute(): ?string
+    {
+        if ($this->relationLoaded('messages')) {
+            return $this->messages->where('channel', 'sms')->first()?->status;
+        }
+
+        return $this->messages()->where('channel', 'sms')->value('status');
+    }
+
+    /**
+     * Resolve structured channel delivery statuses.
+     *
+     * @return array{whatsapp: ?string, sms: ?string}
+     */
+    public function getChannelStatusesAttribute(): array
+    {
+        return [
+            'whatsapp' => $this->whatsapp_status,
+            'sms' => $this->sms_status,
+        ];
     }
 }

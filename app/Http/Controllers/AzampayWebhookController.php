@@ -38,17 +38,42 @@ class AzampayWebhookController extends Controller
         // MNO push usually hits this webhook ONLY on success or definitive failure.
         $status = strtolower($request->input('message', ''));
         if (str_contains($status, 'success') || str_contains($status, 'completed')) {
+            $existingNotes = $transaction->notes;
+            $meta = is_string($existingNotes) ? json_decode($existingNotes, true) : null;
+            $updatedNotes = is_array($meta)
+                ? json_encode(array_merge($meta, ['azampay_transaction_id' => $request->input('transactionid'), 'azampay_confirmed_at' => now()->toIso8601String()]))
+                : 'Azampay transaction ID: '.$request->input('transactionid');
+
             $transaction->update([
                 'status' => 'completed',
                 'reference' => $request->input('mnoReference'),
-                'notes' => 'Azampay transaction ID: '.$request->input('transactionid'),
+                'notes' => $updatedNotes,
             ]);
 
-            // Credit the wallet
-            $wallet = Wallet::find($transaction->wallet_id);
-            if ($wallet) {
-                $wallet->balance += $transaction->amount;
-                $wallet->save();
+            // If package_purchase, credit message quotas (1 WhatsApp + 1 SMS per card/guest)
+            if ($transaction->category === 'package_purchase' && $transaction->user) {
+                $cardsCount = 0;
+                if (is_array($meta)) {
+                    $cardsCount = (int) ($meta['cards_count'] ?? $meta['guests_count'] ?? 0);
+                }
+                if ($cardsCount <= 0 && preg_match('/\((\d+)\s+cards/i', $transaction->title, $matches)) {
+                    $cardsCount = (int) $matches[1];
+                } elseif ($cardsCount <= 0 && preg_match('/\((\d+)\s+guests\)/i', $transaction->title, $matches)) {
+                    $cardsCount = (int) $matches[1];
+                }
+
+                if ($cardsCount > 0) {
+                    $transaction->user->addMessageQuotas($cardsCount, $cardsCount);
+                }
+            }
+
+            // Credit the wallet if wallet_id exists
+            if ($transaction->wallet_id) {
+                $wallet = Wallet::find($transaction->wallet_id);
+                if ($wallet) {
+                    $wallet->balance += $transaction->amount;
+                    $wallet->save();
+                }
             }
         } else {
             $transaction->update([

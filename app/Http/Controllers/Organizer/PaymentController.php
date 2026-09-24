@@ -45,16 +45,33 @@ class PaymentController extends Controller
         ]);
 
         $user = $request->user();
-        $package = Package::findOrFail($request->package_id);
-        $externalId = FinancialTransaction::generateTransactionNumber();
-        $totalAmount = $package->price * $request->guests_count;
+        $package = Package::where('is_active', true)->findOrFail($request->package_id);
 
-        // Record the pending transaction
+        // Enforce minimum card count for Executive package
+        if (str_contains(strtolower($package->name), 'executive') && (int) $request->guests_count < 200) {
+            return back()->withErrors(['guests_count' => 'The Executive package requires a minimum order of 200 cards.']);
+        }
+
+        // Anti-tampering check: calculate price strictly from database package record
+        $unitPrice = (float) $package->price;
+        if ($unitPrice <= 0) {
+            return back()->withErrors(['package_id' => 'Invalid package pricing configuration.']);
+        }
+
+        $guestsCount = (int) $request->guests_count;
+        $totalAmount = $unitPrice * $guestsCount;
+        $externalId = FinancialTransaction::generateTransactionNumber();
+
+        // 1 card entitlement = 1 WhatsApp invitation + 1 SMS notification
+        $whatsappAllowance = $guestsCount;
+        $smsAllowance = $guestsCount;
+
+        // Record the pending transaction with immutable pricing verification metadata
         $transaction = FinancialTransaction::create([
             'transaction_number' => $externalId,
             'type' => 'income',
             'category' => 'package_purchase',
-            'title' => 'Package Purchase: '.$package->name.' ('.$request->guests_count.' guests) via '.$request->provider,
+            'title' => "Package Purchase: {$package->name} ({$guestsCount} cards @ ".number_format($unitPrice)." TZS — {$whatsappAllowance} WhatsApp + {$smsAllowance} SMS) via {$request->provider}",
             'amount' => $totalAmount,
             'currency' => 'TZS',
             'payment_method' => $request->provider,
@@ -62,6 +79,17 @@ class PaymentController extends Controller
             'user_id' => $user->id,
             'status' => 'pending',
             'transaction_date' => now(),
+            'notes' => json_encode([
+                'package_id' => $package->id,
+                'package_name' => $package->name,
+                'verified_unit_price' => $unitPrice,
+                'cards_count' => $guestsCount,
+                'guests_count' => $guestsCount,
+                'whatsapp_messages_included' => $whatsappAllowance,
+                'sms_messages_included' => $smsAllowance,
+                'total_amount' => $totalAmount,
+                'verified_at' => now()->toIso8601String(),
+            ]),
         ]);
 
         $mobileProviders = ['Airtel', 'Tigo', 'Halopesa', 'Azampesa', 'Mpesa'];

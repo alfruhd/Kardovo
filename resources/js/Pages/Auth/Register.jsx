@@ -6,8 +6,8 @@ import TextInput from '@/Components/TextInput';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { validateEmail, validatePassword, generateStrongPassword, validateRequired } from '@/Utils/validation';
-import { Check, X, Sparkles, Eye, EyeOff } from 'lucide-react';
+import { validateEmail, validatePassword, generateStrongPassword } from '@/Utils/validation';
+import { Sparkles, Eye, EyeOff } from 'lucide-react';
 
 export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
@@ -16,6 +16,7 @@ export default function Register() {
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
+        phone: '',
         password: '',
         password_confirmation: '',
     });
@@ -33,7 +34,9 @@ export default function Register() {
 
     const pwdAnalysis = validatePassword(data.password);
     const isStrong = pwdAnalysis.isStrong;
-    const isEmailValid = validateEmail(data.email);
+    const isEmailValid = !data.email || validateEmail(data.email);
+    const isPhoneValid = !data.phone || /^\+?[0-9\s\-().]{7,25}$/.test(data.phone.trim());
+    const hasIdentifier = Boolean((data.email && validateEmail(data.email)) || (data.phone && /^\+?[0-9\s\-().]{7,25}$/.test(data.phone.trim())));
     const isNameValid = data.name.trim().length >= 2;
 
     const handleGeneratePassword = () => {
@@ -48,7 +51,7 @@ export default function Register() {
     const submit = (e) => {
         e.preventDefault();
 
-        if (!isMatch || !isStrong || !isEmailValid || !isNameValid) {
+        if (!isMatch || !isStrong || !hasIdentifier || !isEmailValid || !isPhoneValid || !isNameValid) {
             return;
         }
 
@@ -59,87 +62,91 @@ export default function Register() {
 
     return (
         <GuestLayout>
-            <Head title="Register" />
+            <Head title="Create Organiser Account" />
 
-            <form onSubmit={submit}>
+            {/* Header */}
+            <div className="mb-5 text-center">
+                <h1 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+                    Create Organiser Account
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Manage events, guests, and smart passes
+                </p>
+            </div>
+
+            <form onSubmit={submit} className="space-y-4">
+                {/* Full Name */}
                 <div>
-                    <div className="flex items-center justify-between">
-                        <InputLabel htmlFor="name" value="Name" />
-                        {data.name && isNameValid && (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
-                                <Check className="w-3 h-3" />
-                                <span>Valid</span>
-                            </span>
-                        )}
-                    </div>
-
+                    <InputLabel htmlFor="name" value="Full Name *" />
                     <TextInput
                         id="name"
                         name="name"
                         value={data.name}
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full text-xs font-mono font-bold"
                         autoComplete="name"
                         placeholder="e.g. Salim Juma"
                         isFocused={true}
                         onChange={(e) => setData('name', e.target.value)}
                         hasError={Boolean(errors.name)}
-                        isValid={Boolean(data.name && isNameValid)}
                         required
                     />
-
-                    <InputError message={errors.name} className="mt-2" />
+                    <InputError message={errors.name} className="mt-1.5" />
                 </div>
 
-                <div className="mt-4">
+                {/* Email Address */}
+                <div>
                     <div className="flex items-center justify-between">
-                        <InputLabel htmlFor="email" value="Email" />
-                        {data.email && isEmailValid && (
-                            <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
-                                <Check className="w-3 h-3" />
-                                <span>Verified format</span>
-                            </span>
-                        )}
+                        <InputLabel htmlFor="email" value="Email Address" />
+                        <span className="text-[10.5px] text-slate-400">Optional if phone provided</span>
                     </div>
-
                     <TextInput
                         id="email"
                         type="email"
                         name="email"
                         value={data.email}
-                        className="mt-1 block w-full"
+                        className="mt-1 block w-full text-xs font-mono font-bold"
                         autoComplete="username"
-                        placeholder="name@company.com"
+                        placeholder="name@email.com"
                         onChange={(e) => setData('email', e.target.value)}
                         hasError={Boolean(errors.email)}
-                        isValid={Boolean(data.email && isEmailValid)}
-                        required
+                        required={!data.phone}
                     />
-
-                    <InputError message={errors.email} className="mt-2" />
+                    <InputError message={errors.email} className="mt-1.5" />
                 </div>
 
-                <div className="mt-4">
+                {/* Phone Number */}
+                <div>
                     <div className="flex items-center justify-between">
-                        <InputLabel htmlFor="password" value="Password" />
-                        <div className="flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={handleGeneratePassword}
-                                className="inline-flex items-center gap-1 text-[10px] font-bold text-cyan-700 dark:text-cyan-300 hover:text-cyan-800 dark:hover:text-cyan-200 cursor-pointer bg-cyan-50 dark:bg-cyan-950/60 px-2 py-0.5 rounded-md border border-cyan-200 dark:border-cyan-800/40"
-                                title="Generate strong 16-character password"
-                            >
-                                <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
-                                <span>Suggest Strong</span>
-                            </button>
-                            {data.password && (
-                                <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
-                                    isStrong ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
-                                }`}>
-                                    {isStrong ? <Check className="w-3 h-3" /> : null}
-                                    <span>{isStrong ? 'Strong' : `${pwdAnalysis.score}/4 Requirements`}</span>
-                                </span>
-                            )}
-                        </div>
+                        <InputLabel htmlFor="phone" value="Phone Number" />
+                        <span className="text-[10.5px] text-slate-400">Optional if email provided</span>
+                    </div>
+                    <TextInput
+                        id="phone"
+                        type="tel"
+                        name="phone"
+                        value={data.phone}
+                        className="mt-1 block w-full text-xs font-mono font-bold"
+                        autoComplete="tel"
+                        placeholder="07XXXXXXXX or +255 7XX XXX XXX"
+                        onChange={(e) => setData('phone', e.target.value)}
+                        hasError={Boolean(errors.phone)}
+                        required={!data.email}
+                    />
+                    <InputError message={errors.phone} className="mt-1.5" />
+                </div>
+
+                {/* Password */}
+                <div>
+                    <div className="flex items-center justify-between">
+                        <InputLabel htmlFor="password" value="Password *" />
+                        <button
+                            type="button"
+                            onClick={handleGeneratePassword}
+                            className="inline-flex items-center gap-1 text-[10.5px] font-bold text-cyan-700 dark:text-cyan-400 hover:underline cursor-pointer"
+                        >
+                            <Sparkles className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                            <span>Suggest strong</span>
+                        </button>
                     </div>
 
                     <div className="relative mt-1">
@@ -148,12 +155,11 @@ export default function Register() {
                             type={showPassword ? 'text' : 'password'}
                             name="password"
                             value={data.password}
-                            className="block w-full pr-10"
+                            className="block w-full pr-10 text-xs font-mono"
                             autoComplete="new-password"
                             onChange={(e) => setData('password', e.target.value)}
-                            placeholder="Min 8 chars, uppercase, lowercase, numbers & symbols"
+                            placeholder="Min. 8 characters"
                             hasError={Boolean(errors.password)}
-                            isValid={Boolean(isStrong)}
                             required
                         />
                         <button
@@ -167,42 +173,23 @@ export default function Register() {
                     </div>
 
                     <PasswordStrengthMeter password={data.password} />
-
-                    <InputError message={errors.password} className="mt-2" />
+                    <InputError message={errors.password} className="mt-1.5" />
                 </div>
 
-                <div className="mt-4">
-                    <div className="flex items-center justify-between">
-                        <InputLabel
-                            htmlFor="password_confirmation"
-                            value="Confirm Password"
-                        />
-                        {data.password_confirmation && (
-                            <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
-                                isMatch 
-                                    ? 'text-emerald-600 dark:text-emerald-400' 
-                                    : 'text-rose-600 dark:text-rose-400'
-                            }`}>
-                                {isMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                                <span>{isMatch ? 'Passwords match' : 'Do not match'}</span>
-                            </span>
-                        )}
-                    </div>
-
+                {/* Confirm Password */}
+                <div>
+                    <InputLabel htmlFor="password_confirmation" value="Confirm Password *" />
                     <div className="relative mt-1">
                         <TextInput
                             id="password_confirmation"
                             type={showPasswordConfirm ? 'text' : 'password'}
                             name="password_confirmation"
                             value={data.password_confirmation}
-                            className="block w-full pr-10"
+                            className="block w-full pr-10 text-xs font-mono"
                             autoComplete="new-password"
                             placeholder="••••••••••••"
-                            onChange={(e) =>
-                                setData('password_confirmation', e.target.value)
-                            }
+                            onChange={(e) => setData('password_confirmation', e.target.value)}
                             hasError={Boolean(errors.password_confirmation || isMismatch)}
-                            isValid={Boolean(isMatch)}
                             required
                         />
                         <button
@@ -214,36 +201,49 @@ export default function Register() {
                             {showPasswordConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                     </div>
-
-                    <InputError
-                        message={errors.password_confirmation}
-                        className="mt-2"
-                    />
+                    {isMismatch && (
+                        <p className="mt-1 text-[10.5px] text-rose-500 font-medium">
+                            Passwords do not match.
+                        </p>
+                    )}
+                    <InputError message={errors.password_confirmation} className="mt-1.5" />
                 </div>
 
-                {/* Terms of Service & Privacy Notice */}
-                <div className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                    By registering an organizer account, you agree to Kardovo’s{' '}
-                    <Link href="/terms" className="font-bold text-cyan-600 dark:text-cyan-400 hover:underline">
-                        Terms &amp; Conditions
-                    </Link>{' '}
-                    and{' '}
-                    <Link href="/privacy" className="font-bold text-cyan-600 dark:text-cyan-400 hover:underline">
-                        Privacy Policy
-                    </Link>.
-                </div>
-
-                <div className="mt-4 flex items-center justify-end">
-                    <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 dark:text-slate-400 underline hover:text-gray-900 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                {/* Submit Button */}
+                <div className="pt-2">
+                    <PrimaryButton
+                        className="w-full justify-center py-3 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-black rounded-2xl shadow-md transition active:scale-[0.98] tracking-wide uppercase cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={processing || !isMatch || !isStrong || !hasIdentifier || !isEmailValid || !isPhoneValid || !isNameValid}
                     >
-                        Already registered?
-                    </Link>
-
-                    <PrimaryButton className="ms-4 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled={processing || !isMatch || !isStrong || !isEmailValid || !isNameValid}>
-                        Register
+                        {processing ? 'Creating Account...' : 'Create Account'}
                     </PrimaryButton>
+                </div>
+
+                {/* Already have an account link */}
+                <div className="pt-1 text-center">
+                    <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
+                        Already have an account?{' '}
+                        <Link
+                            href={route('login')}
+                            className="text-[#16A34A] hover:text-[#15803D] dark:text-emerald-400 dark:hover:text-emerald-300 font-black hover:underline cursor-pointer transition"
+                        >
+                            Sign in here
+                        </Link>
+                    </p>
+                </div>
+
+                {/* Terms & Privacy */}
+                <div className="pt-1 text-center">
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        By creating an account, you agree to Kardovo’s{' '}
+                        <Link href="/terms" className="font-bold text-slate-700 dark:text-slate-300 hover:underline">
+                            Terms &amp; Conditions
+                        </Link>{' '}
+                        and{' '}
+                        <Link href="/privacy" className="font-bold text-slate-700 dark:text-slate-300 hover:underline">
+                            Privacy Policy
+                        </Link>.
+                    </p>
                 </div>
             </form>
         </GuestLayout>

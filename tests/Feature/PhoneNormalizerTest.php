@@ -52,6 +52,7 @@ test('Guest model automatically normalizes phone number on save', function () {
 
 test('MessagingController sendBroadcast saves sanitized phone without plus or spaces', function () {
     $user = User::where('role', 'customer')->first();
+    $user->update(['max_whatsapp_limit' => 100, 'max_sms_limit' => 100]);
     $event = Event::where('user_id', $user->id)->first();
 
     $guest = Guest::create([
@@ -81,6 +82,7 @@ test('MessagingController sendBroadcast saves sanitized phone without plus or sp
 
 test('broadcast appends pass link and rsvp footer when include_pass_link is true', function () {
     $user = User::where('role', 'customer')->first();
+    $user->update(['max_whatsapp_limit' => 100, 'max_sms_limit' => 100]);
     $event = Event::where('user_id', $user->id)->first();
 
     $guest = Guest::create([
@@ -115,6 +117,7 @@ test('broadcast appends pass link and rsvp footer when include_pass_link is true
 
 test('broadcast does not append pass link when include_pass_link is false', function () {
     $user = User::where('role', 'customer')->first();
+    $user->update(['max_whatsapp_limit' => 100, 'max_sms_limit' => 100]);
     $event = Event::where('user_id', $user->id)->first();
 
     $guest = Guest::create([

@@ -258,7 +258,7 @@ class GuestController extends Controller
             'Expires' => '0',
         ];
 
-        $columns = ['Card Number', 'Unique Code', 'Guest Name', 'Phone', 'Email', 'Category', 'Max Entries', 'Entries Used', 'Delivery Status', 'RSVP Status', 'RSVP Date'];
+        $columns = ['Card Number', 'Unique Code', 'Guest Name', 'Phone', 'Email', 'Category', 'Max Entries', 'Entries Used', 'Delivery Status', 'RSVP Status', 'RSVP Date', 'RSVP Message / Notes'];
 
         $callback = function () use ($guests, $columns) {
             $file = fopen('php://output', 'w');
@@ -277,6 +277,7 @@ class GuestController extends Controller
                     $guest->delivery_status,
                     $guest->rsvp_status,
                     $guest->rsvp_at ? $guest->rsvp_at->toDateTimeString() : '',
+                    $guest->notes ?? '',
                 ]);
             }
 

@@ -331,19 +331,16 @@ class MessagingController extends Controller
             return back()->with('error', 'Single message dispatch permission is disabled for your organizer account. Please contact system administration.');
         }
 
-        $channel = $request->input('channel', 'whatsapp');
+        $channelInput = $request->input('channel', 'whatsapp');
+        $channelsToSend = ($channelInput === 'both') ? ['whatsapp', 'sms'] : [$channelInput];
         $eventOwner = $guest->event->user ?: $user;
 
-        if ($channel === 'whatsapp' && ! $eventOwner->canSendWhatsApp(1)) {
-            $quota = $eventOwner->getMessageQuotaStats();
-
-            return back()->with('error', 'WhatsApp limit reached.');
+        if (in_array('whatsapp', $channelsToSend) && ! $eventOwner->canSendWhatsApp(1)) {
+            return back()->with('error', 'WhatsApp quota limit reached for your account.');
         }
 
-        if ($channel === 'sms' && ! $eventOwner->canSendSms(1)) {
-            $quota = $eventOwner->getMessageQuotaStats();
-
-            return back()->with('error', 'SMS limit reached.');
+        if (in_array('sms', $channelsToSend) && ! $eventOwner->canSendSms(1)) {
+            return back()->with('error', 'SMS quota limit reached for your account.');
         }
 
         // Resolve public base URL for links (handling tunnels, proxies, and configured webhooks)
@@ -360,53 +357,71 @@ class MessagingController extends Controller
         }
 
         $customText = $request->input('message_text');
-
-        if (! empty($customText)) {
-            $caption = $customText;
-        } else {
-            $caption = "Hi {$guest->name}! You're invited to {$guest->event->title}. Tap below to confirm attendance.";
-        }
+        $caption = ! empty($customText)
+            ? $customText
+            : "Hi {$guest->name}! You're invited to {$guest->event->title}. Tap below to confirm attendance.";
 
         $bodyToSend = $caption;
-
-        // Normalize phone: digits only, no + sign, no spaces (e.g. 255712345678)
         $cleanPhone = PhoneNormalizer::cleanForApi($guest->phone);
 
-        if ($channel === 'whatsapp') {
-            $singleTemplate = $guest->event->cardTemplate ?: CardTemplate::first();
-            $sendResult = $this->sendMetaWhatsAppMessage($cleanPhone, $bodyToSend, $guest, 'pass_invitation', $singleTemplate, $baseUrl);
-        } else {
-            $sendResult = ['success' => true, 'simulated' => true];
+        $results = [];
+        foreach ($channelsToSend as $ch) {
+            if ($ch === 'whatsapp') {
+                $singleTemplate = $guest->event->cardTemplate ?: CardTemplate::first();
+                $res = $this->sendMetaWhatsAppMessage($cleanPhone, $bodyToSend, $guest, 'pass_invitation', $singleTemplate, $baseUrl);
+            } else {
+                // SMS dispatch (simulated / SMS gateway)
+                $res = ['success' => true, 'simulated' => true, 'sent_text' => $bodyToSend];
+            }
+
+            $isSuccess = $res['success'];
+            $status = $isSuccess ? 'sent' : 'failed';
+            $recordedBody = $bodyToSend;
+
+            if (! $isSuccess && ! empty($res['error_message'])) {
+                $recordedBody .= ' [Error: '.$res['error_message'].']';
+            }
+
+            Message::create([
+                'event_id' => $guest->event_id,
+                'guest_id' => $guest->id,
+                'channel' => $ch,
+                'recipient_phone' => $cleanPhone,
+                'message_body' => $recordedBody,
+                'status' => $status,
+                'sent_at' => $isSuccess ? now() : null,
+                'delivered_at' => null,
+            ]);
+
+            $results[$ch] = [
+                'success' => $isSuccess,
+                'error' => $res['error_message'] ?? null,
+            ];
         }
 
-        $isSuccess = $sendResult['success'];
-        $status = $isSuccess ? 'sent' : 'failed';
-        $recordedBody = $bodyToSend;
-
-        if (! $isSuccess && ! empty($sendResult['error_message'])) {
-            $recordedBody .= ' [Error: '.$sendResult['error_message'].']';
-        }
-
-        Message::create([
-            'event_id' => $guest->event_id,
-            'guest_id' => $guest->id,
-            'channel' => $channel,
-            'recipient_phone' => $cleanPhone,
-            'message_body' => $recordedBody,
-            'status' => $status,
-            'sent_at' => $isSuccess ? now() : null,
-            'delivered_at' => null, // Updated when delivery receipt webhook arrives
-        ]);
+        // Determine updated overall delivery status without contradiction:
+        // If guest already has a delivered message or current message succeeded, retain/set sent or delivered.
+        $hasSuccessfulDelivery = $guest->messages()->whereIn('status', ['sent', 'delivered', 'read'])->exists();
+        $overallStatus = $hasSuccessfulDelivery ? 'sent' : 'failed';
 
         $guest->update([
-            'delivery_status' => $status,
+            'delivery_status' => $overallStatus,
         ]);
 
-        if (! $isSuccess) {
-            return back()->with('error', "WhatsApp dispatch to {$guest->name} failed: ".($sendResult['error_message'] ?? 'Meta API error'));
+        $successCount = count(array_filter($results, fn ($r) => $r['success']));
+        $failCount = count($results) - $successCount;
+
+        if ($failCount > 0 && $successCount === 0) {
+            $err = $results[$channelsToSend[0]]['error'] ?? 'Dispatch failed.';
+
+            return back()->with('error', "Dispatch to {$guest->name} failed: {$err}");
         }
 
-        return back()->with('success', "Message dispatched to {$guest->name} via {$channel}!");
+        if ($channelInput === 'both') {
+            return back()->with('success', "Pass dispatched to {$guest->name} via both WhatsApp and SMS!");
+        }
+
+        return back()->with('success', "Message dispatched to {$guest->name} via {$channelInput}!");
     }
 
     /**

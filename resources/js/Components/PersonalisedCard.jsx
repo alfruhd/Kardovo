@@ -35,7 +35,11 @@ const CardScaleWrapper = ({ baseWidth, finalRatio, children }) => {
         const updateScale = () => {
             if (containerRef.current) {
                 const w = containerRef.current.clientWidth;
-                if (w > 0) setScale(w / baseWidth);
+                if (w > 0) {
+                    // Smooth scaling down on narrow containers (phone mockup / mobile),
+                    // capped at 1.0 so desktop modals preserve the crisp native 410px design.
+                    setScale(Math.min(1, w / baseWidth));
+                }
             }
         };
         updateScale();
@@ -44,14 +48,21 @@ const CardScaleWrapper = ({ baseWidth, finalRatio, children }) => {
         return () => ro.disconnect();
     }, [baseWidth]);
 
-    const renderedHeight = finalRatio > 0 ? (baseWidth / finalRatio) * scale : 0;
+    const effectiveScale = scale > 0 ? scale : 1;
+    const renderedHeight = finalRatio > 0 ? (baseWidth / finalRatio) * effectiveScale : 0;
 
     return (
-        <div ref={containerRef} className="w-full relative flex justify-center" style={{ height: renderedHeight > 0 ? `${renderedHeight}px` : 'auto' }}>
+        <div 
+            ref={containerRef} 
+            className="w-full relative flex justify-center items-start" 
+            style={{ 
+                height: renderedHeight > 0 ? `${renderedHeight}px` : 'auto' 
+            }}
+        >
             <div style={{
                 width: `${baseWidth}px`,
                 height: finalRatio > 0 ? `${baseWidth / finalRatio}px` : 'auto',
-                transform: `scale(${scale})`,
+                transform: `scale(${effectiveScale})`,
                 transformOrigin: 'top center',
                 position: 'absolute',
                 top: 0
@@ -1476,16 +1487,18 @@ export default function PersonalisedCard({
                     {/* Modal Pass Content - Scaled to fit screen height perfectly */}
                     <div className="flex-1 flex items-center justify-center my-auto py-2 w-full max-w-full">
                         <div 
-                            className="transition-transform duration-300 drop-shadow-[0_25px_50px_rgba(0,0,0,0.8)] max-h-[82vh] flex items-center justify-center"
-                            style={{ maxHeight: '82vh' }}
+                            className="transition-transform duration-300 drop-shadow-[0_25px_50px_rgba(0,0,0,0.8)] flex items-center justify-center"
+                            style={{ height: '82vh', aspectRatio: (detectedImgRatio || (elementsConfig?.aspect_ratio) || 2/3) }}
                         >
-                            <PersonalisedCard
-                                guest={guest}
-                                event={event}
-                                template={template}
-                                interactive={false}
-                                className="transform-gpu origin-center scale-[0.85] sm:scale-100 max-h-[82vh]"
-                            />
+                            <div className="w-full h-full">
+                                <PersonalisedCard
+                                    guest={guest}
+                                    event={event}
+                                    template={template}
+                                    interactive={false}
+                                    className="w-full h-full"
+                                />
+                            </div>
                         </div>
                     </div>
 

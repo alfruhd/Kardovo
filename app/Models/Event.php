@@ -19,12 +19,26 @@ class Event extends Model
         'rsvp_auto_reply_config',
         'microsite_config',
         'status',
+        'ticketing_enabled',
+        'is_public',
+        'is_occasion',
+        'cover_photo',
+        'occasion_type',
+        'ticket_currency',
+        'ticket_instructions',
+        'ticket_sales_end_at',
+        'ticket_template_config',
     ];
 
     protected $casts = [
         'event_date' => 'date',
         'rsvp_auto_reply_config' => 'array',
         'microsite_config' => 'array',
+        'ticketing_enabled' => 'boolean',
+        'is_public' => 'boolean',
+        'is_occasion' => 'boolean',
+        'ticket_sales_end_at' => 'datetime',
+        'ticket_template_config' => 'array',
     ];
 
     public function user()
@@ -40,6 +54,21 @@ class Event extends Model
     public function guests()
     {
         return $this->hasMany(Guest::class);
+    }
+
+    public function ticketTiers()
+    {
+        return $this->hasMany(TicketTier::class)->orderBy('sort_order');
+    }
+
+    public function ticketOrders()
+    {
+        return $this->hasMany(TicketOrder::class)->latest();
+    }
+
+    public function tickets()
+    {
+        return $this->hasMany(Ticket::class)->latest();
     }
 
     public function scanLogs()
@@ -85,5 +114,15 @@ class Event extends Model
         }
 
         return $query->where('user_id', $user->id);
+    }
+
+    public function scopeOccasions($query)
+    {
+        return $query->where('is_occasion', true);
+    }
+
+    public function scopeInvitationEvents($query)
+    {
+        return $query->where('is_occasion', false);
     }
 }

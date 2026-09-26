@@ -9,6 +9,7 @@ class ScanLog extends Model
     protected $fillable = [
         'event_id',
         'guest_id',
+        'ticket_id',
         'scanner_id',
         'scanner_name',
         'gate_label',
@@ -25,11 +26,17 @@ class ScanLog extends Model
 
     protected $appends = [
         'guest_name',
+        'attendee_name',
     ];
 
     public function getGuestNameAttribute(): ?string
     {
-        return $this->guest?->name;
+        return $this->guest?->name ?? $this->ticket?->attendee_name;
+    }
+
+    public function getAttendeeNameAttribute(): ?string
+    {
+        return $this->ticket?->attendee_name ?? $this->guest?->name;
     }
 
     public function event()
@@ -40,6 +47,11 @@ class ScanLog extends Model
     public function guest()
     {
         return $this->belongsTo(Guest::class);
+    }
+
+    public function ticket()
+    {
+        return $this->belongsTo(Ticket::class);
     }
 
     public function scanner()

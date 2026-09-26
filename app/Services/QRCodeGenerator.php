@@ -308,4 +308,15 @@ class QRCodeGenerator
 
         return $im;
     }
+
+    public static function renderToBase64Png(string $text, int $targetSize = 240): string
+    {
+        $im = self::renderToGdImage($text, $targetSize);
+        ob_start();
+        imagepng($im);
+        $data = ob_get_clean();
+        imagedestroy($im);
+
+        return 'data:image/png;base64,'.base64_encode($data);
+    }
 }

@@ -582,2949 +582,577 @@ export default function CardTemplates({
     const qrCfg = currentConfig.qr_code || { x: 50, y: 85.5, size: isCustomArt ? 72 : 140, darkColor: '#111827' };
     const cardNumCfg = currentConfig.card_number || { x: 50, y: 96, fontSize: isCustomArt ? 9.5 : 28, color: '#FFFFFF' };
 
+
+    // Only show user-uploaded custom art templates (no predefined presets)
+    const myTemplates = templates.filter(t => t.user_id !== null && t.user_id !== undefined);
+
     return (
         <KardovoAppLayout
-            title="Card Templates & Artwork Studio"
+            title="Card Templates"
             headerActions={
                 !hasNoEvents && (
                     <button
                         onClick={() => setUploadModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                     >
-                        <Upload className="w-3.5 h-3.5 text-white" />
-                        <span>Add Template</span>
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Upload Design</span>
                     </button>
                 )
             }
         >
-            <Head title="Card & Artwork Studio - Kardovo" />
+            <Head title="Card Templates — Kardovo" />
 
-            <div className="max-w-7xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-5">
+
+                {/* ── PAGE HEADER ── */}
+                <div className="px-1 flex items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-lg font-black text-slate-900 dark:text-white font-display tracking-tight">Card Templates</h1>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            Upload your event artwork · adjust element positions · save
+                        </p>
+                    </div>
+                    {myTemplates.length > 0 && (
+                        <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400">
+                            {myTemplates.length} {myTemplates.length === 1 ? 'design' : 'designs'}
+                        </span>
+                    )}
+                </div>
+
                 {hasNoEvents ? (
                     <EmptyEventState
-                        title="No Event Selected"
-                        description="Please select an event from the dashboard or create a new one to manage messaging and broadcast passes."
+                        title="No Event Yet"
+                        description="Create an event first, then come back to set up your card template."
                         buttonText="Go to Dashboard"
                         buttonHref={route('dashboard')}
                     />
+                ) : myTemplates.length === 0 ? (
+                    /* ── EMPTY STATE ── */
+                    <div className="flex flex-col items-center justify-center py-24 px-6 text-center border-2 border-dashed border-slate-200 dark:border-white/[0.08] rounded-2xl bg-slate-50/60 dark:bg-white/[0.02]">
+                        <div className="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center mb-4">
+                            <Upload className="w-6 h-6 text-slate-400" />
+                        </div>
+                        <h2 className="text-sm font-bold text-slate-800 dark:text-white">No designs yet</h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">
+                            Upload your event flyer or invitation artwork — we'll overlay the guest name, QR code and access badge on top.
+                        </p>
+                        <button
+                            type="button"
+                            onClick={() => setUploadModalOpen(true)}
+                            className="mt-5 inline-flex items-center gap-2 px-4 py-2.5 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                        >
+                            <Upload className="w-3.5 h-3.5" />
+                            Upload Your First Design
+                        </button>
+                    </div>
                 ) : (
                     <>
-                        {/* ═══════════════════════════════════════════════════════════ */}
-                        {/* 1. SIMPLE PAGE TITLE HEADER                                  */}
-                        {/* ═══════════════════════════════════════════════════════════ */}
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                            Card Templates &amp; Artwork Studio
-                        </h1>
-                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                            Customize and fine-tune dynamic guest pass layouts, typography, and QR code placement.
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono font-medium text-slate-700 dark:text-slate-300 bg-white/80 dark:bg-[#0B1524] px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs">
-                            {templates.length} Templates Configured
-                        </span>
-                    </div>
-                </div>
-
-                {/* ═══════════════════════════════════════════════════════════ */}
-                {/* 2. CARD TEMPLATE PRESET SELECTOR GALLERY                    */}
-                {/* ═══════════════════════════════════════════════════════════ */}
-                <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 shadow-xs space-y-5">
-                    {/* Header Bar */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-white/[0.06]">
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-2xs">
-                                <Layers className="w-4.5 h-4.5" />
-                            </div>
-                            <div>
-                                <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                                    Template Presets Gallery
-                                </h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                    Click any design below to customize and preview live in the studio
-                                </p>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2.5 self-start sm:self-auto">
-                            {canCustomize && (
-                                <button
-                                    type="button"
-                                    onClick={() => setUploadModalOpen(true)}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] text-white font-bold text-xs shadow-xs transition active:scale-95 cursor-pointer"
-                                >
-                                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                                    <span>Add Template</span>
-                                </button>
-                            )}
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-slate-300 font-mono text-xs font-semibold">
-                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span>{sortedTemplates.length} {sortedTemplates.length === 1 ? 'Design Available' : 'Designs Available'}</span>
-                            </span>
-                        </div>
-                    </div>
-
-                    {/* Template Cards Carousel (Newly added templates appear first at the left side) */}
-                    <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 sm:gap-5 pb-6 -mx-4 px-4 sm:mx-0 sm:px-0 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
-                        {sortedTemplates.map((tpl) => {
-                            const isSelected = currentTpl?.id === tpl.id;
-                            const imgUrl = (isSelected && currentTpl?.image_path)
-                                ? currentTpl.image_path
-                                : (tpl.image_path || tpl.elements_config?.bg_image || tpl.elements_config?.image_path || null);
-                            const isCustom = Boolean(imgUrl || tpl.template_type === 'custom_art');
-                            const isPersonal = !!tpl.user_id;
-                            const canDeleteThis = tpl.user_id === user?.id || user?.role === 'admin';
-
-                            return (
-                                <div
-                                    key={tpl.id}
-                                    onClick={() => handleSelectTemplate(tpl)}
-                                    className={`group relative p-3.5 rounded-2xl border transition-all duration-150 cursor-pointer flex flex-col justify-between text-left select-none shrink-0 snap-start w-[260px] sm:w-[300px] ${
-                                        isSelected 
-                                            ? 'border-2 border-[#16A34A] bg-emerald-50/30 dark:bg-emerald-950/20 shadow-xs' 
-                                            : 'border-slate-200/80 dark:border-white/[0.06] hover:border-slate-300 dark:hover:border-white/[0.12] bg-slate-50/70 dark:bg-white/[0.02] hover:bg-slate-100/70 dark:hover:bg-white/[0.05]'
-                                    }`}
-                                >
-                                    <div className="w-full">
-                                        {/* Thumbnail Container */}
-                                        <div className="w-full h-40 sm:h-44 rounded-xl overflow-hidden relative bg-slate-100 dark:bg-slate-900 border border-slate-200/80 dark:border-white/[0.06]">
-                                            {isCustom && imgUrl ? (
-                                                <img 
-                                                    src={imgUrl} 
-                                                    alt={tpl.name}
-                                                    className="w-full h-full object-cover"
-                                                    loading="lazy"
-                                                />
+                        {/* ── TEMPLATE THUMBNAIL RAIL ── */}
+                        <div className="flex overflow-x-auto gap-3 pb-1 -mx-1 px-1 [&::-webkit-scrollbar]:h-1 [&::-webkit-scrollbar-thumb]:bg-slate-300 dark:[&::-webkit-scrollbar-thumb]:bg-slate-700 [&::-webkit-scrollbar-thumb]:rounded-full">
+                            {myTemplates.map((tpl) => {
+                                const isSelected = currentTpl?.id === tpl.id;
+                                const imgUrl = tpl.image_path || tpl.elements_config?.bg_image || null;
+                                const canDeleteThis = tpl.user_id === user?.id || isAdmin;
+                                return (
+                                    <div
+                                        key={tpl.id}
+                                        onClick={() => handleSelectTemplate(tpl)}
+                                        className={`group relative shrink-0 w-24 rounded-xl overflow-hidden border-2 cursor-pointer transition-all duration-150 ${
+                                            isSelected
+                                                ? 'border-[#16A34A] shadow-md shadow-emerald-500/20'
+                                                : 'border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.2]'
+                                        }`}
+                                    >
+                                        <div className="w-full h-[72px] bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+                                            {imgUrl ? (
+                                                <img src={imgUrl} alt={tpl.name} className="w-full h-full object-cover" loading="lazy" />
                                             ) : (
-                                                <div 
-                                                    className="w-full h-full flex items-center justify-center p-3 text-center"
-                                                    style={{
-                                                        background: tpl.elements_config?.bg_color || '#1A365D',
-                                                        color: tpl.elements_config?.guest_name_color || '#F1F5F9',
-                                                    }}
-                                                >
-                                                    <div className="space-y-1">
-                                                        <Sparkles className="w-6 h-6 mx-auto opacity-70" />
-                                                        <div className="text-xs font-bold truncate max-w-[140px]">{tpl.name}</div>
-                                                        <div className="text-[10px] opacity-60">Gradient Canvas</div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* Status Badge */}
-                                            <div className="absolute top-2.5 left-2.5">
-                                                {isSelected ? (
-                                                    <span className="px-2.5 py-1 rounded-lg bg-[#16A34A] text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-xs">
-                                                        <Check className="w-3 h-3 stroke-[3]" /> Active in Studio
-                                                    </span>
-                                                ) : isPersonal ? (
-                                                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 dark:bg-slate-950/80 text-white text-[10px] font-bold tracking-wide border border-white/10 shadow-xs backdrop-blur-xs">
-                                                        Custom Design
-                                                    </span>
-                                                ) : (
-                                                    <span className="px-2.5 py-1 rounded-lg bg-slate-900/80 dark:bg-slate-950/80 text-white text-[10px] font-bold tracking-wide border border-white/10 shadow-xs backdrop-blur-xs">
-                                                        Official Preset
-                                                    </span>
-                                                )}
-                                            </div>
-
-                                            {/* Delete Button (Hover) */}
-                                            {canDeleteThis && (
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => openDeleteConfirmation(e, tpl)}
-                                                    className="absolute top-2.5 right-2.5 p-1.5 rounded-lg bg-black/60 hover:bg-rose-600 text-white backdrop-blur-xs border border-white/10 shadow-xs transition active:scale-90 opacity-0 group-hover:opacity-100 cursor-pointer"
-                                                    title="Delete this template"
-                                                >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </button>
+                                                <Palette className="w-5 h-5 text-slate-400" />
                                             )}
                                         </div>
-
-                                        {/* Card Info */}
-                                        <div className="mt-3 px-0.5 flex items-center justify-between gap-2">
-                                            <div className="min-w-0 flex-1">
-                                                <h4 className="font-bold text-sm text-slate-900 dark:text-white truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" title={tpl.name}>
-                                                    {tpl.name}
-                                                </h4>
-                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate flex items-center gap-1.5">
-                                                    {isCustom ? (
-                                                        <><ImageIcon className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" /><span>Custom Artwork Flyer</span></>
-                                                    ) : (
-                                                        <><Palette className="w-3 h-3 text-emerald-600 dark:text-emerald-400 flex-shrink-0" /><span>Dynamic Gradient Canvas</span></>
-                                                    )}
-                                                </p>
-                                            </div>
+                                        <div className={`px-2 py-1.5 text-[10px] font-bold truncate border-t ${
+                                            isSelected
+                                                ? 'bg-[#16A34A] text-white border-[#16A34A]'
+                                                : 'bg-white dark:bg-[#0B1524] text-slate-600 dark:text-slate-300 border-slate-200 dark:border-white/[0.06]'
+                                        }`}>
+                                            {isSelected && <Check className="w-2.5 h-2.5 inline mr-1 stroke-[3]" />}
+                                            {tpl.name}
                                         </div>
-
-                                        {/* Bottom Action Button */}
-                                        {isSelected ? (
-                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-[#16A34A] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs">
-                                                <span>Active &amp; Editing</span>
-                                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                            </div>
-                                        ) : (
-                                            <div className="mt-3 w-full py-2 px-3 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-slate-50 dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-1.5 transition border border-slate-200 dark:border-white/[0.08]">
-                                                <span>Customize Design</span>
-                                                <ArrowRight className="w-3.5 h-3.5 opacity-70" />
-                                            </div>
+                                        {canDeleteThis && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => openDeleteConfirmation(e, tpl)}
+                                                className="absolute top-1.5 right-1.5 p-1 rounded-md bg-black/60 hover:bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                            >
+                                                <Trash2 className="w-3 h-3" />
+                                            </button>
                                         )}
                                     </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                {/* ═══════════════════════════════════════════════════════════ */}
-                {/* 3. PRIMARY TEMPLATE IDENTITY & 4K STUDIO WORKSPACE           */}
-                {/* ═══════════════════════════════════════════════════════════ */}
-                <form onSubmit={handleSaveTemplate} className="space-y-6">
-                    
-                    {/* Standalone Primary Template Identity Card */}
-                    <div className="bg-white dark:bg-[#0B1524] p-5 sm:p-6 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs space-y-4">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/60 dark:border-white/[0.08]">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-2xs">
-                                    <Sparkles className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                        <span>Primary Template Identity</span>
-                                    </h3>
-                                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                                        Configure preset title and top headline banner overlay
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/15 px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                                    Global Preset Attributes
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-start">
-                            {/* 1. Template Name */}
-                            <div className="space-y-1.5 flex flex-col justify-start">
-                                <div className="h-6 flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                        Template Name <span className="text-rose-500">*</span>
-                                    </label>
-                                    <span className="text-[10px] font-mono font-medium text-slate-400 dark:text-slate-500 px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.04] border border-slate-200/60 dark:border-white/[0.06]">
-                                        Preset Title
-                                    </span>
-                                </div>
-                                <TextInput
-                                    className="block w-full h-10 text-xs font-bold bg-white dark:bg-[#07111D] border-slate-200 dark:border-white/[0.1] focus:border-emerald-500 focus:ring-emerald-500/20 shadow-2xs rounded-xl"
-                                    value={form.data.name}
-                                    onChange={(e) => form.setData('name', e.target.value)}
-                                    required
-                                    placeholder="e.g. Royal Emerald 4K Pass"
-                                />
-                            </div>
-
-                            {/* 2. Headline Banner Text */}
-                            <div className="space-y-1.5 flex flex-col justify-start">
-                                <div className="h-6 flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                        Headline Banner Text
-                                    </label>
-                                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.06] transition hover:bg-slate-200 dark:hover:bg-white/[0.1]">
-                                        <input
-                                            type="checkbox"
-                                            checked={form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false}
-                                            onChange={(e) => {
-                                                const isChecked = e.target.checked;
-                                                form.setData("show_headline", isChecked);
-                                                form.setData("show_category_badge", isChecked);
-                                                updateDirectConfig("show_headline", isChecked);
-                                                updateDirectConfig("show_category_badge", isChecked);
-                                            }}
-                                            className="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 cursor-pointer"
-                                        />
-                                        <span className={(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "text-emerald-600 dark:text-emerald-400 font-black" : "text-slate-400 font-medium"}>
-                                            {(form.data.show_category_badge !== false && form.data.show_headline !== false && form.data.elements_config?.show_headline !== false && form.data.elements_config?.show_category_badge !== false) ? "Visible" : "Hidden"}
-                                        </span>
-                                    </label>
-                                </div>
-                                <TextInput
-                                    className={`block w-full h-10 text-xs font-bold bg-white dark:bg-[#07111D] border-slate-200 dark:border-white/[0.1] focus:border-emerald-500 focus:ring-emerald-500/20 shadow-2xs rounded-xl transition-all ${
-                                        (form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false)
-                                            ? "opacity-40 bg-slate-100 dark:bg-white/[0.04]"
-                                            : ""
-                                    }`}
-                                    value={form.data.elements_config?.headline_text ?? form.data.headline ?? ""}
-                                    disabled={form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false}
-                                    onChange={(e) => {
-                                        form.setData("headline", e.target.value);
-                                        updateDirectConfig("headline_text", e.target.value);
-                                    }}
-                                    placeholder="e.g. WEDDING INVITATION"
-                                />
-                            </div>
-                        </div>
-
-                        {/* 3. Headline Vertical Position (Y%) Slider */}
-                        <div className="pt-3 border-t border-slate-200/70 dark:border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70 dark:bg-white/[0.02] -mx-5 -mb-5 sm:-mx-6 sm:-mb-6 p-4 sm:p-5 rounded-b-3xl">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-7 h-7 rounded-lg bg-white dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] flex items-center justify-center text-slate-600 dark:text-slate-300 shadow-2xs">
-                                    <Move className="w-3.5 h-3.5" />
-                                </div>
-                                <div>
-                                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
-                                        Headline Vertical Position (Y%)
-                                    </span>
-                                    <span className="text-[10.5px] text-slate-500 dark:text-slate-400 block font-medium">
-                                        Fine-tune distance from pass top
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-3 w-full sm:w-72">
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="90"
-                                    step="0.5"
-                                    disabled={form.data.show_category_badge === false || form.data.show_headline === false || form.data.elements_config?.show_headline === false || form.data.elements_config?.show_category_badge === false}
-                                    value={parseFloat(form.data.elements_config?.headline_y ?? form.data.elements_config?.category_badge?.y ?? 5.5)}
-                                    onChange={(e) => {
-                                        const val = parseFloat(e.target.value);
-                                        updateDirectConfig("headline_y", val);
-                                        updateNestedConfig("category_badge", "y", val);
-                                    }}
-                                    className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600 disabled:opacity-40"
-                                />
-                                <span className="text-xs font-mono font-black text-emerald-700 dark:text-emerald-300 bg-white dark:bg-[#07111D] px-2.5 py-1 rounded-lg border border-slate-200/80 dark:border-white/[0.08] shadow-2xs min-w-[54px] text-center shrink-0">
-                                    {parseFloat(form.data.elements_config?.headline_y ?? form.data.elements_config?.category_badge?.y ?? 5.5)}%
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Split Workspace Grid */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                        
-                        {/* Left: Studio Element & Coordinate Inspector (7 cols) */}
-                        <div className="lg:col-span-7 bg-white/75 dark:bg-[#0B1524]/85 backdrop-blur-3xl backdrop-saturate-180 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_10px_35px_rgba(0,0,0,0.04)] dark:shadow-card overflow-hidden flex flex-col lg:max-h-[calc(100vh-6rem)] lg:sticky lg:top-6">
-                            
-                            {/* Inspector Header & Segmented Tabs (Fixed at Top of Card) */}
-                            <div className="p-5 sm:p-6 border-b border-slate-200/60 dark:border-white/[0.08] bg-white/50 dark:bg-white/[0.03] backdrop-blur-xl flex-shrink-0">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-white/[0.06] border border-slate-200/60 dark:border-white/[0.08] text-slate-700 dark:text-slate-200 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                                            <SlidersHorizontal className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <h3 className="text-base font-black text-slate-900 dark:text-white font-display truncate">
-                                                Element Placement &amp; Content Inspector
-                                            </h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium truncate flex items-center gap-1.5">
-                                                <span>Editing Template:</span>
-                                                <span className="font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-white/[0.08] px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-white/[0.08] truncate max-w-[260px] inline-block">
-                                                    {currentTpl?.name}
-                                                </span>
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 flex-shrink-0 self-start sm:self-auto">
-                                        <span className="inline-flex items-center gap-1.5 text-[10.5px] font-mono font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/50 shadow-xs">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                            <span>Live Vector Sync</span>
-                                        </span>
-                                    </div>
-                                </div>
-
-                            {/* Sub-Tabs Bar (Clean Responsive Segmented Tab Grid - Perfectly Aligned) */}
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-2 rounded-2xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08]">
-                                {/* 1: Layers & Elements (Overview Tab - Spans both rows in Col 1 on sm+) */}
-                                <button
-                                    type="button"
-                                    onClick={() => setInspectorTab("layers")}
-                                    className={`col-span-2 sm:col-span-1 sm:row-span-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex flex-row sm:flex-col items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
-                                        inspectorTab === "layers"
-                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
-                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
-                                    }`}
-                                    title="Layers & Elements"
-                                >
-                                    <Layers className={`w-4 h-4 flex-shrink-0 ${inspectorTab === "layers" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>Layers &amp; Elements</span>
-                                </button>
-
-                                {/* 2: Content & Text (Col 2, Row 1) */}
-                                <button
-                                    type="button"
-                                    onClick={() => setInspectorTab("content")}
-                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
-                                        inspectorTab === "content"
-                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
-                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
-                                    }`}
-                                    title="Content & Text"
-                                >
-                                    <Type className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "content" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>Content &amp; Text</span>
-                                </button>
-
-                                {/* 3: Artwork Asset / Palette & Style (Col 3, Row 1) */}
-                                <button
-                                    type="button"
-                                    onClick={() => setInspectorTab(isCustomArt ? "artwork" : "palette")}
-                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
-                                        (inspectorTab === "artwork" || inspectorTab === "palette")
-                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
-                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
-                                    }`}
-                                    title={isCustomArt ? "Artwork Asset" : "Background & Palette"}
-                                >
-                                    {isCustomArt ? (
-                                        <ImageIcon className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "artwork" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    ) : (
-                                        <Palette className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "palette" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    )}
-                                    <span>{isCustomArt ? "Artwork Asset" : "Palette & Style"}</span>
-                                </button>
-
-                                {/* 4: Guest Plaque (Col 4, Row 1) */}
-                                <button
-                                    type="button"
-                                    onClick={() => setInspectorTab("plaque")}
-                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
-                                        inspectorTab === "plaque"
-                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
-                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
-                                    }`}
-                                    title="Guest Plaque"
-                                >
-                                    <Move className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "plaque" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>Guest Plaque</span>
-                                </button>
-
-                                {/* 5: QR Code (Col 2, Row 2 - EXACTLY BELOW Content & Text) */}
-                                <button
-                                    type="button"
-                                    onClick={() => setInspectorTab("qr")}
-                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
-                                        inspectorTab === "qr"
-                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
-                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
-                                    }`}
-                                    title="QR Code"
-                                >
-                                    <QrCode className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "qr" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>QR Code</span>
-                                </button>
-
-                                {/* 6: Security Code (Col 3, Row 2 - EXACTLY BELOW Artwork Asset) */}
-                                <button
-                                    type="button"
-                                    onClick={() => setInspectorTab("security")}
-                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
-                                        inspectorTab === "security"
-                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
-                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
-                                    }`}
-                                    title="Security Code"
-                                >
-                                    <Clock className={`w-3.5 h-3.5 flex-shrink-0 ${inspectorTab === "security" ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>Security Code</span>
-                                </button>
-
-                                {/* 7: Allowance Badge / Verified Badge (Col 4, Row 2 - EXACTLY BELOW Guest Plaque) */}
-                                <button
-                                    type="button"
-                                    onClick={() => setInspectorTab(isCustomArt ? "category" : "badge")}
-                                    className={`col-span-1 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-95 text-center whitespace-nowrap ${
-                                        (inspectorTab === "badge" || inspectorTab === "category")
-                                            ? "bg-[#16A34A] text-white shadow-xs font-extrabold"
-                                            : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-white/70 dark:bg-white/[0.03] hover:bg-white dark:hover:bg-white/[0.08] border border-slate-200/60 dark:border-white/[0.05]"
-                                    }`}
-                                    title={isCustomArt ? "Allowance Badge" : "Verified Badge"}
-                                >
-                                    <ShieldCheck className={`w-3.5 h-3.5 flex-shrink-0 ${(inspectorTab === "badge" || inspectorTab === "category") ? "text-white" : "text-slate-500 dark:text-slate-400"}`} />
-                                    <span>{isCustomArt ? "Allowance Badge" : "Verified Badge"}</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Inspector Body (Flex Layout with Internal Scroll) */}
-                        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                            {/* Scrollable Form Body Container */}
-                            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
-                            
-                            {/* ── Active Category Context Header Banner ── */}
-                            <div className="p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-50 to-slate-100/60 dark:from-white/[0.04] dark:to-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between gap-4 shadow-2xs">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs flex-shrink-0">
-                                        {inspectorTab === 'layers' && <Layers className="w-4 h-4" />}
-                                        {inspectorTab === 'content' && <Type className="w-4 h-4" />}
-                                        {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? <ImageIcon className="w-4 h-4" /> : <Palette className="w-4 h-4" />)}
-                                        {inspectorTab === 'plaque' && <Move className="w-4 h-4" />}
-                                        {(inspectorTab === 'category' || inspectorTab === 'badge') && <ShieldCheck className="w-4 h-4" />}
-                                        {inspectorTab === 'qr' && <QrCode className="w-4 h-4" />}
-                                        {inspectorTab === 'security' && <Clock className="w-4 h-4" />}
-                                    </div>
-                                    <div>
-                                        <div className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                                            {inspectorTab === 'layers' && 'Layers & Elements'}
-                                            {inspectorTab === 'content' && 'Content & Text'}
-                                            {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? 'Artwork Asset' : 'Palette & Style')}
-                                            {inspectorTab === 'plaque' && 'Guest Plaque'}
-                                            {(inspectorTab === 'category' || inspectorTab === 'badge') && (isCustomArt ? 'Allowance Badge' : 'Verified Badge')}
-                                            {inspectorTab === 'qr' && 'QR Code Token'}
-                                            {inspectorTab === 'security' && 'Security Code'}
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                                            {inspectorTab === 'layers' && 'Toggle element layers, titles, badges, and QR codes.'}
-                                            {inspectorTab === 'content' && (isCustomArt ? 'Edit host names, date, quote, and venue text.' : 'Edit headlines, titles, date, and venue details.')}
-                                            {(inspectorTab === 'artwork' || inspectorTab === 'palette') && (isCustomArt ? 'Flyer artwork, aspect ratio, and image fit.' : 'Gradient tones, colors, and background theme.')}
-                                            {inspectorTab === 'plaque' && 'Position, size, and style guest name.'}
-                                            {(inspectorTab === 'category' || inspectorTab === 'badge') && (isCustomArt ? 'Position, size, and style allowance badge.' : 'Position and style verified badge.')}
-                                            {inspectorTab === 'qr' && 'Position, size, and color for QR pass.'}
-                                            {inspectorTab === 'security' && 'Position, size, and color for 8-digit code.'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] text-[10px] font-mono font-semibold text-slate-700 dark:text-slate-300 shadow-2xs flex-shrink-0">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span>Live Sync</span>
-                                </div>
-                            </div>
-
-                            {/* TAB: FIELD LAYERS & VISIBILITY SELECTOR */}
-                            {inspectorTab === 'layers' && (
-                                <div className="space-y-5 animate-fadeIn">
-                                    <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/70 dark:border-white/[0.08]">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-lg bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border border-emerald-500/20 shadow-2xs">
-                                                <Layers className="w-3.5 h-3.5" />
-                                            </div>
-                                            <span className="text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-100">
-                                                Layer Visibility
-                                            </span>
-                                        </div>
-                                        <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-md border border-slate-200/60 dark:border-white/[0.06]">
-                                            Live Sync
-                                        </span>
-                                    </div>
-
-                                    <div className="p-4 sm:p-4.5 bg-gradient-to-br from-slate-50 to-slate-100/70 dark:from-white/[0.04] dark:to-white/[0.01] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3 shadow-xs">
-                                        <div className="flex items-center justify-between">
-                                            <div className="text-xs font-bold text-slate-900 dark:text-white">
-                                                Quick Layouts
-                                            </div>
-                                            <span className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium">
-                                                One-click layer setups
-                                            </span>
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                                            {/* Minimal Pass */}
-                                            <button
-                                                type="button"
-                                                onClick={() => applyLayerPreset('minimal')}
-                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-emerald-500/60 dark:hover:border-emerald-500/50 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
-                                            >
-                                                <div className="flex items-center justify-between gap-1">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
-                                                        Minimal Pass
-                                                    </span>
-                                                    <span className="text-[9px] font-mono font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 px-1.5 py-0.5 rounded-full shrink-0">
-                                                        Popular
-                                                    </span>
-                                                </div>
-                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-                                                    Name, QR &amp; security code only.
-                                                </span>
-                                            </button>
-
-                                            {/* Full Suite */}
-                                            <button
-                                                type="button"
-                                                onClick={() => applyLayerPreset('full')}
-                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-emerald-500/60 dark:hover:border-emerald-500/50 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
-                                                        Full Suite
-                                                    </span>
-                                                </div>
-                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-                                                    All details, schedule &amp; guest plaque.
-                                                </span>
-                                            </button>
-
-                                            {/* QR Pass Only */}
-                                            <button
-                                                type="button"
-                                                onClick={() => applyLayerPreset('pass_only')}
-                                                className="p-3 rounded-xl border border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] hover:border-emerald-500/60 dark:hover:border-emerald-500/50 hover:shadow-xs text-left transition-all active:scale-[0.98] cursor-pointer flex flex-col justify-between group"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate">
-                                                        QR Pass Only
-                                                    </span>
-                                                </div>
-                                                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-                                                    Scannable QR &amp; gate code only.
-                                                </span>
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* 2. Individual Layer Toggle Switches */}
-                                    <div className="space-y-3">
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                            Select Which Elements Appear on the Pass
-                                        </div>
-
-                                        <div className="space-y-2.5">
-                                            {/* A. Guest Name (Standalone) */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                currentConfig.show_guest_name !== false
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        currentConfig.show_guest_name !== false
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                     }`}>
-                                                        <Move className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Guest Attendee Name</span>
-                                                            {currentConfig.show_guest_name !== false ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            Fetched name only for the guest attendee (e.g. <em>Alfred Mashauri</em>).
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={currentConfig.show_guest_name !== false}
-                                                        onChange={(e) => updateDirectConfig('show_guest_name', e.target.checked)}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-
-                                            {/* A2. Invitation Category / Allowance Badge */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                currentConfig.show_allowance_badge !== false
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        currentConfig.show_allowance_badge !== false
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
-                                                        <ShieldCheck className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Invitation Category / Allowance Badge</span>
-                                                            {currentConfig.show_allowance_badge !== false ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            Independent access category pill (e.g. <em>DOUBLE ENTRY</em> or <em>SINGLE ENTRY</em>).
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={currentConfig.show_allowance_badge !== false}
-                                                        onChange={(e) => updateDirectConfig('show_allowance_badge', e.target.checked)}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-
-                                            {/* B. QR Code Pass */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                (form.data.show_qr && currentConfig.show_qr !== false)
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        (form.data.show_qr && currentConfig.show_qr !== false)
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
-                                                        <QrCode className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Cryptographic QR Scanner Token</span>
-                                                            {(form.data.show_qr && currentConfig.show_qr !== false) ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            High-contrast vector QR code scanned by the gate security usher.
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={Boolean(form.data.show_qr && currentConfig.show_qr !== false)}
-                                                        onChange={(e) => {
-                                                            form.setData('show_qr', e.target.checked);
-                                                            updateDirectConfig('show_qr', e.target.checked);
-                                                        }}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-
-                                            {/* C. Security Verification Code */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                (form.data.show_unique_code && currentConfig.show_unique_code !== false)
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        (form.data.show_unique_code && currentConfig.show_unique_code !== false)
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
-                                                        <Clock className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Gate Security Verification Code</span>
-                                                            {(form.data.show_unique_code && currentConfig.show_unique_code !== false) ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            8-digit numeric passcode for manual gate staff override lookup.
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={Boolean(form.data.show_unique_code && currentConfig.show_unique_code !== false)}
-                                                        onChange={(e) => {
-                                                            form.setData('show_unique_code', e.target.checked);
-                                                            updateDirectConfig('show_unique_code', e.target.checked);
-                                                        }}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-
-                                            {/* D. Couple / Host Names */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                currentConfig.show_couple_names !== false
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        currentConfig.show_couple_names !== false
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
-                                                        <Type className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Couple / Event Host Names</span>
-                                                            {currentConfig.show_couple_names !== false ? (
-                                                                 <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            Large centerpiece event title (e.g. <em>Zamroth &amp; Husna</em>). Turn off if already drawn in your flyer.
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={currentConfig.show_couple_names !== false}
-                                                        onChange={(e) => updateDirectConfig('show_couple_names', e.target.checked)}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-
-                                            {/* E. Date & Schedule Details */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                currentConfig.show_date !== false
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        currentConfig.show_date !== false
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
-                                                        <Calendar className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Date, Day &amp; Schedule Details</span>
-                                                            {currentConfig.show_date !== false ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            Month, day, time, and year schedule blocks.
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={currentConfig.show_date !== false}
-                                                        onChange={(e) => updateDirectConfig('show_date', e.target.checked)}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-
-                                            {/* F. Headline Badge Pill */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        (form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false)
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
-                                                        <ShieldCheck className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Headline / Top Tag Pill</span>
-                                                            {(form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false) ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            Header tag badge (e.g. <em>WEDDING INVITATION</em> or <em>EXCLUSIVE PASS</em>).
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={form.data.show_category_badge !== false && form.data.show_headline !== false && currentConfig.show_headline !== false && currentConfig.show_category_badge !== false}
-                                                        onChange={(e) => {
-                                                            form.setData('show_category_badge', e.target.checked);
-                                                            form.setData('show_headline', e.target.checked);
-                                                            updateDirectConfig('show_headline', e.target.checked);
-                                                            updateDirectConfig('show_category_badge', e.target.checked);
-                                                        }}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-
-                                            {/* F2. Verified Pass Badge Header (For Signature Passes) */}
-                                            {!isCustomArt && (
-                                                <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                    (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
-                                                        ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                        : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                                }`}>
-                                                    <div className="flex items-center gap-3 min-w-0">
-                                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                            (form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false)
-                                                                ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                                : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                        }`}>
-                                                            <ShieldCheck className="w-4 h-4" />
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                                <span className="truncate">Verified Pass Badge</span>
-                                                                {(form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false) ? (
-                                                                    <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                        <span>VISIBLE</span>
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                        <span>HIDDEN</span>
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                                Top header security pill (<em>VERIFIED PASS</em> with shield icon).
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false}
-                                                            onChange={(e) => {
-                                                                form.setData('show_category_badge', e.target.checked);
-                                                                updateDirectConfig('show_verified_badge', e.target.checked);
-                                                                updateDirectConfig('show_category_badge', e.target.checked);
-                                                            }}
-                                                            className="sr-only peer"
-                                                        />
-                                                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                    </label>
-                                                </div>
-                                            )}
-
-                                            {/* G. Invitation Quote */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                currentConfig.show_quote !== false
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        currentConfig.show_quote !== false
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
-                                                        <Sparkles className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Invitation Quote / Tagline</span>
-                                                            {currentConfig.show_quote !== false ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            Romantic quote or custom invitation statement paragraph.
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={currentConfig.show_quote !== false}
-                                                        onChange={(e) => updateDirectConfig('show_quote', e.target.checked)}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-
-                                            {/* H. Venue & Location */}
-                                            <div className={`p-3.5 rounded-2xl border transition duration-200 flex items-center justify-between gap-3.5 ${
-                                                currentConfig.show_venue !== false
-                                                    ? 'bg-white dark:bg-white/[0.04] border-slate-300 dark:border-white/[0.12] shadow-2xs'
-                                                    : 'bg-slate-50/60 dark:bg-white/[0.02] border-slate-200 dark:border-white/[0.06] opacity-60'
-                                            }`}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                                                        currentConfig.show_venue !== false
-                                                            ? 'bg-[#16A34A] text-white shadow-2xs'
-                                                            : 'bg-slate-100 dark:bg-white/[0.06] text-slate-400 dark:text-slate-500'
-                                                    }`}>
-                                                        <MapPin className="w-4 h-4" />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                                            <span className="truncate">Venue Location Details</span>
-                                                            {currentConfig.show_venue !== false ? (
-                                                                <span className="inline-flex items-center gap-1 text-[9.5px] font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-white/[0.08] flex-shrink-0">
-                                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <span>VISIBLE</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span className="inline-flex items-center text-[9.5px] font-mono font-bold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-white/[0.04] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.04] flex-shrink-0">
-                                                                    <span>HIDDEN</span>
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
-                                                            Hall/Hotel venue name, city, and date sub-captions.
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={currentConfig.show_venue !== false}
-                                                        onChange={(e) => updateDirectConfig('show_venue', e.target.checked)}
-                                                        className="sr-only peer"
-                                                    />
-                                                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAB: CONTENT & TEXT (ALL TEMPLATES) */}
-                            {inspectorTab === 'content' && (
-                                <div className="space-y-6 animate-fadeIn">
-                                    <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-white/[0.08]">
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <Type className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                            <span>{isCustomArt ? 'Artwork Typography & Pass Copy' : 'Signature Pass Elements & Typography'}</span>
-                                        </div>
-                                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                                            Live Canvas Sync
-                                        </span>
-                                    </div>
-
-                                    {/* ─── A. CUSTOM ARTWORK ADJUSTABLE ELEMENTS ─── */}
-                                    {isCustomArt ? (
-                                        <div className="space-y-5">
-                                            {/* 1. Couple / Host Names Section */}
-                                            {currentConfig.show_couple_names !== false && (
-                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Couple / Event Host Names
-                                                    </div>
-                                                    <TextInput
-                                                        className="block w-full text-xs font-serif font-bold"
-                                                        value={currentConfig.couple_names || ''}
-                                                        onChange={(e) => updateDirectConfig('couple_names', e.target.value)}
-                                                        placeholder="e.g. Zamroth & Husna"
-                                                    />
-                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pt-1">
-                                                        <div>
-                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                                <span>Font Size</span>
-                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.couple_names_size || 40}px</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="18"
-                                                                max="65"
-                                                                step="1"
-                                                                value={currentConfig.couple_names_size || 40}
-                                                                onChange={(e) => updateDirectConfig('couple_names_size', parseFloat(e.target.value))}
-                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                                <span>Vertical Position (Y%)</span>
-                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.couple_names_y || 13.5}%</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="5"
-                                                                max="40"
-                                                                step="0.5"
-                                                                value={currentConfig.couple_names_y || 13.5}
-                                                                onChange={(e) => updateDirectConfig('couple_names_y', parseFloat(e.target.value))}
-                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Text Color" />
-                                                            <div className="flex items-center gap-2 mt-0.5">
-                                                                <input
-                                                                    type="color"
-                                                                    value={currentConfig.couple_names_color || '#FFFFFF'}
-                                                                    onChange={(e) => updateDirectConfig('couple_names_color', e.target.value)}
-                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                                />
-                                                                <TextInput
-                                                                    className="block w-full text-[11px] font-mono uppercase"
-                                                                    value={currentConfig.couple_names_color || '#FFFFFF'}
-                                                                    onChange={(e) => updateDirectConfig('couple_names_color', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* 2. Subtitle / Invitation Prefix */}
-                                            {currentConfig.show_headline !== false && (
-                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Subtitle / Invitation Prefix
-                                                    </div>
-                                                    <TextInput
-                                                        className="block w-full text-xs font-medium"
-                                                        value={currentConfig.subtitle_text || ''}
-                                                        onChange={(e) => updateDirectConfig('subtitle_text', e.target.value)}
-                                                        placeholder="e.g. We invite your pleasure to come to our Engagement Party of"
-                                                    />
-                                                    <div className="grid grid-cols-2 gap-3 pt-1">
-                                                        <div>
-                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                                <span>Font Size</span>
-                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.subtitle_size || 9.5}px</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="7"
-                                                                max="18"
-                                                                step="0.5"
-                                                                value={currentConfig.subtitle_size || 9.5}
-                                                                onChange={(e) => updateDirectConfig('subtitle_size', parseFloat(e.target.value))}
-                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Subtitle Color" />
-                                                            <div className="flex items-center gap-2 mt-0.5">
-                                                                <input
-                                                                    type="color"
-                                                                    value={currentConfig.subtitle_color || '#FFFFFF'}
-                                                                    onChange={(e) => updateDirectConfig('subtitle_color', e.target.value)}
-                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                                />
-                                                                <TextInput
-                                                                    className="block w-full text-[11px] font-mono uppercase"
-                                                                    value={currentConfig.subtitle_color || '#FFFFFF'}
-                                                                    onChange={(e) => updateDirectConfig('subtitle_color', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* 3. Date & Schedule Lockup */}
-                                            {currentConfig.show_date !== false && (
-                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Date &amp; Schedule Lockup
-                                                    </div>
-                                                    <div className="grid grid-cols-3 gap-2">
-                                                        <div>
-                                                            <InputLabel value="Month" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-mono font-bold uppercase"
-                                                                value={currentConfig.date_month || ''}
-                                                                onChange={(e) => updateDirectConfig('date_month', e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Day Name" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-mono font-bold uppercase"
-                                                                value={currentConfig.date_day_name || ''}
-                                                                onChange={(e) => updateDirectConfig('date_day_name', e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Day Number" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-mono font-bold text-center"
-                                                                value={currentConfig.date_day_num || ''}
-                                                                onChange={(e) => updateDirectConfig('date_day_num', e.target.value)}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <div>
-                                                            <InputLabel value="Time" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-mono font-bold"
-                                                                value={currentConfig.date_time || ''}
-                                                                onChange={(e) => updateDirectConfig('date_time', e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Year" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-mono font-bold"
-                                                                value={currentConfig.date_year || ''}
-                                                                onChange={(e) => updateDirectConfig('date_year', e.target.value)}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 border-t border-slate-200/80 dark:border-white/[0.08]">
-                                                        <div>
-                                                            <div className="flex justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                                <span>Date Size</span>
-                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.date_size || 10.5}px</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="8"
-                                                                max="22"
-                                                                step="0.5"
-                                                                value={currentConfig.date_size || 10.5}
-                                                                onChange={(e) => updateDirectConfig('date_size', parseFloat(e.target.value))}
-                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex justify-between text-[10px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                                <span>Position Y%</span>
-                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.date_y || 51.5}%</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="25"
-                                                                max="75"
-                                                                step="0.5"
-                                                                value={currentConfig.date_y || 51.5}
-                                                                onChange={(e) => updateDirectConfig('date_y', parseFloat(e.target.value))}
-                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Date Color" />
-                                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                                                <input
-                                                                    type="color"
-                                                                    value={currentConfig.date_color || '#FFFFFF'}
-                                                                    onChange={(e) => updateDirectConfig('date_color', e.target.value)}
-                                                                    className="w-7 h-7 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                                />
-                                                                <TextInput
-                                                                    className="block w-full text-[10.5px] font-mono uppercase"
-                                                                    value={currentConfig.date_color || '#FFFFFF'}
-                                                                    onChange={(e) => updateDirectConfig('date_color', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Day # Accent" />
-                                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                                                <input
-                                                                    type="color"
-                                                                    value={currentConfig.date_num_color || '#FDE68A'}
-                                                                    onChange={(e) => updateDirectConfig('date_num_color', e.target.value)}
-                                                                    className="w-7 h-7 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                                />
-                                                                <TextInput
-                                                                    className="block w-full text-[10.5px] font-mono uppercase"
-                                                                    value={currentConfig.date_num_color || '#FDE68A'}
-                                                                    onChange={(e) => updateDirectConfig('date_num_color', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* 4. Invitation Quote / Tagline */}
-                                            {currentConfig.show_quote !== false && (
-                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Invitation Quote / Tagline
-                                                    </div>
-                                                    <textarea
-                                                        rows={2}
-                                                        className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs focus:border-emerald-500 focus:ring-emerald-500 p-2.5 uppercase font-medium"
-                                                        value={currentConfig.invitation_quote || ''}
-                                                        onChange={(e) => updateDirectConfig('invitation_quote', e.target.value)}
-                                                    />
-                                                    <div className="grid grid-cols-2 gap-3 pt-1">
-                                                        <div>
-                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                                <span>Quote Font Size</span>
-                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.quote_size || 8.5}px</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="6"
-                                                                max="16"
-                                                                step="0.5"
-                                                                value={currentConfig.quote_size || 8.5}
-                                                                onChange={(e) => updateDirectConfig('quote_size', parseFloat(e.target.value))}
-                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Quote Color" />
-                                                            <div className="flex items-center gap-2 mt-0.5">
-                                                                <input
-                                                                    type="color"
-                                                                    value={currentConfig.quote_color || '#FFFFFF'}
-                                                                    onChange={(e) => updateDirectConfig('quote_color', e.target.value)}
-                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                                />
-                                                                <TextInput
-                                                                    className="block w-full text-[11px] font-mono uppercase"
-                                                                    value={currentConfig.quote_color || '#FFFFFF'}
-                                                                    onChange={(e) => updateDirectConfig('quote_color', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* 5. Venue Details */}
-                                            {currentConfig.show_venue !== false && (
-                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Venue &amp; Location Details
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <div>
-                                                            <InputLabel value="Venue Name" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-bold uppercase"
-                                                                value={currentConfig.venue_name || ''}
-                                                                onChange={(e) => updateDirectConfig('venue_name', e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Location Subtitle" />
-                                                            <TextInput
-                                                                className="block w-full text-xs"
-                                                                value={currentConfig.venue_sub || ''}
-                                                                onChange={(e) => updateDirectConfig('venue_sub', e.target.value)}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <div>
-                                                            <InputLabel value="Venue Date" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-mono"
-                                                                value={currentConfig.venue_date || ''}
-                                                                onChange={(e) => updateDirectConfig('venue_date', e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Save The Date Label" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-bold uppercase"
-                                                                value={currentConfig.save_the_date || ''}
-                                                                onChange={(e) => updateDirectConfig('save_the_date', e.target.value)}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        /* ─── B. SIGNATURE PASS ADJUSTABLE ELEMENTS ─── */
-                                        <div className="space-y-5">
-                                            {/* 1. Headline Banner Typography */}
-                                            {currentConfig.show_headline !== false && (
-                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Headline Banner
-                                                    </div>
-                                                    <TextInput
-                                                        className="block w-full text-xs font-bold uppercase"
-                                                        value={currentConfig.headline_text || form.data.headline || ''}
-                                                        onChange={(e) => {
-                                                            form.setData('headline', e.target.value);
-                                                            updateDirectConfig('headline_text', e.target.value);
-                                                        }}
-                                                        placeholder="e.g. EXCLUSIVE INVITATION PASS"
-                                                    />
-                                                    <div className="grid grid-cols-3 gap-3 pt-1">
-                                                        <div>
-                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                                <span>Font Size</span>
-                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.headline_size || 11.5}px</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="8"
-                                                                max="22"
-                                                                step="0.5"
-                                                                value={currentConfig.headline_size || 11.5}
-                                                                onChange={(e) => updateDirectConfig('headline_size', parseFloat(e.target.value))}
-                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Letter Spacing" />
-                                                            <TextInput
-                                                                className="block w-full text-xs font-mono mt-0.5"
-                                                                value={currentConfig.headline_spacing || '0.22em'}
-                                                                onChange={(e) => updateDirectConfig('headline_spacing', e.target.value)}
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Headline Color" />
-                                                            <div className="flex items-center gap-2 mt-0.5">
-                                                                <input
-                                                                    type="color"
-                                                                    value={currentConfig.headline_color || form.data.brand_color_to || '#0070BA'}
-                                                                    onChange={(e) => updateDirectConfig('headline_color', e.target.value)}
-                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                                />
-                                                                <TextInput
-                                                                    className="block w-full text-[11px] font-mono uppercase"
-                                                                    value={currentConfig.headline_color || form.data.brand_color_to || '#0070BA'}
-                                                                    onChange={(e) => updateDirectConfig('headline_color', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* 2. Event Title Typography */}
-                                            {currentConfig.show_couple_names !== false && (
-                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Event Title Typography
-                                                    </div>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                                        <div>
-                                                            <div className="flex justify-between text-[10.5px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                                <span>Font Size</span>
-                                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{currentConfig.event_title_size || 21}px</span>
-                                                            </div>
-                                                            <input
-                                                                type="range"
-                                                                min="14"
-                                                                max="36"
-                                                                step="1"
-                                                                value={currentConfig.event_title_size || 21}
-                                                                onChange={(e) => updateDirectConfig('event_title_size', parseFloat(e.target.value))}
-                                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Font Family" />
-                                                            <select
-                                                                value={currentConfig.event_title_font || 'system-ui, -apple-system, sans-serif'}
-                                                                onChange={(e) => updateDirectConfig('event_title_font', e.target.value)}
-                                                                className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs p-2 mt-0.5"
-                                                            >
-                                                                <option value="system-ui, -apple-system, sans-serif">Modern Sans-Serif</option>
-                                                                <option value="Georgia, 'Playfair Display', serif">Luxury Serif</option>
-                                                                <option value="ui-monospace, SFMono-Regular, monospace">Monospace</option>
-                                                            </select>
-                                                        </div>
-                                                        <div>
-                                                            <InputLabel value="Title Color" />
-                                                            <div className="flex items-center gap-2 mt-0.5">
-                                                                <input
-                                                                    type="color"
-                                                                    value={currentConfig.event_title_color || '#0F172A'}
-                                                                    onChange={(e) => updateDirectConfig('event_title_color', e.target.value)}
-                                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                                />
-                                                                <TextInput
-                                                                    className="block w-full text-[11px] font-mono uppercase"
-                                                                    value={currentConfig.event_title_color || '#0F172A'}
-                                                                    onChange={(e) => updateDirectConfig('event_title_color', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* 3. Schedule & Venue Cards Section */}
-                                            {(currentConfig.show_date !== false || currentConfig.show_venue !== false) && (
-                                                <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                    <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                        Schedule &amp; Venue Labels
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-3">
-                                                        {currentConfig.show_date !== false && (
-                                                            <div>
-                                                                <InputLabel value="Schedule Card Label" />
-                                                                <TextInput
-                                                                    className="block w-full text-xs font-bold uppercase mt-0.5"
-                                                                    value={currentConfig.schedule_label_text || 'SCHEDULE'}
-                                                                    onChange={(e) => updateDirectConfig('schedule_label_text', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        )}
-                                                        {currentConfig.show_venue !== false && (
-                                                            <div>
-                                                                <InputLabel value="Venue Card Label" />
-                                                                <TextInput
-                                                                    className="block w-full text-xs font-bold uppercase mt-0.5"
-                                                                    value={currentConfig.venue_label_text || 'VENUE LOCATION'}
-                                                                    onChange={(e) => updateDirectConfig('venue_label_text', e.target.value)}
-                                                                />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
-
-                                            {/* 4. Guest Plaque Header & Security Footer */}
-                                            <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] space-y-3">
-                                                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Guest Plaque Header &amp; Footer Copy
-                                                </div>
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                                    <div>
-                                                        <InputLabel value="Plaque Header Label" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-bold uppercase mt-0.5"
-                                                            value={currentConfig.plaque_header_text || 'INVITATION PASS ISSUED TO'}
-                                                            onChange={(e) => updateDirectConfig('plaque_header_text', e.target.value)}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <InputLabel value="Pass Footer Security Text" />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono mt-0.5"
-                                                            value={currentConfig.footer_text || form.data.footer_text || 'Secured & verified by KARDOVO'}
-                                                            onChange={(e) => {
-                                                                form.setData('footer_text', e.target.value);
-                                                                updateDirectConfig('footer_text', e.target.value);
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* TAB: ARTWORK & PHOTO */}
-                            {inspectorTab === 'artwork' && isCustomArt && (
-                                <div className="space-y-4 animate-fadeIn">
-                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <ImageIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                        <span>Custom 4K Artwork Asset</span>
-                                    </div>
-
-                                    <div className="p-4 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200 dark:border-white/[0.08] flex items-center gap-4">
-                                        <div className="w-20 h-28 rounded-xl overflow-hidden bg-slate-900 border border-slate-300 dark:border-white/[0.08] flex-shrink-0">
-                                            <img src={currentTpl.image_path} alt="Template" className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <div className="text-xs font-bold text-slate-900 dark:text-white">Active Artwork Asset</div>
-                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate max-w-xs">{currentTpl.image_path}</div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setUploadModalOpen(true)}
-                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white dark:bg-white/[0.06] border border-slate-200 dark:border-white/[0.08] text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/[0.1] transition"
-                                            >
-                                                <Upload className="w-3.5 h-3.5" />
-                                                <span>Replace Artwork</span>
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAB: GUEST PLAQUE COORDINATES */}
-                            {inspectorTab === 'plaque' && (
-                                <div className="space-y-4 animate-fadeIn">
-                                    <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.08]">
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <Move className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                            <span>Guest Name Geometry &amp; Typography</span>
-                                        </div>
-                                    </div>
-
-                                    {isCustomArt && (
-                                        <div className="p-3.5 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
-                                            <div>
-                                                <div className="text-xs font-bold text-slate-900 dark:text-white">Clean Text Style (No Box)</div>
-                                                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                    Render guest name directly onto artwork with crisp, pure typography (zero shadow or box).
-                                                </div>
-                                            </div>
-                                            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={Boolean(
-                                                        nameCfg.hide_plaque_box === true || nameCfg.hide_plaque_box === 'true' || nameCfg.hide_plaque_box === 1 ||
-                                                        nameCfg.hide_name_box === true || nameCfg.hide_name_box === 'true' || nameCfg.hide_name_box === 1 ||
-                                                        nameCfg.clean_text === true || nameCfg.clean_text === 'true' || nameCfg.clean_text === 1
-                                                    )}
-                                                    onChange={(e) => {
-                                                        const isChecked = e.target.checked;
-                                                        updateNestedConfig('guest_name', {
-                                                            hide_plaque_box: isChecked,
-                                                            hide_name_box: isChecked,
-                                                            clean_text: isChecked,
-                                                        });
-                                                    }}
-                                                    className="sr-only peer"
-                                                />
-                                                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                            </label>
-                                        </div>
-                                    )}
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{nameCfg.y ?? 71.5}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                step="0.5"
-                                                value={nameCfg.y ?? 71.5}
-                                                onChange={(e) => updateNestedConfig('guest_name', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Horizontal Offset (X%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{nameCfg.x ?? 50}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                step="0.5"
-                                                value={nameCfg.x ?? 50}
-                                                onChange={(e) => updateNestedConfig('guest_name', 'x', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Font Size (min 6px)</span>
-                                                <div className="flex items-center gap-1">
-                                                    <input
-                                                        type="number"
-                                                        min="6"
-                                                        max="120"
-                                                        step="0.5"
-                                                        value={nameCfg.fontSize ?? 22}
-                                                        onChange={(e) => updateNestedConfig('guest_name', 'fontSize', Math.max(6, parseFloat(e.target.value) || 6))}
-                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-emerald-600 dark:text-emerald-400"
-                                                    />
-                                                    <span className="text-[10px] text-slate-400">px</span>
-                                                </div>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="6"
-                                                max="72"
-                                                step="0.5"
-                                                value={nameCfg.fontSize ?? 22}
-                                                onChange={(e) => updateNestedConfig('guest_name', 'fontSize', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Plaque Box Width (%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{nameCfg.plaqueWidth ?? 84}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="20"
-                                                max="100"
-                                                step="1"
-                                                disabled={Boolean(nameCfg.hide_plaque_box || nameCfg.hide_name_box || nameCfg.clean_text)}
-                                                value={nameCfg.plaqueWidth ?? 84}
-                                                onChange={(e) => updateNestedConfig('guest_name', 'plaqueWidth', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600 disabled:opacity-30"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <InputLabel value="Font Family" />
-                                            <select
-                                                className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-bold py-2 mt-0.5"
-                                                value={nameCfg.fontFamily || 'Georgia, serif'}
-                                                onChange={(e) => updateNestedConfig('guest_name', 'fontFamily', e.target.value)}
-                                            >
-                                                <option value="Georgia, serif">Georgia (Classic Serif)</option>
-                                                <option value="'Playfair Display', serif">Playfair Display (Luxury)</option>
-                                                <option value="'Cinzel', serif">Cinzel (Regal Roman)</option>
-                                                <option value="system-ui, sans-serif">Modern Sans-Serif</option>
-                                                <option value="'Great Vibes', cursive">Great Vibes (Calligraphy)</option>
-                                                <option value="ui-monospace, monospace">Monospace</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <InputLabel value="Name Text Color" />
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <input
-                                                    type="color"
-                                                    value={nameCfg.color || '#FFFFFF'}
-                                                    onChange={(e) => updateNestedConfig('guest_name', 'color', e.target.value)}
-                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer flex-shrink-0"
-                                                />
-                                                <TextInput
-                                                    className="block w-full text-xs font-mono uppercase font-bold"
-                                                    value={nameCfg.color || '#FFFFFF'}
-                                                    onChange={(e) => updateNestedConfig('guest_name', 'color', e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAB: INVITATION CATEGORY (FOR CUSTOM ARTWORK) */}
-                            {(inspectorTab === 'category' || (inspectorTab === 'badge' && isCustomArt)) && (
-                                <div className="space-y-4 animate-fadeIn">
-                                    <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-white/[0.08]">
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                            <span>Invitation Category Badge &amp; Typography</span>
-                                        </div>
-                                    </div>
-
-                                    {/* Clean Text Style (No Box / Pill) */}
-                                    <div className="p-3.5 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
-                                        <div>
-                                            <div className="text-xs font-bold text-slate-900 dark:text-white">Clean Text Style (No Box / Pill)</div>
-                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                Render category text directly onto artwork with zero shadow, box, or background pill.
-                                            </div>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={Boolean(
-                                                    allowanceCfg.hide_badge_box === true || allowanceCfg.hide_badge_box === 'true' || allowanceCfg.hide_badge_box === 1 ||
-                                                    allowanceCfg.clean_text === true || allowanceCfg.clean_text === 'true' || allowanceCfg.clean_text === 1
-                                                )}
-                                                onChange={(e) => {
-                                                    const isChecked = e.target.checked;
-                                                    updateNestedConfig('allowance_badge', {
-                                                        hide_badge_box: isChecked,
-                                                        clean_text: isChecked,
-                                                    });
-                                                }}
-                                                className="sr-only peer"
-                                            />
-                                            <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                        </label>
-                                    </div>
-
-                                    {/* Vertical & Horizontal Coordinates */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{allowanceCfg.y ?? 78.5}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                step="0.5"
-                                                value={allowanceCfg.y ?? 78.5}
-                                                onChange={(e) => updateNestedConfig('allowance_badge', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Horizontal Offset (X%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{allowanceCfg.x ?? 50}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                step="0.5"
-                                                value={allowanceCfg.x ?? 50}
-                                                onChange={(e) => updateNestedConfig('allowance_badge', 'x', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Font Size & Pill Width */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Font Size (min 6px)</span>
-                                                <div className="flex items-center gap-1">
-                                                    <input
-                                                        type="number"
-                                                        min="6"
-                                                        max="90"
-                                                        step="0.5"
-                                                        value={allowanceCfg.fontSize ?? 10}
-                                                        onChange={(e) => updateNestedConfig('allowance_badge', 'fontSize', Math.max(6, parseFloat(e.target.value) || 6))}
-                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-emerald-600 dark:text-emerald-400"
-                                                    />
-                                                    <span className="text-[10px] text-slate-400">px</span>
-                                                </div>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="6"
-                                                max="60"
-                                                step="0.5"
-                                                value={allowanceCfg.fontSize ?? 10}
-                                                onChange={(e) => updateNestedConfig('allowance_badge', 'fontSize', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Pill Box Width (%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{allowanceCfg.plaqueWidth ?? 84}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="20"
-                                                max="100"
-                                                step="1"
-                                                disabled={Boolean(allowanceCfg.hide_badge_box || allowanceCfg.clean_text)}
-                                                value={allowanceCfg.plaqueWidth ?? 84}
-                                                onChange={(e) => updateNestedConfig('allowance_badge', 'plaqueWidth', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600 disabled:opacity-30"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Typography & Color */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <InputLabel value="Font Family" />
-                                            <select
-                                                className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-bold py-2 mt-0.5"
-                                                value={allowanceCfg.fontFamily || 'sans-serif'}
-                                                onChange={(e) => updateNestedConfig('allowance_badge', 'fontFamily', e.target.value)}
-                                            >
-                                                <option value="system-ui, sans-serif">Modern Sans-Serif</option>
-                                                <option value="Georgia, serif">Georgia (Classic Serif)</option>
-                                                <option value="'Playfair Display', serif">Playfair Display (Luxury)</option>
-                                                <option value="'Cinzel', serif">Cinzel (Regal Roman)</option>
-                                                <option value="'Great Vibes', cursive">Great Vibes (Calligraphy)</option>
-                                                <option value="ui-monospace, monospace">Monospace</option>
-                                            </select>
-                                        </div>
-
-                                        <div>
-                                            <InputLabel value="Category Text Color" />
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <input
-                                                    type="color"
-                                                    value={allowanceCfg.color || '#FDE68A'}
-                                                    onChange={(e) => updateNestedConfig('allowance_badge', 'color', e.target.value)}
-                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer flex-shrink-0"
-                                                />
-                                                <TextInput
-                                                    className="block w-full text-xs font-mono uppercase font-bold"
-                                                    value={allowanceCfg.color || '#FDE68A'}
-                                                    onChange={(e) => updateNestedConfig('allowance_badge', 'color', e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Visibility Toggle */}
-                                    <div className="pt-2 border-t border-slate-100 dark:border-white/[0.08]">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={currentConfig.show_allowance_badge !== false}
-                                                onChange={(e) => updateDirectConfig('show_allowance_badge', e.target.checked)}
-                                                className="rounded text-[#16A34A] focus:ring-[#16A34A]"
-                                            />
-                                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                Display Invitation Category Badge on Pass
-                                            </span>
-                                        </label>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* TAB: QR CODE POSITION & DIMENSIONS */}
-                            {inspectorTab === 'qr' && (
-                                <div className="space-y-4 animate-fadeIn">
-                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <QrCode className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                        <span>QR Pass Verification Block Geometry</span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{qrCfg.y}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                step="0.5"
-                                                value={qrCfg.y}
-                                                onChange={(e) => updateNestedConfig('qr_code', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Horizontal Offset (X%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{qrCfg.x ?? 50}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                step="0.5"
-                                                value={qrCfg.x ?? 50}
-                                                onChange={(e) => updateNestedConfig('qr_code', 'x', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>QR Code Size (min 20px)</span>
-                                                <div className="flex items-center gap-1">
-                                                    <input
-                                                        type="number"
-                                                        min="20"
-                                                        max="300"
-                                                        step="1"
-                                                        value={Math.max(20, parseFloat(qrCfg.size) || 72)}
-                                                        onChange={(e) => updateNestedConfig('qr_code', 'size', Math.max(20, parseFloat(e.target.value) || 20))}
-                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-emerald-600 dark:text-emerald-400"
-                                                    />
-                                                    <span className="text-[10px] text-slate-400">px</span>
-                                                </div>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="20"
-                                                max="240"
-                                                step="1"
-                                                value={Math.max(20, parseFloat(qrCfg.size) || 72)}
-                                                onChange={(e) => updateNestedConfig('qr_code', 'size', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel value="QR Dark Module Color" />
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <input
-                                                    type="color"
-                                                    value={qrCfg.darkColor || '#111827'}
-                                                    onChange={(e) => updateNestedConfig('qr_code', 'darkColor', e.target.value)}
-                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer flex-shrink-0"
-                                                />
-                                                <TextInput
-                                                    className="block w-full text-xs font-mono uppercase font-bold"
-                                                    value={qrCfg.darkColor || '#111827'}
-                                                    onChange={(e) => updateNestedConfig('qr_code', 'darkColor', e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <label className="flex items-center gap-2 cursor-pointer pt-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={form.data.show_qr}
-                                            onChange={(e) => form.setData('show_qr', e.target.checked)}
-                                            className="rounded text-[#16A34A] focus:ring-[#16A34A]"
-                                        />
-                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                            Display Scannable QR Code on Invitation Pass
-                                        </span>
-                                    </label>
-                                </div>
-                            )}
-
-                            {/* TAB: CATEGORY BADGE */}
-                            {(inspectorTab === 'badge' && !isUploadedCustomArt) && (
-                                <div className="space-y-4 animate-fadeIn">
-                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                        <span>Security Badge Placement</span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{badgeCfg.y}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="2"
-                                                max="30"
-                                                step="0.5"
-                                                value={badgeCfg.y}
-                                                onChange={(e) => updateNestedConfig('category_badge', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel value="Badge Color" />
-                                            <div className="flex items-center gap-2">
-                                                <input
-                                                    type="color"
-                                                    value={badgeCfg.color || '#00A3FF'}
-                                                    onChange={(e) => updateNestedConfig('category_badge', 'color', e.target.value)}
-                                                    className="w-8 h-8 rounded-lg border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                />
-                                                <TextInput
-                                                    className="block w-full text-xs font-mono uppercase"
-                                                    value={badgeCfg.color || '#00A3FF'}
-                                                    onChange={(e) => updateNestedConfig('category_badge', 'color', e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <label className="flex items-center gap-2 cursor-pointer pt-2">
-                                        <input
-                                            type="checkbox"
-                                            checked={form.data.show_category_badge !== false && currentConfig.show_verified_badge !== false && currentConfig.show_category_badge !== false}
-                                            onChange={(e) => {
-                                                form.setData('show_category_badge', e.target.checked);
-                                                updateDirectConfig('show_verified_badge', e.target.checked);
-                                                updateDirectConfig('show_category_badge', e.target.checked);
-                                            }}
-                                            className="rounded text-[#16A34A] focus:ring-[#16A34A]"
-                                        />
-                                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                            Display Verified Security Badge Header
-                                        </span>
-                                    </label>
-                                </div>
-                            )}
-
-                            {/* TAB: BACKGROUND & GRADIENT PALETTE (For Signature / Gradient passes) */}
-                            {inspectorTab === 'palette' && !isCustomArt && (
-                                <div className="space-y-5 animate-fadeIn">
-                                    <div className="flex items-center justify-between">
-                                        <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                            <Layers className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                            <span>Pass Background Engine</span>
-                                        </div>
-                                        <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">
-                                            Live Canvas Sync
-                                        </span>
-                                    </div>
-
-                                    {/* 1. Background Style Mode Switcher */}
-                                    <div>
-                                        <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
-                                            Base Background Style
-                                        </label>
-                                        <div className="grid grid-cols-3 gap-2 p-1 bg-slate-100 dark:bg-white/[0.05] rounded-2xl border border-slate-200 dark:border-white/[0.08]">
-                                            {[
-                                                { id: 'solid', label: 'Plain Solid', icon: Sparkles },
-                                                { id: 'gradient', label: 'Gradient Mesh', icon: Palette },
-                                                { id: 'image', label: 'Imported BG', icon: ImageIcon },
-                                            ].map((mode) => {
-                                                const IconComponent = mode.icon;
-                                                const isCurrent = (form.data.elements_config?.bg_mode || 'gradient') === mode.id;
-                                                return (
-                                                    <button
-                                                        key={mode.id}
-                                                        type="button"
-                                                        onClick={() => updateDirectConfig('bg_mode', mode.id)}
-                                                        className={`py-2 px-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 ${
-                                                            isCurrent
-                                                                ? 'bg-white dark:bg-[#0B1524] text-emerald-700 dark:text-emerald-400 shadow-sm border border-slate-200 dark:border-white/[0.08]'
-                                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                                                        }`}
-                                                    >
-                                                        <IconComponent className="w-3.5 h-3.5" />
-                                                        <span className="truncate">{mode.label}</span>
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-
-                                    {/* ── MODE 1: PLAIN SOLID BACKGROUND ── */}
-                                    {(form.data.elements_config?.bg_mode === 'solid') && (
-                                        <div className="space-y-4 pt-1 animate-fadeIn">
-                                            <div>
-                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
-                                                    Executive Solid Aesthetic Presets
-                                                </label>
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                                    {[
-                                                        { label: 'Porcelain Pearl', hex: '#FFFFFF', badge: '#0070BA' },
-                                                        { label: 'Ivory Champagne', hex: '#FAF9F5', badge: '#B45309' },
-                                                        { label: 'Obsidian Onyx', hex: '#070D18', badge: '#00A3FF' },
-                                                        { label: 'Executive Navy', hex: '#0A1628', badge: '#38BDF8' },
-                                                        { label: 'Emerald Noir', hex: '#041D14', badge: '#10B981' },
-                                                        { label: 'Royal Bordeaux', hex: '#1A050A', badge: '#FB7185' },
-                                                        { label: 'Platinum Slate', hex: '#F1F5F9', badge: '#2563EB' },
-                                                        { label: 'Velvet Midnight', hex: '#0B0F19', badge: '#A855F7' },
-                                                    ].map((preset) => (
-                                                        <button
-                                                            key={preset.label}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                form.setData({
-                                                                    ...form.data,
-                                                                    brand_color_from: preset.hex,
-                                                                    brand_color_to: preset.badge,
-                                                                    elements_config: {
-                                                                        ...form.data.elements_config,
-                                                                        bg_solid_color: preset.hex,
-                                                                        category_badge: {
-                                                                            ...(form.data.elements_config?.category_badge || {}),
-                                                                            color: preset.badge
-                                                                        }
-                                                                    }
-                                                                });
-                                                            }}
-                                                            className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-emerald-500 text-left transition flex items-center gap-2.5 group active:scale-95 shadow-2xs"
-                                                        >
-                                                            <div 
-                                                                className="w-5 h-5 rounded-full border border-black/15 shadow-xs flex-shrink-0 flex items-center justify-center"
-                                                                style={{ backgroundColor: preset.hex }}
-                                                            >
-                                                                <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: preset.badge }} />
-                                                            </div>
-                                                            <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-emerald-600 dark:group-hover:text-emerald-400">
-                                                                {preset.label}
-                                                            </span>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="pt-2 border-t border-slate-100 dark:border-white/[0.08]">
-                                                <InputLabel value="Custom Solid Background Color" />
-                                                <div className="flex items-center gap-2 mt-1">
-                                                    <input
-                                                        type="color"
-                                                        value={form.data.elements_config?.bg_solid_color || '#FFFFFF'}
-                                                        onChange={(e) => updateDirectConfig('bg_solid_color', e.target.value)}
-                                                        className="w-9 h-9 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                    />
-                                                    <TextInput
-                                                        className="block w-full text-xs font-mono uppercase font-bold"
-                                                        value={form.data.elements_config?.bg_solid_color || '#FFFFFF'}
-                                                        onChange={(e) => updateDirectConfig('bg_solid_color', e.target.value)}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* ── MODE 2: LUXURY GRADIENT MESH ── */}
-                                    {((form.data.elements_config?.bg_mode || 'gradient') === 'gradient') && (
-                                        <div className="space-y-4 pt-1 animate-fadeIn">
-                                            <div>
-                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
-                                                    Curated Luxury Gradient Mesh Presets
-                                                </label>
-                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                                    {[
-                                                        { label: 'Executive Azure', from: '#FFFFFF', to: '#C7E2FE', badge: '#0070BA' },
-                                                        { label: 'Champagne Gold', from: '#FFFDF7', to: '#FDE68A', badge: '#D97706' },
-                                                        { label: 'Rose Quartz Frost', from: '#FFF5F6', to: '#FECDD3', badge: '#E11D48' },
-                                                        { label: 'Emerald Dew', from: '#F0FDF4', to: '#BBF7D0', badge: '#059669' },
-                                                        { label: 'Midnight Cyber', from: '#091524', to: '#0A1C33', badge: '#00A3FF' },
-                                                        { label: 'Imperial Amethyst', from: '#170A2C', to: '#0A0312', badge: '#C084FC' },
-                                                        { label: 'Onyx Carbon Aurora', from: '#0F172A', to: '#020617', badge: '#38BDF8' },
-                                                        { label: 'Nordic Sunset', from: '#FFF7ED', to: '#FED7AA', badge: '#EA580C' },
-                                                    ].map((preset) => (
-                                                        <button
-                                                            key={preset.label}
-                                                            type="button"
-                                                            onClick={() => {
-                                                                form.setData({
-                                                                    ...form.data,
-                                                                    brand_color_from: preset.from,
-                                                                    brand_color_to: preset.to,
-                                                                    elements_config: {
-                                                                        ...form.data.elements_config,
-                                                                        category_badge: {
-                                                                            ...(form.data.elements_config?.category_badge || {}),
-                                                                            color: preset.badge
-                                                                        }
-                                                                    }
-                                                                });
-                                                            }}
-                                                            className="p-2.5 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-emerald-500 dark:hover:border-emerald-400 text-left transition flex items-center gap-2.5 group active:scale-95 shadow-2xs"
-                                                        >
-                                                            <div 
-                                                                className="w-5 h-5 rounded-full border border-black/10 shadow-xs flex-shrink-0"
-                                                                style={{ background: `linear-gradient(135deg, ${preset.from} 0%, ${preset.to} 100%)` }}
-                                                            />
-                                                            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
-                                                                {preset.label}
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-slate-100 dark:border-white/[0.08]">
-                                                <div>
-                                                    <InputLabel value="Mesh Base (From Color)" />
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <input
-                                                            type="color"
-                                                            value={form.data.brand_color_from}
-                                                            onChange={(e) => form.setData('brand_color_from', e.target.value)}
-                                                            className="w-9 h-9 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                        />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono uppercase font-bold"
-                                                            value={form.data.brand_color_from}
-                                                            onChange={(e) => form.setData('brand_color_from', e.target.value)}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                <div>
-                                                    <InputLabel value="Mesh Ambient (To Color)" />
-                                                    <div className="flex items-center gap-2 mt-1">
-                                                        <input
-                                                            type="color"
-                                                            value={form.data.brand_color_to}
-                                                            onChange={(e) => form.setData('brand_color_to', e.target.value)}
-                                                            className="w-9 h-9 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer"
-                                                        />
-                                                        <TextInput
-                                                            className="block w-full text-xs font-mono uppercase font-bold"
-                                                            value={form.data.brand_color_to}
-                                                            onChange={(e) => form.setData('brand_color_to', e.target.value)}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* ── MODE 3: IMPORTED BACKGROUND IMAGE / TEXTURE ── */}
-                                    {(form.data.elements_config?.bg_mode === 'image') && (
-                                        <div className="space-y-4 pt-1 animate-fadeIn">
-                                            {/* File Upload Input */}
-                                            <div>
-                                                <InputLabel value="Upload Custom Background Art / Texture" />
-                                                <div className="mt-1 flex items-center gap-3">
-                                                    <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-kardovo-navy hover:bg-slate-900 text-white text-xs font-bold shadow-sm transition active:scale-95">
-                                                        <Upload className="w-3.5 h-3.5 text-white" />
-                                                        <span>Select Image File</span>
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            onChange={(e) => {
-                                                                const file = e.target.files[0];
-                                                                if (file) {
-                                                                    form.setData('image_file', file);
-                                                                    const reader = new FileReader();
-                                                                    reader.onload = (ev) => {
-                                                                        updateDirectConfig('bg_image', ev.target.result);
-                                                                    };
-                                                                    reader.readAsDataURL(file);
-                                                                }
-                                                            }}
-                                                        />
-                                                    </label>
-                                                    {form.data.elements_config?.bg_image && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                form.setData('image_file', null);
-                                                                updateDirectConfig('bg_image', null);
-                                                            }}
-                                                            className="text-xs font-bold text-red-600 hover:text-red-700 px-3 py-2 rounded-xl bg-red-50 hover:bg-red-100 transition"
-                                                        >
-                                                            Remove Background
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            {/* Curated Luxury Textures */}
-                                            <div>
-                                                <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-2">
-                                                    Or Choose a Curated Background Texture
-                                                </label>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    {[
-                                                        { label: 'Burgundy Velvet', url: '/template_assets/adel_laila_engagement.jpg' },
-                                                        { label: 'Gold Art Romance', url: '/template_assets/zamroth_husna_wedding.jpg' },
-                                                    ].map((texture) => (
-                                                        <button
-                                                            key={texture.label}
-                                                            type="button"
-                                                            onClick={() => updateDirectConfig('bg_image', texture.url)}
-                                                            className="p-2 rounded-xl border border-slate-200 dark:border-white/[0.08] hover:border-emerald-500 text-left transition flex items-center gap-2.5 group active:scale-95"
-                                                        >
-                                                            <img 
-                                                                src={texture.url} 
-                                                                alt={texture.label} 
-                                                                className="w-7 h-7 rounded-lg object-cover border border-black/10 flex-shrink-0"
-                                                            />
-                                                            <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 truncate">
-                                                                {texture.label}
-                                                            </div>
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            {/* Overlay Opacity Slider */}
-                                            <div className="pt-2 border-t border-slate-100 dark:border-white/[0.08]">
-                                                <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                    <span>Backdrop Tint / Darkening Overlay</span>
-                                                    <span className="font-mono text-emerald-600 dark:text-emerald-400">
-                                                        {Math.round((form.data.elements_config?.bg_overlay_opacity ?? 0.35) * 100)}%
-                                                    </span>
-                                                </div>
-                                                <input
-                                                    type="range"
-                                                    min="0"
-                                                    max="0.9"
-                                                    step="0.05"
-                                                    value={form.data.elements_config?.bg_overlay_opacity ?? 0.35}
-                                                    onChange={(e) => updateDirectConfig('bg_overlay_opacity', parseFloat(e.target.value))}
-                                                    className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {/* TAB: SECURITY CODE */}
-                            {inspectorTab === 'security' && (
-                                <div className="space-y-4 animate-fadeIn">
-                                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                                        <Clock className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                        <span>Gate Verification Code Typography &amp; Placement</span>
-                                    </div>
-
-                                    {/* Clean Text (No Shadow) */}
-                                    <div className="p-3.5 bg-slate-50 dark:bg-white/[0.03] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] flex items-center justify-between">
-                                        <div>
-                                            <div className="text-xs font-bold text-slate-900 dark:text-white">Clean Text Style (No Shadow)</div>
-                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                Render gate code with crisp, flat appearance (zero text shadow).
-                                            </div>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
-                                            <input
-                                                type="checkbox"
-                                                checked={Boolean(cardNumCfg.hide_shadow)}
-                                                onChange={(e) => updateNestedConfig('card_number', 'hide_shadow', e.target.checked)}
-                                                className="sr-only peer"
-                                            />
-                                            <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-[#16A34A] dark:peer-checked:bg-[#16A34A]" />
-                                        </label>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Vertical Offset (Y%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{cardNumCfg.y}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                step="0.5"
-                                                value={cardNumCfg.y}
-                                                onChange={(e) => updateNestedConfig('card_number', 'y', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Horizontal Offset (X%)</span>
-                                                <span className="font-mono text-emerald-600 dark:text-emerald-400">{cardNumCfg.x ?? 50}%</span>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                step="0.5"
-                                                value={cardNumCfg.x ?? 50}
-                                                onChange={(e) => updateNestedConfig('card_number', 'x', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <div className="flex justify-between text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                                                <span>Font Size (min 6px)</span>
-                                                <div className="flex items-center gap-1">
-                                                    <input
-                                                        type="number"
-                                                        min="6"
-                                                        max="60"
-                                                        step="0.5"
-                                                        value={cardNumCfg.fontSize ?? 9.5}
-                                                        onChange={(e) => updateNestedConfig('card_number', 'fontSize', Math.max(6, parseFloat(e.target.value) || 6))}
-                                                        className="w-14 text-center py-0.5 px-1 text-[11px] font-mono font-bold bg-white dark:bg-slate-900 border border-slate-300 dark:border-white/[0.08] rounded-md text-emerald-600 dark:text-emerald-400"
-                                                    />
-                                                    <span className="text-[10px] text-slate-400">px</span>
-                                                </div>
-                                            </div>
-                                            <input
-                                                type="range"
-                                                min="6"
-                                                max="48"
-                                                step="0.5"
-                                                value={cardNumCfg.fontSize ?? 9.5}
-                                                onChange={(e) => updateNestedConfig('card_number', 'fontSize', parseFloat(e.target.value))}
-                                                className="w-full h-1.5 bg-slate-300 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-600"
-                                            />
-                                        </div>
-
-                                        <div>
-                                            <InputLabel value="Font Family" />
-                                            <select
-                                                className="block w-full border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl text-xs font-bold py-2 mt-0.5"
-                                                value={cardNumCfg.fontFamily || 'ui-monospace, monospace'}
-                                                onChange={(e) => updateNestedConfig('card_number', 'fontFamily', e.target.value)}
-                                            >
-                                                <option value="ui-monospace, monospace">Monospace (Terminal)</option>
-                                                <option value="system-ui, sans-serif">Modern Sans-Serif</option>
-                                                <option value="Georgia, serif">Georgia (Classic Serif)</option>
-                                                <option value="'Cinzel', serif">Cinzel (Roman)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <InputLabel value="Code Text Color" />
-                                            <div className="flex items-center gap-2 mt-0.5">
-                                                <input
-                                                    type="color"
-                                                    value={cardNumCfg.color || '#FFFFFF'}
-                                                    onChange={(e) => updateNestedConfig('card_number', 'color', e.target.value)}
-                                                    className="w-8 h-8 rounded-xl border border-slate-300 dark:border-white/[0.08] cursor-pointer flex-shrink-0"
-                                                />
-                                                <TextInput
-                                                    className="block w-full text-xs font-mono uppercase font-bold"
-                                                    value={cardNumCfg.color || '#FFFFFF'}
-                                                    onChange={(e) => updateNestedConfig('card_number', 'color', e.target.value)}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center pt-5">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={form.data.show_unique_code}
-                                                    onChange={(e) => form.setData('show_unique_code', e.target.checked)}
-                                                    className="rounded text-[#16A34A] focus:ring-[#16A34A]"
-                                                />
-                                                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                    Display Gate Code
-                                                </span>
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                                                        </div>
-
-                            {/* Submit & Save Bar (Fixed at bottom of Inspector) */}
-                            <div className="p-4 sm:px-6 border-t border-slate-200/60 dark:border-white/[0.08] bg-white/75 dark:bg-[#08121E]/95 backdrop-blur-2xl flex flex-wrap items-center justify-between gap-3 flex-shrink-0 shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
-                                {isCurrentCustomOrAdmin ? (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => openDeleteConfirmation(e, currentTpl)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs font-bold transition cursor-pointer"
-                                    >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                        <span>Delete Template</span>
-                                    </button>
-                                ) : (
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                                        Instant 4K canvas vector synchronisation
-                                    </div>
-                                )}
-
-                                {canCustomize ? (
-                                    <PrimaryButton 
-                                        disabled={form.processing} 
-                                        className="text-white py-2.5 px-5 rounded-xl text-xs font-bold gap-2 shadow-xs transition active:scale-95 ml-auto cursor-pointer"
-                                    >
-                                        <Save className="w-3.5 h-3.5 text-white" />
-                                        <span>Save Template</span>
-                                    </PrimaryButton>
-                                ) : (
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmModal({
-                                            show: true,
-                                            title: 'Studio Customization Locked',
-                                            message: '4K Card Studio design & artwork customization permissions are locked for your organizer account by platform governance.',
-                                            warning: 'Please contact platform administrators to request template design permissions.',
-                                            confirmText: 'Understood',
-                                            type: 'warning',
-                                            loading: false,
-                                            onConfirm: () => setConfirmModal(prev => ({ ...prev, show: false })),
-                                        })}
-                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-200 dark:bg-white/[0.06] text-slate-500 dark:text-slate-400 font-bold text-xs border border-slate-300 dark:border-white/[0.08] cursor-not-allowed opacity-80 shadow-xs ml-auto"
-                                        title="Template Customization Locked"
-                                    >
-                                        <Lock className="w-3.5 h-3.5 text-slate-500" />
-                                        <span>Studio Customization (Locked)</span>
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Right: Live 4K Easel Stage & Test Controls (5 cols, sticky on scroll) */}
-                    <div className="lg:col-span-5 flex flex-col items-center space-y-4 lg:sticky lg:top-6 lg:self-start">
-                        
-                        {/* ── Interactive Test Guest Controls & Live Preview Stage ── */}
-                        <div className="w-full bg-white/75 dark:bg-[#0B1524] backdrop-blur-3xl backdrop-saturate-180 p-4 rounded-3xl border border-slate-200/80 dark:border-white/[0.08] shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-card space-y-3">
-                            <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                                <span className="flex items-center gap-2 font-display">
-                                    <Sparkles className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                                    <span>Live Pass Preview Stage</span>
-                                </span>
-                                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono text-slate-700 dark:text-slate-300 font-medium uppercase bg-white dark:bg-white/[0.06] border border-slate-200/80 dark:border-white/[0.08] px-2.5 py-0.5 rounded-full shadow-2xs">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span>Vector Sync</span>
-                                </span>
-                            </div>
-
-                            {/* Interactive Test Guest Input */}
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1">
-                                        Test Guest Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={testGuestName}
-                                        onChange={(e) => setTestGuestName(e.target.value)}
-                                        className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-                                        placeholder="Type guest name..."
-                                    />
-                                </div>
-                                <div>
-                                    <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 block mb-1">
-                                        Test Allowance
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={testAllowance}
-                                        onChange={(e) => setTestAllowance(e.target.value)}
-                                        className="w-full text-xs font-bold border border-slate-200/80 dark:border-white/[0.08] bg-white/70 dark:bg-[#08121E] text-slate-900 dark:text-white rounded-xl py-1.5 px-2.5 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
-                                        placeholder="e.g. DOUBLE ENTRY"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* ── 3. Live Rendered Canvas Stage ── */}
-                        <div className="w-full flex justify-center py-2 relative">
-                            <PersonalisedCard
-                                guest={{
-                                    name: testGuestName || 'Alfred Mashauri',
-                                    allowance_label: testAllowance || 'DOUBLE ENTRY',
-                                    card_number: 'KDV-2026-004821',
-                                    unique_code: '29841872',
-                                    qr_token: 'kdv_live_sample_pass_token_2026',
-                                    category: testAllowance || 'Double Entry',
-                                    max_entries: (testAllowance && testAllowance.toUpperCase().includes('SINGLE')) ? 1 : 2
-                                }}
-                                event={sampleEvent}
-                                template={{
-                                    ...currentTpl,
-                                    ...form.data,
-                                    image_path: currentTpl?.image_path
-                                }}
-                                interactive={true}
-                            />
-                        </div>
-                    </div>
-                </div>
-                </form>
-                    </>
-                )}
-
-                {/* Upload Custom Artwork Modal */}
-                <Modal show={uploadModalOpen} onClose={() => setUploadModalOpen(false)} maxWidth="md">
-                    <form noValidate onSubmit={handleUploadSubmit} className="p-6 sm:p-7 space-y-4">
-                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
-                            <div className="flex items-center gap-2">
-                                <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                                <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
-                                    Add Template
-                                </h3>
-                            </div>
+                                );
+                            })}
+                            {/* Add new */}
                             <button
                                 type="button"
-                                onClick={() => setUploadModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                                onClick={() => setUploadModalOpen(true)}
+                                className="shrink-0 w-24 h-[104px] rounded-xl border-2 border-dashed border-slate-300 dark:border-white/[0.1] hover:border-[#16A34A] dark:hover:border-[#16A34A] text-slate-400 hover:text-[#16A34A] flex flex-col items-center justify-center gap-1.5 transition cursor-pointer"
                             >
-                                <X className="w-5 h-5" />
+                                <Plus className="w-5 h-5" />
+                                <span className="text-[10px] font-bold">Upload</span>
                             </button>
                         </div>
 
-                        {uploadForm.hasErrors && Object.keys(uploadForm.errors).length > 0 && (
-                            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40 text-xs text-rose-700 dark:text-rose-300 space-y-1">
-                                <div className="font-bold flex items-center gap-1.5">
-                                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                                    <span>Please fix the following issues:</span>
-                                </div>
-                                <ul className="list-disc list-inside space-y-0.5 text-[11px] pl-1">
-                                    {Object.entries(uploadForm.errors).map(([key, err]) => (
-                                        <li key={key}>{err}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
+                        {/* ── STUDIO WORKSPACE ── */}
+                        {currentTpl && (
+                            <form onSubmit={handleSaveTemplate} className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                        <div>
-                            <InputLabel value="Template Name *" />
-                            <TextInput
-                                className="block w-full text-xs font-bold mt-1"
-                                value={uploadForm.data.name}
-                                onChange={(e) => {
-                                    uploadForm.setData('name', e.target.value);
-                                    if (uploadForm.errors.name) uploadForm.clearErrors('name');
-                                }}
-                                placeholder="e.g. Wedding Gold"
-                            />
-                            <InputError message={uploadForm.errors.name} className="mt-1" />
-                        </div>
+                                {/* LEFT: Element Controls (5 cols) */}
+                                <div className="lg:col-span-5 space-y-3">
 
-                        <div>
-                            <InputLabel value="Card Image *" />
-                            <div className="mt-1">
-                                <input
-                                    type="file"
-                                    id="custom-artwork-file-input"
-                                    accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
-                                    onChange={(e) => {
-                                        const file = e.target.files?.[0] || null;
-                                        if (file) {
-                                            const objectUrl = URL.createObjectURL(file);
-                                            const img = new Image();
-                                            img.onload = () => {
-                                                const w = img.naturalWidth;
-                                                const h = img.naturalHeight;
-                                                const ratio = (w / h).toFixed(4);
-                                                const orientation = w > h ? 'landscape' : (w === h ? 'square' : 'portrait');
-                                                setUploadedImgMeta({ width: w, height: h, ratio, orientation });
-                                            };
-                                            img.src = objectUrl;
-                                        } else {
-                                            setUploadedImgMeta(null);
-                                        }
-                                        uploadForm.setData('image_file', file);
-                                        if (uploadForm.errors.image_file) uploadForm.clearErrors('image_file');
-                                    }}
-                                    className="block w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#16A34A] hover:file:bg-[#15803D] file:text-white cursor-pointer border border-slate-300 dark:border-white/[0.08] rounded-xl p-1 bg-white dark:bg-[#08121E]"
-                                />
-                            </div>
-                            <InputError message={uploadForm.errors.image_file} className="mt-1" />
+                                    {/* Template name row */}
+                                    <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] px-4 py-3 flex items-center justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Template name</div>
+                                            <input
+                                                type="text"
+                                                value={form.data.name}
+                                                onChange={(e) => form.setData('name', e.target.value)}
+                                                placeholder="e.g. Wedding Pass"
+                                                className="w-full text-xs font-bold bg-transparent text-slate-900 dark:text-white border-none outline-none placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                            />
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            disabled={form.processing}
+                                            className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer disabled:opacity-50"
+                                        >
+                                            <Save className="w-3.5 h-3.5" />
+                                            Save
+                                        </button>
+                                    </div>
 
-                            {uploadForm.data.image_file && (
-                                <div className="mt-2.5 p-2 rounded-2xl bg-slate-900 border border-slate-700/80 space-y-2">
-                                    <div className="w-full h-36 rounded-xl overflow-hidden bg-black/60 relative flex items-center justify-center">
-                                        <img
-                                            src={URL.createObjectURL(uploadForm.data.image_file)}
-                                            alt="Upload Preview"
-                                            className="w-full h-full object-contain"
-                                        />
-                                        <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-                                            <span className="px-2 py-0.5 rounded bg-black/80 text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs border border-white/10">
-                                                {uploadedImgMeta ? `${uploadedImgMeta.width} × ${uploadedImgMeta.height} px` : 'Artwork Ready'}
-                                            </span>
-                                            {uploadedImgMeta && (
-                                                <span className="px-2 py-0.5 rounded bg-[#16A34A] text-white text-[9px] font-bold uppercase tracking-wider backdrop-blur-xs shadow-xs">
-                                                    {uploadedImgMeta.orientation}
+                                    {/* ELEMENT 1: Guest Attendee Name */}
+                                    <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden">
+                                        <div className="px-4 py-3 flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06]">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
+                                                    <Type className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900 dark:text-white">Guest Attendee Name</div>
+                                                    <div className="text-[10px] text-slate-400 mt-0.5">Fetched name for the guest (e.g. Alfred Mashauri)</div>
+                                                </div>
+                                            </div>
+                                            <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.data.elements_config?.show_guest_name !== false}
+                                                    onChange={(e) => updateDirectConfig('show_guest_name', e.target.checked)}
+                                                    className="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 cursor-pointer"
+                                                />
+                                                <span className={`text-[10px] font-bold ${form.data.elements_config?.show_guest_name !== false ? 'text-[#16A34A]' : 'text-slate-400'}`}>
+                                                    {form.data.elements_config?.show_guest_name !== false ? 'VISIBLE' : 'HIDDEN'}
                                                 </span>
-                                            )}
+                                            </label>
+                                        </div>
+                                        {form.data.elements_config?.show_guest_name !== false && (
+                                            <div className="px-4 py-3 space-y-3">
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <div className="text-[10px] text-slate-500 font-bold mb-1.5">Vertical position (%)</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="range" min="1" max="99" step="0.5"
+                                                                value={form.data.elements_config?.guest_name?.y ?? 71.5}
+                                                                onChange={(e) => updateNestedConfig('guest_name', 'y', parseFloat(e.target.value))}
+                                                                className="flex-1 h-1.5 accent-emerald-600 cursor-pointer"
+                                                            />
+                                                            <span className="text-[10px] font-mono font-bold text-[#16A34A] w-9 text-right">
+                                                                {parseFloat(form.data.elements_config?.guest_name?.y ?? 71.5)}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-[10px] text-slate-500 font-bold mb-1.5">Font size (px)</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="range" min="8" max="48" step="0.5"
+                                                                value={form.data.elements_config?.guest_name?.fontSize ?? 20}
+                                                                onChange={(e) => updateNestedConfig('guest_name', 'fontSize', parseFloat(e.target.value))}
+                                                                className="flex-1 h-1.5 accent-emerald-600 cursor-pointer"
+                                                            />
+                                                            <span className="text-[10px] font-mono font-bold text-[#16A34A] w-9 text-right">
+                                                                {parseFloat(form.data.elements_config?.guest_name?.fontSize ?? 20)}px
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <div>
+                                                        <div className="text-[10px] text-slate-500 font-bold mb-1.5">Text color</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <input
+                                                                type="color"
+                                                                value={form.data.elements_config?.guest_name?.color ?? '#FFFFFF'}
+                                                                onChange={(e) => updateNestedConfig('guest_name', 'color', e.target.value)}
+                                                                className="w-8 h-8 rounded-lg border border-slate-200 dark:border-white/10 cursor-pointer p-0.5 bg-white dark:bg-slate-800"
+                                                            />
+                                                            <span className="text-xs font-mono text-slate-600 dark:text-slate-300">
+                                                                {form.data.elements_config?.guest_name?.color ?? '#FFFFFF'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    {/* Remove container toggle */}
+                                                    <label className="flex items-center gap-2 cursor-pointer select-none shrink-0">
+                                                        <div className={`relative w-8 h-4 rounded-full transition-colors ${form.data.elements_config?.guest_name?.hide_plaque_box ? 'bg-[#16A34A]' : 'bg-slate-200 dark:bg-white/[0.1]'}`}>
+                                                            <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-xs transition-transform ${form.data.elements_config?.guest_name?.hide_plaque_box ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                                        </div>
+                                                        <input
+                                                            type="checkbox"
+                                                            className="sr-only"
+                                                            checked={!!form.data.elements_config?.guest_name?.hide_plaque_box}
+                                                            onChange={(e) => updateNestedConfig('guest_name', 'hide_plaque_box', e.target.checked)}
+                                                        />
+                                                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Remove container</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* ELEMENT 2: Category Badge */}
+                                    <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden">
+                                        <div className="px-4 py-3 flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06]">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center">
+                                                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900 dark:text-white">Invitation Category Badge</div>
+                                                    <div className="text-[10px] text-slate-400 mt-0.5">Access pill (e.g. DOUBLE ENTRY, SINGLE ENTRY)</div>
+                                                </div>
+                                            </div>
+                                            <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.data.elements_config?.show_allowance_badge !== false}
+                                                    onChange={(e) => updateDirectConfig('show_allowance_badge', e.target.checked)}
+                                                    className="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 cursor-pointer"
+                                                />
+                                                <span className={`text-[10px] font-bold ${form.data.elements_config?.show_allowance_badge !== false ? 'text-[#16A34A]' : 'text-slate-400'}`}>
+                                                    {form.data.elements_config?.show_allowance_badge !== false ? 'VISIBLE' : 'HIDDEN'}
+                                                </span>
+                                            </label>
+                                        </div>
+                                        {form.data.elements_config?.show_allowance_badge !== false && (
+                                            <div className="px-4 py-3 space-y-3">
+                                                <div>
+                                                    <div className="text-[10px] text-slate-500 font-bold mb-1.5">Vertical position (%)</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="range" min="1" max="99" step="0.5"
+                                                            value={form.data.elements_config?.allowance_badge?.y ?? 78.5}
+                                                            onChange={(e) => updateNestedConfig('allowance_badge', 'y', parseFloat(e.target.value))}
+                                                            className="flex-1 h-1.5 accent-emerald-600 cursor-pointer"
+                                                        />
+                                                        <span className="text-[10px] font-mono font-bold text-[#16A34A] w-9 text-right">
+                                                            {parseFloat(form.data.elements_config?.allowance_badge?.y ?? 78.5)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                {/* Remove container toggle */}
+                                                <label className="flex items-center gap-2 cursor-pointer select-none">
+                                                    <div className={`relative w-8 h-4 rounded-full transition-colors ${form.data.elements_config?.allowance_badge?.hide_badge_box ? 'bg-[#16A34A]' : 'bg-slate-200 dark:bg-white/[0.1]'}`}>
+                                                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-xs transition-transform ${form.data.elements_config?.allowance_badge?.hide_badge_box ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                                                    </div>
+                                                    <input
+                                                        type="checkbox"
+                                                        className="sr-only"
+                                                        checked={!!form.data.elements_config?.allowance_badge?.hide_badge_box}
+                                                        onChange={(e) => updateNestedConfig('allowance_badge', 'hide_badge_box', e.target.checked)}
+                                                    />
+                                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">Remove container</span>
+                                                </label>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* ELEMENT 3: QR Code */}
+                                    <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden">
+                                        <div className="px-4 py-3 flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06]">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center">
+                                                    <QrCode className="w-3.5 h-3.5 text-slate-700 dark:text-slate-300" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900 dark:text-white">QR Scanner Token</div>
+                                                    <div className="text-[10px] text-slate-400 mt-0.5">High-contrast QR scanned at the gate</div>
+                                                </div>
+                                            </div>
+                                            <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.data.elements_config?.show_qr !== false}
+                                                    onChange={(e) => {
+                                                        form.setData('show_qr', e.target.checked);
+                                                        updateDirectConfig('show_qr', e.target.checked);
+                                                    }}
+                                                    className="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 cursor-pointer"
+                                                />
+                                                <span className={`text-[10px] font-bold ${form.data.elements_config?.show_qr !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                                                    {form.data.elements_config?.show_qr !== false ? 'VISIBLE' : 'HIDDEN'}
+                                                </span>
+                                            </label>
+                                        </div>
+                                        {form.data.elements_config?.show_qr !== false && (
+                                            <div className="px-4 py-3 grid grid-cols-2 gap-3">
+                                                <div>
+                                                    <div className="text-[10px] text-slate-500 font-bold mb-1.5">Vertical position (%)</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="range" min="1" max="99" step="0.5"
+                                                            value={form.data.elements_config?.qr_code?.y ?? 85.5}
+                                                            onChange={(e) => updateNestedConfig('qr_code', 'y', parseFloat(e.target.value))}
+                                                            className="flex-1 h-1.5 accent-emerald-600 cursor-pointer"
+                                                        />
+                                                        <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 w-9 text-right">
+                                                            {parseFloat(form.data.elements_config?.qr_code?.y ?? 85.5)}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="text-[10px] text-slate-500 font-bold mb-1.5">QR size (px)</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <input
+                                                            type="range" min="40" max="200" step="2"
+                                                            value={form.data.elements_config?.qr_code?.size ?? 88}
+                                                            onChange={(e) => updateNestedConfig('qr_code', 'size', parseInt(e.target.value))}
+                                                            className="flex-1 h-1.5 accent-emerald-600 cursor-pointer"
+                                                        />
+                                                        <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 w-9 text-right">
+                                                            {form.data.elements_config?.qr_code?.size ?? 88}px
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* ELEMENT 4: Gate Security Code */}
+                                    <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden">
+                                        <div className="px-4 py-3 flex items-center justify-between border-b border-slate-100 dark:border-white/[0.06]">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-7 h-7 rounded-lg bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center">
+                                                    <Lock className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+                                                </div>
+                                                <div>
+                                                    <div className="text-xs font-bold text-slate-900 dark:text-white">Gate Security Code</div>
+                                                    <div className="text-[10px] text-slate-400 mt-0.5">8-digit passcode for manual staff lookup</div>
+                                                </div>
+                                            </div>
+                                            <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={form.data.elements_config?.show_unique_code !== false}
+                                                    onChange={(e) => {
+                                                        form.setData('show_unique_code', e.target.checked);
+                                                        updateDirectConfig('show_unique_code', e.target.checked);
+                                                    }}
+                                                    className="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 cursor-pointer"
+                                                />
+                                                <span className={`text-[10px] font-bold ${form.data.elements_config?.show_unique_code !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'}`}>
+                                                    {form.data.elements_config?.show_unique_code !== false ? 'VISIBLE' : 'HIDDEN'}
+                                                </span>
+                                            </label>
+                                        </div>
+                                        {form.data.elements_config?.show_unique_code !== false && (
+                                            <div className="px-4 py-3">
+                                                <div className="text-[10px] text-slate-500 font-bold mb-1.5">Vertical position (%)</div>
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="range" min="1" max="99" step="0.5"
+                                                        value={form.data.elements_config?.card_number?.y ?? 96}
+                                                        onChange={(e) => updateNestedConfig('card_number', 'y', parseFloat(e.target.value))}
+                                                        className="flex-1 h-1.5 accent-emerald-600 cursor-pointer"
+                                                    />
+                                                    <span className="text-[10px] font-mono font-bold text-emerald-700 dark:text-emerald-400 w-9 text-right">
+                                                        {parseFloat(form.data.elements_config?.card_number?.y ?? 96)}%
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                </div>
+
+                                {/* RIGHT: Live Preview (7 cols) */}
+                                <div className="lg:col-span-7 lg:sticky lg:top-6">
+                                    <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden">
+                                        {/* Preview header */}
+                                        <div className="px-4 py-3 border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between">
+                                            <div>
+                                                <div className="text-[11px] font-black uppercase tracking-wider text-slate-800 dark:text-white">Live Preview</div>
+                                                <div className="text-[10px] text-slate-400 mt-0.5">{currentTpl?.name}</div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                {/* Test guest name input */}
+                                                <div className="flex items-center gap-2 bg-slate-50 dark:bg-white/[0.04] border border-slate-200 dark:border-white/[0.08] rounded-lg px-2.5 py-1.5">
+                                                    <Type className="w-3 h-3 text-slate-400 shrink-0" />
+                                                    <input
+                                                        type="text"
+                                                        value={testGuestName}
+                                                        onChange={(e) => setTestGuestName(e.target.value)}
+                                                        placeholder="Test guest name"
+                                                        className="text-[11px] font-medium bg-transparent text-slate-700 dark:text-slate-200 border-none outline-none w-32 placeholder:text-slate-300 dark:placeholder:text-slate-600"
+                                                    />
+                                                </div>
+                                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                    Live
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        {/* Card preview */}
+                                        <div className="p-6 flex items-center justify-center bg-slate-50 dark:bg-[#070E1A] min-h-[480px]">
+                                            <div className="w-full max-w-[320px]">
+                                                <PersonalisedCard
+                                                    guestName={testGuestName}
+                                                    cardNumber={sampleGuest?.card_number || '12345678'}
+                                                    allowance={testAllowance}
+                                                    event={sampleEvent}
+                                                    template={{
+                                                        ...currentTpl,
+                                                        ...form.data,
+                                                        image_path: currentTpl?.image_path
+                                                    }}
+                                                    interactive={true}
+                                                />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center justify-between px-1 text-[11px] text-slate-300 font-mono">
-                                        <span className="truncate max-w-[200px]" title={uploadForm.data.image_file.name}>
-                                            📄 {uploadForm.data.image_file.name}
-                                        </span>
-                                        <span>
-                                            {(uploadForm.data.image_file.size / (1024 * 1024)).toFixed(2)} MB
-                                        </span>
-                                    </div>
                                 </div>
-                            )}
-                        </div>
 
+                            </form>
+                        )}
+                    </>
+                )}
+
+            </div>
+
+            {/* ── UPLOAD MODAL ── */}
+            <Modal show={uploadModalOpen} onClose={() => setUploadModalOpen(false)} maxWidth="sm">
+                <form noValidate onSubmit={handleUploadSubmit} className="p-6 space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.08]">
                         <div>
-                            <InputLabel value="Layout Type *" />
-                            <div className="space-y-2 mt-1.5">
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => {
-                                        uploadForm.setData({
-                                            ...uploadForm.data,
-                                            overlay_mode: 'minimal',
-                                            show_guest_name: true,
-                                            show_allowance_badge: true,
-                                            show_category_badge: true,
-                                            show_qr: true,
-                                            show_unique_code: true,
-                                            show_headline: false,
-                                            show_couple_names: false,
-                                            show_date: false,
-                                            show_quote: false,
-                                            show_venue: false,
-                                        });
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            uploadForm.setData({
-                                                ...uploadForm.data,
-                                                overlay_mode: 'minimal',
-                                                show_guest_name: true,
-                                                show_allowance_badge: true,
-                                                show_category_badge: true,
-                                                show_qr: true,
-                                                show_unique_code: true,
-                                                show_headline: false,
-                                                show_couple_names: false,
-                                                show_date: false,
-                                                show_quote: false,
-                                                show_venue: false,
-                                            });
-                                        }
-                                    }}
-                                    className={`p-3 rounded-2xl border text-left transition active:scale-[0.99] flex items-start gap-3 cursor-pointer ${
-                                        uploadForm.data.overlay_mode !== 'full'
-                                            ? 'border-[#16A34A] bg-[#16A34A]/10 text-slate-900 dark:text-white ring-1 ring-[#16A34A] shadow-xs'
-                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/[0.15]'
-                                    }`}
-                                >
-                                    <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
-                                        uploadForm.data.overlay_mode !== 'full'
-                                            ? 'border-[#16A34A] bg-[#16A34A]'
-                                            : 'border-slate-300 dark:border-white/[0.2]'
-                                    }`}>
-                                        {uploadForm.data.overlay_mode !== 'full' && (
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-950" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-xs text-slate-900 dark:text-white">Guest &amp; QR Only</span>
-                                            <span className="text-[10px] font-bold text-[#16A34A] bg-[#16A34A]/15 border border-[#16A34A]/25 px-2 py-0.5 rounded-full font-mono">
-                                                Recommended
-                                            </span>
-                                        </div>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                            Guest name and QR code only. Best for finished card designs.
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div
-                                    role="button"
-                                    tabIndex={0}
-                                    onClick={() => {
-                                        uploadForm.setData({
-                                            ...uploadForm.data,
-                                            overlay_mode: 'full',
-                                            show_guest_name: true,
-                                            show_allowance_badge: true,
-                                            show_category_badge: true,
-                                            show_qr: true,
-                                            show_unique_code: true,
-                                            show_headline: true,
-                                            show_couple_names: true,
-                                            show_date: true,
-                                            show_quote: true,
-                                            show_venue: true,
-                                        });
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' || e.key === ' ') {
-                                            e.preventDefault();
-                                            uploadForm.setData({
-                                                ...uploadForm.data,
-                                                overlay_mode: 'full',
-                                                show_guest_name: true,
-                                                show_allowance_badge: true,
-                                                show_category_badge: true,
-                                                show_qr: true,
-                                                show_unique_code: true,
-                                                show_headline: true,
-                                                show_couple_names: true,
-                                                show_date: true,
-                                                show_quote: true,
-                                                show_venue: true,
-                                            });
-                                        }
-                                    }}
-                                    className={`p-3 rounded-2xl border text-left transition active:scale-[0.99] flex items-start gap-3 cursor-pointer ${
-                                        uploadForm.data.overlay_mode === 'full'
-                                            ? 'border-[#16A34A] bg-[#16A34A]/10 text-slate-900 dark:text-white ring-1 ring-[#16A34A] shadow-xs'
-                                            : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/50 dark:bg-white/[0.02] text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-white/[0.15]'
-                                    }`}
-                                >
-                                    <div className={`mt-0.5 w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors ${
-                                        uploadForm.data.overlay_mode === 'full'
-                                            ? 'border-[#16A34A] bg-[#16A34A]'
-                                            : 'border-slate-300 dark:border-white/[0.2]'
-                                    }`}>
-                                        {uploadForm.data.overlay_mode === 'full' && (
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-slate-950" />
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <span className="font-bold text-xs text-slate-900 dark:text-white">Full Details</span>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                            Includes title, date, venue, and QR code.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                            <h3 className="text-sm font-black text-slate-900 dark:text-white">Upload Design</h3>
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">PNG, JPG, WEBP or SVG · max 10MB</p>
                         </div>
+                        <button type="button" onClick={() => setUploadModalOpen(false)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-white transition cursor-pointer">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
 
-                        <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
-                            <SecondaryButton type="button" onClick={() => setUploadModalOpen(false)}>
-                                Cancel
-                            </SecondaryButton>
-                            <PrimaryButton 
-                                type="button"
-                                onClick={handleUploadSubmit}
-                                disabled={isUploadingArtwork || uploadForm.processing} 
-                                className="text-white py-2.5 px-4 text-xs font-bold rounded-xl shadow-xs transition active:scale-95 flex items-center gap-1.5 cursor-pointer"
-                            >
-                                {isUploadingArtwork || uploadForm.processing ? (
+                    {/* Template name */}
+                    <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                            Template Name <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={uploadForm.data.name}
+                            onChange={(e) => uploadForm.setData('name', e.target.value)}
+                            placeholder="e.g. Wedding Night Pass"
+                            className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-[#07111D] text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 outline-none transition"
+                        />
+                        {uploadForm.errors.name && <p className="text-rose-500 text-[11px] mt-1">{uploadForm.errors.name}</p>}
+                    </div>
+
+                    {/* File picker */}
+                    <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
+                            Artwork File <span className="text-rose-500">*</span>
+                        </label>
+                        <label className="block w-full cursor-pointer">
+                            <div className={`flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-8 transition ${
+                                uploadForm.data.image_file
+                                    ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20'
+                                    : 'border-slate-300 dark:border-white/[0.1] hover:border-[#16A34A] bg-slate-50 dark:bg-white/[0.02]'
+                            }`}>
+                                {uploadForm.data.image_file ? (
                                     <>
-                                        <Loader2 className="w-4 h-4 animate-spin text-white" />
-                                        <span>Saving...</span>
+                                        <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 text-center px-4 truncate max-w-full">
+                                            {uploadForm.data.image_file.name}
+                                        </span>
+                                        <span className="text-[10px] text-slate-400">Click to change</span>
                                     </>
                                 ) : (
                                     <>
-                                        <Upload className="w-3.5 h-3.5" />
-                                        <span>Save Template</span>
+                                        <Upload className="w-5 h-5 text-slate-400" />
+                                        <span className="text-xs font-medium text-slate-500">Click to select artwork</span>
                                     </>
                                 )}
-                            </PrimaryButton>
-                        </div>
-                    </form>
-                </Modal>
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+                                    uploadForm.setData('image_file', file);
+                                    const img = new window.Image();
+                                    const url = URL.createObjectURL(file);
+                                    img.onload = () => {
+                                        const w = img.naturalWidth, h = img.naturalHeight;
+                                        setUploadedImgMeta({
+                                            width: w, height: h,
+                                            ratio: `${w}:${h}`,
+                                            orientation: h > w ? 'portrait' : 'landscape'
+                                        });
+                                        URL.revokeObjectURL(url);
+                                    };
+                                    img.src = url;
+                                }}
+                            />
+                        </label>
+                        {uploadForm.errors.image_file && <p className="text-rose-500 text-[11px] mt-1">{uploadForm.errors.image_file}</p>}
+                    </div>
 
-                <ConfirmationModal
-                    show={confirmModal.show}
-                    title={confirmModal.title}
-                    message={confirmModal.message}
-                    warning={confirmModal.warning}
-                    confirmText={confirmModal.confirmText}
-                    cancelText={confirmModal.cancelText}
-                    type={confirmModal.type}
-                    loading={confirmModal.loading}
-                    onConfirm={confirmModal.onConfirm}
-                    onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
-                />
-            </div>
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                        <button type="button" onClick={() => setUploadModalOpen(false)} className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition cursor-pointer">
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={isUploadingArtwork || uploadForm.processing}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-50"
+                        >
+                            {isUploadingArtwork || uploadForm.processing ? (
+                                <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading…</>
+                            ) : (
+                                <><Upload className="w-3.5 h-3.5" /> Upload</>
+                            )}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* ── CONFIRM DELETE ── */}
+            <ConfirmationModal
+                show={confirmModal.show}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                warning={confirmModal.warning}
+                confirmText={confirmModal.confirmText}
+                cancelText={confirmModal.cancelText}
+                type={confirmModal.type}
+                loading={confirmModal.loading}
+                onConfirm={confirmModal.onConfirm}
+                onClose={() => setConfirmModal(prev => ({ ...prev, show: false }))}
+            />
+
         </KardovoAppLayout>
     );
 }

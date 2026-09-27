@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import Modal from '@/Components/Modal';
@@ -8,20 +8,17 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import { 
-    Calendar, CalendarPlus, 
+    Calendar,
     Plus, 
     Users, 
     CheckCircle2, 
     ArrowRight, 
-    Palette, 
-    Send, 
-    MapPin, 
     CheckCheck, 
     TrendingUp, 
-    ChevronRight,
     Zap,
     Sparkles,
-    Wallet,
+    Ticket,
+    Search
 } from 'lucide-react';
 
 export default function CustomerDashboard({ 
@@ -31,7 +28,11 @@ export default function CustomerDashboard({
 }) {
     const { auth } = usePage().props;
     const user = auth?.user || {};
+
     const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [createType, setCreateType] = useState('invitation'); // 'invitation' | 'occasion'
+    const [activeFilter, setActiveFilter] = useState('all'); // 'all' | 'invitations' | 'occasions'
+    const [searchQuery, setSearchQuery] = useState('');
 
     const today = new Date();
     const todayFormatted = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -42,32 +43,82 @@ export default function CustomerDashboard({
         if (hour < 17) return 'Good afternoon';
         return 'Good evening';
     })();
-    const firstName = user?.name ? user.name.split(' ')[0] : 'alfruhd';
+
+    const firstName = user?.name ? user.name.split(' ')[0] : 'there';
     const isNewUser = events.length === 0;
 
-    // Form: Create Event
-    const { data, setData, post, processing, errors, reset } = useForm({
+    // Form: Create Digital Invitation Event
+    const invitationForm = useForm({
         title: '',
         event_type: 'Wedding Reception',
         event_date: '',
         event_time: '',
         venue: '',
-        city: '',
+        city: 'Dar es Salaam',
         description: '',
     });
 
-    const handleCreateSubmit = (e) => {
+    // Form: Create Ticketed Occasion
+    const occasionForm = useForm({
+        title: '',
+        occasion_type: 'concert',
+        event_date: '',
+        event_time: '',
+        venue: '',
+        city: 'Dar es Salaam',
+        description: '',
+        ticket_currency: 'TZS',
+        initial_tier_name: 'Standard Admission',
+        initial_tier_price: 25000,
+        initial_tier_capacity: 100,
+        is_public: true,
+    });
+
+    const handleCreateInvitationSubmit = (e) => {
         e.preventDefault();
-        post(route('events.store'), {
+        invitationForm.post(route('events.store'), {
             onSuccess: () => {
                 setCreateModalOpen(false);
-                reset();
+                invitationForm.reset();
+            }
+        });
+    };
+
+    const handleCreateOccasionSubmit = (e) => {
+        e.preventDefault();
+        occasionForm.post(route('ticketing.occasions.store'), {
+            forceFormData: true,
+            onSuccess: () => {
+                setCreateModalOpen(false);
+                occasionForm.reset();
             }
         });
     };
 
     const quota = user?.message_quotas || {};
     const isUnrestrictedQuota = user?.is_unrestricted_quota || user?.role === 'admin';
+
+    // Filter events by tab and search
+    const filteredEvents = useMemo(() => {
+        return events.filter((ev) => {
+            const matchesTab = 
+                activeFilter === 'all' || 
+                (activeFilter === 'invitations' && !ev.is_occasion) || 
+                (activeFilter === 'occasions' && ev.is_occasion);
+
+            const matchesSearch = !searchQuery.trim() || 
+                ev.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                ev.venue?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                ev.city?.toLowerCase().includes(searchQuery.toLowerCase());
+
+            return matchesTab && matchesSearch;
+        });
+    }, [events, activeFilter, searchQuery]);
+
+    const openModalWithTab = (tab) => {
+        setCreateType(tab);
+        setCreateModalOpen(true);
+    };
 
     return (
         <KardovoAppLayout
@@ -76,10 +127,10 @@ export default function CustomerDashboard({
                 <button
                     type="button"
                     onClick={() => setCreateModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-sm transition active:scale-95 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
                 >
-                    <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-                    <span>Create Event</span>
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Create</span>
                 </button>
             }
         >
@@ -87,550 +138,527 @@ export default function CustomerDashboard({
 
             <div className="max-w-7xl mx-auto space-y-6">
 
-                {/* 1. TOP HEADER (COMPLEMENTARY SYSTEM THEME) */}
-                <div className="rounded-3xl bg-white/80 dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] p-6 sm:p-7 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3.5">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                            <Sparkles className="w-6 h-6 stroke-[2]" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight flex items-center gap-2">
-                                <span>{greeting}, {firstName}</span>
-                            </h1>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
-                                Select or create an event to get started
-                            </p>
-                        </div>
+                {/* 1. GREETING */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+                    <div>
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+                            {greeting}, {firstName}
+                        </h1>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                            Overview of your digital invitations and ticketed occasions.
+                        </p>
                     </div>
+
+                    {!isNewUser && (
+                        <div className="flex items-center gap-2 flex-wrap text-xs">
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
+                                <span>{overviewStats.invitation_events_count || 0} Invitations</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08] font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                <span>{overviewStats.occasion_events_count || 0} Occasions</span>
+                            </span>
+                        </div>
+                    )}
                 </div>
 
-
-                {/* 2. PLAIN DASHBOARD FOR NEW USER (COMPLEMENTARY SYSTEM THEME) */}
+                {/* 2. NEW USER ONBOARDING: DUAL INVITATION & TICKETING INTRO */}
                 {isNewUser ? (
                     <div className="space-y-6 animate-fadeIn">
-                        {/* Empty Dashed Box */}
-                        <div className="rounded-3xl border-2 border-dashed border-emerald-500/20 dark:border-emerald-500/30 bg-white/80 dark:bg-[#0B1524] py-16 sm:py-20 px-6 text-center space-y-3 shadow-xs hover:border-emerald-500/40 transition">
-                            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto shadow-2xs">
-                                <Calendar className="w-8 h-8 stroke-[1.75]" />
-                            </div>
-                            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                No Event Selected
-                            </h2>
-                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-                                Select an existing event or create a new one to view your dashboard
-                            </p>
-                            <div className="pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setCreateModalOpen(true)}
-                                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] text-white font-bold text-xs sm:text-sm shadow-xs transition active:scale-95 cursor-pointer"
-                                >
-                                    <Plus className="w-4 h-4 stroke-[2.5]" />
-                                    <span>Create New Event</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* How to use Kardovo Section */}
-                        <div className="rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white/80 dark:bg-[#0B1524] p-5 sm:p-6 shadow-xs space-y-5">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                    <Sparkles className="w-4 h-4" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            {/* Card A: Digital Invitations */}
+                            <div className="rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] p-6 sm:p-8 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition group">
+                                <div className="space-y-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-[#16A34A] dark:text-emerald-400 flex items-center justify-center shadow-2xs">
+                                        <Sparkles className="w-6 h-6" />
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">Personal & Private</div>
+                                        <h3 className="text-lg font-black text-slate-900 dark:text-white font-display mt-0.5">Digital Invitations & RSVPs</h3>
+                                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                                            Craft bespoke animated invitation cards, upload guest lists, track attendance with real-time RSVPs, and distribute passes via WhatsApp & SMS.
+                                        </p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white font-display">
-                                        How to use Kardovo
-                                    </h3>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                        Follow 5 simple steps to set up and send your event passes
-                                    </p>
+                                <div className="pt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => openModalWithTab('invitation')}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        <span>Create Digital Invitation</span>
+                                    </button>
                                 </div>
                             </div>
 
-                                                        {/* 5 Minimalist Steps Grid */}
-                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-                                {/* Step 1: Create Event */}
-                                <div 
-                                    
-                                    className="p-3 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] transition flex items-center gap-3"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex flex-shrink-0 items-center justify-center relative">
-                                        <CalendarPlus className="w-4 h-4" />
-                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#0B1524]">1</span>
+                            {/* Card B: Ticketed Occasions */}
+                            <div className="rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] p-6 sm:p-8 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition group">
+                                <div className="space-y-4">
+                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-[#16A34A] dark:text-emerald-400 flex items-center justify-center shadow-2xs">
+                                        <Ticket className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <h4 className="text-[12px] font-bold text-slate-900 dark:text-white transition leading-tight">Create Event</h4>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Create now</p>
+                                        <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">Public & Commercial</div>
+                                        <h3 className="text-lg font-black text-slate-900 dark:text-white font-display mt-0.5">Ticketed Occasions & Sales</h3>
+                                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                                            Launch ticket sales for concerts, summits, festivals, or sports. Accept Mobile Money (M-Pesa, Airtel, Tigo), issue passes, and verify at the gate.
+                                        </p>
                                     </div>
                                 </div>
-
-                                {/* Step 2: Payment */}
-                                <div
-                                    
-                                    className="p-3 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] transition flex items-center gap-3"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex flex-shrink-0 items-center justify-center relative">
-                                        <Wallet className="w-4 h-4" />
-                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#0B1524]">2</span>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-[12px] font-bold text-slate-900 dark:text-white transition leading-tight">Make Payment</h4>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Go to Payment</p>
-                                    </div>
-                                </div>
-
-                                {/* Step 3: Choose Card Template */}
-                                <div
-                                    
-                                    className="p-3 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] transition flex items-center gap-3"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex flex-shrink-0 items-center justify-center relative">
-                                        <Palette className="w-4 h-4" />
-                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#0B1524]">3</span>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-[12px] font-bold text-slate-900 dark:text-white transition leading-tight">Card Template</h4>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">View templates</p>
-                                    </div>
-                                </div>
-
-                                {/* Step 4: Import Guests */}
-                                <div
-                                    
-                                    className="p-3 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] transition flex items-center gap-3"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex flex-shrink-0 items-center justify-center relative">
-                                        <Users className="w-4 h-4" />
-                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#0B1524]">4</span>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-[12px] font-bold text-slate-900 dark:text-white transition leading-tight">Import Guests</h4>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">My Events</p>
-                                    </div>
-                                </div>
-
-                                {/* Step 5: Send Passes */}
-                                <div
-                                    
-                                    className="p-3 rounded-2xl bg-slate-50/70 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.06] transition flex items-center gap-3"
-                                >
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex flex-shrink-0 items-center justify-center relative">
-                                        <Send className="w-4 h-4" />
-                                        <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-emerald-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#0B1524]">5</span>
-                                    </div>
-                                    <div>
-                                        <h4 className="text-[12px] font-bold text-slate-900 dark:text-white transition leading-tight">Send Passes</h4>
-                                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Messaging Hub</p>
-                                    </div>
+                                <div className="pt-6">
+                                    <button
+                                        type="button"
+                                        onClick={() => openModalWithTab('occasion')}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        <span>Launch Ticketed Occasion</span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="space-y-6 animate-fadeIn">
-                        {/* Executive Metrics KPI Grid */}
-                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-                            {/* Total Events */}
-                            <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all duration-200 flex flex-col justify-between">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Events</span>
-                                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-colors">
-                                        <Calendar className="w-4 h-4" />
-                                    </div>
-                                </div>
-                                <div className="mt-3">
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{overviewStats.total_events || 0}</div>
-                                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">{overviewStats.active_events || 0} active</div>
-                                </div>
-                            </div>
+                    <div className="space-y-5 animate-fadeIn">
 
-                            {/* Total Guests */}
-                            <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all duration-200 flex flex-col justify-between">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Guests</span>
-                                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-colors">
-                                        <Users className="w-4 h-4" />
-                                    </div>
+                        {/* STATS STRIP — 4 key numbers in one quiet row */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-200/60 dark:bg-white/[0.06] rounded-2xl overflow-hidden border border-slate-200/60 dark:border-white/[0.06]">
+                            {[
+                                {
+                                    label: 'Events',
+                                    value: overviewStats.total_events || 0,
+                                    sub: `${overviewStats.invitation_events_count || 0} inv · ${overviewStats.occasion_events_count || 0} occ`,
+                                },
+                                {
+                                    label: 'Attending',
+                                    value: Number(overviewStats.total_will_attend || 0).toLocaleString(),
+                                    sub: `${overviewStats.overall_attendance_rate || 0}% rate`,
+                                    accent: true,
+                                },
+                                {
+                                    label: 'Tickets Sold',
+                                    value: Number(overviewStats.total_tickets_sold || 0).toLocaleString(),
+                                    sub: `TZS ${Number(overviewStats.total_ticket_revenue || 0).toLocaleString()}`,
+                                },
+                                {
+                                    label: 'Gate Verified',
+                                    value: Number(overviewStats.total_checkins || 0).toLocaleString(),
+                                    sub: `${overviewStats.overall_checkin_rate || 0}% entry`,
+                                },
+                            ].map(({ label, value, sub, accent }) => (
+                                <div key={label} className="bg-white dark:bg-[#0B1524] px-5 py-4">
+                                    <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">{label}</div>
+                                    <div className={`text-xl font-black font-mono mt-1 ${accent ? 'text-[#16A34A] dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>{value}</div>
+                                    <div className="text-[10px] text-slate-400 mt-0.5">{sub}</div>
                                 </div>
-                                <div className="mt-3">
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(overviewStats.total_guests || 0).toLocaleString()}</div>
-                                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Invited guests</div>
-                                </div>
-                            </div>
-
-                            {/* Confirmed RSVPs */}
-                            <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all duration-200 flex flex-col justify-between">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Attending</span>
-                                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-colors">
-                                        <CheckCircle2 className="w-4 h-4" />
-                                    </div>
-                                </div>
-                                <div className="mt-3">
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(overviewStats.total_will_attend || 0).toLocaleString()}</div>
-                                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">{overviewStats.overall_attendance_rate || 0}% confirmed</div>
-                                </div>
-                            </div>
-
-                            {/* Admitted at Gate */}
-                            <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all duration-200 flex flex-col justify-between">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Checked In</span>
-                                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-colors">
-                                        <CheckCheck className="w-4 h-4" />
-                                    </div>
-                                </div>
-                                <div className="mt-3">
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(overviewStats.total_checkins || 0).toLocaleString()}</div>
-                                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Gate entries</div>
-                                </div>
-                            </div>
-
-                            {/* Passes Dispatched */}
-                            <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all duration-200 flex flex-col justify-between">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Passes Sent</span>
-                                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-colors">
-                                        <Send className="w-4 h-4" />
-                                    </div>
-                                </div>
-                                <div className="mt-3">
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">{Number(overviewStats.total_messages || 0).toLocaleString()}</div>
-                                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">Dispatched</div>
-                                </div>
-                            </div>
-
-                            {/* Message Quota */}
-                            <div className="group rounded-2xl p-4 bg-white dark:bg-[#0B1524] border border-slate-200/80 dark:border-white/[0.08] shadow-xs hover:shadow-card hover:border-emerald-500/40 dark:hover:border-emerald-500/40 transition-all duration-200 flex flex-col justify-between">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider text-slate-900 dark:text-white">Quota</span>
-                                    <div className="w-8 h-8 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-colors">
-                                        <Zap className="w-4 h-4" />
-                                    </div>
-                                </div>
-                                <div className="mt-3">
-                                    <div className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
-                                        {isUnrestrictedQuota ? '∞' : (quota.whatsapp_remaining ?? '1,000')}
-                                    </div>
-                                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
-                                        {isUnrestrictedQuota ? 'Unlimited balance' : `${quota.whatsapp_used || 0} sent`}
-                                    </div>
-                                </div>
-                            </div>
+                            ))}
                         </div>
 
-                        {/* Main Grid: Your Events & RSVP Status */}
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                            {/* Left Column: Your Events (8 cols) */}
-                            <div className="lg:col-span-8 space-y-6">
-                                <div className="rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 shadow-xs">
-                                    <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/[0.06]">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
-                                                <Calendar className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h2 className="text-base font-black text-slate-900 dark:text-white font-display">
-                                                    Your Events
-                                                </h2>
-                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                    Active event campaigns and guest tallies.
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <Link
-                                            href={route('events.index')}
-                                            className="text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/80 dark:bg-white/[0.05] dark:hover:bg-white/[0.1] border border-slate-200/60 dark:border-white/[0.08] transition group shadow-2xs"
-                                        >
-                                            <span>View All ({events.length})</span>
-                                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                                        </Link>
-                                    </div>
+                        {/* MAIN: events list (left) + compact sidebar (right) */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
 
-                                    <div className="mt-4 divide-y divide-slate-100 dark:divide-white/[0.06]">
-                                        {events.slice(0, 5).map((event) => {
+                            {/* EVENTS LIST */}
+                            <div className="lg:col-span-8 bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden">
+
+                                {/* List header */}
+                                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-white/[0.06]">
+                                    <div className="flex items-center gap-1 text-xs">
+                                        {[
+                                            { key: 'all', label: `All (${events.length})` },
+                                            { key: 'invitations', label: `Invitations (${overviewStats.invitation_events_count || 0})` },
+                                            { key: 'occasions', label: `Occasions (${overviewStats.occasion_events_count || 0})` },
+                                        ].map(({ key, label }) => (
+                                            <button
+                                                key={key}
+                                                type="button"
+                                                onClick={() => setActiveFilter(key)}
+                                                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                                                    activeFilter === key
+                                                        ? 'bg-[#16A34A] text-white'
+                                                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                                                }`}
+                                            >
+                                                {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <div className="relative">
+                                        <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="Search…"
+                                            className="text-xs pl-7 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.02] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-0 w-36"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Rows */}
+                                {filteredEvents.length === 0 ? (
+                                    <div className="py-14 text-center text-sm text-slate-400">No events found.</div>
+                                ) : (
+                                    <div className="divide-y divide-slate-100 dark:divide-white/[0.05]">
+                                        {filteredEvents.map((event) => {
                                             const dateObj = event.event_date ? new Date(event.event_date) : null;
-                                            const dayStr = dateObj ? dateObj.toLocaleDateString('en-GB', { day: 'numeric' }) : '--';
-                                            const monthStr = dateObj ? dateObj.toLocaleDateString('en-GB', { month: 'short' }) : 'TBD';
+                                            const day   = dateObj ? dateObj.toLocaleDateString('en-GB', { day: 'numeric' }) : '--';
+                                            const month = dateObj ? dateObj.toLocaleDateString('en-GB', { month: 'short' }) : '---';
+                                            const manageUrl = event.is_occasion
+                                                ? route('ticketing.index', { event_id: event.id })
+                                                : route('events.show', event.id);
 
                                             return (
-                                                <div 
-                                                    key={event.id}
-                                                    className="py-3.5 first:pt-1 last:pb-1 flex items-center justify-between gap-3 group transition-colors"
-                                                >
-                                                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                                                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-slate-100/90 dark:bg-white/[0.04] border border-slate-200/70 dark:border-white/[0.08] flex flex-col items-center justify-center flex-shrink-0 text-center shadow-2xs">
-                                                            <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400 leading-none">
-                                                                {monthStr}
-                                                            </span>
-                                                            <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono leading-tight mt-0.5">
-                                                                {dayStr}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="min-w-0 flex-1">
-                                                            <Link 
-                                                                href={route('events.show', event.id)}
-                                                                className="font-bold text-sm sm:text-[15px] text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors truncate block hover:underline"
-                                                            >
-                                                                {event.title}
-                                                            </Link>
-
-                                                            <div className="flex items-center gap-2 sm:gap-2.5 mt-1 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                                                                {event.event_type && (
-                                                                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-[10px] font-semibold border border-emerald-500/20 flex-shrink-0">
-                                                                        {event.event_type}
-                                                                    </span>
-                                                                )}
-                                                                {(event.venue || event.city) && (
-                                                                    <span className="flex items-center gap-1 truncate max-w-[200px] sm:max-w-xs">
-                                                                        <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
-                                                                        <span className="truncate">{event.venue || event.city}</span>
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                        </div>
+                                                <div key={event.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
+                                                    {/* Date */}
+                                                    <div className="w-10 text-center flex-shrink-0">
+                                                        <div className="text-[9px] uppercase font-bold text-[#16A34A] dark:text-emerald-400 leading-none">{month}</div>
+                                                        <div className="text-base font-black font-mono text-slate-900 dark:text-white leading-tight">{day}</div>
                                                     </div>
 
-                                                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                                                    {/* Divider */}
+                                                    <div className="w-px h-8 bg-slate-100 dark:bg-white/[0.06] flex-shrink-0" />
+
+                                                    {/* Title */}
+                                                    <div className="min-w-0 flex-1">
                                                         <Link
-                                                            href={route('events.show', event.id)}
-                                                            className="px-3 py-1.5 rounded-xl bg-slate-100/90 hover:bg-[#16A34A] text-slate-700 dark:text-slate-300 hover:text-white dark:bg-white/[0.05] dark:hover:bg-[#16A34A] dark:hover:text-white font-bold text-xs border border-slate-200/70 dark:border-white/[0.08] hover:border-transparent shadow-2xs transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                                                            href={manageUrl}
+                                                            className="text-sm font-bold text-slate-900 dark:text-white hover:text-[#16A34A] dark:hover:text-emerald-400 transition-colors truncate block"
                                                         >
-                                                            <span>Manage</span>
-                                                            <ChevronRight className="w-3.5 h-3.5" />
+                                                            {event.title}
                                                         </Link>
+                                                        <span className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">
+                                                            {event.is_occasion ? 'Occasion' : 'Invitation'}
+                                                        </span>
                                                     </div>
+
+                                                    {/* Action */}
+                                                    <Link
+                                                        href={manageUrl}
+                                                        className="flex-shrink-0 text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-[#16A34A] dark:group-hover:text-emerald-400 transition-colors"
+                                                    >
+                                                        Manage →
+                                                    </Link>
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                </div>
+                                )}
                             </div>
 
-                            {/* Right Column: RSVP Status (4 cols) */}
-                            <div className="lg:col-span-4 space-y-6">
-                                <div className="rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200/90 dark:border-white/[0.08] p-5 sm:p-6 shadow-xs space-y-5">
-                                    <div className="flex items-center gap-3 pb-3 border-b border-slate-100 dark:border-white/[0.06]">
-                                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
-                                            <TrendingUp className="w-4 h-4" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-sm font-black text-slate-900 dark:text-white font-display">
-                                                RSVP Status
-                                            </h2>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                Overall guest responses.
-                                            </p>
-                                        </div>
+                            {/* COMPACT SIDEBAR */}
+                            <div className="lg:col-span-4 space-y-4">
+
+                                {/* RSVP Snapshot */}
+                                <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] p-5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">RSVP Snapshot</span>
+                                        <span className="text-xs font-bold text-[#16A34A] dark:text-emerald-400">{overviewStats.overall_attendance_rate || 0}%</span>
                                     </div>
-
-                                    <div className="space-y-4">
-                                        {/* Attending */}
-                                        <div className="space-y-1.5">
-                                            <div className="flex justify-between text-xs font-bold">
-                                                <span className="text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
-                                                    <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
-                                                    <span>Attending</span>
-                                                </span>
-                                                <span className="text-slate-900 dark:text-white font-mono">
-                                                    {overviewStats.total_will_attend || 0} <span className="text-slate-400 font-normal">({overviewStats.overall_attendance_rate || 0}%)</span>
-                                                </span>
+                                    {[
+                                        { label: 'Attending',    value: overviewStats.total_will_attend || 0,     total: overviewStats.total_guests, color: 'bg-[#16A34A]' },
+                                        { label: 'Pending',      value: overviewStats.total_pending_rsvp || 0,    total: overviewStats.total_guests, color: 'bg-amber-400' },
+                                        { label: 'Declined',     value: overviewStats.total_will_not_attend || 0, total: overviewStats.total_guests, color: 'bg-slate-300 dark:bg-slate-600' },
+                                    ].map(({ label, value, total, color }) => (
+                                        <div key={label} className="space-y-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span className="text-slate-500 dark:text-slate-400 font-medium">{label}</span>
+                                                <span className="font-bold font-mono text-slate-900 dark:text-white">{Number(value).toLocaleString()}</span>
                                             </div>
-                                            <div className="h-2 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
-                                                <div 
-                                                    className="h-full rounded-full bg-[#16A34A] transition-all duration-500"
-                                                    style={{ width: `${Math.min(overviewStats.overall_attendance_rate || 0, 100)}%` }}
+                                            <div className="h-1 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full ${color} transition-all`}
+                                                    style={{ width: total > 0 ? `${Math.min(Math.round((value / total) * 100), 100)}%` : '0%' }}
                                                 />
                                             </div>
                                         </div>
+                                    ))}
+                                </div>
 
-                                        {/* Pending */}
-                                        <div className="space-y-1.5">
-                                            <div className="flex justify-between text-xs font-bold">
-                                                <span className="text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                                                    <span className="w-2 h-2 rounded-full bg-amber-500" />
-                                                    <span>Pending RSVP</span>
-                                                </span>
-                                                <span className="text-slate-900 dark:text-white font-mono">
-                                                    {overviewStats.total_pending_rsvp || 0}
-                                                </span>
-                                            </div>
-                                            <div className="h-2 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
-                                                <div 
-                                                    className="h-full rounded-full bg-amber-500 transition-all duration-500"
-                                                    style={{ 
-                                                        width: overviewStats.total_guests > 0 
-                                                            ? `${Math.min(Math.round(((overviewStats.total_pending_rsvp || 0) / overviewStats.total_guests) * 100), 100)}%` 
-                                                            : '0%' 
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Declined */}
-                                        <div className="space-y-1.5">
-                                            <div className="flex justify-between text-xs font-bold">
-                                                <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                                                    <span className="w-2 h-2 rounded-full bg-slate-400" />
-                                                    <span>Declined</span>
-                                                </span>
-                                                <span className="text-slate-900 dark:text-white font-mono">
-                                                    {overviewStats.total_will_not_attend || 0}
-                                                </span>
-                                            </div>
-                                            <div className="h-2 rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden">
-                                                <div 
-                                                    className="h-full rounded-full bg-slate-400 transition-all duration-500"
-                                                    style={{ 
-                                                        width: overviewStats.total_guests > 0 
-                                                            ? `${Math.min(Math.round(((overviewStats.total_will_not_attend || 0) / overviewStats.total_guests) * 100), 100)}%` 
-                                                            : '0%' 
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
+                                {/* Ticketing Revenue */}
+                                <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] p-5">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">Ticket Revenue</span>
+                                        <Link href={route('ticketing.index')} className="text-[10px] font-bold text-[#16A34A] dark:text-emerald-400 hover:underline">
+                                            Portal →
+                                        </Link>
                                     </div>
-
-                                    {/* Quick Summary Pill Box */}
-                                    <div className="pt-3 border-t border-slate-100 dark:border-white/[0.06] grid grid-cols-2 gap-2 text-center">
-                                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05]">
-                                            <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Response Rate</div>
-                                            <div className="text-sm font-black font-mono text-slate-900 dark:text-white mt-0.5">
-                                                {overviewStats.total_guests > 0 
-                                                    ? Math.round((((overviewStats.total_will_attend || 0) + (overviewStats.total_will_not_attend || 0)) / overviewStats.total_guests) * 100)
-                                                    : 0}%
-                                            </div>
-                                        </div>
-                                        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.05]">
-                                            <div className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Check-in Rate</div>
-                                            <div className="text-sm font-black font-mono text-slate-900 dark:text-white mt-0.5">
-                                                {overviewStats.total_guests > 0
-                                                    ? Math.round(((overviewStats.total_checkins || 0) / overviewStats.total_guests) * 100)
-                                                    : 0}%
-                                            </div>
-                                        </div>
+                                    <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
+                                        TZS {Number(overviewStats.total_ticket_revenue || 0).toLocaleString()}
+                                    </div>
+                                    <div className="text-[10px] text-slate-400 mt-1">
+                                        {Number(overviewStats.total_tickets_sold || 0).toLocaleString()} tickets · {overviewStats.total_ticket_checkins || 0} verified
                                     </div>
                                 </div>
+
                             </div>
                         </div>
                     </div>
                 )}
-
             </div>
 
-            {/* ═══════════ CREATE EVENT MODAL ═══════════ */}
-            <Modal show={createModalOpen} onClose={() => setCreateModalOpen(false)} maxWidth="md">
-                <form onSubmit={handleCreateSubmit} className="p-6">
-                    <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-white/[0.08]">
-                        <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                <Plus className="w-4 h-4" />
-                            </div>
-                            <div>
-                                <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">Create New Event</h3>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Launch a new invitation portfolio</p>
-                            </div>
+            {/* ═══════════ UNIVERSAL CREATION MODAL ═══════════ */}
+            <Modal show={createModalOpen} onClose={() => setCreateModalOpen(false)} maxWidth="lg">
+                <div className="p-6 space-y-5">
+                    
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.08]">
+                        <div>
+                            <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
+                                Create New Portfolio
+                            </h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                                Launch an invitation campaign or public ticketed occasion.
+                            </p>
+                        </div>
+                        
+                        {/* Selector Tabs (Kardovo Theme) */}
+                        <div className="flex items-center p-1 bg-slate-100 dark:bg-white/[0.06] rounded-xl text-xs font-bold">
+                            <button
+                                type="button"
+                                onClick={() => setCreateType('invitation')}
+                                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                                    createType === 'invitation'
+                                        ? 'bg-white dark:bg-white/10 text-[#16A34A] dark:text-emerald-400 shadow-2xs'
+                                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                                }`}
+                            >
+                                Digital Invitation
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCreateType('occasion')}
+                                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                                    createType === 'occasion'
+                                        ? 'bg-white dark:bg-white/10 text-[#16A34A] dark:text-emerald-400 shadow-2xs'
+                                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                                }`}
+                            >
+                                Ticketed Occasion
+                            </button>
                         </div>
                     </div>
 
-                    <div className="mt-5 space-y-4">
-                        <div>
-                            <InputLabel htmlFor="create_title" value="Event Title *" />
-                            <TextInput
-                                id="create_title"
-                                value={data.title}
-                                onChange={(e) => setData('title', e.target.value)}
-                                className="mt-1 block w-full text-sm focus:border-emerald-500 focus:ring-emerald-500"
-                                placeholder="e.g. Neema & Baraka — Wedding Reception"
-                                required
-                            />
-                            <InputError message={errors.title} className="mt-1" />
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
+                    {/* FORM A: DIGITAL INVITATION */}
+                    {createType === 'invitation' && (
+                        <form onSubmit={handleCreateInvitationSubmit} className="space-y-4">
                             <div>
-                                <InputLabel htmlFor="create_type" value="Event Type *" />
-                                <select
-                                    id="create_type"
-                                    value={data.event_type}
-                                    onChange={(e) => setData('event_type', e.target.value)}
-                                    className="mt-1 block w-full text-xs rounded-xl border-slate-300 dark:border-slate-700 dark:bg-[#0B1524] dark:text-white shadow-xs focus:border-emerald-500 focus:ring-emerald-500"
-                                >
-                                    <option value="Wedding Reception">Wedding Reception</option>
-                                    <option value="Send Off Party">Send Off Party</option>
-                                    <option value="Engagement">Engagement</option>
-                                    <option value="Birthday Gala">Birthday Gala</option>
-                                    <option value="Corporate Gala">Corporate Gala</option>
-                                    <option value="VIP Concert">VIP Concert</option>
-                                    <option value="Alumni Reunion">Alumni Reunion</option>
-                                    <option value="Private Dinner">Private Dinner</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <InputLabel htmlFor="create_date" value="Event Date *" />
+                                <InputLabel htmlFor="inv_title" value="Event Title *" />
                                 <TextInput
-                                    id="create_date"
-                                    type="date"
-                                    min={todayFormatted}
-                                    value={data.event_date}
-                                    onChange={(e) => setData('event_date', e.target.value)}
-                                    className="mt-1 block w-full text-xs focus:border-emerald-500 focus:ring-emerald-500"
+                                    id="inv_title"
+                                    value={invitationForm.data.title}
+                                    onChange={(e) => invitationForm.setData('title', e.target.value)}
+                                    className="mt-1 block w-full text-xs"
+                                    placeholder="e.g. Neema & Baraka — Wedding Reception"
                                     required
                                 />
-                                <InputError message={errors.event_date} className="mt-1" />
+                                <InputError message={invitationForm.errors.title} className="mt-1" />
                             </div>
-                        </div>
 
-                        <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <InputLabel htmlFor="inv_type" value="Event Category *" />
+                                    <select
+                                        id="inv_type"
+                                        value={invitationForm.data.event_type}
+                                        onChange={(e) => invitationForm.setData('event_type', e.target.value)}
+                                        className="mt-1 block w-full text-xs rounded-xl border-slate-300 dark:border-white/[0.08] dark:bg-[#0B1524] dark:text-white shadow-xs focus:border-emerald-500 focus:ring-emerald-500"
+                                    >
+                                        <option value="Wedding Reception">Wedding Reception</option>
+                                        <option value="Send Off Party">Send Off Party</option>
+                                        <option value="Engagement">Engagement</option>
+                                        <option value="Birthday Celebration">Birthday Celebration</option>
+                                        <option value="Corporate Gala">Corporate Gala</option>
+                                        <option value="Private Dinner">Private Dinner</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="inv_date" value="Event Date *" />
+                                    <TextInput
+                                        id="inv_date"
+                                        type="date"
+                                        min={todayFormatted}
+                                        value={invitationForm.data.event_date}
+                                        onChange={(e) => invitationForm.setData('event_date', e.target.value)}
+                                        className="mt-1 block w-full text-xs"
+                                        required
+                                    />
+                                    <InputError message={invitationForm.errors.event_date} className="mt-1" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <InputLabel htmlFor="inv_time" value="Schedule / Time" />
+                                    <TextInput
+                                        id="inv_time"
+                                        value={invitationForm.data.event_time}
+                                        onChange={(e) => invitationForm.setData('event_time', e.target.value)}
+                                        className="mt-1 block w-full text-xs"
+                                        placeholder="e.g. 4:00 PM — Reception"
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="inv_city" value="City / Location *" />
+                                    <TextInput
+                                        id="inv_city"
+                                        value={invitationForm.data.city}
+                                        onChange={(e) => invitationForm.setData('city', e.target.value)}
+                                        className="mt-1 block w-full text-xs"
+                                        placeholder="Dar es Salaam"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
                             <div>
-                                <InputLabel htmlFor="create_time" value="Event Time" />
+                                <InputLabel htmlFor="inv_venue" value="Venue Name *" />
                                 <TextInput
-                                    id="create_time"
-                                    value={data.event_time}
-                                    onChange={(e) => setData('event_time', e.target.value)}
-                                    className="mt-1 block w-full text-xs focus:border-emerald-500 focus:ring-emerald-500"
-                                    placeholder="4:00 PM — Reception & Dinner"
+                                    id="inv_venue"
+                                    value={invitationForm.data.venue}
+                                    onChange={(e) => invitationForm.setData('venue', e.target.value)}
+                                    className="mt-1 block w-full text-xs"
+                                    placeholder="e.g. Serena Hotel, Kibo Hall"
+                                    required
                                 />
+                                <InputError message={invitationForm.errors.venue} className="mt-1" />
                             </div>
 
+                            <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex items-center justify-end gap-2.5">
+                                <SecondaryButton type="button" onClick={() => setCreateModalOpen(false)}>
+                                    Cancel
+                                </SecondaryButton>
+                                <PrimaryButton type="submit" disabled={invitationForm.processing} className="bg-[#16A34A] hover:bg-[#15803D] text-white">
+                                    {invitationForm.processing ? 'Creating...' : 'Create Digital Invitation'}
+                                </PrimaryButton>
+                            </div>
+                        </form>
+                    )}
+
+                    {/* FORM B: TICKETED OCCASION (KARDOVO THEME) */}
+                    {createType === 'occasion' && (
+                        <form onSubmit={handleCreateOccasionSubmit} className="space-y-4">
                             <div>
-                                <InputLabel htmlFor="create_city" value="City / Location" />
+                                <InputLabel htmlFor="occ_title" value="Occasion / Event Title *" />
                                 <TextInput
-                                    id="create_city"
-                                    value={data.city}
-                                    onChange={(e) => setData('city', e.target.value)}
-                                    className="mt-1 block w-full text-xs focus:border-emerald-500 focus:ring-emerald-500"
-                                    placeholder="Dar es Salaam"
+                                    id="occ_title"
+                                    value={occasionForm.data.title}
+                                    onChange={(e) => occasionForm.setData('title', e.target.value)}
+                                    className="mt-1 block w-full text-xs"
+                                    placeholder="e.g. Diamond Platnumz — Wasafi Festival 2026"
+                                    required
                                 />
+                                <InputError message={occasionForm.errors.title} className="mt-1" />
                             </div>
-                        </div>
 
-                        <div>
-                            <InputLabel htmlFor="create_venue" value="Venue Name *" />
-                            <TextInput
-                                id="create_venue"
-                                value={data.venue}
-                                onChange={(e) => setData('venue', e.target.value)}
-                                className="mt-1 block w-full text-xs focus:border-emerald-500 focus:ring-emerald-500"
-                                placeholder="e.g. Kunduchi Beach Gardens"
-                                required
-                            />
-                            <InputError message={errors.venue} className="mt-1" />
-                        </div>
-                    </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <InputLabel htmlFor="occ_type" value="Occasion Category *" />
+                                    <select
+                                        id="occ_type"
+                                        value={occasionForm.data.occasion_type}
+                                        onChange={(e) => occasionForm.setData('occasion_type', e.target.value)}
+                                        className="mt-1 block w-full text-xs rounded-xl border-slate-300 dark:border-white/[0.08] dark:bg-[#0B1524] dark:text-white shadow-xs focus:border-emerald-500 focus:ring-emerald-500"
+                                    >
+                                        <option value="concert">Concert / Live Music</option>
+                                        <option value="event">Festival / Public Event</option>
+                                        <option value="sports">Sports / Marathon</option>
+                                        <option value="conference">Conference / Summit</option>
+                                        <option value="nightlife">Nightlife / Party</option>
+                                        <option value="hotel">Resort / Retreat</option>
+                                        <option value="other">Other Occasion</option>
+                                    </select>
+                                </div>
 
-                    <div className="mt-6 pt-4 border-t border-slate-100 dark:border-white/[0.08] flex items-center justify-end gap-2.5">
-                        <SecondaryButton type="button" onClick={() => setCreateModalOpen(false)}>
-                            Cancel
-                        </SecondaryButton>
-                        <PrimaryButton type="submit" disabled={processing} className="bg-[#16A34A] hover:bg-[#15803D] text-white border border-[#16A34A]">
-                            {processing ? 'Creating Event...' : 'Create Event Portfolio'}
-                        </PrimaryButton>
-                    </div>
-                </form>
+                                <div>
+                                    <InputLabel htmlFor="occ_date" value="Occasion Date *" />
+                                    <TextInput
+                                        id="occ_date"
+                                        type="date"
+                                        min={todayFormatted}
+                                        value={occasionForm.data.event_date}
+                                        onChange={(e) => occasionForm.setData('event_date', e.target.value)}
+                                        className="mt-1 block w-full text-xs"
+                                        required
+                                    />
+                                    <InputError message={occasionForm.errors.event_date} className="mt-1" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <InputLabel htmlFor="occ_venue" value="Venue / Gate Location *" />
+                                    <TextInput
+                                        id="occ_venue"
+                                        value={occasionForm.data.venue}
+                                        onChange={(e) => occasionForm.setData('venue', e.target.value)}
+                                        className="mt-1 block w-full text-xs"
+                                        placeholder="e.g. Warehouse Arena"
+                                        required
+                                    />
+                                    <InputError message={occasionForm.errors.venue} className="mt-1" />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="occ_city" value="City *" />
+                                    <TextInput
+                                        id="occ_city"
+                                        value={occasionForm.data.city}
+                                        onChange={(e) => occasionForm.setData('city', e.target.value)}
+                                        className="mt-1 block w-full text-xs"
+                                        placeholder="Dar es Salaam"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-3">
+                                <div className="col-span-2">
+                                    <InputLabel htmlFor="occ_tier" value="Initial Ticket Tier Name" />
+                                    <TextInput
+                                        id="occ_tier"
+                                        value={occasionForm.data.initial_tier_name}
+                                        onChange={(e) => occasionForm.setData('initial_tier_name', e.target.value)}
+                                        className="mt-1 block w-full text-xs"
+                                        placeholder="e.g. Regular Pass / VIP Admission"
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel htmlFor="occ_price" value="Price (TZS)" />
+                                    <TextInput
+                                        id="occ_price"
+                                        type="number"
+                                        min="0"
+                                        step="1000"
+                                        value={occasionForm.data.initial_tier_price}
+                                        onChange={(e) => occasionForm.setData('initial_tier_price', e.target.value)}
+                                        className="mt-1 block w-full text-xs"
+                                        placeholder="25000"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-slate-100 dark:border-white/[0.08] flex items-center justify-end gap-2.5">
+                                <SecondaryButton type="button" onClick={() => setCreateModalOpen(false)}>
+                                    Cancel
+                                </SecondaryButton>
+                                <button
+                                    type="submit"
+                                    disabled={occasionForm.processing}
+                                    className="px-4 py-2.5 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer shadow-xs"
+                                >
+                                    {occasionForm.processing ? 'Launching...' : 'Launch Ticketed Occasion'}
+                                </button>
+                            </div>
+                        </form>
+                    )}
+
+                </div>
             </Modal>
 
         </KardovoAppLayout>

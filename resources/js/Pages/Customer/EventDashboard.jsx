@@ -151,7 +151,10 @@ export default function EventDashboard({
     filters = {}, 
     stats = {}, 
     recentScanLogs = [],
-    templates = []
+    templates = [],
+    ticketTiers = [],
+    ticketStats = {},
+    ticketOrders = []
 }) {
     const { auth } = usePage().props;
     const user = auth?.user;
@@ -161,6 +164,7 @@ export default function EventDashboard({
     const canBroadcast = isAdmin || (user?.status !== 'suspended' && user?.effective_permissions?.can_send_broadcasts !== false);
     const canCustomize = isAdmin || (user?.status !== 'suspended' && user?.effective_permissions?.can_customize_templates !== false);
     const canManageScanners = isAdmin || (user?.status !== 'suspended' && user?.effective_permissions?.can_manage_scanners !== false);
+
     const [search, setSearch] = useState(filters?.search || '');
     const [deliveryFilter, setDeliveryFilter] = useState(filters?.delivery || 'all');
     const [channelFilter, setChannelFilter] = useState(filters?.channel || 'all');
@@ -310,7 +314,7 @@ export default function EventDashboard({
                 document.visibilityState === 'visible'
             ) {
                 router.reload({
-                    only: ['guests', 'stats', 'recentScanLogs'],
+                    only: ['guests', 'stats', 'recentScanLogs', 'ticketTiers', 'ticketStats', 'ticketOrders'],
                     preserveScroll: true,
                     preserveState: true,
                 });
@@ -648,22 +652,7 @@ export default function EventDashboard({
                         </button>
                     )}
 
-                    {/* 3. Template Picker Button */}
-                    {canCustomize && (
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setSelectedTemplateId(event?.card_template_id || '');
-                                setSelectTemplateModalOpen(true);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:py-2 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
-                            title="Select / Change Card Template"
-                        >
-                            <Palette className="w-3.5 h-3.5 text-emerald-400" />
-                            <span className="hidden md:inline">Card Template</span>
-                            <span className="md:hidden">Template</span>
-                        </button>
-                    )}
+
 
                     {/* 4. Event Settings Button */}
                     <button

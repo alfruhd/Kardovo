@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import EmptyEventState from '@/Components/EmptyEventState';
@@ -13,6 +13,9 @@ import {
     X,
     User as UserIcon,
     Shield,
+    Users,
+    Ticket,
+    ArrowRight,
 } from 'lucide-react';
 import Modal from '@/Components/Modal';
 import TextInput from '@/Components/TextInput';
@@ -53,6 +56,14 @@ export default function CalendarPage({
     const [selectedType, setSelectedType] = useState('all');
     const [selectedOrganizer, setSelectedOrganizer] = useState('all');
     const [createModalOpen, setCreateModalOpen] = useState(false);
+    const scheduleSectionRef = useRef(null);
+
+    const handleSelectDate = (dateStr) => {
+        setSelectedDate(dateStr);
+        setTimeout(() => {
+            scheduleSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 50);
+    };
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         title: '',
@@ -83,7 +94,7 @@ export default function CalendarPage({
                 (event.city && event.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 (event.user?.name && event.user.name.toLowerCase().includes(searchQuery.toLowerCase())) ||
                 (event.user?.email && event.user.email.toLowerCase().includes(searchQuery.toLowerCase()));
-            const matchType = selectedType === 'all' || event.event_type === selectedType;
+            const matchType = selectedType === 'all' || event.event_type === selectedType || event.occasion_type === selectedType;
             const matchOrganizer = selectedOrganizer === 'all' || String(event.user_id) === String(selectedOrganizer);
             return matchSearch && matchType && matchOrganizer;
         });
@@ -103,7 +114,10 @@ export default function CalendarPage({
 
     const eventTypes = useMemo(() => {
         const set = new Set();
-        events.forEach(e => { if (e.event_type) set.add(e.event_type); });
+        events.forEach(e => {
+            if (e.event_type) set.add(e.event_type);
+            if (e.occasion_type) set.add(e.occasion_type);
+        });
         return Array.from(set);
     }, [events]);
 
@@ -185,10 +199,18 @@ export default function CalendarPage({
         return Object.values(groups);
     }, [filteredEvents]);
 
-    const getEventTypeStyles = (type = '') => {
+    const getEventChipStyles = (event) => {
+        if (event?.is_occasion) {
+            return {
+                bar: 'border-l-[3px] border-purple-500 bg-purple-50/90 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 hover:bg-purple-100/90 dark:hover:bg-purple-900/50',
+                dot: 'bg-purple-500 dark:bg-purple-400',
+                badge: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+            };
+        }
         return {
+            bar: 'border-l-[3px] border-[#16A34A] bg-emerald-50/90 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100/90 dark:hover:bg-emerald-900/50',
             dot: 'bg-[#16A34A] dark:bg-emerald-400',
-            bar: 'bg-emerald-500/15 border-l-2 border-[#16A34A] text-emerald-800 dark:text-emerald-300'
+            badge: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20',
         };
     };
 
@@ -274,54 +296,105 @@ export default function CalendarPage({
     ];
 
     const EventRow = ({ event }) => {
-        const style = getEventTypeStyles(event.event_type);
+        const eventUrl = event.is_occasion
+            ? route('ticketing.index', { event_id: event.id })
+            : route('events.show', event.id);
+
         return (
-            <div className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-3 group">
-                <div className="min-w-0 flex-1 space-y-1">
-                    <Link
-                        href={route('events.show', event.id)}
-                        className="font-bold text-sm text-slate-900 dark:text-white group-hover:text-emerald-500 dark:group-hover:text-emerald-400 transition-colors truncate block"
-                    >
-                        {event.title}
-                    </Link>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
-                        {event.event_type && (
-                            <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold border border-emerald-500/20">
-                                {event.event_type}
-                            </span>
-                        )}
-                        {event.event_time && (
-                            <span className="flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5 text-slate-400" />{event.event_time}
-                            </span>
-                        )}
-                        {(event.venue || event.city) && (
-                            <span className="flex items-center gap-1 truncate">
-                                <MapPin className="w-3.5 h-3.5 text-slate-400" />{event.venue || event.city}
-                            </span>
-                        )}
-                        {isAdmin && event.user && (
-                            <span className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 dark:bg-white/[0.06] text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.08]">
-                                <UserIcon className="w-3 h-3 text-slate-400" />
-                                <span className="truncate max-w-[120px]">{event.user.name}</span>
-                            </span>
+            <div className="p-4 sm:p-5 rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-slate-50/70 dark:bg-white/[0.02] hover:bg-white dark:hover:bg-white/[0.05] hover:border-emerald-500/40 hover:shadow-xs transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
+                <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                    <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border transition-all ${
+                        event.is_occasion
+                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 group-hover:scale-105'
+                            : 'bg-emerald-500/10 text-[#16A34A] dark:text-emerald-400 border-emerald-500/20 group-hover:scale-105'
+                    }`}>
+                        {event.is_occasion ? (
+                            <Ticket className="w-5 h-5" />
+                        ) : (
+                            <CalendarIcon className="w-5 h-5" />
                         )}
                     </div>
+
+                    <div className="space-y-1.5 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                            <Link
+                                href={eventUrl}
+                                className="font-bold text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-[#16A34A] transition-colors truncate"
+                            >
+                                {event.title}
+                            </Link>
+
+                            {event.is_occasion && (
+                                <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 text-[10px] font-bold border border-purple-500/20 uppercase tracking-wider">
+                                    Ticketed Occasion
+                                </span>
+                            )}
+                            {event.event_type && !event.is_occasion && (
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold border border-emerald-500/20">
+                                    {event.event_type}
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 flex-wrap">
+                            {event.event_time && (
+                                <span className="inline-flex items-center gap-1.5 font-medium">
+                                    <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>{event.event_time}</span>
+                                </span>
+                            )}
+                            {(event.venue || event.city) && (
+                                <span className="inline-flex items-center gap-1.5 font-medium truncate">
+                                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span className="truncate">{event.venue || event.city}</span>
+                                </span>
+                            )}
+                            {event.total_guests > 0 && (
+                                <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-slate-500 dark:text-slate-400 font-semibold">
+                                    <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                    <span>{event.is_occasion ? `${event.total_guests} tickets sold` : `${event.total_guests} guests`}</span>
+                                </span>
+                            )}
+                            {isAdmin && event.user && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-white/[0.06] text-[10px] font-medium text-slate-600 dark:text-slate-300 border border-slate-200/60 dark:border-white/[0.08]">
+                                    <UserIcon className="w-3 h-3 text-slate-400" />
+                                    <span className="truncate max-w-[120px]">{event.user.name}</span>
+                                </span>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
                 <Link
-                    href={route('events.show', event.id)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.05] hover:bg-emerald-500 text-slate-700 dark:text-slate-300 hover:text-white font-bold text-xs border border-slate-200/70 dark:border-white/[0.08] hover:border-transparent transition-all flex items-center gap-1 active:scale-95 flex-shrink-0"
+                    href={eventUrl}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:text-[#16A34A] dark:hover:text-emerald-400 font-bold text-xs border border-slate-200 dark:border-white/10 hover:border-emerald-500/50 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 shadow-2xs transition-all active:scale-95 shrink-0"
                 >
-                    Manage <ChevronRight className="w-3.5 h-3.5" />
+                    <span>{event.is_occasion ? 'Open Ticketing' : 'Manage Event'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
             </div>
         );
     };
 
     const NoEvents = () => (
-        <div className="text-center py-6 rounded-2xl bg-slate-50 dark:bg-white/[0.02] border border-dashed border-slate-200 dark:border-white/[0.06]">
-            <CalendarIcon className="w-7 h-7 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
-            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">No events</p>
+        <div className="text-center py-10 px-4 rounded-2xl bg-slate-50/50 dark:bg-white/[0.01] border border-dashed border-slate-200 dark:border-white/10 space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-white/[0.04] text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto">
+                <CalendarIcon className="w-6 h-6" />
+            </div>
+            <div className="space-y-1">
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">No events on this day</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                    Your schedule is clear for {formattedSelectedDate}. You can schedule a new event or occasion.
+                </p>
+            </div>
+            <button
+                type="button"
+                onClick={() => openCreateModalForDate(selectedDate)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl transition shadow-xs active:scale-95 cursor-pointer mt-1"
+            >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Schedule on this Day</span>
+            </button>
         </div>
     );
 
@@ -360,10 +433,10 @@ export default function CalendarPage({
                         }
                     />
                 ) : (
-                    <div className="bg-white dark:bg-[#0B1524] rounded-3xl border border-slate-200/60 dark:border-white/[0.08] shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-[#0B1524] rounded-3xl border border-slate-200 dark:border-white/10 shadow-xs overflow-hidden">
 
                         {/* ── TOP BAR ── */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 dark:border-white/[0.08] bg-white dark:bg-[#0B1524]">
+                        <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-200 dark:border-white/10 bg-white dark:bg-[#0B1524]">
 
                             {/* Month/Period label */}
                             <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display tracking-tight min-w-[160px]">
@@ -492,13 +565,13 @@ export default function CalendarPage({
                             return (
                                 <div>
                                     {/* Week day headers */}
-                                    <div className="grid grid-cols-7 border-b border-slate-100 dark:border-white/[0.06]">
+                                    <div className="grid grid-cols-7 border-b border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/[0.02]">
                                         {weekDays.map((day) => (
                                             <button
                                                 key={day.dateStr}
                                                 type="button"
-                                                onClick={() => setSelectedDate(day.dateStr)}
-                                                className={`py-3 px-1 text-center cursor-pointer transition-colors ${
+                                                onClick={() => handleSelectDate(day.dateStr)}
+                                                className={`py-3 px-1 text-center cursor-pointer transition-colors border-r last:border-r-0 border-slate-200 dark:border-white/10 ${
                                                     day.isSelected ? 'bg-emerald-50 dark:bg-emerald-950/20' : 'hover:bg-slate-50 dark:hover:bg-white/[0.02]'
                                                 }`}
                                             >
@@ -513,28 +586,32 @@ export default function CalendarPage({
                                                     {day.dayNumber}
                                                 </div>
                                                 {day.events.length > 0 && (
-                                                    <div className="mt-1.5 space-y-1 px-1 overflow-hidden">
+                                                    <div className="mt-1.5 space-y-1 px-0.5 overflow-hidden">
                                                         {day.events.slice(0, 2).map((ev) => {
-                                                            const style = getEventTypeStyles(ev.event_type);
+                                                            const chip = getEventChipStyles(ev);
                                                             return (
                                                                 <div
                                                                     key={ev.id}
-                                                                    className="hidden sm:flex items-center gap-1 px-1 py-0.5 rounded text-[9px] font-semibold bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 truncate text-left"
-                                                                    title={ev.title}
+                                                                    className={`hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded-r-md text-[9.5px] font-medium leading-tight truncate text-left transition-all ${chip.bar}`}
+                                                                    title={`${ev.title}${ev.event_time ? ` · ${ev.event_time}` : ''}`}
                                                                 >
-                                                                    <span className={`w-1 h-1 rounded-full flex-shrink-0 ${style.dot}`} />
+                                                                    {ev.is_occasion ? (
+                                                                        <Ticket className="w-2.5 h-2.5 shrink-0 text-purple-600 dark:text-purple-400 opacity-80" />
+                                                                    ) : (
+                                                                        <span className={`w-1 h-1 rounded-full shrink-0 ${chip.dot}`} />
+                                                                    )}
                                                                     <span className="truncate">{ev.title}</span>
                                                                 </div>
                                                             );
                                                         })}
-                                                        <div className="sm:hidden flex justify-center gap-0.5">
+                                                        <div className="sm:hidden flex justify-center gap-1 mt-0.5">
                                                             {day.events.slice(0, 3).map((ev, i) => (
-                                                                <span key={i} className={`w-1 h-1 rounded-full ${getEventTypeStyles(ev.event_type).dot}`} />
+                                                                <span key={i} className={`w-1.5 h-1.5 rounded-full ${getEventChipStyles(ev).dot}`} />
                                                             ))}
                                                         </div>
                                                         {day.events.length > 2 && (
-                                                            <div className="hidden sm:block text-[8px] font-bold text-slate-400 dark:text-slate-500 text-left pl-0.5">
-                                                                +{day.events.length - 2}
+                                                            <div className="hidden sm:block text-[8.5px] font-bold text-slate-400 dark:text-slate-500 text-left pl-1">
+                                                                +{day.events.length - 2} more
                                                             </div>
                                                         )}
                                                     </div>
@@ -571,17 +648,17 @@ export default function CalendarPage({
                         {/* ── MONTH VIEW ── */}
                         {viewMode === 'month' && (
                             <>
-                                {/* Day headers */}
-                                <div className="grid grid-cols-7 border-b border-slate-100 dark:border-white/[0.06]">
+                                {/* Day headers with visible dividers */}
+                                <div className="grid grid-cols-7 border-b border-slate-200 dark:border-white/10 bg-slate-50/60 dark:bg-white/[0.02]">
                                     {DAYS_MON.map((day) => (
-                                        <div key={day} className="py-3 text-center text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wide">
+                                        <div key={day} className="py-3 text-center text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider border-r last:border-r-0 border-slate-200 dark:border-white/10">
                                             {day}
                                         </div>
                                     ))}
                                 </div>
 
-                                {/* Date cells */}
-                                <div className="grid grid-cols-7">
+                                {/* Date cells with crisp, visible grid lines */}
+                                <div className="grid grid-cols-7 border-l border-slate-200 dark:border-white/10">
                                     {buildMonthCells().map((cell, idx) => {
                                         const isSelected = cell.dateStr === selectedDate;
                                         return (
@@ -589,14 +666,14 @@ export default function CalendarPage({
                                                 key={`${cell.dateStr}-${idx}`}
                                                 role="button"
                                                 tabIndex={0}
-                                                onClick={() => setSelectedDate(cell.dateStr)}
+                                                onClick={() => handleSelectDate(cell.dateStr)}
                                                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedDate(cell.dateStr); } }}
-                                                className={`min-h-[90px] sm:min-h-[110px] p-2 sm:p-3 border-b border-r border-slate-100 dark:border-white/[0.05] cursor-pointer select-none transition-colors ${
+                                                className={`min-h-[95px] sm:min-h-[115px] p-2 sm:p-2.5 border-b border-r border-slate-200 dark:border-white/10 cursor-pointer select-none transition-colors ${
                                                     isSelected
-                                                        ? 'bg-emerald-50/80 dark:bg-emerald-950/20'
+                                                        ? 'bg-emerald-50/90 dark:bg-emerald-950/30'
                                                         : cell.isCurrentMonth
-                                                            ? 'hover:bg-slate-50 dark:hover:bg-white/[0.03]'
-                                                            : 'bg-slate-50/30 dark:bg-transparent opacity-60'
+                                                            ? 'bg-white dark:bg-[#0B1524] hover:bg-slate-50/80 dark:hover:bg-white/[0.03]'
+                                                            : 'bg-slate-50/60 dark:bg-white/[0.01] opacity-60'
                                                 }`}
                                             >
                                                 <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-sm font-bold ${
@@ -614,20 +691,24 @@ export default function CalendarPage({
                                                 {cell.events.length > 0 && (
                                                     <div className="space-y-1 mt-1.5 overflow-hidden">
                                                         {cell.events.slice(0, 2).map((ev) => {
-                                                            const style = getEventTypeStyles(ev.event_type);
+                                                            const chip = getEventChipStyles(ev);
                                                             return (
                                                                 <div
                                                                     key={ev.id}
-                                                                    className="flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-500/10 dark:bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 truncate text-left"
-                                                                    title={ev.title}
+                                                                    className={`flex items-center gap-1.5 px-2 py-0.5 sm:py-1 rounded-r-md text-[10px] sm:text-[10.5px] font-medium leading-tight truncate text-left transition-all ${chip.bar}`}
+                                                                    title={`${ev.title}${ev.event_time ? ` · ${ev.event_time}` : ''}`}
                                                                 >
-                                                                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${style.dot}`} />
+                                                                    {ev.is_occasion ? (
+                                                                        <Ticket className="w-2.5 h-2.5 shrink-0 text-purple-600 dark:text-purple-400 opacity-85" />
+                                                                    ) : (
+                                                                        <span className={`w-1 h-1 rounded-full shrink-0 ${chip.dot}`} />
+                                                                    )}
                                                                     <span className="truncate">{ev.title}</span>
                                                                 </div>
                                                             );
                                                         })}
                                                         {cell.events.length > 2 && (
-                                                            <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 pl-0.5 text-left">
+                                                            <div className="text-[9.5px] font-bold text-slate-400 dark:text-slate-500 pl-1 text-left">
                                                                 +{cell.events.length - 2} more
                                                             </div>
                                                         )}
@@ -638,27 +719,41 @@ export default function CalendarPage({
                                     })}
                                 </div>
 
-                                {/* Selected Schedule panel */}
-                                <div className="border-t border-slate-100 dark:border-white/[0.08] p-5 sm:p-6">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div>
-                                            <p className="text-[10px] font-bold font-mono text-emerald-500 dark:text-emerald-400 uppercase tracking-wider">Selected Schedule</p>
-                                            <h3 className="text-base font-black text-slate-900 dark:text-white font-display">{formattedSelectedDate}</h3>
+                                {/* Selected Schedule panel with auto-scroll ref & executive layout */}
+                                <div ref={scheduleSectionRef} className="border-t border-slate-200 dark:border-white/10 p-5 sm:p-6 bg-white dark:bg-[#0B1524]">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                <p className="text-[10px] font-bold font-mono text-[#16A34A] dark:text-emerald-400 uppercase tracking-widest">
+                                                    Selected Schedule
+                                                </p>
+                                                <span className="text-xs font-bold text-slate-400">•</span>
+                                                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                                                    {selectedDateEvents.length === 1 ? '1 Event Planned' : `${selectedDateEvents.length} Events Planned`}
+                                                </span>
+                                            </div>
+                                            <h3 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+                                                {formattedSelectedDate}
+                                            </h3>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => openCreateModalForDate(selectedDate)}
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer"
+                                            className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer shrink-0 w-fit"
                                         >
-                                            <Plus className="w-3.5 h-3.5" /> Add Event
+                                            <Plus className="w-3.5 h-3.5" />
+                                            <span>Add Event</span>
                                         </button>
                                     </div>
 
                                     {selectedDateEvents.length > 0 ? (
-                                        <div className="divide-y divide-slate-100 dark:divide-white/[0.06]">
+                                        <div className="space-y-3">
                                             {selectedDateEvents.map(ev => <EventRow key={ev.id} event={ev} />)}
                                         </div>
-                                    ) : <NoEvents />}
+                                    ) : (
+                                        <NoEvents />
+                                    )}
                                 </div>
                             </>
                         )}

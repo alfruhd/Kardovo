@@ -26,7 +26,8 @@ import {
     Users,
     Activity,
     Server,
-    ShieldCheck
+    ShieldCheck,
+    Tag
 } from 'lucide-react';
 import KardovoLogo from '@/Components/KardovoLogo';
 import { useTheme } from '@/Hooks/useTheme';
@@ -181,12 +182,6 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         active: pageUrl.startsWith('/admin/users') || (pageUrl.startsWith('/admin') && (pageUrl.includes('tab=users') || pageUrl.includes('category='))),
                     },
                     {
-                        name: 'Admin Logs',
-                        href: safeRoute('admin.logs', '/admin/logs'),
-                        icon: Activity,
-                        active: pageUrl.startsWith('/admin/logs') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=logs')),
-                    },
-                    {
                         name: 'Gateways',
                         href: safeRoute('admin.gateways', '/admin/gateways'),
                         icon: Server,
@@ -207,7 +202,13 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         name: 'Events',
                         href: safeRoute('events.index', '/events'),
                         icon: Ticket,
-                        active: pageUrl === '/events' || pageUrl.startsWith('/events'),
+                        active: pageUrl === '/events' || (pageUrl.startsWith('/events') && !pageUrl.startsWith('/ticketing')),
+                    },
+                    {
+                        name: 'Ticketing Portal',
+                        href: safeRoute('ticketing.index', '/ticketing'),
+                        icon: Tag,
+                        active: pageUrl.startsWith('/ticketing'),
                     },
                     {
                         name: 'Templates',
@@ -271,12 +272,6 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         active: pageUrl.startsWith('/admin/users') || (pageUrl.startsWith('/admin') && (pageUrl.includes('tab=users') || pageUrl.includes('category='))),
                     },
                     {
-                        name: 'Admin Logs',
-                        href: safeRoute('admin.logs', '/admin/logs'),
-                        icon: Activity,
-                        active: pageUrl.startsWith('/admin/logs') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=logs')),
-                    },
-                    {
                         name: 'Audit Logs',
                         href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
                         icon: ShieldCheck,
@@ -291,7 +286,13 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         name: 'Events',
                         href: safeRoute('events.index', '/events'),
                         icon: Ticket,
-                        active: pageUrl === '/events' || pageUrl.startsWith('/events'),
+                        active: pageUrl === '/events' || (pageUrl.startsWith('/events') && !pageUrl.startsWith('/ticketing')),
+                    },
+                    {
+                        name: 'Ticketing Portal',
+                        href: safeRoute('ticketing.index', '/ticketing'),
+                        icon: Tag,
+                        active: pageUrl.startsWith('/ticketing'),
                     },
                     {
                         name: 'Templates',
@@ -371,7 +372,13 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         name: 'My Events',
                         href: safeRoute('events.index', '/events'),
                         icon: Ticket,
-                        active: pageUrl === '/events' || pageUrl.startsWith('/events'),
+                        active: pageUrl === '/events' || (pageUrl.startsWith('/events') && !pageUrl.startsWith('/ticketing')),
+                    },
+                    {
+                        name: 'Ticketing Portal',
+                        href: safeRoute('ticketing.index', '/ticketing'),
+                        icon: Tag,
+                        active: pageUrl.startsWith('/ticketing'),
                     },
                     {
                         name: 'Calendar',
@@ -444,16 +451,16 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 active: pageUrl.startsWith('/admin/users') || (pageUrl.startsWith('/admin') && (pageUrl.includes('tab=users') || pageUrl.includes('category='))),
             },
             {
-                name: 'Logs',
-                href: safeRoute('admin.logs', '/admin/logs'),
-                icon: Activity,
-                active: pageUrl.startsWith('/admin/logs') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=logs')),
-            },
-            {
                 name: 'Gateways',
                 href: safeRoute('admin.gateways', '/admin/gateways'),
                 icon: Server,
                 active: pageUrl.startsWith('/admin/gateways') || (pageUrl.startsWith('/admin') && pageUrl.includes('tab=gateways')),
+            },
+            {
+                name: 'Audit',
+                href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
+                icon: ShieldCheck,
+                active: pageUrl.startsWith('/admin/audit-logs'),
             },
             {
                 name: 'More',
@@ -483,10 +490,10 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 active: pageUrl === '/events' || pageUrl.startsWith('/events'),
             },
             {
-                name: 'Logs',
-                href: safeRoute('admin.logs', '/admin/logs'),
-                icon: Activity,
-                active: pageUrl.startsWith('/admin/logs'),
+                name: 'Audit',
+                href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
+                icon: ShieldCheck,
+                active: pageUrl.startsWith('/admin/audit-logs'),
             },
             {
                 name: 'More',
@@ -698,56 +705,6 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 </div>
 
                 <div className="p-3 flex-shrink-0 transition-colors duration-200">
-                    {/* User Plan & Quotas */}
-                    {user?.is_customer && !sidebarCollapsed && user?.message_quotas && (
-                        <div className="mb-3 p-3.5 bg-slate-900/40 border border-white/[0.08] rounded-2xl w-full shadow-inner relative overflow-hidden group">
-                            {/* Decorative background glow */}
-                            <div className="absolute top-0 right-0 -mr-8 -mt-8 w-24 h-24 rounded-full bg-emerald-500/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
-                            <div className="absolute bottom-0 left-0 -ml-8 -mb-8 w-24 h-24 rounded-full bg-blue-500/10 blur-xl opacity-60 group-hover:opacity-100 transition-opacity"></div>
-                            
-                            <div className="relative z-10 flex items-center justify-between mb-4">
-                                <p className="text-[10px] font-black text-slate-300 tracking-wider uppercase">Active Quotas</p>
-                                <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 text-[9px] font-black rounded-full border border-emerald-500/20">LIVE</span>
-                            </div>
-                            
-                            {/* WhatsApp Quota */}
-                            <div className="mb-3.5 relative z-10">
-                                <div className="flex justify-between text-[11px] font-medium text-slate-300 mb-1.5 items-center">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
-                                        </div>
-                                        <span>WhatsApp</span>
-                                    </div>
-                                    <span className="font-black text-emerald-400 text-[10px]">{user.message_quotas.whatsapp_limit === null ? 'Unlimited' : `${user.message_quotas.whatsapp_remaining} left`}</span>
-                                </div>
-                                {user.message_quotas.whatsapp_limit !== null && (
-                                    <div className="w-full bg-slate-950/60 rounded-full h-1.5 overflow-hidden border border-white/5">
-                                        <div className="bg-gradient-to-r from-emerald-500 to-emerald-300 h-1.5 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.8)] transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, (user.message_quotas.whatsapp_remaining / user.message_quotas.whatsapp_limit) * 100))}%` }}></div>
-                                    </div>
-                                )}
-                            </div>
-                            
-                            {/* SMS Quota */}
-                            <div className="relative z-10">
-                                <div className="flex justify-between text-[11px] font-medium text-slate-300 mb-1.5 items-center">
-                                    <div className="flex items-center gap-1.5">
-                                        <div className="w-4 h-4 rounded-full bg-blue-500/20 flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                                        </div>
-                                        <span>SMS</span>
-                                    </div>
-                                    <span className="font-black text-blue-400 text-[10px]">{user.message_quotas.sms_limit === null ? 'Unlimited' : `${user.message_quotas.sms_remaining} left`}</span>
-                                </div>
-                                {user.message_quotas.sms_limit !== null && (
-                                    <div className="w-full bg-slate-950/60 rounded-full h-1.5 overflow-hidden border border-white/5">
-                                        <div className="bg-gradient-to-r from-blue-500 to-blue-300 h-1.5 rounded-full shadow-[0_0_10px_rgba(96,165,250,0.8)] transition-all duration-500" style={{ width: `${Math.max(0, Math.min(100, (user.message_quotas.sms_remaining / user.message_quotas.sms_limit) * 100))}%` }}></div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
-
                     {/* Bottom Sign Out Button */}
                     <Link
                         href={route('logout')}

@@ -27,7 +27,7 @@ class MessagingController extends Controller
             }
         }
 
-        $eventsQuery = Event::accessibleBy($user)->withCount(['guests', 'messages'])->with(['user']);
+        $eventsQuery = Event::accessibleBy($user)->invitationEvents()->withCount(['guests', 'messages'])->with(['user']);
         $events = $eventsQuery->latest('event_date')->get();
 
         $selectedEventId = $request->input('event_id', $events->first()?->id);

@@ -22,6 +22,7 @@ class EventController extends Controller
         }
 
         $eventsQuery = Event::accessibleBy($user)
+            ->invitationEvents()
             ->with(['cardTemplate', 'user'])
             ->withCount([
                 'guests as total_guests',
@@ -106,18 +107,26 @@ class EventController extends Controller
                 'guests as checkins_count' => function ($q) {
                     $q->where('entries_used', '>', 0);
                 },
+                'tickets as total_tickets_sold',
             ]);
 
         $events = $eventsQuery->orderBy('event_date', 'asc')
             ->get()
             ->map(function ($event) {
-                $total = $event->total_guests ?: 1;
-                $responded = $event->will_attend_count + $event->will_not_attend_count;
-                $responseRate = $event->total_guests > 0 ? round(($responded / $event->total_guests) * 100) : 0;
-                $attendanceRate = $event->total_guests > 0 ? round(($event->will_attend_count / $event->total_guests) * 100) : 0;
+                if ($event->is_occasion) {
+                    $event->total_guests = $event->total_tickets_sold ?? 0;
+                    $event->response_rate = 100;
+                    $event->attendance_rate = 100;
+                    $event->event_type = $event->occasion_type ? ucfirst($event->occasion_type) : 'Ticketed Occasion';
+                } else {
+                    $total = $event->total_guests ?: 1;
+                    $responded = $event->will_attend_count + $event->will_not_attend_count;
+                    $responseRate = $event->total_guests > 0 ? round(($responded / $event->total_guests) * 100) : 0;
+                    $attendanceRate = $event->total_guests > 0 ? round(($event->will_attend_count / $event->total_guests) * 100) : 0;
 
-                $event->response_rate = $responseRate;
-                $event->attendance_rate = $attendanceRate;
+                    $event->response_rate = $responseRate;
+                    $event->attendance_rate = $attendanceRate;
+                }
 
                 return $event;
             });
@@ -143,6 +152,11 @@ class EventController extends Controller
         $user = $request->user();
         if (! Event::accessibleBy($user)->where('id', $event->id)->exists()) {
             abort(403, 'Unauthorized access to this event.');
+        }
+
+        // Occasions created in ticketing portal are managed independently in the ticketing portal
+        if ($event->is_occasion) {
+            return redirect()->route('ticketing.index', ['event_id' => $event->id]);
         }
 
         $event->load(['cardTemplate', 'user']);
@@ -219,13 +233,24 @@ class EventController extends Controller
                 ];
             },
             'recentScanLogs' => fn () => ScanLog::where('event_id', $event->id)
-                ->with(['guest', 'scanner'])
+                ->with(['guest', 'scanner', 'ticket'])
                 ->latest('scanned_at')
                 ->take(50)
                 ->get(),
             'templates' => fn () => CardTemplate::where(function ($q) use ($targetUserId) {
                 $q->where('user_id', $targetUserId)->orWhereNull('user_id');
             })->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id DESC')->get(),
+            'ticketTiers' => fn () => $event->ticketTiers()->withCount('tickets')->get(),
+            'ticketStats' => function () use ($event) {
+                return [
+                    'ticketing_enabled' => (bool) $event->ticketing_enabled,
+                    'total_sold' => (int) $event->tickets()->where('status', '!=', 'cancelled')->count(),
+                    'total_revenue' => (float) $event->ticketOrders()->where('payment_status', 'paid')->sum('total_amount'),
+                    'total_capacity' => (int) $event->ticketTiers()->sum('capacity'),
+                    'total_checked_in' => (int) $event->tickets()->where('status', 'checked_in')->count(),
+                ];
+            },
+            'ticketOrders' => fn () => $event->ticketOrders()->with('tickets.ticketTier')->latest()->take(30)->get(),
         ]);
     }
 
@@ -237,7 +262,7 @@ class EventController extends Controller
             if (! $user->canCreateEvents()) {
                 return back()->with('error', 'Event creation permission is disabled for your organizer account. Please contact system administration.');
             }
-            if ($user->max_events_limit && $user->events()->count() >= $user->max_events_limit) {
+            if ($user->max_events_limit && $user->events()->where('is_occasion', false)->count() >= $user->max_events_limit) {
                 return back()->with('error', "Event hosting quota limit of {$user->max_events_limit} reached for your account.");
             }
         }
@@ -273,6 +298,7 @@ class EventController extends Controller
             ? $validated['user_id']
             : $user->id;
         $validated['status'] = 'active';
+        $validated['is_occasion'] = false;
 
         $event = Event::create($validated);
 

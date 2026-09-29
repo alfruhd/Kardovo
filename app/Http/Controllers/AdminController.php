@@ -27,7 +27,7 @@ class AdminController extends Controller
             return redirect()->route('admin.users', $request->only(['category', 'sub']));
         }
         if ($tab === 'logs') {
-            return redirect()->route('admin.logs');
+            return redirect()->route('admin.auditLogs');
         }
         if ($tab === 'gateways') {
             return redirect()->route('admin.gateways');
@@ -151,24 +151,6 @@ class AdminController extends Controller
             ->orderByRaw("CASE WHEN template_type = 'custom_art' THEN 0 ELSE 1 END, id ASC")
             ->get();
 
-        $recentScanLogs = ScanLog::with(['guest', 'event', 'scanner'])
-            ->latest('scanned_at')
-            ->take(50)
-            ->get()
-            ->map(function ($log) {
-                return [
-                    'id' => $log->id,
-                    'status' => $log->status,
-                    'guest_name' => $log->guest?->name ?? 'Unregistered Pass',
-                    'card_number' => $log->guest?->card_number ?? 'N/A',
-                    'event_title' => $log->event?->title ?? 'General Event',
-                    'scanner_name' => $log->scanner_name ?? ($log->scanner?->name ?? 'Gatekeeper'),
-                    'gate_label' => $log->gate_label ?? 'Main Gate',
-                    'scanned_at' => $log->scanned_at ? $log->scanned_at->format('h:i:s A - d M Y') : 'Recent',
-                    'rejection_reason' => $log->rejection_reason,
-                ];
-            });
-
         $totalGuests = Guest::count();
         $totalCheckins = Guest::where('entries_used', '>', 0)->sum('entries_used');
         $totalScans = ScanLog::count();
@@ -258,7 +240,6 @@ class AdminController extends Controller
             'allEvents' => $allEvents,
             'subAdmins' => $subAdmins,
             'globalTemplates' => $globalTemplates,
-            'recentScanLogs' => $recentScanLogs,
             'stats' => [
                 'total_customers' => $customers->count(),
                 'total_gate_staff' => $gateStaff->count(),
@@ -395,38 +376,6 @@ class AdminController extends Controller
             'gateStaff' => $gateStaff,
             'subAdmins' => $subAdmins,
             'allEvents' => $allEvents,
-        ]);
-    }
-
-    public function logs(Request $request)
-    {
-        $user = $request->user();
-        if (! $user->isAdmin() && ! $user->isSubAdmin()) {
-            abort(403, 'Administrative access required.');
-        }
-
-        $recentScanLogs = ScanLog::with(['guest', 'event', 'scanner'])
-            ->latest('scanned_at')
-            ->take(100)
-            ->get()
-            ->map(function ($log) {
-                return [
-                    'id' => $log->id,
-                    'status' => $log->status,
-                    'guest_name' => $log->guest?->name ?? 'Unregistered Pass',
-                    'card_number' => $log->guest?->card_number ?? 'N/A',
-                    'event_title' => $log->event?->title ?? 'General Event',
-                    'scanner_name' => $log->scanner_name ?? ($log->scanner?->name ?? 'Gatekeeper'),
-                    'gate_label' => $log->gate_label ?? 'Main Gate',
-                    'scanned_at' => $log->scanned_at ? $log->scanned_at->format('h:i:s A - d M Y') : 'Recent',
-                    'rejection_reason' => $log->rejection_reason,
-                ];
-            });
-
-        return Inertia::render('Admin/Logs', [
-            'isSuperAdmin' => $user->isAdmin(),
-            'isSubAdmin' => $user->isSubAdmin(),
-            'recentScanLogs' => $recentScanLogs,
         ]);
     }
 

@@ -11,7 +11,7 @@ import {
     MessageSquare,
     Palette,
     Smartphone,
-    Activity,
+    ShieldCheck,
     ArrowRight,
     CircleDollarSign,
     TrendingUp
@@ -25,7 +25,6 @@ export default function AdminDashboard({
     isSuperAdmin = true,
     isSubAdmin = false,
     globalTemplates = [], 
-    recentScanLogs = [],
     stats = {}, 
     gateways = {} 
 }) {
@@ -45,10 +44,10 @@ export default function AdminDashboard({
             icon: Users,
         },
         {
-            title: 'Admin Logs',
-            detail: 'Security verification stream',
-            href: safeRoute('admin.logs', '/admin/logs'),
-            icon: Activity,
+            title: 'Audit Logs',
+            detail: 'Security & system activities',
+            href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
+            icon: ShieldCheck,
         },
         {
             title: 'Gateways',

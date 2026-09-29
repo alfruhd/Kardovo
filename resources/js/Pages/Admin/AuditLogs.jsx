@@ -1,15 +1,25 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
-import { Shield, Search, Filter } from 'lucide-react';
+import { Shield, Search, Filter, X } from 'lucide-react';
 import TextInput from '@/Components/TextInput';
+import Pagination from '@/Components/Pagination';
 
-export default function AuditLogs({ logs, filters, auth }) {
-    const [actionType, setActionType] = useState(filters.action_type || '');
+export default function AuditLogs({ logs = { data: [] }, filters = {}, auth }) {
+    const [searchTerm, setSearchTerm] = useState(filters?.search || filters?.action_type || '');
 
     const handleFilter = (e) => {
         e.preventDefault();
-        router.get(route('admin.auditLogs'), { action_type: actionType }, { preserveState: true });
+        router.get(
+            route('admin.auditLogs'), 
+            { search: searchTerm.trim() || undefined }, 
+            { preserveState: true, replace: true }
+        );
+    };
+
+    const handleClear = () => {
+        setSearchTerm('');
+        router.get(route('admin.auditLogs'), {}, { preserveState: true, replace: true });
     };
 
     return (
@@ -23,19 +33,30 @@ export default function AuditLogs({ logs, filters, auth }) {
                             System Audit Logs
                         </h1>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                            A secure, chronological record of system activities, access control, and user actions.
+                            A secure, chronological record of system activities, access control, and user actions (50 records per page).
                         </p>
                     </div>
 
-                    <form onSubmit={handleFilter} className="flex items-center gap-2">
-                        <TextInput
-                            type="text"
-                            placeholder="Filter by action..."
-                            value={actionType}
-                            onChange={(e) => setActionType(e.target.value)}
-                            className="text-sm py-1.5"
-                        />
-                        <button type="submit" className="p-2 bg-slate-100 dark:bg-white/[0.04] rounded-lg hover:bg-slate-200 dark:hover:bg-white/[0.08] transition">
+                    <form onSubmit={handleFilter} className="flex items-center gap-2 w-full sm:w-auto">
+                        <div className="relative flex-1 sm:w-64">
+                            <TextInput
+                                type="text"
+                                placeholder="Filter by action, user, IP..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="text-sm py-1.5 w-full pr-8"
+                            />
+                            {searchTerm && (
+                                <button
+                                    type="button"
+                                    onClick={handleClear}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
+                        <button type="submit" className="p-2 bg-slate-100 dark:bg-white/[0.04] rounded-lg hover:bg-slate-200 dark:hover:bg-white/[0.08] transition cursor-pointer" title="Apply Filter">
                             <Filter className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                         </button>
                     </form>
@@ -96,6 +117,14 @@ export default function AuditLogs({ logs, filters, auth }) {
                             </tbody>
                         </table>
                     </div>
+
+                    <Pagination
+                        links={logs?.links}
+                        from={logs?.from}
+                        to={logs?.to}
+                        total={logs?.total}
+                        itemName="audit logs"
+                    />
                 </div>
             </div>
         </KardovoAppLayout>

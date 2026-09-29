@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\ScanLog;
+use App\Models\Ticket;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -202,6 +203,119 @@ class ScannerController extends Controller
                     ->tap($matchGuestClosure)
                     ->lockForUpdate()
                     ->first();
+            }
+
+            // 2.5. CHECK TICKETING: If not an invited guest pass, check for a purchased ticket in current event
+            if (! $guest) {
+                $ticket = Ticket::with('ticketTier')
+                    ->where('event_id', $eventId)
+                    ->where(function ($q) use ($trimmed, $upper, $lower) {
+                        $q->where('qr_token', $trimmed)
+                            ->orWhere('qr_token', $lower)
+                            ->orWhere('qr_token', $upper)
+                            ->orWhere('unique_code', $trimmed)
+                            ->orWhere('ticket_number', $trimmed)
+                            ->orWhere('ticket_number', $upper);
+                    })
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($ticket) {
+                    if ($ticket->is_checked_in) {
+                        $rejectionReason = "Already Checked-in ({$ticket->ticket_number})";
+                        ScanLog::create([
+                            'event_id' => $eventId,
+                            'guest_id' => null,
+                            'ticket_id' => $ticket->id,
+                            'scanner_id' => $user->id,
+                            'scanner_name' => $user->name,
+                            'gate_label' => $gateLabel,
+                            'scanned_at' => now(),
+                            'status' => 'rejected',
+                            'rejection_reason' => $rejectionReason,
+                            'entries_used_at_scan' => 1,
+                        ]);
+
+                        return response()->json([
+                            'status' => 'rejected',
+                            'reason' => $rejectionReason,
+                            'guest' => [
+                                'id' => $ticket->id,
+                                'name' => $ticket->attendee_name,
+                                'category' => $ticket->ticketTier?->name ?? 'Paid Ticket',
+                                'card_number' => $ticket->ticket_number,
+                                'unique_code' => $ticket->unique_code,
+                                'entries_used' => 1,
+                                'max_entries' => 1,
+                                'entries_remaining' => 0,
+                                'allowance_label' => $ticket->ticketTier?->name ?? 'Paid Ticket',
+                            ],
+                        ]);
+                    }
+
+                    if ($ticket->status === 'cancelled') {
+                        $rejectionReason = "Ticket Cancelled ({$ticket->ticket_number})";
+                        ScanLog::create([
+                            'event_id' => $eventId,
+                            'guest_id' => null,
+                            'ticket_id' => $ticket->id,
+                            'scanner_id' => $user->id,
+                            'scanner_name' => $user->name,
+                            'gate_label' => $gateLabel,
+                            'scanned_at' => now(),
+                            'status' => 'rejected',
+                            'rejection_reason' => $rejectionReason,
+                            'entries_used_at_scan' => 0,
+                        ]);
+
+                        return response()->json([
+                            'status' => 'rejected',
+                            'reason' => $rejectionReason,
+                        ]);
+                    }
+
+                    // Admit ticket holder
+                    $ticket->markCheckedIn($user->id, $gateLabel);
+
+                    ScanLog::create([
+                        'event_id' => $eventId,
+                        'guest_id' => null,
+                        'ticket_id' => $ticket->id,
+                        'scanner_id' => $user->id,
+                        'scanner_name' => $user->name,
+                        'gate_label' => $gateLabel,
+                        'scanned_at' => now(),
+                        'status' => 'granted',
+                        'rejection_reason' => null,
+                        'entries_used_at_scan' => 1,
+                    ]);
+
+                    return response()->json([
+                        'status' => 'granted',
+                        'ticket' => [
+                            'id' => $ticket->id,
+                            'name' => $ticket->attendee_name,
+                            'category' => $ticket->ticketTier?->name ?? 'Paid Ticket',
+                            'card_number' => $ticket->ticket_number,
+                            'unique_code' => $ticket->unique_code,
+                            'entries_used' => 1,
+                            'max_entries' => 1,
+                            'entries_remaining' => 0,
+                            'allowance_label' => $ticket->ticketTier?->name ?? 'Paid Ticket',
+                        ],
+                        'guest' => [
+                            'id' => $ticket->id,
+                            'name' => $ticket->attendee_name,
+                            'category' => $ticket->ticketTier?->name ?? 'Paid Ticket',
+                            'card_number' => $ticket->ticket_number,
+                            'unique_code' => $ticket->unique_code,
+                            'entries_used' => 1,
+                            'max_entries' => 1,
+                            'entries_remaining' => 0,
+                            'allowance_label' => $ticket->ticketTier?->name ?? 'Paid Ticket',
+                        ],
+                    ]);
+                }
             }
 
             // 3. If not found in current event, search ONLY within other events owned by THIS organizer

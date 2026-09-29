@@ -43,36 +43,81 @@ class DashboardController extends Controller
                 'messages as messages_sent_count' => function ($q) {
                     $q->where('status', '!=', 'draft');
                 },
+                'tickets as total_tickets_sold',
+                'tickets as checked_in_tickets_count' => function ($q) {
+                    $q->whereNotNull('checked_in_at');
+                },
+                'ticketOrders as paid_orders_count' => function ($q) {
+                    $q->where('payment_status', 'paid');
+                },
             ])
+            ->withSum(['tickets as total_ticket_revenue' => function ($q) {
+                $q->where('status', '!=', 'cancelled');
+            }], 'price_paid')
             ->latest('event_date')
             ->get()
             ->map(function ($event) {
-                $total = $event->total_guests ?: 1;
-                $responded = $event->will_attend_count + $event->will_not_attend_count;
-                $responseRate = $event->total_guests > 0 ? round(($responded / $event->total_guests) * 100) : 0;
-                $attendanceRate = $event->total_guests > 0 ? round(($event->will_attend_count / $event->total_guests) * 100) : 0;
+                if ($event->is_occasion) {
+                    $sold = (int) ($event->total_tickets_sold ?? 0);
+                    $checkedIn = (int) ($event->checked_in_tickets_count ?? 0);
+                    $event->checkin_rate = $sold > 0 ? round(($checkedIn / $sold) * 100) : 0;
+                    $event->total_revenue = (float) ($event->total_ticket_revenue ?? 0);
+                    $event->attendees_count = $sold;
+                } else {
+                    $total = (int) ($event->total_guests ?? 0);
+                    $responded = (int) ($event->will_attend_count ?? 0) + (int) ($event->will_not_attend_count ?? 0);
+                    $responseRate = $total > 0 ? round(($responded / $total) * 100) : 0;
+                    $attendanceRate = $total > 0 ? round(((int) ($event->will_attend_count ?? 0) / $total) * 100) : 0;
+                    $checkins = (int) ($event->checkins_count ?? 0);
 
-                $event->response_rate = $responseRate;
-                $event->attendance_rate = $attendanceRate;
+                    $event->response_rate = $responseRate;
+                    $event->attendance_rate = $attendanceRate;
+                    $event->checkin_rate = $total > 0 ? round(($checkins / $total) * 100) : 0;
+                    $event->attendees_count = $total;
+                }
 
                 return $event;
             });
 
-        $totalGuests = $events->sum('total_guests');
-        $totalWillAttend = $events->sum('will_attend_count');
-        $totalCheckins = $events->sum('checkins_count');
+        $invitationEvents = $events->where('is_occasion', false);
+        $occasionEvents = $events->where('is_occasion', true);
+
+        $totalGuests = (int) $invitationEvents->sum('total_guests');
+        $totalWillAttend = (int) $invitationEvents->sum('will_attend_count');
+        $totalInvitationCheckins = (int) $invitationEvents->sum('checkins_count');
+
+        $totalTicketsSold = (int) $occasionEvents->sum('total_tickets_sold');
+        $totalTicketRevenue = (float) $occasionEvents->sum('total_ticket_revenue');
+        $totalTicketCheckins = (int) $occasionEvents->sum('checked_in_tickets_count');
+
+        $totalAttendees = $totalGuests + $totalTicketsSold;
+        $totalCombinedCheckins = $totalInvitationCheckins + $totalTicketCheckins;
 
         $overviewStats = [
             'total_events' => $events->count(),
             'active_events' => $events->where('status', 'active')->count(),
+            'invitation_events_count' => $invitationEvents->count(),
+            'occasion_events_count' => $occasionEvents->count(),
+
+            // Invitation metrics
             'total_guests' => $totalGuests,
             'total_will_attend' => $totalWillAttend,
-            'total_will_not_attend' => $events->sum('will_not_attend_count'),
-            'total_pending_rsvp' => $events->sum('pending_rsvp_count'),
-            'total_checkins' => $totalCheckins,
-            'total_messages' => $events->sum('messages_sent_count'),
+            'total_will_not_attend' => (int) $invitationEvents->sum('will_not_attend_count'),
+            'total_pending_rsvp' => (int) $invitationEvents->sum('pending_rsvp_count'),
+            'total_invitation_checkins' => $totalInvitationCheckins,
+            'total_messages' => (int) $events->sum('messages_sent_count'),
             'overall_attendance_rate' => $totalGuests > 0 ? round(($totalWillAttend / $totalGuests) * 100) : 0,
-            'overall_checkin_rate' => $totalGuests > 0 ? round(($totalCheckins / $totalGuests) * 100) : 0,
+
+            // Ticketing metrics
+            'total_tickets_sold' => $totalTicketsSold,
+            'total_ticket_revenue' => $totalTicketRevenue,
+            'total_ticket_checkins' => $totalTicketCheckins,
+            'ticket_checkin_rate' => $totalTicketsSold > 0 ? round(($totalTicketCheckins / $totalTicketsSold) * 100) : 0,
+
+            // Global Telemetry
+            'total_attendees' => $totalAttendees,
+            'total_checkins' => $totalCombinedCheckins,
+            'overall_checkin_rate' => $totalAttendees > 0 ? round(($totalCombinedCheckins / $totalAttendees) * 100) : 0,
         ];
 
         $eventIds = $events->pluck('id');

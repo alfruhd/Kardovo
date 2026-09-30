@@ -191,6 +191,14 @@ class KardovoPlatformTest extends TestCase
         $response = $this->actingAs($customer)->get(route('dashboard'));
 
         $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('Customer/Dashboard')
+            ->has('events')
+            ->has('overviewStats.invitation_events_count')
+            ->has('overviewStats.occasion_events_count')
+            ->has('overviewStats.total_tickets_sold')
+            ->has('overviewStats.total_ticket_revenue')
+        );
     }
 
     public function test_customer_can_edit_and_delete_their_event(): void
@@ -482,10 +490,10 @@ class KardovoPlatformTest extends TestCase
         $usersResponse->assertStatus(200);
         $usersResponse->assertInertia(fn ($page) => $page->component('Admin/Users'));
 
-        // 2. Logs page loads with Inertia component Admin/Logs
-        $logsResponse = $this->actingAs($admin)->get(route('admin.logs'));
+        // 2. Audit Logs page loads with Inertia component Admin/AuditLogs
+        $logsResponse = $this->actingAs($admin)->get(route('admin.auditLogs'));
         $logsResponse->assertStatus(200);
-        $logsResponse->assertInertia(fn ($page) => $page->component('Admin/Logs'));
+        $logsResponse->assertInertia(fn ($page) => $page->component('Admin/AuditLogs'));
 
         // 3. Gateways page loads with Inertia component Admin/Gateways
         $gatewaysResponse = $this->actingAs($admin)->get(route('admin.gateways'));
@@ -494,7 +502,7 @@ class KardovoPlatformTest extends TestCase
 
         // 4. Legacy tab redirects
         $this->actingAs($admin)->get('/admin?tab=users')->assertRedirect(route('admin.users'));
-        $this->actingAs($admin)->get('/admin?tab=logs')->assertRedirect(route('admin.logs'));
+        $this->actingAs($admin)->get('/admin?tab=logs')->assertRedirect(route('admin.auditLogs'));
         $this->actingAs($admin)->get('/admin?tab=gateways')->assertRedirect(route('admin.gateways'));
         $this->actingAs($admin)->get('/admin?tab=events')->assertRedirect(route('events.index'));
         $this->actingAs($admin)->get('/admin?tab=templates')->assertRedirect(route('templates.index'));

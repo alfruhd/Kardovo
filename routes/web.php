@@ -13,7 +13,11 @@ use App\Http\Controllers\MessagingController;
 use App\Http\Controllers\Organizer\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGuestController;
+use App\Http\Controllers\PublicTicketController;
+use App\Http\Controllers\PublicTicketMarketplaceController;
 use App\Http\Controllers\ScannerController;
+use App\Http\Controllers\TicketCheckoutController;
+use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Middleware\EnsureOrganizerHasPaid;
 use Illuminate\Foundation\Application;
@@ -25,6 +29,17 @@ Route::get('/demo/pass', [PublicGuestController::class, 'showDemoPass'])->name('
 Route::get('/kj/{token?}', [PublicGuestController::class, 'showCard'])->middleware('throttle:300,1')->name('guest.kj');
 Route::get('/card/{token}', [PublicGuestController::class, 'showCard'])->middleware('throttle:300,1')->name('guest.card');
 Route::post('/card/{token}/rsvp', [PublicGuestController::class, 'submitRsvp'])->middleware('throttle:60,1')->name('guest.rsvp');
+
+// Public Ticketing & Live Pass Hub
+Route::get('/tickets', [PublicTicketMarketplaceController::class, 'index'])->name('tickets.marketplace');
+Route::get('/e/{event}/tickets', [TicketCheckoutController::class, 'showEventTickets'])->name('events.publicTickets');
+Route::get('/t/{ticket_number}', [PublicTicketController::class, 'show'])->name('tickets.publicPass');
+Route::get('/t/{ticket_number}/pdf', [PublicTicketController::class, 'downloadPdf'])->name('tickets.downloadPdf');
+Route::post('/t/{ticket_number}/whatsapp', [PublicTicketController::class, 'sendWhatsApp'])->middleware('throttle:30,1')->name('tickets.sendWhatsApp');
+Route::post('/t/{ticket_number}/sms', [PublicTicketController::class, 'sendSms'])->middleware('throttle:30,1')->name('tickets.sendSms');
+Route::post('/t/{ticket_number}/email', [PublicTicketController::class, 'sendEmail'])->middleware('throttle:30,1')->name('tickets.sendEmail');
+Route::post('/events/{event}/checkout-tickets', [TicketCheckoutController::class, 'checkout'])->middleware('throttle:60,1')->name('tickets.checkout');
+Route::get('/tickets/order/{order_number}', [TicketCheckoutController::class, 'orderSuccess'])->name('tickets.orderSuccess');
 
 // Instant Dev Role Switcher
 Route::post('/dev/switch-user', [AuthenticatedSessionController::class, 'switchUser'])->name('dev.switchUser');
@@ -60,6 +75,18 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/events/{event}/guests-export-pdf', [GuestController::class, 'exportPdf'])->name('guests.exportPdf');
         Route::get('/guests/sample-template', [GuestController::class, 'downloadSampleTemplate'])->name('guests.sampleTemplate');
 
+        // Ticketing Portal
+        Route::get('/ticketing', [TicketController::class, 'index'])->name('ticketing.index');
+        Route::post('/ticketing/occasions', [TicketController::class, 'storeOccasion'])->name('ticketing.occasions.store');
+        Route::match(['put', 'post'], '/events/{event}/ticketing-settings', [TicketController::class, 'updateSettings'])->name('events.ticketingSettings');
+        Route::match(['put', 'post'], '/events/{event}/ticket-template', [TicketController::class, 'updateTicketTemplate'])->name('events.ticketTemplate.update');
+        Route::post('/events/{event}/ticket-tiers', [TicketController::class, 'storeTier'])->name('events.ticketTiers.store');
+        Route::put('/events/{event}/ticket-tiers/{tier}', [TicketController::class, 'updateTier'])->name('events.ticketTiers.update');
+        Route::delete('/events/{event}/ticket-tiers/{tier}', [TicketController::class, 'destroyTier'])->name('events.ticketTiers.destroy');
+        Route::post('/events/{event}/tickets/batch-generate', [TicketController::class, 'batchGenerate'])->name('events.tickets.batchGenerate');
+        Route::get('/events/{event}/tickets/print-sheet', [TicketController::class, 'printSheet'])->name('events.tickets.printSheet');
+        Route::get('/events/{event}/tickets/export-csv', [TicketController::class, 'exportCsv'])->name('events.tickets.exportCsv');
+
         // Card Templates
         Route::get('/templates', [CardTemplateController::class, 'index'])->name('templates.index');
         Route::post('/templates', [CardTemplateController::class, 'store'])->name('templates.store');
@@ -83,7 +110,7 @@ Route::middleware(['auth'])->group(function () {
     // Admin Portal
     Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
     Route::get('/admin/users', [AdminController::class, 'users'])->name('admin.users');
-    Route::get('/admin/logs', [AdminController::class, 'logs'])->name('admin.logs');
+    Route::redirect('/admin/logs', '/admin/audit-logs')->name('admin.logs');
     Route::get('/admin/gateways', [AdminController::class, 'gateways'])->name('admin.gateways');
     Route::get('/admin/audit-logs', [AuditLogController::class, 'index'])->name('admin.auditLogs');
     Route::post('/admin/gateway', [AdminController::class, 'updateGateway'])->name('admin.gateway');
@@ -141,6 +168,10 @@ Route::get('/privacy', function () {
 Route::get('/policies', function () {
     return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'security']);
 })->name('policies');
+
+Route::get('/ticketing-terms', function () {
+    return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'ticketing']);
+})->name('ticketing.terms');
 
 // WhatsApp Cloud API & Gateway Webhooks
 Route::get('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');

@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { 
     CheckCircle2, Sparkles, Smartphone, QrCode, MessageCircle, 
-    Users, BarChart3, Clock, ShieldCheck, ChevronRight, HandCoins, ChartPie, Globe 
-, Send, Play, ArrowRight, Moon, Sun, ExternalLink } from "lucide-react";
+    Users, BarChart3, Clock, ShieldCheck, ChevronRight, HandCoins, ChartPie, Globe,
+    Send, Play, ArrowRight, Moon, Sun, ExternalLink, Ticket,
+    Calendar, MapPin, Tag, Layers, Check, Zap, Building2, Plane, PartyPopper, Trophy, Plus
+} from "lucide-react";
 import Login from './Auth/Login';
 import Modal from '@/Components/Modal';
 import KardovoLogo from '@/Components/KardovoLogo';
@@ -90,6 +92,38 @@ const translations = {
         "en": "We accept payments via all mobile money networks (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa, AzamPesa) and bank cards (Visa, Mastercard, Amex) securely through AzamPay.",
         "sw": "Tunapokea malipo kupitia mitandao yote ya simu (M-Pesa, Mixx by Yas, Airtel Money, HaloPesa, AzamPesa) na kadi za benki (Visa, Mastercard, Amex) kwa usalama na uhakika kupitia AzamPay."
     },
+    "Je, wanunuzi wa tiketi wanahitaji kufungua akaunti?": {
+        "en": "Do ticket buyers need to create an account?",
+        "sw": "Je, wanunuzi wa tiketi wanahitaji kufungua akaunti?"
+    },
+    "faq_no_account_ans": {
+        "en": "No! Attendees do not need to register an account or remember passwords. They simply provide their name and phone number, paying instantly with M-Pesa, Mixx, Airtel Money, or Cards. Digital ticket passes display immediately on screen and arrive directly via SMS and Email.",
+        "sw": "Hapana! Wanunuzi hawahitaji kujisajili au kukumbuka nywila (password). Wanaingiza tu jina na namba ya simu, na kulipia kwa M-Pesa, Mixx, Airtel Money au Kadi. Mara malipo yanapokamilika, tiketi ya kidigitali inaonekana moja kwa moja skrini na kufika kupitia SMS na barua pepe yao."
+    },
+    "Mratibu wa tukio anawezaje kuanza kuuza tiketi na kupokea malipo?": {
+        "en": "How do event organizers start selling tickets and receive payouts?",
+        "sw": "Mratibu wa tukio anawezaje kuanza kuuza tiketi na kupokea malipo?"
+    },
+    "faq_organizer_payout_ans": {
+        "en": "Organizers can create events, configure ticket tiers (VIP, Regular, Early Bird, etc.), and set prices in the Organizer Portal. Ticket sales are tracked in real time and revenue payouts are sent directly via mobile money or bank accounts.",
+        "sw": "Waandaaji wanaweza kuunda tukio, kuweka madaraja ya tiketi (VIP, Regular, n.k.) na bei zake katika Dashibodi ya Waandaaji (Organizer Portal). Mauzo yanafuatiliwa moja kwa moja na malipo (payouts) yanatumwa moja kwa moja kwenye mitandao ya simu au benki."
+    },
+    "Uhakiki wa tiketi mlangoni unazuiaje tiketi bandia au zilizonakiliwa?": {
+        "en": "How does gate verification prevent counterfeit or duplicate tickets?",
+        "sw": "Uhakiki wa tiketi mlangoni unazuiaje tiketi bandia au zilizonakiliwa?"
+    },
+    "faq_gate_security_ans": {
+        "en": "Every digital ticket carries a unique tamper-proof dynamic QR code. Our live gate scanner checks passes in under 0.2s, instantly alerting security to duplicate or fake passes and preventing unauthorized access.",
+        "sw": "Kila tiketi ina dynamic QR code iliyosimbwa kwa njia salama (cryptographic token). Scanner yetu ya simu inasoma tiketi chini ya sekunde 0.2 na inatambua mara moja tiketi iliyokwishatumika au iliyonakiliwa kwa kutoa onyo la 'Duplicate', hivyo kuzuia wizi au uingiaji haramu."
+    },
+    "Je, inakuwaje tukio likiahirishwa au kufutwa?": {
+        "en": "What happens if an event is postponed or cancelled?",
+        "sw": "Je, inakuwaje tukio likiahirishwa au kufutwa?"
+    },
+    "faq_event_cancel_ans": {
+        "en": "If an organizer reschedules or updates the venue, issued ticket passes update automatically without needing re-issuance. If an event is cancelled, organizers communicate refund procedures directly to attendees via SMS and WhatsApp.",
+        "sw": "Mratibu anapobadilisha tarehe au ukumbi, tiketi zilizokwisha nunuliwa zinasasishwa moja kwa moja kidigitali bila hitaji la kutoa tiketi mpya. Ikiwa tukio litafutwa, waandaaji wanawasiliana na wanunuzi kupitia SMS na WhatsApp kuhusu utaratibu wa marejesho (refunds)."
+    },
     "Features": {
         "en": "Features",
         "sw": "Vipengele"
@@ -99,12 +133,88 @@ const translations = {
         "sw": "Hatua Rahisi"
     },
     "Payment": {
-        "en": "Payment",
+        "en": "Pricing",
         "sw": "Bei Zetu"
     },
     "FAQ": {
         "en": "FAQ",
         "sw": "Maswali (FAQ)"
+    },
+    "Ticketing": {
+        "en": "Tickets",
+        "sw": "Kununua Tiketi"
+    },
+    "Huduma za Tiketi": {
+        "en": "Ticketing Services",
+        "sw": "Huduma za Tiketi"
+    },
+    "Mialiko & RSVP": {
+        "en": "Invitations & RSVP",
+        "sw": "Mialiko & RSVP"
+    },
+    "Browse & Buy Tickets": {
+        "en": "Browse & Buy Tickets",
+        "sw": "Tazama & Nunua Tiketi"
+    },
+    "Create Invitations": {
+        "en": "Create Invitations",
+        "sw": "Tengeneza Mialiko"
+    },
+    "Passes Papo Hapo WhatsApp & SMS": {
+        "en": "Instant WhatsApp & SMS Passes",
+        "sw": "Passes Papo Hapo WhatsApp & SMS"
+    },
+    "Malipo ya Mitandao Yote & Kadi": {
+        "en": "Mobile Money & Card Payments",
+        "sw": "Malipo ya Mitandao Yote & Kadi"
+    },
+    "Kuscan Mlangoni kwa Simu": {
+        "en": "Live Gate Scanner App",
+        "sw": "Kuscan Mlangoni kwa Simu"
+    },
+    "Bila Kufungua Akaunti (Tiketi)": {
+        "en": "Zero Account Needed to Buy Tickets",
+        "sw": "Bila Kufungua Akaunti (Tiketi)"
+    },
+    "Kardovo Ticketing Platform": {
+        "en": "Kardovo Ticketing Platform",
+        "sw": "Mfumo wa Tiketi wa Kardovo"
+    },
+    "Discover, Book & Sell Tickets Instantly": {
+        "en": "Discover, Book & Sell Tickets Across Tanzania",
+        "sw": "Gundua, Nunua & Uza Tiketi Zako Papo Hapo"
+    },
+    "ticketing_showcase_desc": {
+        "en": "No queues, no mandatory account sign-up. Attendees book tickets in seconds with M-Pesa, Airtel Money, Tigo Pesa, or Cards, receiving instant dynamic QR passes directly on their phone.",
+        "sw": "Ondoa usumbufu wa foleni au kujiandikisha. Wanunuzi wanakata tiketi chini ya dakika 1 kwa M-Pesa, Airtel Money, Tigo Pesa au Kadi, na kupata Pass ya QR moja kwa moja kwenye simu zao."
+    },
+    "For Ticket Buyers": {
+        "en": "For Ticket Buyers",
+        "sw": "Kwa Wanunuzi wa Tiketi"
+    },
+    "For Organizers & Businesses": {
+        "en": "For Organizers & Businesses",
+        "sw": "Kwa Waandaaji wa Matukio"
+    },
+    "Door Access & Gate Pass": {
+        "en": "Door Access & Gate Pass",
+        "sw": "Uhakiki & Lango la Kuingilia"
+    },
+    "Explore Ticketing Marketplace": {
+        "en": "Explore Ticketing Marketplace",
+        "sw": "Fungua Soko la Tiketi"
+    },
+    "Start Selling Tickets": {
+        "en": "Start Selling Tickets",
+        "sw": "Anza Kuuza Tiketi Zako"
+    },
+    "Featured Live Experiences": {
+        "en": "Featured Live Experiences Across Tanzania",
+        "sw": "Matukio Yanayoendelea Tanzania"
+    },
+    "View event": {
+        "en": "View event",
+        "sw": "Kata Tiketi"
     },
     "Log In": {
         "en": "Log In",
@@ -123,8 +233,8 @@ const translations = {
         "sw": "Anza Sasa"
     },
     "Kadi za Kidigitali na Usimamizi Kisasa": {
-        "en": "Digital Cards & Modern Management",
-        "sw": "Kadi za Kidigitali na Usimamizi Kisasa"
+        "en": "Digital Invitations & Official Ticketing Platform",
+        "sw": "Kadi za Kidigitali & Mfumo Rasmi wa Tiketi Tanzania"
     },
     "Tuma Mialiko Yako Kidigitali": {
         "en": "Send Your Invitations Digitally",
@@ -620,8 +730,8 @@ function FAQItem({ question, answer }) {
 function FAQSection({ t }) {
     const faqs = [
         {
-            q: t("Je, natumaje mialiko kwa wageni wangu?"),
-            a: t("Kardovo inakuwezesha kutuma mialiko ya kidigitali na QR Codes moja kwa moja kwa wageni wako kupitia WhatsApp au SMS kwa kubofya kitufe kimoja tu kutokea kwenye dashibodi yako.")
+            q: t("Je, wanunuzi wa tiketi wanahitaji kufungua akaunti?"),
+            a: t("faq_no_account_ans")
         },
         {
             q: t("Je, wageni wangu wanahitaji kupakua app yoyote?"),
@@ -629,15 +739,11 @@ function FAQSection({ t }) {
         },
         {
             q: t("QR Code scanner inafanyaje kazi mlangoni?"),
-            a: t("Baada ya mgeni kuthibitisha (RSVP), anapata Pass yenye QR Code. Siku ya tukio, walinzi au wahudumu wako watatumia simu zao kuscan hizo QR Codes mlangoni ili kuruhusu wageni kuingia haraka bila msongamano.")
+            a: t("Baada ya mgeni kuthibitisha (RSVP) au kununua tiketi, anapata Pass yenye QR Code. Siku ya tukio, walinzi au wahudumu wako watatumia simu zao kuscan hizo QR Codes mlangoni ili kuruhusu wageni kuingia haraka chini ya sekunde 0.2 bila msongamano wala tiketi bandia.")
         },
         {
-            q: t("Je, ninaweza kuona wangapi wamethibitisha kuhudhuria?"),
-            a: t("Ndiyo, dashibodi yako inakupa ripoti ya moja kwa moja (live) inayoonyesha idadi ya wageni walioalikwa, waliothibitisha kuhudhuria (RSVP Attending), waliokataa, na wale ambao tayari wameingia ukumbini.")
-        },
-        {
-            q: t("Kuna ukomo wa idadi ya wageni ninaoweza kualika?"),
-            a: t("Vifurushi vyetu vimepangwa kuendana na ukubwa wa tukio lako. Kifurushi cha Premium kinakidhi hadi wageni 300, wakati Executive inaruhusu hadi wageni 1,000, na Corporate inashughulikia hadi wageni 5,000.")
+            q: t("Mratibu wa tukio anawezaje kuanza kuuza tiketi na kupokea malipo?"),
+            a: t("faq_organizer_payout_ans")
         },
         {
             q: t("Je, ninaweza kufanya malipo kwa njia gani?"),
@@ -646,13 +752,13 @@ function FAQSection({ t }) {
     ];
 
     return (
-        <section id="faq" className="py-24 bg-white border-t border-slate-100">
-            <div className="max-w-4xl mx-auto px-6">
-                <div className="text-center mb-16 scroll-animate delay-100">
-                    <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-4 font-display pb-1">{t("Maswali Yanayoulizwa Sana (FAQ)")}</h2>
-                    <p className="text-slate-500 text-lg">{t("Pata majibu ya maswali muhimu kuhusu matumizi ya Kardovo.")}</p>
+        <section id="faq" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-12 sm:py-16 bg-white border-t border-slate-100 scroll-mt-14">
+            <div className="max-w-4xl mx-auto px-6 w-full">
+                <div className="text-center mb-10 sm:mb-12 scroll-animate delay-100">
+                    <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-3 font-display pb-1">{t("Maswali Yanayoulizwa Sana (FAQ)")}</h2>
+                    <p className="text-slate-500 text-base sm:text-lg">{t("Pata majibu ya maswali muhimu kuhusu matumizi ya Kardovo.")}</p>
                 </div>
-                <div className="bg-slate-50 rounded-3xl p-6 md:p-10 border border-slate-100 shadow-sm scroll-animate delay-200">
+                <div className="bg-slate-50 rounded-3xl p-6 md:p-10 border border-slate-100 shadow-xs scroll-animate delay-200">
                     {faqs.map((faq, idx) => (
                         <FAQItem key={idx} question={faq.q} answer={faq.a} />
                     ))}
@@ -663,7 +769,32 @@ function FAQSection({ t }) {
 }
 
 export default function Welcome({ auth }) {
-    const [lang, setLang] = useState('sw');
+    const [lang, setLangState] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('kardovo_lang');
+            if (saved === 'en' || saved === 'sw') return saved;
+        }
+        return 'sw';
+    });
+
+    const setLang = (newLang) => {
+        setLangState(newLang);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('kardovo_lang', newLang);
+            window.dispatchEvent(new CustomEvent('kardovo-lang-change', { detail: { lang: newLang } }));
+        }
+    };
+
+    useEffect(() => {
+        const handleLangChange = (e) => {
+            if (e.detail?.lang && (e.detail.lang === 'en' || e.detail.lang === 'sw')) {
+                setLangState(e.detail.lang);
+            }
+        };
+        window.addEventListener('kardovo-lang-change', handleLangChange);
+        return () => window.removeEventListener('kardovo-lang-change', handleLangChange);
+    }, []);
+
     const t = (key) => translations[key] ? translations[key][lang] : key;
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [authModalMode, setAuthModalMode] = useState('register');
@@ -674,18 +805,62 @@ export default function Welcome({ auth }) {
     };
     const [activeSection, setActiveSection] = React.useState('');
 
+    // ── TOP NAVBAR STATIC WITH TRANSLUCENT SCROLL EFFECT ──
+    const [isScrolled, setIsScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            setIsScrolled(window.scrollY > 20);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        handleScroll();
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    const scrollToSection = (e, sectionId) => {
+        if (e) e.preventDefault();
+        const el = document.getElementById(sectionId);
+        if (!el) return;
+
+        const navHeight = 56; // h-14 sticky header
+        const rect = el.getBoundingClientRect();
+        const elementTop = rect.top + window.scrollY;
+
+        window.scrollTo({
+            top: Math.max(0, Math.round(elementTop - navHeight)),
+            behavior: 'smooth'
+        });
+
+        if (window.history?.pushState) {
+            window.history.pushState(null, '', `#${sectionId}`);
+        }
+        setActiveSection(sectionId);
+    };
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && window.location.hash) {
+            const hash = window.location.hash.replace('#', '');
+            if (['ticketing-services', 'invitations', 'how-it-works', 'payment', 'faq'].includes(hash)) {
+                setTimeout(() => {
+                    scrollToSection(null, hash);
+                }, 300);
+            }
+        }
+    }, []);
+
     React.useEffect(() => {
-        const sections = ['features', 'how-it-works', 'payment', 'faq'];
+        const sections = ['ticketing-services', 'invitations', 'how-it-works', 'payment', 'faq'];
         let ticking = false;
         const handleScroll = () => {
             if (!ticking) {
                 window.requestAnimationFrame(() => {
                     let current = '';
+                    const navHeight = 56;
                     sections.forEach(section => {
                         const el = document.getElementById(section);
                         if (el) {
                             const rect = el.getBoundingClientRect();
-                            if (rect.top <= 300 && rect.bottom >= 300) {
+                            if (rect.top <= navHeight + 80 && rect.bottom >= navHeight + 80) {
                                 current = section;
                             }
                         }
@@ -707,7 +882,6 @@ export default function Welcome({ auth }) {
             entries.forEach((entry) => {
                 if (entry.isIntersecting) {
                     entry.target.classList.add('is-visible');
-                    // animObserver.unobserve(entry.target); // Un-comment to only animate once
                 }
             });
         }, { threshold: 0.1 });
@@ -721,7 +895,7 @@ export default function Welcome({ auth }) {
         };
     }, []);
     return (
-        <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans selection:bg-emerald-500 selection:text-white scroll-smooth">
+        <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans selection:bg-[#16A34A] selection:text-white relative">
             
             <style dangerouslySetInnerHTML={{__html: `
                 @keyframes float {
@@ -788,601 +962,334 @@ export default function Welcome({ auth }) {
                 .animate-wave-medium { animation: move-forever 20s cubic-bezier(.55,.5,.45,.5) infinite; }
                 .animate-wave-fast { animation: move-forever 15s cubic-bezier(.55,.5,.45,.5) infinite; }
                 .animate-wave-fastest { animation: move-forever 10s cubic-bezier(.55,.5,.45,.5) infinite; }
+                
+                @keyframes hero-fade-up {
+                    0% {
+                        opacity: 0;
+                        transform: translateY(22px);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+                @keyframes shimmer-gradient {
+                    0%, 100% {
+                        background-size: 200% 200%;
+                        background-position: 0% 50%;
+                    }
+                    50% {
+                        background-size: 200% 200%;
+                        background-position: 100% 50%;
+                    }
+                }
+                .animate-hero-headline {
+                    animation: hero-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .animate-hero-gradient {
+                    background-size: 200% 200%;
+                    animation: shimmer-gradient 6s ease-in-out infinite;
+                }
+                .animate-hero-subtitle {
+                    animation: hero-fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
+                }
+                .animate-hero-cta {
+                    animation: hero-fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
+                }
             `}} />
             <Head title={t("Kadi za Kidigitali na Usimamizi Kisasa")} />
 
-
-            {/* Navigation Bar */}
-            <header className="fixed top-0 w-full z-50 px-6 py-5">
-                <div className="max-w-7xl mx-auto flex items-center justify-between bg-white/80 backdrop-blur-xl border border-slate-200/50 shadow-sm rounded-2xl px-5 py-3">
-                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="cursor-pointer focus:outline-none hover:opacity-80 transition-opacity">
-                        <KardovoLogo showText={true} textClassName="text-[#0B2545]" />
+            {/* Top Navigation Bar (Compact & Solid Navy with Subtle Blur on Scroll) */}
+            <header 
+                className={`sticky top-0 z-50 text-white transition-all duration-300 ${
+                    isScrolled 
+                        ? "bg-[#0B2545]/95 backdrop-blur-md border-b border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.25)]" 
+                        : "bg-[#0B2545] border-b border-[#173860]"
+                }`}
+            >
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+                    {/* Brand Logo */}
+                    <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="cursor-pointer focus:outline-none flex items-center shrink-0">
+                        <KardovoLogo light={true} showText={true} textClassName="text-white text-base font-black tracking-widest" imgClassName="h-7 w-7" />
                     </button>
                     
-                    <nav className="flex items-center gap-6">
-                        <div className="hidden md:flex items-center gap-8 text-sm font-bold text-slate-500">
-                            {[
-                                { id: 'features', label: t('Features') },
-                                { id: 'how-it-works', label: t('How It Works') },
-                                { id: 'payment', label: t('Payment') },
-                                { id: 'faq', label: t('FAQ') }
-                            ].map(link => (
-                                <a 
-                                    key={link.id}
-                                    href={`#${link.id}`} 
-                                    className={`relative flex flex-col items-center hover:text-[#16A34A] transition-colors duration-200 ${activeSection === link.id ? 'text-[#16A34A]' : ''}`}
-                                >
-                                    <span>{link.label}</span>
-                                    <span className={`absolute -bottom-2 w-1.5 h-1.5 rounded-full bg-[#16A34A] transition-opacity duration-300 ${activeSection === link.id ? 'opacity-100' : 'opacity-0'}`}></span>
-                                </a>
-                            ))}
-                        </div>
-                        
-                        {/* Language Toggle */}
-                        <button 
-                            onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} 
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors text-sm font-bold text-slate-600 shadow-sm mr-2"
+                    {/* Navigation Pills */}
+                    <nav className="hidden lg:flex items-center gap-1.5 shrink-0 text-xs font-bold text-slate-300">
+                        {/* 1. Sell & Buy Tickets (Before Invitations & RSVP) */}
+                        <a 
+                            href="#ticketing-services" 
+                            onClick={(e) => scrollToSection(e, 'ticketing-services')}
+                            className={`px-3 py-1.5 rounded-xl transition hover:text-white hover:bg-white/10 cursor-pointer ${activeSection === 'ticketing-services' ? 'text-white bg-white/15' : ''}`}
                         >
-                            <Globe className="w-4 h-4 text-blue-500" />
-                            {lang === 'en' ? 'SWA' : 'ENG'}
+                            {lang === 'sw' ? 'Tiketi za Matukio' : 'Sell & Buy Tickets'}
+                        </a>
+
+                        {/* 2. Invitations & RSVP */}
+                        <a 
+                            href="#invitations" 
+                            onClick={(e) => scrollToSection(e, 'invitations')}
+                            className={`px-3 py-1.5 rounded-xl transition hover:text-white hover:bg-white/10 cursor-pointer ${activeSection === 'invitations' ? 'text-white bg-white/15' : ''}`}
+                        >
+                            {t('Mialiko & RSVP')}
+                        </a>
+
+                        {/* 3. How It Works, Payment, FAQ */}
+                        {[
+                            { id: 'how-it-works', label: t('How It Works') },
+                            { id: 'payment', label: t('Payment') },
+                            { id: 'faq', label: t('FAQ') }
+                        ].map(link => (
+                            <a 
+                                key={link.id}
+                                href={`#${link.id}`} 
+                                onClick={(e) => scrollToSection(e, link.id)}
+                                className={`px-3 py-1.5 rounded-xl transition hover:text-white hover:bg-white/10 cursor-pointer ${activeSection === link.id ? 'text-white bg-white/15' : ''}`}
+                            >
+                                {link.label}
+                            </a>
+                        ))}
+                    </nav>
+
+                    {/* Right-Side Controls: Language Toggle & Auth */}
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-slate-300 shrink-0">
+                        {/* Language Toggle matching landing page & tickets */}
+                        <button 
+                            type="button"
+                            onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} 
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 hover:border-white/40 hover:bg-white/10 transition-colors text-xs font-bold text-slate-200 shadow-xs cursor-pointer mr-1"
+                            title={lang === 'en' ? 'Badili lugha kuwa Kiswahili' : 'Switch language to English'}
+                        >
+                            <Globe className="w-3.5 h-3.5 text-[#008EE8]" />
+                            <span>{lang === 'en' ? 'SWA' : 'ENG'}</span>
                         </button>
                         
                         {auth?.user ? (
-
                             <Link
                                 href={route('dashboard')}
-                                className="px-5 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] text-white font-bold text-sm shadow-lg shadow-emerald-600/20 hover:-translate-y-0.5 transition-all"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-xs font-bold transition shadow-xs"
                             >
-                                {t("Go to Dashboard")}
+                                <span>{t("Go to Dashboard")}</span>
                             </Link>
                         ) : (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => openAuthModal('login')}
-                                    className="px-4 py-2.5 rounded-xl text-slate-600 font-bold text-sm hover:bg-slate-100 transition-colors cursor-pointer"
+                                    className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition text-xs cursor-pointer"
                                 >
-                                    Log In
+                                    {t("Log In")}
                                 </button>
                                 <button
                                     onClick={() => openAuthModal('register')}
-                                    className="px-5 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] text-white font-bold text-sm shadow-lg shadow-emerald-600/20 hover:-translate-y-0.5 transition-all cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-xs font-bold transition shadow-xs cursor-pointer"
                                 >
-                                    {t("Start Now")}
+                                    <span>{t("Start Now")}</span>
                                 </button>
                             </div>
                         )}
-                    </nav>
+                    </div>
                 </div>
             </header>
 
             <main>
-                {/* Hero Section */}
-                <section className="relative pt-20 pb-16 lg:pt-24 lg:pb-20 overflow-hidden bg-[#F8FAFC]">
-                    {/* Interactive Monochrome Canvas Wave Background */}
-                    <div className="absolute inset-0 opacity-[0.08] pointer-events-none overflow-hidden mix-blend-multiply">
-                        {/* Left large node */}
-                        <div className="absolute top-[20%] left-[15%] w-64 h-64 border border-slate-300 rounded-full animate-[pulse-node_8s_ease-in-out_infinite]" />
-                        <div className="absolute top-[20%] left-[15%] w-96 h-96 border border-slate-200/50 rounded-full animate-[pulse-node_12s_ease-in-out_infinite_1s]" />
-                        
-                        {/* Right large node */}
-                        <div className="absolute top-[60%] right-[10%] w-72 h-72 border border-slate-300 rounded-full animate-[pulse-node_10s_ease-in-out_infinite_2s]" />
-                        <div className="absolute top-[60%] right-[10%] w-[28rem] h-[28rem] border border-slate-200/50 rounded-full animate-[pulse-node_15s_ease-in-out_infinite]" />
-                        
-                        {/* Center connecting node */}
-                        <div className="absolute top-[40%] left-[50%] w-48 h-48 border border-slate-300 rounded-full animate-[pulse-node_9s_ease-in-out_infinite_0.5s]" />
-                        
-                        {/* Floating mini nodes */}
-                        <div className="absolute top-[15%] right-[25%] w-4 h-4 bg-slate-400 rounded-full animate-[float-node-1_6s_ease-in-out_infinite]" />
-                        <div className="absolute top-[70%] left-[25%] w-3 h-3 bg-slate-300 rounded-full animate-[float-node-2_7s_ease-in-out_infinite]" />
-                        <div className="absolute top-[45%] right-[40%] w-5 h-5 bg-slate-400 rounded-full animate-[float-node-3_8s_ease-in-out_infinite]" />
+                {/* Hero Section (Fills Initial Viewport with Anchored Metrics - Zero White Space) */}
+                <section id="hero" className="min-h-[calc(100vh-3.5rem+6px)] min-h-[calc(100dvh-3.5rem+6px)] bg-gradient-to-b from-[#0B2545] via-[#091D35] to-[#07111E] text-white relative overflow-hidden flex flex-col justify-between">
+                    {/* Subtle Ambient Tech Mesh matching Ticket Marketplace */}
+                    <div 
+                        className="absolute inset-0 opacity-15 pointer-events-none"
+                        style={{
+                            backgroundImage: 'radial-gradient(#008EE8 1.5px, transparent 1.5px)',
+                            backgroundSize: '24px 24px',
+                        }}
+                    />
+                    <div className="absolute top-0 right-1/4 w-[600px] h-[350px] bg-[#16A34A]/10 rounded-full blur-[140px] pointer-events-none" />
+                    <div className="absolute bottom-10 left-1/4 w-[500px] h-[300px] bg-[#008EE8]/10 rounded-full blur-[140px] pointer-events-none" />
 
-                        {/* Connecting Data Lines */}
-                        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                            {/* Line from Left to Center */}
-                            <path d="M 20vw 30vh Q 40vw 20vh 50vw 40vh" fill="none" stroke="currentColor" strokeWidth="1" className="text-slate-300 opacity-50" strokeDasharray="4 4" />
-                            <path d="M 20vw 30vh Q 40vw 20vh 50vw 40vh" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-400" strokeDasharray="100" strokeDashoffset="100" style={{ animation: 'data-flow 3s linear infinite' }} />
-                            
-                            {/* Line from Center to Right */}
-                            <path d="M 50vw 40vh Q 70vw 60vh 85vw 50vh" fill="none" stroke="currentColor" strokeWidth="1" className="text-slate-300 opacity-50" strokeDasharray="4 4" />
-                            <path d="M 50vw 40vh Q 70vw 60vh 85vw 50vh" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-400" strokeDasharray="100" strokeDashoffset="100" style={{ animation: 'data-flow 4s linear infinite 1s' }} />
-                            
-                            {/* Line from Left to Bottom Right */}
-                            <path d="M 20vw 30vh Q 40vw 70vh 85vw 50vh" fill="none" stroke="currentColor" strokeWidth="1" className="text-slate-200 opacity-50" />
-                        </svg>
+                    {/* Hero Content (Centered) */}
+                    <div className="flex-1 flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative z-10 py-10 sm:py-14">
+                        <div className="max-w-5xl lg:max-w-6xl mx-auto flex flex-col items-center">
+                            {/* Headline */}
+                            <h1 className="animate-hero-headline text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black font-display tracking-tight text-white max-w-5xl mx-auto leading-[1.06] sm:leading-[1.03] mb-4 sm:mb-6 drop-shadow-sm">
+                                {lang === 'sw' ? (
+                                    <>
+                                        <span>Mialiko ya Kidigitali</span>
+                                        <br />
+                                        <span className="animate-hero-gradient text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400">
+                                            & Tiketi za Matukio
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <span>Digital Invitations</span>
+                                        <br />
+                                        <span className="animate-hero-gradient text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400">
+                                            & Event Ticketing
+                                        </span>
+                                    </>
+                                )}
+                            </h1>
+
+                            {/* Subtitle */}
+                            <p className="animate-hero-subtitle text-base sm:text-xl md:text-[1.25rem] text-slate-300/90 font-normal max-w-3xl mx-auto leading-relaxed mb-8 sm:mb-10">
+                                {lang === 'sw' 
+                                    ? 'Tuma mialiko ya kisasa kupitia WhatsApp na SMS yenye QR Code mlangoni, au uza na ununue tiketi za matukio nchini Tanzania kwa mitandao yote ya simu.'
+                                    : 'Send modern invitations via WhatsApp and SMS with door QR verification, or sell and book event tickets across Tanzania with mobile money.'
+                                }
+                            </p>
+
+                            {/* Standout Aesthetic Buttons */}
+                            <div className="animate-hero-cta flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+                                <Link
+                                    href={route('tickets.marketplace')}
+                                    className="w-full sm:w-auto group relative inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] active:scale-[0.98] text-white text-base font-bold shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
+                                >
+                                    <Ticket className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
+                                    <span>{lang === 'sw' ? 'Kununua Tiketi' : 'Browse Tickets'}</span>
+                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+                                </Link>
+
+                                <button
+                                    type="button"
+                                    onClick={() => openAuthModal('register')}
+                                    className="w-full sm:w-auto group relative inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/15 active:scale-[0.98] border border-white/20 hover:border-white/35 text-white text-base font-bold backdrop-blur-xl shadow-lg transition-all duration-300 cursor-pointer"
+                                >
+                                    <Plus className="w-5 h-5 text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
+                                    <span>{lang === 'sw' ? 'Tengeneza Mwaliko' : 'Create Invitation'}</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    
-            {/* S-Curve Paper Planes */}
-            <div className="absolute top-0 left-0 text-blue-500/70 opacity-0" style={{ animation: 'plane-s-curve-1 25s ease-in-out infinite both' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-lg">
-                    <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
-                </svg>
-            </div>
-            <div className="absolute top-0 left-0 text-emerald-500/50 opacity-0" style={{ animation: 'plane-s-curve-2 30s ease-in-out infinite 10s both' }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="drop-shadow-md">
-                    <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
-                </svg>
-            </div>
-                    
-                    <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-                        <div className="relative group perspective-1000">
-                            {/* Tech Animations Behind Text */}
-                            <TechBackground />
-                            
-                            {/* Floating Decorative Elements */}
-                            
-                            
-
-                            {/* Floating QR Scanner Decor */}
-                            <div className="absolute -bottom-10 -left-6 md:-bottom-12 md:-left-12 z-20 animate-[float-network_8s_ease-in-out_infinite_1s]">
-                                <div className="bg-white/90 backdrop-blur-md p-3 rounded-2xl shadow-[0_20px_40px_rgba(11,37,69,0.2)] border border-blue-100 flex flex-col items-center gap-2 transform -rotate-12">
-                                    <QrCode className="w-12 h-12 text-[#0B2545]" />
-                                    <div className="text-[9px] font-black tracking-widest text-[#16A34A] uppercase">Approved</div>
+                    {/* Metrics Bar (Anchored at the bottom of the first screen - Perfectly fits viewport) */}
+                    <div className="w-full border-t border-white/10 bg-black/25 backdrop-blur-md relative z-10 py-5 sm:py-6">
+                        <div className="max-w-7xl mx-auto px-6">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 divide-x divide-white/10">
+                                <div className="text-center px-4">
+                                    <h3 className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight drop-shadow-sm">
+                                        <AnimatedCounter end={10} suffix="K+" />
+                                    </h3>
+                                    <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-1 uppercase tracking-wider">{t("Mialiko Iliyotumwa")}</p>
+                                </div>
+                                <div className="text-center px-4">
+                                    <h3 className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight drop-shadow-sm">
+                                        <AnimatedCounter end={99.9} decimals={1} suffix="%" />
+                                    </h3>
+                                    <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-1 uppercase tracking-wider">{t("Uhakika wa Kufika")}</p>
+                                </div>
+                                <div className="text-center px-4">
+                                    <h3 className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight drop-shadow-sm">
+                                        <AnimatedCounter end={24} suffix="/7" />
+                                    </h3>
+                                    <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-1 uppercase tracking-wider">{t("Huduma kwa Wateja")}</p>
+                                </div>
+                                <div className="text-center px-4">
+                                    <h3 className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight drop-shadow-sm">
+                                        <AnimatedCounter end={0.2} decimals={1} suffix="s" />
+                                    </h3>
+                                    <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-1 uppercase tracking-wider">{t("Kuscan Mlangoni")}</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </section>
 
-                            {/* Central Content */}
-                            <div className="relative z-10 flex flex-col items-center mt-0 md:mt-4 w-full max-w-5xl mx-auto text-center">
-                                <div className="scroll-animate delay-100 inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/80 backdrop-blur-sm text-[#0B2545] text-xs font-black tracking-widest uppercase mb-10 shadow-lg shadow-blue-900/10 transform hover:scale-105 transition-transform cursor-default border border-[#0B2545]/10">
-                                    <Sparkles className="w-4 h-4 text-emerald-500" />
-                                    {t("Kadi za Kidigitali na Usimamizi Kisasa")}
+                {/* Ticketing Services Section */}
+                <section id="ticketing-services" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-6 sm:py-8 bg-white relative scroll-mt-14 border-b border-slate-100">
+                    <div className="max-w-7xl mx-auto px-6 w-full">
+                        {/* Section Header */}
+                        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 scroll-animate">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1">
+                                {lang === 'sw' ? 'Kuuza & Kununua Tiketi Mtandaoni' : 'Sell & Buy Event Tickets Online'}
+                            </h2>
+                            <p className="text-base sm:text-lg text-slate-500 leading-relaxed">
+                                {lang === 'sw' 
+                                    ? 'Mfumo rahisi na wa uhakika wa tiketi kwa ajili ya matamasha, mikutano, ndege na matukio ya kijamii wenye malipo ya haraka ya simu.'
+                                    : 'A simple, reliable ticketing platform for concerts, conferences, flights, and social events with seamless mobile checkout.'
+                                }
+                            </p>
+                        </div>
+
+                        {/* 3 Core Value Cards matching Features layout */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+                            {/* Card 1 */}
+                            <div className="group p-5 sm:p-6 rounded-2xl scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-300">
+                                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-xs flex items-center justify-center mb-3.5 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
+                                    <Users className="w-5 h-5" />
                                 </div>
-                                
-                                <h1 className="scroll-animate delay-200 relative text-5xl md:text-6xl lg:text-[5rem] font-black text-[#0B2545] tracking-tight leading-[1.1] max-w-4xl mx-auto font-display mb-8 drop-shadow-sm">
-                                    {t("Tuma Mialiko Yako Kidigitali")} <br className="hidden md:block" />
-                                    <span className="inline-block mt-2">
-                                        <span className="mr-3">{t("Kupitia")}</span>
-                                        <span className="relative text-transparent bg-clip-text bg-gradient-to-br from-green-500 to-emerald-400">WhatsApp</span>
-                                        <span className="text-[#0B2545] mx-3 font-medium">&</span>
-                                        <span className="relative text-transparent bg-clip-text bg-gradient-to-br from-blue-500 to-cyan-500">SMS</span>.
-                                    </span>
-                                </h1>
-                                
-                                <p className="scroll-animate delay-300 text-lg md:text-xl text-[#0B2545] font-semibold leading-relaxed max-w-2xl mx-auto mb-12 drop-shadow-md">
-                                    {t("Tengeneza kadi zenye muonekano wa kuvutia, pokea majibu (RSVP) moja kwa moja, na dhibiti uingiaji wa wageni mlangoni kwa kutumia QR Code scanner.")}
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                    {lang === 'sw' ? 'Bila Kufungua Akaunti' : 'No Account Needed'}
+                                </h3>
+                                <p className="text-slate-500 leading-relaxed text-sm font-medium">
+                                    {lang === 'sw'
+                                        ? 'Weka tu jina na namba ya simu. Malipo yanakamilika chini ya dakika moja kwa kutumia M-Pesa, TigoPesa, Airtel Money au Kadi.'
+                                        : 'Just enter your name and phone number. Checkout takes under a minute using M-Pesa, TigoPesa, Airtel Money, or Cards.'
+                                    }
                                 </p>
-                                
-                                <div className="scroll-animate delay-400 flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto mb-20">
-                                    <button
-                                        onClick={() => openAuthModal('register')}
-                                        className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-base shadow-2xl hover:shadow-green-900/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 cursor-pointer"
-                                    >
-                                        <Send className="w-5 h-5 transition-transform" />
-                                        <span>{t("Tengeneza Kadi Yako")}</span>
-                                    </button>
-                                    
-                                    <a
-                                        href="#demo"
-                                        className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/90 hover:bg-white border-2 border-[#0B2545]/20 hover:border-[#0B2545]/40 text-[#0B2545] font-black text-base shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Smartphone className="w-5 h-5 text-[#16A34A]" />
-                                        {t("Tuma Mfano")}
-                                    </a>
+                            </div>
+
+                            {/* Card 2 */}
+                            <div className="group p-5 sm:p-6 rounded-2xl scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-300">
+                                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-xs flex items-center justify-center mb-3.5 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
+                                    <QrCode className="w-5 h-5" />
                                 </div>
-                                
-                                {/* Dashboard Mockup */}
-                                <div className="scroll-animate-mockup delay-300 w-full max-w-5xl mx-auto relative z-20 mt-10 shadow-[0_30px_100px_-20px_rgba(11,37,69,0.3)] rounded-[1.5rem] group hover:scale-[1.02] transition-transform duration-500">
-    {/* DESKTOP DASHBOARD MOCKUP */}
-    <div className="bg-slate-50 rounded-[1.5rem] overflow-hidden border border-slate-100 aspect-[16/11] relative flex text-left font-sans text-sm shadow-inner">
-        <div className="flex-1 flex overflow-hidden opacity-95 hover:opacity-100 transition-opacity">
-            
-            {/* Sidebar */}
-            <div className="w-[20%] max-w-[220px] bg-[#0B2545] text-slate-200 p-4 flex flex-col border-r border-[#173860] relative z-20">
-                {/* Logo */}
-                <div className="flex items-center gap-2 mb-1 mt-1">
-                    <div className="w-6 h-6 rounded bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm flex items-center justify-center font-black text-white text-[10px]">K</div>
-                    <div className="font-black tracking-widest text-[13px] text-white">KARDOVO</div>
-                </div>
-                
-                <div className="mb-6 text-[9px] text-slate-400 font-bold tracking-wide">Kardovo Events & Media Ltd</div>
-
-                {/* Menu */}
-                <div className="flex flex-col gap-1.5 flex-1 pr-2">
-                    <div className="flex items-center gap-3 bg-[#16a34a] text-white px-3 py-2 rounded-lg font-bold text-[11px] shadow-sm cursor-pointer transition-colors border border-[#16a34a]">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                        Dashboard
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors font-semibold text-[11px]">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> Calendar
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors font-semibold text-[11px]">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg> Payment
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors font-semibold text-[11px]">
-
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" /></svg> Card Templates
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors font-semibold text-[11px]">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg> My Events
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors font-semibold text-[11px]">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg> Messaging Hub
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors font-semibold text-[11px]">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm14 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" /></svg> Gate Scanner
-                    </div>
-                    <div className="flex items-center gap-3 px-3 py-2 text-slate-300 hover:text-white hover:bg-white/10 rounded-lg cursor-pointer transition-colors font-semibold text-[11px]">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg> Account Profile
-                    </div>
-                </div>
-
-                {/* Quotas */}
-                <div className="mt-auto bg-[#0B2545]/80 rounded-lg p-2.5 border border-[#173860] mb-3">
-                    <div className="flex justify-between items-center mb-2">
-                        <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Active Quotas</span>
-                        <span className="text-[7px] border border-emerald-500/50 text-emerald-400 px-1.5 py-0.5 rounded-full font-bold bg-emerald-500/10">LIVE</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[9px] text-slate-300 mb-1.5 bg-[#0B2545]/50 px-2 py-1 rounded border border-white/5">
-                        <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_#34d399]"></span> WhatsApp</div>
-                        <span className="text-emerald-400 font-bold">663 left</span>
-                    </div>
-                    <div className="flex justify-between items-center text-[9px] text-slate-300 bg-[#0B2545]/50 px-2 py-1 rounded border border-white/5">
-                        <div className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_4px_#3b82f6]"></span> SMS</div>
-                        <span className="text-blue-400 font-bold">114 left</span>
-                    </div>
-                </div>
-            </div>
-
-            {/* Main Content */}
-            <div className="flex-1 bg-[#F8FAFC] flex flex-col relative z-10 overflow-hidden">
-                {/* Topbar */}
-                <div className="bg-[#0B2545] h-[48px] px-4 flex items-center justify-between shadow-sm z-20 shrink-0 border-b border-[#173860]">
-                    <div className="text-[11px] font-medium"><span className="text-emerald-400">Kardovo</span> <span className="text-slate-500 mx-1">/</span> <span className="text-white font-bold">Organizer Dashboard</span></div>
-                    <div className="flex items-center gap-2.5">
-                        <div className="bg-[#16a34a] hover:bg-emerald-500 cursor-pointer text-white px-3 py-1.5 rounded-full text-[10px] font-bold flex items-center gap-1 transition-colors">
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg> Create Event
-                        </div>
-                        <div className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer flex items-center justify-center text-slate-300 transition-colors border border-white/10">
-                            <svg className="w-3.5 h-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
-                        </div>
-                        <div className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 cursor-pointer flex items-center justify-center text-slate-300 transition-colors border border-white/10">
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Dashboard Content STATIC area */}
-                <div className="p-4 flex-1 overflow-hidden flex flex-col justify-between">
-                    {/* Welcome Card */}
-                    <div className="bg-white rounded-[1rem] p-4 shadow-sm flex items-center gap-4 mb-4 border border-slate-100 min-h-[70px] shrink-0">
-                        <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0">
-                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
-                        </div>
-                        <div className="flex flex-col justify-center">
-                            <h2 className="text-xl font-black text-slate-900 tracking-tight leading-tight">Good evening, David</h2>
-                            <p className="text-[11px] text-slate-500 font-medium mt-0.5">Select or create an event to get started</p>
-                        </div>
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-6 gap-3 mb-4 shrink-0">
-                        <div className="bg-white p-3 rounded-[1rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Events</span>
-                                <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                    {lang === 'sw' ? 'Pass ya Papo Hapo, SMS & Email' : 'Instant Digital Pass, SMS & Email'}
+                                </h3>
+                                <p className="text-slate-500 leading-relaxed text-sm font-medium">
+                                    {lang === 'sw'
+                                        ? 'Baada ya malipo kukamilika, pasi yako ya kidigitali inaonekana papo hapo skrini ikiwa na QR code salama, huku ukipokea kiungo cha pasi kwa SMS na barua pepe ikiwa na vocha ya PDF.'
+                                        : 'Once payment completes, your authentic digital pass displays immediately on screen with a dynamic QR code, and is delivered directly to your phone via SMS and email with an attached PDF voucher.'
+                                    }
+                                </p>
                             </div>
-                            <div className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">3</div>
-                            <div className="text-[9px] text-emerald-600 font-bold">3 active</div>
-                        </div>
-                        <div className="bg-white p-3 rounded-[1rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Guests</span>
-                                <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg></div>
-                            </div>
-                            <div className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">26</div>
-                            <div className="text-[9px] text-emerald-600 font-bold">Invited guests</div>
-                        </div>
-                        <div className="bg-white p-3 rounded-[1rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Attending</span>
-                                <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></div>
-                            </div>
-                            <div className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">13</div>
-                            <div className="text-[9px] text-emerald-600 font-bold">50% confirmed</div>
-                        </div>
-                        <div className="bg-white p-3 rounded-[1rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Checked In</span>
-                                <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div>
-                            </div>
-                            <div className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">9</div>
-                            <div className="text-[9px] text-emerald-600 font-bold">Gate entries</div>
-                        </div>
-                        <div className="bg-white p-3 rounded-[1rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Passes Sent</span>
-                                <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg></div>
-                            </div>
-                            <div className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">167</div>
-                            <div className="text-[9px] text-emerald-600 font-bold">Dispatched</div>
-                        </div>
-                        <div className="bg-white p-3 rounded-[1rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:-translate-y-0.5 transition-transform">
-                            <div className="flex justify-between items-start mb-1">
-                                <span className="text-[9px] font-bold text-slate-700 uppercase tracking-wider">Quota</span>
-                                <div className="w-5 h-5 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center"><svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div>
-                            </div>
-                            <div className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">777</div>
-                            <div className="text-[9px] text-emerald-600 font-bold">145 sent</div>
-                        </div>
-                    </div>
 
-                    {/* Lower Section Grid */}
-                    <div className="grid grid-cols-3 gap-4 flex-1 overflow-hidden">
-                        {/* Your Events - col-span-2 */}
-                        <div className="col-span-2 bg-white rounded-[1rem] p-4 shadow-sm border border-slate-100 flex flex-col overflow-hidden">
-                            <div className="flex justify-between items-center mb-3">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
-                                    <div>
-                                        <h3 className="text-sm font-black text-slate-900">Your Events</h3>
-                                        <p className="text-[10px] text-slate-500 font-medium">Active event campaigns and guest tallies.</p>
-                                    </div>
+                            {/* Card 3 */}
+                            <div className="group p-5 sm:p-6 rounded-2xl scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-300">
+                                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-xs flex items-center justify-center mb-3.5 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
+                                    <BarChart3 className="w-5 h-5" />
                                 </div>
-                                <div className="bg-slate-50 hover:bg-slate-100 px-3 py-1.5 rounded-full text-[10px] font-bold text-slate-700 border border-slate-200 cursor-pointer transition-colors">View All (3) &rarr;</div>
-                            </div>
-                            
-                            <div className="flex flex-col gap-2 flex-1 justify-around">
-                                {/* Event 1 */}
-                                <div className="flex items-center justify-between gap-3 p-2 bg-white hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100 cursor-pointer">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className="bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-center shrink-0 shadow-sm">
-                                            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Nov</div>
-                                            <div className="text-lg font-black text-slate-900 leading-none">20</div>
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <h4 className="text-[13px] font-black text-slate-900 truncate">Fintech East Africa Summit 2026</h4>
-                                            <div className="flex flex-row items-center gap-2 mt-1 whitespace-nowrap">
-                                                <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md text-[9px] font-bold border border-emerald-100">Corporate Conference</span>
-                                                <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 truncate"><svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Dar es Salaam Serena Hotel</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors shrink-0">Manage &rsaquo;</div>
-                                </div>
-                                {/* Event 2 */}
-                                <div className="flex items-center justify-between gap-3 p-2 bg-white hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100 cursor-pointer">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className="bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-center shrink-0 shadow-sm">
-                                            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Oct</div>
-                                            <div className="text-lg font-black text-slate-900 leading-none">5</div>
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <h4 className="text-[13px] font-black text-slate-900 truncate">CRDB Bank Annual Executive Summit 2026</h4>
-                                            <div className="flex flex-row items-center gap-2 mt-1 whitespace-nowrap">
-                                                <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md text-[9px] font-bold border border-emerald-100">Corporate Gala</span>
-                                                <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 truncate"><svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Julius Nyerere Convention Centre</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors shrink-0">Manage &rsaquo;</div>
-                                </div>
-                                {/* Event 3 */}
-                                <div className="flex items-center justify-between gap-3 p-2 bg-white hover:bg-slate-50 rounded-xl transition-colors border border-transparent hover:border-slate-100 cursor-pointer">
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className="bg-slate-50 border border-slate-100 rounded-xl py-2 px-3 text-center shrink-0 shadow-sm">
-                                            <div className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Sept</div>
-                                            <div className="text-lg font-black text-slate-900 leading-none">14</div>
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <h4 className="text-[13px] font-black text-slate-900 truncate">Neema & Baraka &mdash; Wedding</h4>
-                                            <div className="flex flex-row items-center gap-2 mt-1 whitespace-nowrap">
-                                                <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-md text-[9px] font-bold border border-emerald-100">Wedding Reception</span>
-                                                <span className="text-[10px] text-slate-500 font-medium flex items-center gap-1 truncate"><svg className="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> Kunduchi Beach Gardens</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full text-[10px] font-bold transition-colors shrink-0">Manage &rsaquo;</div>
-                                </div>
+                                <h3 className="text-lg font-bold text-slate-900 mb-2">
+                                    {lang === 'sw' ? 'Udhibiti wa Waandaaji' : 'Organizer Control'}
+                                </h3>
+                                <p className="text-slate-500 leading-relaxed text-sm font-medium">
+                                    {lang === 'sw'
+                                        ? 'Panga madaraja ya VIP na Regular, fuatilia mauzo mubashara, dhibiti ukomo wa idadi (quotas), na hakiki tiketi getini kwa simu yoyote.'
+                                        : 'Set up VIP and regular tiers, track live sales, manage quotas, and verify tickets at the gate using any smartphone.'
+                                    }
+                                </p>
                             </div>
                         </div>
 
-                        {/* RSVP Status - col-span-1 */}
-                        <div className="col-span-1 bg-white rounded-[1rem] p-4 shadow-sm border border-slate-100 flex flex-col justify-between overflow-hidden">
-                            <div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg></div>
-                                    <div>
-                                        <h3 className="text-sm font-black text-slate-900">RSVP Status</h3>
-                                        <p className="text-[10px] text-slate-500 font-medium">Overall guest responses.</p>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex flex-col gap-3">
-                                    <div>
-                                        <div className="flex justify-between items-end mb-1">
-                                            <span className="text-[10px] font-bold text-slate-700 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#16A34A]"></span> Attending</span>
-                                            <span className="text-[11px] font-black text-slate-900">13 <span className="text-slate-400 font-bold ml-1">(50%)</span></span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                                            <div className="h-full bg-[#16A34A] rounded-full" style={{ width: '50%' }}></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between items-end mb-1">
-                                            <span className="text-[10px] font-bold text-slate-700 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500"></span> Pending RSVP</span>
-                                            <span className="text-[11px] font-black text-slate-900">7</span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                                            <div className="h-full bg-amber-500 rounded-full" style={{ width: '27%' }}></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between items-end mb-1">
-                                            <span className="text-[10px] font-bold text-slate-700 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-400"></span> Declined</span>
-                                            <span className="text-[11px] font-black text-slate-900">6</span>
-                                        </div>
-                                        <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                                            <div className="h-full bg-slate-400 rounded-full" style={{ width: '23%' }}></div>
-                                        </div>
-                                    </div>
-                                </div>
+                        {/* Clean Action Callout Banner */}
+                        <div className="mt-6 sm:mt-8 p-5 sm:p-6 rounded-2xl scroll-animate bg-[#0B2545] text-white flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 shadow-xl">
+                            <div className="text-center md:text-left space-y-1">
+                                <h3 className="text-xl sm:text-2xl font-black text-white font-display">
+                                    {lang === 'sw' ? 'Unatafuta tiketi au unapanga kuuza zako?' : 'Looking for event tickets or planning to sell your own?'}
+                                </h3>
+                                <p className="text-sm text-slate-300">
+                                    {lang === 'sw' ? 'Tazama tiketi zinazopatikana kote nchini Tanzania.' : 'Explore available tickets across Tanzania.'}
+                                </p>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-100">
-                                <div className="bg-slate-50 rounded-xl p-2 text-center border border-slate-100 shadow-sm flex flex-col justify-center">
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Response Rate</p>
-                                    <p className="text-sm font-black text-slate-800">73%</p>
-                                </div>
-                                <div className="bg-slate-50 rounded-xl p-2 text-center border border-slate-100 shadow-sm flex flex-col justify-center">
-                                    <p className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Check-In Rate</p>
-                                    <p className="text-sm font-black text-slate-800">35%</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    {/* MOBILE DASHBOARD MOCKUP OVERLAY */}
-    <div className="scroll-animate-phone absolute -bottom-8 -right-4 md:-bottom-12 md:-right-8 w-48 md:w-64 hidden sm:block group-hover:-translate-y-4 transition-transform duration-700 delay-100 z-30">
-        <div className="rounded-[2rem] md:rounded-[2.5rem] shadow-2xl hover:shadow-[0_40px_80px_-15px_rgba(0,0,0,0.5)] relative aspect-[9/19.5] bg-[#F4F6F9] hover:scale-[1.03] hover:-translate-y-3 hover:-rotate-1 transition-all duration-400 ease-out cursor-pointer">
-            {/* Dynamic Island Notch */}
-            <div className="absolute top-2 md:top-2.5 left-1/2 -translate-x-1/2 w-16 md:w-20 h-4 md:h-5 bg-black rounded-full z-20"></div>
-
-            <div className="w-full h-full bg-[#F4F6F9] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden relative flex flex-col font-sans">
-                {/* Mobile Header (no hamburger, #07192F color) */}
-                <div className="bg-[#0B2545] px-4 md:px-5 py-3 md:py-3.5 flex items-center justify-between pt-7 md:pt-9 z-10 shadow-sm border-b border-[#173860]">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center font-black text-white text-[10px] md:text-[11px] shadow-sm">K</div>
-                    </div>
-                    <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/10 text-slate-300 border border-white/20 flex items-center justify-center font-bold text-[9px] md:text-[10px]">D</div>
-                </div>
-
-                {/* Mobile Content */}
-                <div className="flex-1 overflow-y-auto overflow-x-hidden flex flex-col p-3 md:p-4 gap-3 md:gap-4 relative no-scrollbar">
-                    
-                    {/* Greeting Mobile */}
-                    <div className="bg-white rounded-[1rem] p-3 text-center shadow-sm border border-slate-100 shrink-0 flex flex-col items-center justify-center min-h-[60px]">
-                        <h4 className="font-black text-slate-900 text-[11px] md:text-sm">Good evening, David</h4>
-                        <p className="text-slate-500 text-[9px] md:text-[10px] mt-0.5">Select or create an event</p>
-                    </div>
-
-                    {/* Quick Stats Grid Mobile */}
-                    <div className="grid grid-cols-2 gap-2 md:gap-3 shrink-0">
-                        <div className="bg-white rounded-[1rem] p-2 md:p-3 border border-slate-100 shadow-sm text-center flex flex-col justify-center">
-                            <p className="text-[8px] md:text-[9px] text-slate-500 font-bold mb-0.5 uppercase tracking-wider">Events</p>
-                            <p className="text-sm md:text-lg font-black text-slate-900">3</p>
-                        </div>
-                        <div className="bg-white rounded-[1rem] p-2 md:p-3 border border-slate-100 shadow-sm text-center flex flex-col justify-center">
-                            <p className="text-[8px] md:text-[9px] text-slate-500 font-bold mb-0.5 uppercase tracking-wider">Guests</p>
-                            <p className="text-sm md:text-lg font-black text-slate-900">26</p>
-                        </div>
-                        <div className="bg-white rounded-[1rem] p-2 md:p-3 border border-slate-100 shadow-sm text-center flex flex-col justify-center">
-                            <p className="text-[8px] md:text-[9px] text-slate-500 font-bold mb-0.5 uppercase tracking-wider">Attending</p>
-                            <p className="text-sm md:text-lg font-black text-emerald-600">13</p>
-                        </div>
-                        <div className="bg-white rounded-[1rem] p-2 md:p-3 border border-slate-100 shadow-sm text-center flex flex-col justify-center">
-                            <p className="text-[8px] md:text-[9px] text-slate-500 font-bold mb-0.5 uppercase tracking-wider">Check-in</p>
-                            <p className="text-sm md:text-lg font-black text-emerald-600">9</p>
-                        </div>
-                    </div>
-
-                    {/* Your Events List Mobile - Structured Nicely */}
-                    <div className="bg-white rounded-[1rem] border border-slate-100 flex-1 overflow-hidden flex flex-col shadow-sm">
-                        <div className="px-3 py-2 border-b border-slate-50 font-bold text-[9px] md:text-xs text-slate-900">Your Events</div>
-                        <div className="flex-1 overflow-hidden flex flex-col">
-                            {/* Mobile Event 1 */}
-                            <div className="px-3 py-2.5 border-b border-slate-50 flex items-center gap-2.5">
-                                <div className="bg-slate-50 border border-slate-100 rounded-lg text-center shrink-0 w-9 py-1 shadow-sm">
-                                    <div className="text-[6px] md:text-[7px] font-bold text-slate-500 uppercase">Nov</div>
-                                    <div className="text-[10px] md:text-xs font-black text-slate-900">20</div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-[9px] md:text-[11px] text-slate-900 truncate">Fintech East Africa Summit</p>
-                                    <div className="flex items-center mt-1">
-                                        <span className="text-[7px] md:text-[8px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold border border-emerald-100">Corporate Conference</span>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Mobile Event 2 */}
-                            <div className="px-3 py-2.5 flex items-center gap-2.5">
-                                <div className="bg-slate-50 border border-slate-100 rounded-lg text-center shrink-0 w-9 py-1 shadow-sm">
-                                    <div className="text-[6px] md:text-[7px] font-bold text-slate-500 uppercase">Oct</div>
-                                    <div className="text-[10px] md:text-xs font-black text-slate-900">5</div>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-[9px] md:text-[11px] text-slate-900 truncate">CRDB Bank Summit</p>
-                                    <div className="flex items-center mt-1">
-                                        <span className="text-[7px] md:text-[8px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold border border-emerald-100">Corporate Gala</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Mobile Bottom Nav */}
-                <div className="bg-white border-t border-slate-200 h-10 md:h-14 flex justify-around items-center px-3 pb-1 md:pb-2 shrink-0 z-10 shadow-[0_-10px_20px_rgba(0,0,0,0.03)]">
-                    <div className="flex flex-col items-center gap-1 text-emerald-600 cursor-pointer">
-                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                    </div>
-                    <div className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors">
-                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    </div>
-                    <div className="flex flex-col items-center gap-1 text-slate-400 relative group cursor-pointer">
-                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#16a34a] text-white flex items-center justify-center -mt-5 shadow-lg shadow-emerald-500/30 border-[3px] border-white group-hover:scale-105 transition-transform">
-                            <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-                        </div>
-                    </div>
-                    <div className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors">
-                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                    </div>
-                    <div className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors">
-                        <svg className="w-4 h-4 md:w-5 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+                            <div className="flex flex-wrap items-center justify-center gap-3 shrink-0">
+                                <Link
+                                    href={route('tickets.marketplace')}
+                                    className="px-6 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-sm font-bold shadow-xs transition"
+                                >
+                                    {lang === 'sw' ? 'Kununua Tiketi' : 'Browse Tickets'}
+                                </Link>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Metrics */}
-                <section className="py-10 border-y border-slate-200/60 bg-white/50">
-                    <div className="max-w-7xl mx-auto px-6">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 divide-x divide-slate-200/50">
-                            <div className="text-center px-4">
-                                <h3 className="text-4xl font-black text-[#16A34A] tracking-tight drop-shadow-sm">
-                                    <AnimatedCounter end={10} suffix="K+" />
-                                </h3>
-                                <p className="text-sm font-semibold text-slate-500 mt-2 uppercase tracking-wide">{t("Mialiko Iliyotumwa")}</p>
-                            </div>
-                            <div className="text-center px-4">
-                                <h3 className="text-4xl font-black text-[#16A34A] tracking-tight drop-shadow-sm">
-                                    <AnimatedCounter end={99.9} decimals={1} suffix="%" />
-                                </h3>
-                                <p className="text-sm font-semibold text-slate-500 mt-2 uppercase tracking-wide">{t("Uhakika wa Kufika")}</p>
-                            </div>
-                            <div className="text-center px-4">
-                                <h3 className="text-4xl font-black text-[#16A34A] tracking-tight drop-shadow-sm">
-                                    <AnimatedCounter end={24} suffix="/7" />
-                                </h3>
-                                <p className="text-sm font-semibold text-slate-500 mt-2 uppercase tracking-wide">{t("Huduma kwa Wateja")}</p>
-                            </div>
-                            <div className="text-center px-4">
-                                <h3 className="text-4xl font-black text-[#16A34A] tracking-tight drop-shadow-sm">
-                                    <AnimatedCounter end={0.2} decimals={1} suffix="s" />
-                                </h3>
-                                <p className="text-sm font-semibold text-slate-500 mt-2 uppercase tracking-wide">{t("Kuscan Mlangoni")}</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Features Section */}
-                <section id="features" className="py-24 bg-white relative">
-                    <div className="max-w-7xl mx-auto px-6">
-                        <div className="text-center max-w-2xl mx-auto mb-20 scroll-animate">
-                            <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-4 font-display pb-1">{t("All-in-One Event Toolkit")}</h2>
-                            <p className="text-lg text-slate-500">{t("Kila kitu unachokihitaji kurahisisha usimamizi wa sherehe yako kuanzia maandalizi hadi siku ya tukio yenyewe.")}</p>
+                {/* Features & Invitations Section */}
+                <section id="invitations" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-6 sm:py-8 bg-white relative scroll-mt-14 border-b border-slate-100">
+                    <div className="max-w-7xl mx-auto px-6 w-full">
+                        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 scroll-animate">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1">{t("All-in-One Event Toolkit")}</h2>
+                            <p className="text-base sm:text-lg text-slate-500">{t("Kila kitu unachokihitaji kurahisisha usimamizi wa sherehe yako kuanzia maandalizi hadi siku ya tukio yenyewe.")}</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                             {[
                                 { icon: Smartphone, title: t("Kadi za Kidigitali"), desc: t("Tengeneza kadi zenye muonekano wa kisasa. Jumuisha namba ya kiti, ramani, na QR Code kwa ajili ya mlangoni.") },
                                 { icon: MessageCircle, title: t("WhatsApp & SMS"), desc: t("Watumie wageni wako kadi zao moja kwa moja kwenye namba zao za simu kwa uharaka na uhakika mkubwa.") },
@@ -1391,12 +1298,12 @@ export default function Welcome({ auth }) {
                                 { icon: QrCode, title: t("Kuscan QR Mlangoni"), desc: t("Ondoa kero ya watu wasioalikwa. Tumia simu kuscan QR Code mlangoni na kuhakiki taarifa za mgeni sekunde chache tu.") },
                                 { icon: ChartPie, title: t("Ripoti za Moja kwa Moja"), desc: t("Fuatilia kwa ukaribu idadi ya mialiko iliyofika, majibu ya RSVP, na wageni waliokwisha ingia ukumbini.") }
                             ].map((feature, idx) => (
-                                <div key={idx} className={`group p-8 rounded-[2rem] scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-2xl hover:shadow-slate-200/50 hover:-translate-y-2 transition-all duration-300`}>
-                                    <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
-                                        <feature.icon className="w-7 h-7" />
+                                <div key={idx} className={`group p-4.5 sm:p-5 rounded-2xl scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-300`}>
+                                    <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-xs flex items-center justify-center mb-3 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
+                                        <feature.icon className="w-5 h-5" />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-900 mb-3">{feature.title}</h3>
-                                    <p className="text-slate-500 leading-relaxed font-medium">{feature.desc}</p>
+                                    <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1.5">{feature.title}</h3>
+                                    <p className="text-slate-500 leading-relaxed text-xs sm:text-sm font-medium">{feature.desc}</p>
                                 </div>
                             ))}
                         </div>
@@ -1404,18 +1311,17 @@ export default function Welcome({ auth }) {
                 </section>
 
                 {/* HOW IT WORKS */}
-                <section id="how-it-works" className="py-24 bg-white relative border-t border-slate-100">
+                <section id="how-it-works" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-12 sm:py-16 bg-white relative scroll-mt-14 border-t border-slate-100">
                     <div className="absolute inset-0 bg-slate-50/50 pointer-events-none"></div>
-                    <div className="max-w-7xl mx-auto px-6 relative z-10">
-                        <div className="text-center max-w-2xl mx-auto mb-20 scroll-animate">
-                            
-                            <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-4 font-display pb-1">{t("Jinsi Inavyofanya Kazi")}</h2>
-                            <p className="text-lg text-slate-500">{t("Hatua tano tu zinazokutenganisha wewe na usimamizi bora wa tukio lako kidigitali.")}</p>
+                    <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
+                        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 scroll-animate">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-3 font-display pb-1">{t("Jinsi Inavyofanya Kazi")}</h2>
+                            <p className="text-base sm:text-lg text-slate-500">{t("Hatua tano tu zinazokutenganisha wewe na usimamizi bora wa tukio lako kidigitali.")}</p>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-10 lg:gap-6 relative">
+                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6 relative">
                             {/* Connecting Line (Desktop) */}
-                            <div className="hidden lg:block absolute top-12 left-[12%] right-[12%] h-[2px] bg-slate-200 border-t-2 border-dashed border-slate-200"></div>
+                            <div className="hidden lg:block absolute top-10 left-[12%] right-[12%] h-[2px] bg-slate-200 border-t-2 border-dashed border-slate-200"></div>
                             
                             {[
                                 { 
@@ -1445,11 +1351,11 @@ export default function Welcome({ auth }) {
                                 }
                             ].map((step, idx) => (
                                 <div key={idx} className={`relative flex flex-col items-center text-center group scroll-animate`}>
-                                    <div className="w-24 h-24 rounded-full shadow-xl shadow-slate-200/50 flex items-center justify-center text-3xl font-black text-white bg-[#0B2545] mb-8 relative z-10 border-4 border-slate-50 group-hover:scale-110 group-hover:bg-[#16A34A] transition-all duration-300">
+                                    <div className="w-20 h-20 rounded-full shadow-lg shadow-slate-200/50 flex items-center justify-center text-2xl font-black text-white bg-[#0B2545] mb-5 relative z-10 border-4 border-slate-50 group-hover:scale-110 group-hover:bg-[#16A34A] transition-all duration-300">
                                         {step.num}
                                     </div>
-                                    <h3 className="text-xl font-bold text-[#0B2545] mb-3">{step.title}</h3>
-                                    <p className="text-slate-500 leading-relaxed text-sm md:text-base">{step.desc}</p>
+                                    <h3 className="text-lg font-bold text-[#0B2545] mb-2">{step.title}</h3>
+                                    <p className="text-slate-500 leading-relaxed text-xs sm:text-sm font-medium">{step.desc}</p>
                                 </div>
                             ))}
                         </div>
@@ -1457,16 +1363,16 @@ export default function Welcome({ auth }) {
                 </section>
 
                 {/* PRICING */}
-                <section id="payment" className="py-24 bg-[#F8FAFC]">
-                    <div className="max-w-7xl mx-auto px-6">
-                        <div className="text-center max-w-2xl mx-auto mb-20 scroll-animate">
-                            <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-4 font-display pb-1">{t("Bei Zetu ni Nafuu")}</h2>
-                            <p className="text-lg text-slate-500">{t("Chagua kifurushi kinachoendana na mahitaji ya ukubwa wa tukio lako.")}</p>
+                <section id="payment" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-6 sm:py-8 bg-[#F8FAFC] relative scroll-mt-14 border-t border-slate-100">
+                    <div className="max-w-7xl mx-auto px-6 w-full">
+                        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 scroll-animate">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1">{t("Bei Zetu ni Nafuu")}</h2>
+                            <p className="text-base sm:text-lg text-slate-500">{t("Chagua kifurushi kinachoendana na mahitaji ya ukubwa wa tukio lako.")}</p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 items-stretch">
                             {/* Basic */}
-                            <div className="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow flex flex-col h-full">
+                            <div className="bg-white rounded-[2rem] p-6 sm:p-7 border border-slate-200 shadow-sm hover:shadow-xl transition-shadow flex flex-col h-full">
                                 <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-2">Basic</h4>
                                 <div className="mb-6 flex items-baseline gap-1">
                                     <span className="text-3xl font-black text-slate-900">1,000</span>
@@ -1624,12 +1530,12 @@ export default function Welcome({ auth }) {
             </main>
 
             {/* Footer */}
-            <footer className="bg-[#0B2545] text-slate-300 py-6 px-6">
+            <footer className="bg-white border-t border-slate-200 py-6 px-6">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
                     {/* Far Left: Logo */}
                     <div className="flex-1 flex justify-start opacity-90 hover:opacity-100 transition-opacity">
                         <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="cursor-pointer focus:outline-none">
-                            <KardovoLogo showText={true} light={true} />
+                            <KardovoLogo showText={true} light={false} />
                         </button>
                     </div>
                     
@@ -1639,9 +1545,9 @@ export default function Welcome({ auth }) {
                     </div>
                     
                     {/* Far Right: Links */}
-                    <div className="flex-1 flex justify-end gap-6 font-medium text-sm text-slate-400">
-                        <Link href="/terms" className="hover:text-white transition-colors">{t("Vigezo na Masharti")}</Link>
-                        <Link href="/privacy" className="hover:text-white transition-colors">{t("Sera ya Faragha")}</Link>
+                    <div className="flex-1 flex justify-end gap-6 font-medium text-sm text-slate-500">
+                        <Link href="/terms" className="hover:text-slate-800 transition-colors">{t("Vigezo na Masharti")}</Link>
+                        <Link href="/privacy" className="hover:text-slate-800 transition-colors">{t("Sera ya Faragha")}</Link>
                     </div>
                 </div>
             </footer>

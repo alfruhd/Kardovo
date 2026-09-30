@@ -8,6 +8,7 @@ import {
     ShieldCheck,
     MessageSquare,
     Scale,
+    Ticket,
     Printer,
     Sun,
     Moon,
@@ -23,20 +24,21 @@ const sections = [
         content: [
             {
                 heading: "Acceptance",
-                body: "By creating an account, buying pass quotas, or using the Kardovo platform in any way, you agree to these terms. If you don't agree, please stop using the platform.",
+                body: "By creating an account, buying event tickets or pass quotas, or using the Kardovo platform in any way, you agree to these terms. If you don't agree, please stop using the platform.",
             },
             {
                 heading: "What each role can do",
                 body: null,
                 list: [
-                    "Organizers — manage events, upload guest lists, configure passes, and send invitations.",
-                    "Gate Operators — scan and validate passes at venue entrances only.",
+                    "Organizers — manage events, upload guest lists, configure passes, sell tickets, track sales, and send invitations.",
+                    "Ticket Buyers — browse public events, purchase tickets with mobile money or cards without mandatory registration, receive digital passes, and present them at gates.",
+                    "Gate Operators — scan and validate guest passes and ticket passes at venue entrances only.",
                     "All users — keep login credentials and API keys private. Report any compromise immediately.",
                 ],
             },
             {
-                heading: "Passes are personal and non-transferable",
-                body: "Each digital pass is tied to one specific guest. You may not share, resell, duplicate, or forge a pass. Doing so will result in gate rejection and account termination.",
+                heading: "Passes and tickets are personal and non-transferable",
+                body: "Each digital pass or event ticket is tied to one specific guest or order. You may not share, resell, duplicate, or forge a pass or ticket. Doing so will result in gate rejection and possible account termination or legal action.",
             },
             {
                 heading: "Service uptime",
@@ -46,16 +48,16 @@ const sections = [
                 heading: "Prohibited actions",
                 body: null,
                 list: [
-                    "Bypassing or tampering with platform security.",
-                    "Uploading guest data you don't have permission to use.",
+                    "Bypassing or tampering with platform security or ticketing quotas.",
+                    "Uploading guest data or selling tickets for events you don't have permission to manage.",
                     "Sending spam or unrelated messages through our platform.",
-                    "Accessing another organizer's data without permission.",
-                    "Reselling platform access without a written agreement.",
+                    "Accessing another organizer's data or attendee lists without permission.",
+                    "Reselling platform access or ticketing services without a written agreement.",
                 ],
             },
             {
                 heading: "Payments and Purchases",
-                body: "All package upgrades and purchases are processed securely through AzamPay. Accepted payment methods include major mobile money networks and supported credit/debit cards. All transactions are final.",
+                body: "All package upgrades, pass quotas, and attendee ticket purchases are processed securely through AzamPay. Accepted payment methods include major mobile money networks (M-Pesa, TigoPesa, Airtel Money, HaloPesa, AzamPesa) and supported credit/debit cards. All transactions are final unless covered under our event cancellation and refund policies.",
             },
             {
                 heading: "Disputes",
@@ -80,7 +82,8 @@ const sections = [
                 body: null,
                 list: [
                     "Organizer info — name, email, organization, billing details.",
-                    "Guest info — name, phone number (for WhatsApp delivery only), unique pass token, entry tier, and RSVP status.",
+                    "Guest info — name, phone number (for WhatsApp/SMS delivery only), unique pass token, entry tier, and RSVP status.",
+                    "Ticket Buyer info — name, phone number (for digital ticket delivery via SMS & WhatsApp), order reference, purchased tier/quantity, and payment reference.",
                     "Gate logs — check-in time, scan result (granted / rejected), and operator ID.",
                     "Technical data — IP addresses for security logging, kept for up to 90 days.",
                 ],
@@ -89,7 +92,7 @@ const sections = [
                 heading: "Why we collect it",
                 body: null,
                 list: [
-                    "To issue passes and run gate verification.",
+                    "To issue passes, deliver digital tickets, and run gate verification.",
                     "To detect fraud and prevent duplicate entry.",
                     "To comply with legal and financial record-keeping requirements.",
                 ],
@@ -110,7 +113,7 @@ const sections = [
             },
             {
                 heading: "Data retention & your rights",
-                body: "Guest data is kept for the event duration plus up to 12 months for audit purposes, then securely deleted. You can request access, correction, or deletion of your data at any time by emailing legal@kardovo.com. We'll respond within 72 hours.",
+                body: "Guest and ticket data is kept for the event duration plus up to 12 months for audit purposes, then securely deleted. You can request access, correction, or deletion of your data at any time by emailing legal@kardovo.com. We'll respond within 72 hours.",
             },
         ],
     },
@@ -225,9 +228,44 @@ const sections = [
             },
         ],
     },
+    {
+        id: "ticketing",
+        badge: "§6",
+        icon: Ticket,
+        title: "Ticketing & Sales Policies",
+        color: "text-emerald-500",
+        content: [
+            {
+                heading: "Zero-Account Ticket Purchasing",
+                body: "Ticket buyers can purchase tickets directly using their name and mobile number without creating an account or downloading an app. Checkout takes under a minute using mobile money networks (M-Pesa, TigoPesa, Airtel Money, HaloPesa, AzamPesa) or bank cards (Visa, Mastercard) via AzamPay. Digital ticket passes with dynamic QR codes are delivered immediately via SMS and WhatsApp.",
+            },
+            {
+                heading: "Ticket Validity & Gate Entry",
+                body: "Each ticket pass contains a unique, tamper-proof cryptographic token valid for entry up to the tier and quantity purchased. Photocopying, sharing, or attempting to scan a ticket pass more than once will immediately trigger a Red Duplicate Rejection alert on the gate scanner, and admission will be denied.",
+            },
+            {
+                heading: "Organizer Sales & Payouts",
+                body: "Event organizers can configure multiple ticket tiers (VIP, Regular, Early Bird, etc.), manage quotas, and view real-time sales dashboards. Net ticket sales revenue (after deduction of applicable payment processing and platform service fees) is remitted to the organizer via direct mobile money or bank transfer according to agreed payout schedules.",
+            },
+            {
+                heading: "Event Postponement, Cancellation & Refunds",
+                body: "If an event is rescheduled, existing digital tickets update automatically with the new date and venue details. If an event is cancelled by the organizer, the organizer is solely responsible for attendee communications and funding ticket refunds, facilitated under Kardovo's consumer protection guidelines.",
+            },
+        ],
+    },
 ];
 
-export default function TermsAndConditions() {
+export default function TermsAndConditions({ initialTab }) {
+    React.useEffect(() => {
+        if (initialTab) {
+            const el = document.getElementById(initialTab);
+            if (el) {
+                setTimeout(() => {
+                    el.scrollIntoView({ behavior: "smooth" });
+                }, 100);
+            }
+        }
+    }, [initialTab]);
     const isDark = false;
 
     return (

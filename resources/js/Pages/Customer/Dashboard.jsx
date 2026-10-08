@@ -263,8 +263,8 @@ export default function CustomerDashboard({
                             <div className="lg:col-span-8 bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] overflow-hidden">
 
                                 {/* List header */}
-                                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-white/[0.06]">
-                                    <div className="flex items-center gap-1 text-xs">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-4 sm:px-5 py-3.5 border-b border-slate-100 dark:border-white/[0.06]">
+                                    <div className="flex items-center gap-1 text-xs overflow-x-auto scrollbar-none pb-0.5 -mx-1 px-1 sm:mx-0 sm:px-0">
                                         {[
                                             { key: 'all', label: `All (${events.length})` },
                                             { key: 'invitations', label: `Invitations (${overviewStats.invitation_events_count || 0})` },
@@ -274,9 +274,9 @@ export default function CustomerDashboard({
                                                 key={key}
                                                 type="button"
                                                 onClick={() => setActiveFilter(key)}
-                                                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                                                className={`shrink-0 px-2.5 sm:px-3 py-1 rounded-lg font-bold transition-all cursor-pointer text-xs ${
                                                     activeFilter === key
-                                                        ? 'bg-[#16A34A] text-white'
+                                                        ? 'bg-[#16A34A] text-white shadow-xs'
                                                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                                                 }`}
                                             >
@@ -284,14 +284,14 @@ export default function CustomerDashboard({
                                             </button>
                                         ))}
                                     </div>
-                                    <div className="relative">
-                                        <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                    <div className="relative w-full sm:w-auto">
+                                        <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                                         <input
                                             type="text"
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder="Search…"
-                                            className="text-xs pl-7 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.02] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-0 w-36"
+                                            className="text-xs pl-7 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.02] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-0 w-full sm:w-36"
                                         />
                                     </div>
                                 </div>
@@ -403,7 +403,7 @@ export default function CustomerDashboard({
                 <div className="p-6 space-y-5">
                     
                     {/* Modal Header */}
-                    <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/[0.08]">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-white/[0.08]">
                         <div>
                             <h3 className="text-base font-black text-slate-900 dark:text-white font-display">
                                 Create New Portfolio
@@ -414,7 +414,7 @@ export default function CustomerDashboard({
                         </div>
                         
                         {/* Selector Tabs (Kardovo Theme) */}
-                        <div className="flex items-center p-1 bg-slate-100 dark:bg-white/[0.06] rounded-xl text-xs font-bold">
+                        <div className="flex items-center p-1 bg-slate-100 dark:bg-white/[0.06] rounded-xl text-xs font-bold self-start sm:self-auto">
                             <button
                                 type="button"
                                 onClick={() => setCreateType('invitation')}
@@ -566,6 +566,8 @@ export default function CustomerDashboard({
                                     >
                                         <option value="concert">Concert / Live Music</option>
                                         <option value="event">Festival / Public Event</option>
+                                        <option value="fashion">Fashion / Runway Show</option>
+                                        <option value="corporate">Corporate Event / Summit</option>
                                         <option value="sports">Sports / Marathon</option>
                                         <option value="conference">Conference / Summit</option>
                                         <option value="nightlife">Nightlife / Party</option>

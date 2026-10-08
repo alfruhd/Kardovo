@@ -39,6 +39,25 @@
     }
 }
 
+/* Organic Floating Animations */
+@keyframes floatSlow {
+    0%, 100% {
+        transform: translateY(0px) rotate(var(--tw-rotate, 0deg));
+    }
+    50% {
+        transform: translateY(-14px) rotate(var(--tw-rotate, 0deg));
+    }
+}
+
+@keyframes floatDelayed {
+    0%, 100% {
+        transform: translateY(0px) rotate(var(--tw-rotate, 0deg));
+    }
+    50% {
+        transform: translateY(-18px) rotate(var(--tw-rotate, 0deg));
+    }
+}
+
 
 
 /* Dedicated Card Printing Isolation */

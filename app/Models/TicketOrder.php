@@ -20,11 +20,15 @@ class TicketOrder extends Model
         'buyer_email',
         'subtotal',
         'platform_fee',
+        'platform_fee_percent',
+        'organizer_net_amount',
         'total_amount',
         'currency',
         'payment_method',
         'payment_reference',
         'payment_status',
+        'payout_disbursement_status',
+        'payout_disbursed_at',
         'paid_at',
         'metadata',
     ];
@@ -32,8 +36,11 @@ class TicketOrder extends Model
     protected $casts = [
         'subtotal' => 'decimal:2',
         'platform_fee' => 'decimal:2',
+        'platform_fee_percent' => 'decimal:2',
+        'organizer_net_amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'paid_at' => 'datetime',
+        'payout_disbursed_at' => 'datetime',
         'metadata' => 'array',
     ];
 

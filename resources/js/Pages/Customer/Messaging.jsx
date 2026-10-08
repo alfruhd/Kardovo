@@ -20,6 +20,7 @@ import {
     Clock, 
     ShieldCheck, 
     Sparkles, 
+    IdCard,
     Filter, 
     Users, 
     ChevronRight, 
@@ -175,7 +176,6 @@ export default function Messaging({
     // Interactive chat preview simulation state
     const [previewRsvpTapped, setPreviewRsvpTapped] = useState('attending');
     const [recipientSearch, setRecipientSearch] = useState('');
-    const [showPassModal, setShowPassModal] = useState(false);
 
     // Delivery Logs search & filters state
     const [logSearch, setLogSearch] = useState('');
@@ -569,13 +569,13 @@ export default function Messaging({
 
 
                         {/* ── CARD 1: Event & Delivery Setup ── */}
-                        <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
+                        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
                             
                             {/* Target Event Selector */}
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                        1. Select Target Event
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        Target Event
                                     </label>
                                     <span className="text-[11px] font-mono text-slate-400">
                                         {events.length} available
@@ -583,7 +583,7 @@ export default function Messaging({
                                 </div>
                                 <div className="relative">
                                     <select
-                                        className="block w-full h-11 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl text-xs font-semibold px-3.5 hover:border-slate-300 dark:hover:border-slate-700 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 cursor-pointer appearance-none pr-10 transition"
+                                        className="block w-full h-10 border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 text-slate-900 dark:text-white rounded-xl text-xs font-medium px-3.5 hover:border-slate-300 dark:hover:border-slate-700 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 cursor-pointer appearance-none pr-10 transition"
                                         value={selectedEvent?.id || ''}
                                         onChange={(e) => handleSelectEvent(e.target.value)}
                                     >
@@ -604,66 +604,66 @@ export default function Messaging({
                             </div>
 
                             {/* Delivery Channel Selector */}
-                            <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                                    2. Delivery Channel
+                            <div>
+                                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
+                                    Channel
                                 </label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-2 gap-2.5">
                                     <button
                                         type="button"
                                         onClick={() => handleChannelChange('whatsapp')}
-                                        className={`p-3 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
+                                        className={`p-2.5 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
                                             channel === 'whatsapp'
-                                                ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-500/80 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500/30'
-                                                : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/40'
+                                                ? 'bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-500/70 text-emerald-900 dark:text-emerald-200 ring-1 ring-emerald-500/20'
+                                                : 'bg-slate-50/40 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/40'
                                         }`}
                                     >
-                                        <div className="flex items-center flex-wrap justify-end gap-2.5 mt-3 sm:mt-0">
+                                        <div className="flex items-center gap-2">
                                             <span className={`w-2 h-2 rounded-full ${channel === 'whatsapp' ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
                                             <div>
-                                                <div className="text-xs font-bold">WhatsApp API</div>
-                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Interactive quick-reply pass</div>
+                                                <div className="text-xs font-semibold">WhatsApp</div>
+                                                <div className="text-[10px] text-slate-400 dark:text-slate-500">Quick-reply buttons</div>
                                             </div>
                                         </div>
-                                        {channel === 'whatsapp' && <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                                        {channel === 'whatsapp' && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
                                     </button>
 
                                     <button
                                         type="button"
                                         onClick={() => handleChannelChange('sms')}
-                                        className={`p-3 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
+                                        className={`p-2.5 rounded-xl border text-left transition flex items-center justify-between cursor-pointer ${
                                             channel === 'sms'
-                                                ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-500/80 text-blue-900 dark:text-blue-200 ring-1 ring-blue-500/30'
-                                                : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/40'
+                                                ? 'bg-blue-50/60 dark:bg-blue-950/30 border-blue-500/70 text-blue-900 dark:text-blue-200 ring-1 ring-blue-500/20'
+                                                : 'bg-slate-50/40 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/70 dark:hover:bg-slate-800/40'
                                         }`}
                                     >
-                                        <div className="flex items-center flex-wrap justify-end gap-2.5 mt-3 sm:mt-0">
+                                        <div className="flex items-center gap-2">
                                             <span className={`w-2 h-2 rounded-full ${channel === 'sms' ? 'bg-blue-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
                                             <div>
-                                                <div className="text-xs font-bold">SMS Gateway</div>
-                                                <div className="text-[10px] text-slate-500 dark:text-slate-400">Direct carrier text link</div>
+                                                <div className="text-xs font-semibold">SMS Gateway</div>
+                                                <div className="text-[10px] text-slate-400 dark:text-slate-500">Carrier text link</div>
                                             </div>
                                         </div>
-                                        {channel === 'sms' && <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                                        {channel === 'sms' && <Check className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />}
                                     </button>
                                 </div>
                             </div>
 
                             {/* Campaign Content Mode */}
-                            <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                                    3. Campaign Mode
+                            <div>
+                                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 block mb-1.5">
+                                    Format
                                 </label>
-                                <div className={`grid gap-2 ${channel === 'sms' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-2 sm:grid-cols-4'}`}>
+                                <div className={`grid gap-2 ${channel === 'sms' ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-4'}`}>
                                     {(channel === 'sms'
                                         ? [
-                                            { id: 'text_only', label: 'Plain Text', desc: 'Direct SMS Text Broadcast', icon: MessageSquare },
+                                            { id: 'text_only', label: 'Plain Text', desc: 'Direct SMS', icon: MessageSquare },
                                         ]
                                         : [
-                                            { id: 'pass_invitation', label: 'Pass & RSVP', desc: 'Pass + RSVP Buttons', icon: Ticket },
-                                            { id: 'pass_only', label: 'Pass Only', desc: 'Direct Pass View', icon: Sparkles },
-                                            { id: 'text_rsvp', label: 'Text & RSVP', desc: 'Text + RSVP Buttons', icon: CheckCircle2 },
-                                            { id: 'text_only', label: 'Plain Text', desc: 'Text Broadcast', icon: MessageSquare },
+                                            { id: 'pass_invitation', label: 'Pass & RSVP', desc: 'Pass + Buttons', icon: Ticket },
+                                            { id: 'pass_only', label: 'Pass Only', desc: 'Direct Pass', icon: IdCard },
+                                            { id: 'text_rsvp', label: 'Text & RSVP', desc: 'Text + Buttons', icon: CheckCircle2 },
+                                            { id: 'text_only', label: 'Plain Text', desc: 'Direct Message', icon: MessageSquare },
                                         ]
                                     ).map((mode) => {
                                         const IconComponent = mode.icon;
@@ -673,91 +673,96 @@ export default function Messaging({
                                                 key={mode.id}
                                                 type="button"
                                                 onClick={() => handleCampaignTypeChange(mode.id)}
-                                                className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
+                                                className={`p-2 rounded-xl border text-center transition flex flex-col items-center justify-center gap-0.5 cursor-pointer ${
                                                     isCurrent
-                                                        ? 'bg-[#16A34A] text-white border-[#16A34A] shadow-xs'
-                                                        : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 dark:hover:text-slate-200'
+                                                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 border-slate-900 dark:border-white shadow-2xs'
+                                                        : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60'
                                                 }`}
                                             >
-                                                <IconComponent className={`w-3.5 h-3.5 ${isCurrent ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`} />
-                                                <span className="text-xs font-bold">{mode.label}</span>
-                                                <span className={`text-[9px] ${isCurrent ? 'text-emerald-100' : 'opacity-75'}`}>{mode.desc}</span>
+                                                <IconComponent className={`w-3.5 h-3.5 ${isCurrent ? 'text-emerald-400 dark:text-emerald-600' : 'text-slate-400'}`} />
+                                                <span className="text-[11px] font-semibold">{mode.label}</span>
+                                                <span className={`text-[9px] ${isCurrent ? 'opacity-80' : 'opacity-60'}`}>{mode.desc}</span>
                                             </button>
                                         );
                                     })}
                                 </div>
                             </div>
 
-                            {/* Campaign Option: Pass Link & RSVP toggle (available in every campaign mode, default off) */}
-                            <div className="p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex items-center justify-between transition">
-                                <div className="flex items-center flex-wrap justify-end gap-2.5 mt-3 sm:mt-0">
-                                    <Ticket className="w-4 h-4 text-slate-400" />
+                            {/* Campaign Option: Pass Link & RSVP toggle */}
+                            <div 
+                                onClick={() => setIncludePassLink(!includePassLink)}
+                                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between select-none ${
+                                    includePassLink 
+                                        ? 'bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-500/60 ring-1 ring-emerald-500/20' 
+                                        : 'bg-slate-50/60 dark:bg-slate-950/40 border-slate-200 dark:border-slate-800 hover:bg-slate-100/60 dark:hover:bg-slate-900'
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition ${
+                                        includePassLink 
+                                            ? 'bg-emerald-600 text-white' 
+                                            : 'bg-slate-200/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                                    }`}>
+                                        <Ticket className="w-4 h-4" />
+                                    </div>
                                     <div>
-                                        <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                        <div className="text-xs font-semibold text-slate-900 dark:text-slate-100">
                                             Include Digital Pass & RSVP Link
                                         </div>
                                         <div className="text-[10.5px] text-slate-500 dark:text-slate-400">
-                                            Appends individual pass URL to message
+                                            Appends individual guest pass URL to the message
                                         </div>
                                     </div>
                                 </div>
-                                <label className="relative inline-flex items-center cursor-pointer">
+                                <div className="relative inline-flex items-center flex-shrink-0 ml-3 pointer-events-none">
                                     <input
                                         type="checkbox"
                                         checked={includePassLink}
-                                        onChange={(e) => setIncludePassLink(e.target.checked)}
+                                        readOnly
                                         className="sr-only peer"
                                     />
-                                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500" />
-                                </label>
+                                    <div className="w-10 h-6 bg-slate-300 dark:bg-slate-700 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all after:shadow-sm peer-checked:bg-emerald-600" />
+                                </div>
                             </div>
 
                             {/* Template Picker (If pass is attached) */}
                             {(campaignType === 'pass_invitation' || campaignType === 'pass_only') && (
-                                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+                                <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800/80">
                                     <div className="flex items-center justify-between">
-                                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                                            <Palette className="w-3.5 h-3.5 text-slate-500" />
-                                            <span>4. Invitation Card Template</span>
+                                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                            <Palette className="w-3.5 h-3.5 text-slate-400" />
+                                            <span>Card Template</span>
                                         </label>
-                                        {activeTemplate && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowPassModal(true)}
-                                                className="text-[11px] font-semibold text-cyan-600 dark:text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
-                                            >
-                                                <Eye className="w-3 h-3" />
-                                                <span>Preview Pass</span>
-                                            </button>
-                                        )}
                                     </div>
-                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+                                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
                                         <div className="sm:col-span-8 relative">
                                             <select
                                                 value={selectedTemplateId}
                                                 onChange={(e) => handleSelectTemplate(e.target.value)}
-                                                className="block w-full h-10 border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl text-xs font-semibold px-3 hover:border-slate-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 cursor-pointer appearance-none pr-8 transition"
+                                                className="block w-full h-9 border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 text-slate-900 dark:text-white rounded-xl text-xs font-medium px-3 hover:border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 cursor-pointer appearance-none pr-8 transition"
                                             >
                                                 {templates.length === 0 ? (
                                                     <option value="">Default Platform Template</option>
                                                 ) : (
                                                     <>
                                                         {templates.some(t => t.user_id) && (
-                                                            <optgroup label="🌟 My Custom Templates">
+                                                            <optgroup label="My Custom Templates">
                                                                 {templates.filter(t => t.user_id).map(t => (
                                                                     <option key={t.id} value={t.id}>
-                                                                        🎨 {t.name} (Custom)
+                                                                        {t.name}
                                                                     </option>
                                                                 ))}
                                                             </optgroup>
                                                         )}
-                                                        <optgroup label="🏛️ Global Card Templates">
-                                                            {templates.filter(t => !t.user_id).map(t => (
-                                                                <option key={t.id} value={t.id}>
-                                                                    {t.template_type === 'custom_art' ? '🖼️' : '💳'} {t.name}
-                                                                </option>
-                                                            ))}
-                                                        </optgroup>
+                                                        {templates.some(t => !t.user_id) && (
+                                                            <optgroup label="Global Templates">
+                                                                {templates.filter(t => !t.user_id).map(t => (
+                                                                    <option key={t.id} value={t.id}>
+                                                                        {t.name}
+                                                                    </option>
+                                                                ))}
+                                                            </optgroup>
+                                                        )}
                                                     </>
                                                 )}
                                             </select>
@@ -770,10 +775,10 @@ export default function Messaging({
                                                 type="button"
                                                 onClick={handleSaveTemplateToEvent}
                                                 disabled={isSavingTemplate || !selectedEvent || (selectedEvent?.card_template_id == selectedTemplateId)}
-                                                className="w-full h-10 px-2.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-1 transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
+                                                className="w-full h-9 px-2.5 text-[11px] font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-1 transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
                                             >
                                                 {isSavingTemplate ? (
-                                                    <RefreshCw className="w-3 h-3 animate-spin text-cyan-600" />
+                                                    <RefreshCw className="w-3 h-3 animate-spin text-emerald-600" />
                                                 ) : (
                                                     <Check className="w-3 h-3 text-emerald-600" />
                                                 )}
@@ -786,39 +791,41 @@ export default function Messaging({
                         </div>
 
                         {/* ── CARD 2: Audience Filter & Recipient Table ── */}
-                        <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-3.5">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                                    <Users className="w-3.5 h-3.5 text-slate-500" />
-                                    <span>Target Audience Segmentation</span>
+                                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                    <Users className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>Audience</span>
                                 </label>
-                                <span className="text-[11px] font-mono text-slate-400">
-                                    <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{selectedGuestIds.length}</strong> of {allGuests.length} selected
+                                <span className="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                                    <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">{selectedGuestIds.length}</strong> / {allGuests.length} selected
                                 </span>
                             </div>
 
-                            {/* Filter & Segmentation Buttons */}
-                            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            {/* Filter & Segmentation Buttons - Sleek Segmented Strip */}
+                            <div className="p-1 rounded-xl bg-slate-100/70 dark:bg-slate-950/70 border border-slate-200/60 dark:border-slate-800/60 grid grid-cols-2 sm:grid-cols-5 gap-1">
                                 {[
-                                    { id: 'draft', label: 'Unsent Drafts', count: filterCounts.draft },
-                                    { id: 'all', label: 'All Guests', count: filterCounts.all },
-                                    { id: 'pending_rsvp', label: 'Pending RSVP', count: filterCounts.pending_rsvp },
-                                    { id: 'failed', label: 'Failed Retry', count: filterCounts.failed },
-                                    { id: 'custom', label: 'Custom Select', count: selectedGuestIds.length },
+                                    { id: 'draft', label: 'Drafts', count: filterCounts.draft },
+                                    { id: 'all', label: 'All', count: filterCounts.all },
+                                    { id: 'pending_rsvp', label: 'Pending', count: filterCounts.pending_rsvp },
+                                    { id: 'failed', label: 'Failed', count: filterCounts.failed },
+                                    { id: 'custom', label: 'Selected', count: selectedGuestIds.length },
                                 ].map((opt) => (
                                     <button
                                         key={opt.id}
                                         type="button"
                                         onClick={() => setTargetFilter(opt.id)}
-                                        className={`p-2.5 rounded-xl border text-center transition flex flex-col items-center justify-center cursor-pointer ${
+                                        className={`py-1.5 px-2 rounded-lg text-center transition flex items-center justify-center gap-1.5 cursor-pointer ${
                                             targetFilter === opt.id
-                                                ? 'bg-[#16A34A] text-white border-[#16A34A] shadow-xs'
-                                                : 'bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 dark:hover:text-slate-200'
+                                                ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-2xs font-semibold'
+                                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 font-medium'
                                         }`}
                                     >
-                                        <span className="text-[11px] font-bold leading-tight">{opt.label}</span>
-                                        <span className={`text-[10px] font-mono mt-1 px-1.5 py-0.5 rounded-md ${
-                                            targetFilter === opt.id ? 'bg-white/20 text-white' : 'bg-slate-200/60 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                        <span className="text-xs">{opt.label}</span>
+                                        <span className={`text-[10px] font-mono px-1 rounded-md ${
+                                            targetFilter === opt.id 
+                                                ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold' 
+                                                : 'bg-slate-200/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400'
                                         }`}>
                                             {opt.count}
                                         </span>
@@ -827,39 +834,37 @@ export default function Messaging({
                             </div>
 
                             {/* Inline Recipient Search & Interactive Checkbox List */}
-                            <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/30 dark:bg-slate-950/30">
-                                <div className="p-2.5 bg-slate-100/70 dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={handleSelectAllFiltered}
-                                            className="text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 cursor-pointer"
-                                        >
-                                            <CheckSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                                            <span>
-                                                {searchedFilteredGuests.length > 0 && searchedFilteredGuests.every(g => selectedGuestIds.includes(g.id))
-                                                    ? 'Deselect All' 
-                                                    : `Select All (${searchedFilteredGuests.length})`
-                                                }
-                                            </span>
-                                        </button>
-                                    </div>
-                                    <div className="relative w-48 sm:w-64">
-                                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                            <div className="rounded-xl border border-slate-200/80 dark:border-slate-800/80 overflow-hidden bg-slate-50/20 dark:bg-slate-950/20">
+                                <div className="p-2 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectAllFiltered}
+                                        className="text-[11px] font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center gap-1.5 cursor-pointer pl-1 transition"
+                                    >
+                                        <CheckSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                        <span>
+                                            {searchedFilteredGuests.length > 0 && searchedFilteredGuests.every(g => selectedGuestIds.includes(g.id))
+                                                ? 'Deselect All' 
+                                                : `Select All (${searchedFilteredGuests.length})`
+                                            }
+                                        </span>
+                                    </button>
+                                    <div className="relative w-44 sm:w-56">
+                                        <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                                         <input
                                             type="text"
-                                            placeholder="Filter recipients..."
+                                            placeholder="Search guests..."
                                             value={recipientSearch}
                                             onChange={(e) => setRecipientSearch(e.target.value)}
-                                            className="w-full pl-8 pr-2.5 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                                            className="w-full pl-7 pr-2 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                         />
                                     </div>
                                 </div>
 
-                                <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-900">
+                                <div className="max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/40">
                                     {searchedFilteredGuests.length === 0 ? (
                                         <div className="p-4 text-center text-xs text-slate-400">
-                                            No guests match the current filter or search criteria.
+                                            No guests match the current filter or search.
                                         </div>
                                     ) : (
                                         searchedFilteredGuests.map((guest) => {
@@ -868,10 +873,10 @@ export default function Messaging({
                                                 <div 
                                                     key={guest.id} 
                                                     onClick={() => toggleGuestSelection(guest.id)}
-                                                    className={`p-2.5 flex items-center justify-between gap-3 text-xs transition cursor-pointer select-none ${
+                                                    className={`px-3 py-2 flex items-center justify-between gap-3 text-xs transition cursor-pointer select-none ${
                                                         isSelected 
-                                                            ? 'bg-emerald-50/60 dark:bg-emerald-950/30 text-slate-900 dark:text-white' 
-                                                            : 'hover:bg-slate-100/50 dark:hover:bg-slate-900/50 text-slate-600 dark:text-slate-400'
+                                                            ? 'bg-emerald-50/50 dark:bg-emerald-950/20 text-slate-900 dark:text-white' 
+                                                            : 'hover:bg-slate-100/40 dark:hover:bg-slate-800/40 text-slate-600 dark:text-slate-400'
                                                     }`}
                                                 >
                                                     <div className="flex items-center gap-2.5 min-w-0">
@@ -879,18 +884,18 @@ export default function Messaging({
                                                             type="checkbox"
                                                             checked={isSelected}
                                                             onChange={() => {}} 
-                                                            className="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500"
+                                                            className="rounded border-slate-300 dark:border-slate-700 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
                                                         />
-                                                        <span className="font-bold truncate">{guest.name}</span>
+                                                        <span className="font-medium truncate">{guest.name}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 flex-shrink-0">
-                                                        <span className="font-mono text-[11px] text-slate-500 dark:text-slate-400">{guest.phone}</span>
-                                                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded capitalize ${
-                                                            guest.delivery_status === 'read' ? 'bg-cyan-100 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300' :
-                                                            guest.delivery_status === 'delivered' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' :
-                                                            guest.delivery_status === 'sent' ? 'bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300' :
-                                                            guest.delivery_status === 'failed' ? 'bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300' :
-                                                            'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                                                        <span className="font-mono text-[10.5px] text-slate-400">{guest.phone}</span>
+                                                        <span className={`text-[9.5px] font-medium px-1.5 py-0.5 rounded capitalize ${
+                                                            guest.delivery_status === 'read' ? 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400' :
+                                                            guest.delivery_status === 'delivered' ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' :
+                                                            guest.delivery_status === 'sent' ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400' :
+                                                            guest.delivery_status === 'failed' ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400' :
+                                                            'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
                                                         }`}>
                                                             {guest.delivery_status || 'draft'}
                                                         </span>
@@ -904,13 +909,13 @@ export default function Messaging({
                         </div>
 
                         {/* ── CARD 3: Message Caption Composer ── */}
-                        <div className="bg-white dark:bg-slate-900 p-5 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                        <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-4">
                             
                             {/* Quick Presets for Text Only */}
                             {campaignType === 'text_only' && (
-                                <div className="space-y-1.5">
-                                    <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider block">
-                                        Quick Announcement Presets
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">
+                                        Presets
                                     </span>
                                     <div className="flex flex-wrap gap-1.5">
                                         {TEXT_ONLY_PRESETS.map((preset) => (
@@ -918,7 +923,7 @@ export default function Messaging({
                                                 key={preset.id}
                                                 type="button"
                                                 onClick={() => setCustomCaption(preset.text)}
-                                                className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-[10.5px] font-medium text-slate-700 dark:text-slate-300 transition cursor-pointer"
+                                                className="px-2.5 py-1 rounded-lg bg-slate-100/70 dark:bg-slate-800/70 hover:bg-slate-200/70 dark:hover:bg-slate-700 text-[11px] font-medium text-slate-700 dark:text-slate-300 transition cursor-pointer"
                                             >
                                                 {preset.title}
                                             </button>
@@ -927,10 +932,10 @@ export default function Messaging({
                                 </div>
                             )}
 
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                                        {channel === 'sms' ? "SMS Message Caption" : "WhatsApp Message Caption"}
+                            <div>
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                        {channel === 'sms' ? "SMS Message" : "WhatsApp Message"}
                                     </label>
                                     <button
                                         type="button"
@@ -938,29 +943,29 @@ export default function Messaging({
                                             const templ = channel === 'sms' ? SMS_DEFAULT_TEMPLATE : WHATSAPP_DEFAULT_TEMPLATE;
                                             setCustomCaption(templ);
                                         }}
-                                        className="text-[10.5px] text-cyan-600 dark:text-cyan-400 hover:underline font-medium cursor-pointer"
+                                        className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline font-medium cursor-pointer"
                                     >
-                                        Reset Template
+                                        Reset to default
                                     </button>
                                 </div>
 
                                 <textarea
                                     rows={3}
-                                    className="block w-full border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-white rounded-xl text-xs font-normal p-3 leading-relaxed focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 outline-none transition"
+                                    className="block w-full border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 text-slate-900 dark:text-white rounded-xl text-xs font-normal p-3 leading-relaxed focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 outline-none transition"
                                     value={customCaption}
                                     onChange={(e) => setCustomCaption(e.target.value)}
                                 />
 
                                 {/* Dynamic Tags Bar */}
-                                <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                                <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
                                     <div className="flex flex-wrap items-center gap-1.5">
-                                        <span className="text-[10.5px] text-slate-400 font-medium">Insert:</span>
+                                        <span className="text-[10px] text-slate-400 font-medium">Tags:</span>
                                         {['guest_name', 'event_title', 'event_date', 'venue', 'pass_code'].map((tag) => (
                                             <button
                                                 key={tag}
                                                 type="button"
                                                 onClick={() => insertPlaceholder(tag)}
-                                                className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-mono text-[10px] font-semibold border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                                                className="px-2 py-0.5 rounded-md bg-slate-100/80 dark:bg-slate-800 hover:bg-slate-200/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 font-mono text-[10px] font-medium transition cursor-pointer"
                                             >
                                                 +{'{' + tag + '}'}
                                             </button>
@@ -976,14 +981,14 @@ export default function Messaging({
 
                             {/* Automated RSVP WhatsApp Reply Settings */}
                             {channel === 'whatsapp' && (campaignType === 'pass_invitation' || campaignType === 'text_rsvp') && (
-                                <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
+                                <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-2.5">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <div className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                                                Automated WhatsApp RSVP Reply Bot
+                                            <div className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                                                RSVP Auto-Reply Bot
                                             </div>
-                                            <div className="text-[10.5px] text-slate-400">
-                                                Instant response sent back to attendee after they submit RSVP.
+                                            <div className="text-[10px] text-slate-400">
+                                                Instant response sent back after attendee submits RSVP.
                                             </div>
                                         </div>
                                         <label className="relative inline-flex items-center cursor-pointer">
@@ -993,32 +998,32 @@ export default function Messaging({
                                                 onChange={(e) => setEnableAutoReply(e.target.checked)}
                                                 className="sr-only peer"
                                             />
-                                            <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500" />
+                                            <div className="w-8 h-4.5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3.5 after:w-3.5 after:transition-all peer-checked:bg-emerald-500" />
                                         </label>
                                     </div>
 
                                     {enableAutoReply && (
                                         <div className="space-y-2 pt-1">
                                             <div>
-                                                <label className="text-[10.5px] font-semibold text-emerald-700 dark:text-emerald-400 block mb-1">
-                                                    ✓ "Will Attend" Confirmation Reply
+                                                <label className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 block mb-1">
+                                                    ✓ Attending Reply
                                                 </label>
                                                 <input
                                                     type="text"
                                                     value={rsvpAttendingText}
                                                     onChange={(e) => setRsvpAttendingText(e.target.value)}
-                                                    className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
+                                                    className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-emerald-500"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-[10.5px] font-semibold text-rose-700 dark:text-rose-400 block mb-1">
-                                                    ✕ "Cannot Attend" Acknowledgment Reply
+                                                <label className="text-[10px] font-medium text-rose-600 dark:text-rose-400 block mb-1">
+                                                    ✕ Declined Reply
                                                 </label>
                                                 <input
                                                     type="text"
                                                     value={rsvpDeclinedText}
                                                     onChange={(e) => setRsvpDeclinedText(e.target.value)}
-                                                    className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
+                                                    className="w-full text-xs p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-rose-500"
                                                 />
                                             </div>
                                         </div>
@@ -1029,28 +1034,28 @@ export default function Messaging({
                             {/* ── Dispatch Action Footer ── */}
                             <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div className="text-xs text-slate-500 dark:text-slate-400">
-                                    Targeting <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{selectedGuestIds.length}</strong> selected guest(s) in <strong>{selectedEvent?.title}</strong>
+                                    Sending to <strong className="text-emerald-600 dark:text-emerald-400 font-semibold">{selectedGuestIds.length}</strong> selected guest(s)
                                 </div>
                                 {canBroadcast ? (
                                     <button 
                                         type="button"
                                         onClick={handleSendBroadcast}
                                         disabled={isDispatching} 
-                                        className={`inline-flex items-center justify-center gap-2 py-3 px-6 rounded-xl text-xs font-bold transition active:scale-95 cursor-pointer shadow-md ${
+                                        className={`inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-xs font-semibold transition active:scale-95 cursor-pointer shadow-xs ${
                                             isDispatching 
                                                 ? 'bg-slate-700 text-white opacity-80 cursor-wait'
-                                                : 'bg-[#16A34A] hover:bg-[#15803D] text-white border border-[#16A34A] hover:shadow-lg'
+                                                : 'bg-emerald-600 hover:bg-emerald-700 text-white hover:shadow-md'
                                         }`}
                                     >
                                         {isDispatching ? (
                                             <>
                                                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-white" />
-                                                <span>Dispatching ({selectedGuestIds.length}) Passes...</span>
+                                                <span>Dispatching ({selectedGuestIds.length})...</span>
                                             </>
                                         ) : (
                                             <>
                                                 <Send className="w-3.5 h-3.5" />
-                                                <span>Dispatch ({selectedGuestIds.length}) Campaign Now</span>
+                                                <span>Dispatch Campaign ({selectedGuestIds.length})</span>
                                             </>
                                         )}
                                     </button>
@@ -1062,13 +1067,13 @@ export default function Messaging({
                             </div>
                             
                             {(flash?.success || flash?.warning || flash?.error || Object.keys(errors).length > 0) && (
-                                <div className={`mt-4 p-3.5 rounded-xl border flex gap-3 text-sm font-medium animate-fadeIn ${
+                                <div className={`mt-3 p-3 rounded-xl border flex gap-2.5 text-xs font-medium animate-fadeIn ${
                                     flash?.success ? 'bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-800/50 dark:text-emerald-300' 
                                     : (flash?.warning ? 'bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/30 dark:border-amber-800/50 dark:text-amber-300'
                                     : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-800/50 dark:text-red-300')
                                 }`}>
                                     <div>
-                                        {flash?.success ? <CheckCheck className="w-5 h-5" /> : <X className="w-5 h-5" />}
+                                        {flash?.success ? <CheckCheck className="w-4 h-4" /> : <X className="w-4 h-4" />}
                                     </div>
                                     <div>
                                         {flash?.success || flash?.warning || flash?.error || Object.values(errors)[0]}
@@ -1140,13 +1145,10 @@ export default function Messaging({
                                                 )}
                                             </div>
                                             {(campaignType === 'pass_invitation' || campaignType === 'pass_only') && (
-                                                <div 
-                                                    onClick={() => setShowPassModal(true)}
-                                                    className="p-2 rounded-xl bg-[#151E2B] border border-slate-700 hover:border-blue-400 cursor-pointer transition"
-                                                >
+                                                <div className="p-2 rounded-xl bg-[#151E2B] border border-slate-700 select-none">
                                                     <div className="flex items-center justify-between text-[8.5px] text-slate-400">
                                                         <span className="truncate max-w-[190px]">{samplePassUrl}</span>
-                                                        <span className="text-blue-400 flex items-center gap-0.5">View Pass <ExternalLink className="w-2.5 h-2.5" /></span>
+                                                        <span className="text-blue-400 font-medium">Digital Pass</span>
                                                     </div>
                                                     <div className="text-[10.5px] font-bold text-white truncate mt-0.5">{sampleEventTitle}</div>
                                                     <div className="text-[9px] text-slate-400">{sampleGuestName}</div>
@@ -1271,27 +1273,16 @@ export default function Messaging({
                                                             </button>
                                                         </div>
                                                     </div>
-                                            ) : (
+                                             ) : (
                                                 /* Pass Attachment Card (pass_invitation or pass_only) */
                                                 <div className="bg-[#1F2C34] rounded-xl rounded-tl-xs overflow-hidden border border-slate-700/60 shadow-md">
-                                                    <div 
-                                                        onClick={() => setShowPassModal(true)}
-                                                        className="relative cursor-pointer group select-none bg-black/40 p-1.5 sm:p-2 flex items-center justify-center transition hover:opacity-95 overflow-hidden"
-                                                        title="Click to view full invitation pass"
-                                                    >
-                                                        <div className="w-full flex justify-center pointer-events-none transform transition duration-200 group-hover:scale-[1.01]">
+                                                    <div className="relative select-none bg-black/40 p-1.5 sm:p-2 flex items-center justify-center overflow-hidden">
+                                                        <div className="w-full flex justify-center pointer-events-none">
                                                             <ScaledCardThumbnail
                                                                 guest={sampleGuest}
                                                                 event={selectedEvent}
                                                                 template={template}
                                                             />
-                                                        </div>
-                                                        {/* Interactive Hover / Tap Indicator */}
-                                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                                                            <span className="px-3 py-1.5 rounded-full bg-slate-900/90 text-white font-bold text-[10.5px] backdrop-blur-xs border border-white/20 shadow-xl flex items-center gap-1.5">
-                                                                <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
-                                                                <span>Tap to Expand Pass</span>
-                                                            </span>
                                                         </div>
                                                     </div>
 
@@ -1303,19 +1294,9 @@ export default function Messaging({
                                                                     <span>🎟️</span>
                                                                     <span>Digital Pass & RSVP:</span>
                                                                 </div>
-                                                                <a
-                                                                    href={samplePassUrl}
-                                                                    target="_blank"
-                                                                    rel="noreferrer"
-                                                                    onClick={(e) => {
-                                                                        e.preventDefault();
-                                                                        setShowPassModal(true);
-                                                                    }}
-                                                                    className="text-cyan-400 hover:underline text-[10.5px] font-mono break-all block mt-0.5"
-                                                                    title="Click to preview pass card"
-                                                                >
+                                                                <span className="text-cyan-400 text-[10.5px] font-mono break-all block mt-0.5">
                                                                     {samplePassUrl}
-                                                                </a>
+                                                                </span>
                                                             </div>
                                                         )}
                                                     </div>
@@ -1537,50 +1518,6 @@ export default function Messaging({
                 </div>
                     </>
                 )}
-
-                {/* ── Invitation Pass Modal ── */}
-                <Modal show={showPassModal} onClose={() => setShowPassModal(false)} maxWidth="lg">
-                    <div className="p-4 sm:p-6 bg-white dark:bg-[#0B1524] text-slate-900 dark:text-white rounded-3xl border border-slate-200 dark:border-white/[0.08] shadow-2xl">
-                        <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-slate-100 dark:border-white/[0.08]">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-8 h-8 rounded-xl bg-cyan-500/15 border border-cyan-400/30 flex items-center justify-center">
-                                    <Sparkles className="w-4 h-4 text-cyan-500" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                                        <span>Official Invitation Pass Preview</span>
-                                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 text-[9.5px] font-mono font-bold uppercase">
-                                            Verified Pass
-                                        </span>
-                                    </h3>
-                                    {template?.name && (
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                            Active Style: <strong className="text-slate-800 dark:text-slate-200">{template.name}</strong>
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setShowPassModal(false)}
-                                className="p-1.5 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.12] text-slate-500 dark:text-slate-300 transition active:scale-95 cursor-pointer"
-                                title="Close"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        </div>
-
-                        <div className="flex justify-center py-2 max-h-[78vh] overflow-y-auto">
-                            <PersonalisedCard
-                                guest={sampleGuest}
-                                event={selectedEvent}
-                                template={template}
-                                interactive={true}
-                                className="w-full max-w-[420px]"
-                            />
-                        </div>
-                    </div>
-                </Modal>
 
                 <ConfirmationModal
                     show={confirmModal.show}

@@ -25,11 +25,11 @@ class NewPasswordController extends Controller
      */
     public function create(Request $request, ?string $token = null): Response
     {
-        $resolvedToken = $token ?? $request->query('token') ?? $request->session()->get('password_reset_dev_code');
+        $devCode = app()->environment('local', 'testing') ? $request->session()->get('password_reset_dev_code') : null;
+        $resolvedToken = $token ?? $request->query('token') ?? $devCode;
         $resolvedEmail = $request->query('email') ?? $request->session()->get('password_reset_identity') ?? $request->session()->get('password_reset_email');
         $maskedTarget = $request->session()->get('password_reset_masked_target');
         $deliveryMethod = $request->session()->get('password_reset_delivery_method', 'email');
-        $devCode = app()->environment('local', 'testing') ? $request->session()->get('password_reset_dev_code') : null;
 
         return Inertia::render('Auth/ResetPassword', [
             'email' => $resolvedEmail,

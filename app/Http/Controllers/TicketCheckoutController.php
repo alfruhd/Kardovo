@@ -123,6 +123,11 @@ class TicketCheckoutController extends Controller
             $paymentMethod = $validated['payment_method'] ?? ($subtotal <= 0 ? 'Free' : 'M-Pesa');
             $isFree = ($subtotal <= 0);
 
+            // Platform fee is 6% of subtotal; remaining 94% is organizer net amount
+            $platformFeePercent = 6.00;
+            $platformFee = $isFree ? 0 : round($subtotal * ($platformFeePercent / 100), 2);
+            $organizerNetAmount = $isFree ? 0 : round($subtotal - $platformFee, 2);
+
             $order = TicketOrder::create([
                 'event_id' => $event->id,
                 'user_id' => $request->user()?->id,
@@ -130,16 +135,26 @@ class TicketCheckoutController extends Controller
                 'buyer_phone' => $cleanPhone,
                 'buyer_email' => $validated['buyer_email'] ?? null,
                 'subtotal' => $subtotal,
-                'platform_fee' => 0,
+                'platform_fee' => $platformFee,
+                'platform_fee_percent' => $platformFeePercent,
+                'organizer_net_amount' => $organizerNetAmount,
                 'total_amount' => $subtotal,
                 'currency' => $event->ticket_currency ?? 'TZS',
                 'payment_method' => $paymentMethod,
                 'payment_reference' => 'PAY-'.date('ymd').'-'.strtoupper(bin2hex(random_bytes(3))),
                 'payment_status' => 'paid', // Auto-fulfill checkout
+                'payout_disbursement_status' => 'pending',
                 'paid_at' => now(),
                 'metadata' => [
                     'payment_phone' => $cleanPaymentPhone,
                     'carrier' => $validated['carrier'] ?? null,
+                    'platform_fee_percent' => $platformFeePercent,
+                    'platform_fee_amount' => $platformFee,
+                    'organizer_net_amount' => $organizerNetAmount,
+                    'payout_method' => $event->payout_method,
+                    'payout_provider' => $event->payout_provider,
+                    'payout_account_number' => $event->payout_account_number,
+                    'payout_account_name' => $event->payout_account_name,
                     'ip' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ],

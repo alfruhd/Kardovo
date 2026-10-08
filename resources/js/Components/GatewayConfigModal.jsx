@@ -224,18 +224,9 @@ export default function GatewayConfigModal({
                             <Server className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                         </div>
                         <div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="text-lg font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                    Gateway Integrations
-                                </h3>
-                                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30">
-                                    <ShieldCheck className="w-3 h-3" />
-                                    <span>Encrypted API</span>
-                                </span>
-                            </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">
-                                Configure Meta WhatsApp Cloud API credentials, test live messaging, manage SMS delivery, and configure AzamPay.
-                            </p>
+                            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display tracking-tight">
+                                Gateway Settings
+                            </h3>
                         </div>
                     </div>
                     <button
@@ -406,18 +397,15 @@ export default function GatewayConfigModal({
                             <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-500/10 via-emerald-500/[0.04] to-transparent border border-emerald-500/30 space-y-3.5 shadow-xs">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                        <Send className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                                         <h4 className="text-xs font-black uppercase tracking-wider text-emerald-950 dark:text-emerald-300">
-                                            2. Live WhatsApp Test Ping (Optional)
+                                            Live WhatsApp Test (Optional)
                                         </h4>
                                     </div>
                                     <span className="text-[9.5px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
                                         Real Dispatch
                                     </span>
                                 </div>
-                                <p className="text-xs text-slate-600 dark:text-slate-300 font-medium leading-relaxed">
-                                    Type your personal WhatsApp number below and click <strong>&quot;Test Connection&quot;</strong> to receive an immediate live WhatsApp test notification on your device.
-                                </p>
                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-0.5">
                                     <div className="flex-1">
                                         <TextInput

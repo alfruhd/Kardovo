@@ -202,9 +202,9 @@ export default function CalendarPage({
     const getEventChipStyles = (event) => {
         if (event?.is_occasion) {
             return {
-                bar: 'border-l-[3px] border-purple-500 bg-purple-50/90 dark:bg-purple-950/40 text-purple-900 dark:text-purple-200 hover:bg-purple-100/90 dark:hover:bg-purple-900/50',
-                dot: 'bg-purple-500 dark:bg-purple-400',
-                badge: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+                bar: 'border-l-[3px] border-blue-500 bg-blue-50/90 dark:bg-blue-950/40 text-blue-900 dark:text-blue-200 hover:bg-blue-100/90 dark:hover:bg-blue-900/50',
+                dot: 'bg-blue-500 dark:bg-blue-400',
+                badge: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
             };
         }
         return {
@@ -305,7 +305,7 @@ export default function CalendarPage({
                 <div className="flex items-start sm:items-center gap-3.5 min-w-0">
                     <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 border transition-all ${
                         event.is_occasion
-                            ? 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20 group-hover:scale-105'
+                            ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 group-hover:scale-105'
                             : 'bg-emerald-500/10 text-[#16A34A] dark:text-emerald-400 border-emerald-500/20 group-hover:scale-105'
                     }`}>
                         {event.is_occasion ? (
@@ -325,7 +325,7 @@ export default function CalendarPage({
                             </Link>
 
                             {event.is_occasion && (
-                                <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-700 dark:text-purple-300 text-[10px] font-bold border border-purple-500/20 uppercase tracking-wider">
+                                <span className="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-300 text-[10px] font-bold border border-blue-500/20 uppercase tracking-wider">
                                     Ticketed Occasion
                                 </span>
                             )}
@@ -596,7 +596,7 @@ export default function CalendarPage({
                                                                     title={`${ev.title}${ev.event_time ? ` · ${ev.event_time}` : ''}`}
                                                                 >
                                                                     {ev.is_occasion ? (
-                                                                        <Ticket className="w-2.5 h-2.5 shrink-0 text-purple-600 dark:text-purple-400 opacity-80" />
+                                                                        <Ticket className="w-2.5 h-2.5 shrink-0 text-blue-600 dark:text-blue-400 opacity-80" />
                                                                     ) : (
                                                                         <span className={`w-1 h-1 rounded-full shrink-0 ${chip.dot}`} />
                                                                     )}
@@ -699,7 +699,7 @@ export default function CalendarPage({
                                                                     title={`${ev.title}${ev.event_time ? ` · ${ev.event_time}` : ''}`}
                                                                 >
                                                                     {ev.is_occasion ? (
-                                                                        <Ticket className="w-2.5 h-2.5 shrink-0 text-purple-600 dark:text-purple-400 opacity-85" />
+                                                                        <Ticket className="w-2.5 h-2.5 shrink-0 text-blue-600 dark:text-blue-400 opacity-85" />
                                                                     ) : (
                                                                         <span className={`w-1 h-1 rounded-full shrink-0 ${chip.dot}`} />
                                                                     )}

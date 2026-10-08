@@ -48,8 +48,8 @@ class PublicTicketController extends Controller
                 'unique_code' => $ticket->unique_code,
                 'qr_token' => $ticket->qr_token,
                 'attendee_name' => $ticket->attendee_name,
-                'attendee_phone' => $ticket->attendee_phone,
-                'attendee_email' => $ticket->attendee_email,
+                'attendee_phone' => ! empty($ticket->attendee_phone) ? (substr($ticket->attendee_phone, 0, 4).'••••'.substr($ticket->attendee_phone, -3)) : null,
+                'attendee_email' => ! empty($ticket->attendee_email) ? (substr($ticket->attendee_email, 0, 2).'••••@'.explode('@', $ticket->attendee_email)[1] ?? '•••') : null,
                 'price_paid' => (float) $ticket->price_paid,
                 'formatted_price' => $ticket->formatted_price,
                 'currency' => $ticket->currency,
@@ -117,9 +117,9 @@ class PublicTicketController extends Controller
             ->where('ticket_number', $ticketNumber)
             ->firstOrFail();
 
-        $targetPhone = $request->input('phone') ?: $ticket->attendee_phone;
+        $targetPhone = $ticket->attendee_phone;
         if (empty($targetPhone)) {
-            return response()->json(['error' => 'Please provide a recipient phone number.'], 422);
+            return response()->json(['error' => 'No phone number registered for this ticket attendee.'], 422);
         }
 
         $result = TicketDeliveryService::sendWhatsApp($ticket, $targetPhone);
@@ -140,9 +140,9 @@ class PublicTicketController extends Controller
             ->where('ticket_number', $ticketNumber)
             ->firstOrFail();
 
-        $targetPhone = $request->input('phone') ?: $ticket->attendee_phone;
+        $targetPhone = $ticket->attendee_phone;
         if (empty($targetPhone)) {
-            return response()->json(['error' => 'Please provide a recipient phone number.'], 422);
+            return response()->json(['error' => 'No phone number registered for this ticket attendee.'], 422);
         }
 
         $result = TicketDeliveryService::sendSms($ticket, $targetPhone);
@@ -163,9 +163,9 @@ class PublicTicketController extends Controller
             ->where('ticket_number', $ticketNumber)
             ->firstOrFail();
 
-        $targetEmail = $request->input('email') ?: $ticket->attendee_email;
+        $targetEmail = $ticket->attendee_email;
         if (empty($targetEmail)) {
-            return response()->json(['error' => 'Please provide a recipient email address.'], 422);
+            return response()->json(['error' => 'No email address registered for this ticket attendee.'], 422);
         }
 
         $result = TicketDeliveryService::sendEmail($ticket, $targetEmail);

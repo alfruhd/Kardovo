@@ -28,15 +28,17 @@ class PublicTicketMarketplaceController extends Controller
         $category = strtolower($request->input('category', 'all'));
         if ($category && $category !== 'all') {
             if ($category === 'events') {
-                $query->whereIn('occasion_type', ['event', 'concert', 'festival', 'conference']);
-            } elseif ($category === 'flights') {
-                $query->where('occasion_type', 'flight');
+                $query->whereIn('occasion_type', ['event', 'concert', 'festival']);
             } elseif ($category === 'hotels') {
                 $query->where('occasion_type', 'hotel');
             } elseif ($category === 'nightlife') {
                 $query->where('occasion_type', 'nightlife');
             } elseif ($category === 'sports') {
                 $query->where('occasion_type', 'sports');
+            } elseif ($category === 'fashion') {
+                $query->where('occasion_type', 'fashion');
+            } elseif (in_array($category, ['corporate', 'conference'])) {
+                $query->whereIn('occasion_type', ['corporate', 'conference']);
             } else {
                 $query->where('occasion_type', $category);
             }
@@ -83,15 +85,32 @@ class PublicTicketMarketplaceController extends Controller
         $allPublicOccasions = Event::where('ticketing_enabled', true)->where('is_public', true)->get();
         $categoryCounts = [
             'all' => $allPublicOccasions->count(),
-            'events' => $allPublicOccasions->whereIn('occasion_type', ['event', 'concert', 'festival', 'conference'])->count(),
-            'flights' => $allPublicOccasions->where('occasion_type', 'flight')->count(),
+            'events' => $allPublicOccasions->whereIn('occasion_type', ['event', 'concert', 'festival'])->count(),
             'hotels' => $allPublicOccasions->where('occasion_type', 'hotel')->count(),
             'nightlife' => $allPublicOccasions->where('occasion_type', 'nightlife')->count(),
             'sports' => $allPublicOccasions->where('occasion_type', 'sports')->count(),
+            'fashion' => $allPublicOccasions->where('occasion_type', 'fashion')->count(),
+            'corporate' => $allPublicOccasions->whereIn('occasion_type', ['corporate', 'conference'])->count(),
         ];
+
+        // Dedicated featured occasions for the top carousel (always fixed top 5 latest events, unaffected by search or category filters)
+        $featuredOccasions = Event::where('ticketing_enabled', true)
+            ->where('is_public', true)
+            ->latest('event_date')
+            ->limit(5)
+            ->get()
+            ->map(function ($ev) {
+                return [
+                    'id' => $ev->id,
+                    'title' => $ev->title,
+                    'cover_photo' => $ev->cover_photo,
+                    'event_date' => $ev->event_date?->format('D, M jS, gA') ?: $ev->event_date?->format('M d, Y'),
+                ];
+            });
 
         return Inertia::render('Public/TicketMarketplace', [
             'occasions' => $occasions,
+            'featuredOccasions' => $featuredOccasions,
             'categoryCounts' => $categoryCounts,
             'currentCategory' => $category,
             'search' => $search ?? '',
@@ -265,35 +284,6 @@ class PublicTicketMarketplaceController extends Controller
             'capacity' => 15,
             'sold_count' => 3,
             'color' => '#8b5cf6',
-            'status' => 'active',
-            'sort_order' => 1,
-        ]);
-
-        // 5. Precision Air: Dar es Salaam to Kilimanjaro
-        $flight = Event::create([
-            'user_id' => $user->id,
-            'title' => 'PRECISION AIR: DAR ES SALAAM (DAR) TO KILIMANJARO (JRO)',
-            'event_type' => 'Flight Pass',
-            'occasion_type' => 'flight',
-            'event_date' => now()->addDays(10)->toDateString(),
-            'event_time' => 'Departure: 09:30 AM',
-            'venue' => 'Julius Nyerere International Airport (JNIA) Terminal 2',
-            'city' => 'Dar es Salaam',
-            'cover_photo' => 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80',
-            'description' => 'Scheduled domestic flight direct from Dar es Salaam to Kilimanjaro International Airport.',
-            'ticketing_enabled' => true,
-            'is_public' => true,
-            'ticket_currency' => 'TZS',
-            'ticket_instructions' => 'Check-in counter closes 45 minutes prior to scheduled departure. 23kg check-in bag included.',
-        ]);
-
-        TicketTier::create([
-            'event_id' => $flight->id,
-            'name' => 'Economy Class Flight Ticket',
-            'price' => 180000,
-            'capacity' => 70,
-            'sold_count' => 22,
-            'color' => '#0284c7',
             'status' => 'active',
             'sort_order' => 1,
         ]);

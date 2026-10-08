@@ -50,7 +50,7 @@ class TwoFactorController extends Controller
         return Inertia::render('Auth/VerifyOtp', [
             'maskedEmail' => $maskedEmail,
             'maskedPhone' => $maskedPhone,
-            'devCode' => $request->session()->get('auth.2fa_dev_code'),
+            'devCode' => app()->environment('local', 'testing') ? $request->session()->get('auth.2fa_dev_code') : null,
             'status' => session('status'),
         ]);
     }

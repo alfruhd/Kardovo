@@ -17,7 +17,6 @@ import {
     ShieldCheck, 
     Check,
     Home as HomeIcon,
-    Plane,
     Building2,
     Sparkles,
     ExternalLink,
@@ -56,74 +55,6 @@ export default function EventTickets({ event, tiers = [] }) {
         }
         return initial;
     });
-
-    // ── TOP NAVBAR DYNAMIC AUTO-HIDE BEHAVIOR (Like Organizer Portal) ──
-    const [headerVisible, setHeaderVisible] = useState(true);
-    const [isHoveringTop, setIsHoveringTop] = useState(false);
-    const isHoveringTopRef = useRef(false);
-    const lastScrollY = useRef(0);
-    const hideTimerRef = useRef(null);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-
-            // Always show when near the very top of the page
-            if (currentScrollY < 15) {
-                setHeaderVisible(true);
-                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                lastScrollY.current = currentScrollY;
-                return;
-            }
-
-            // Scrolling UP -> Reappear immediately with smooth slide-down animation
-            if (currentScrollY < lastScrollY.current - 4) {
-                setHeaderVisible(true);
-                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                // Keep visible for a couple seconds then auto-hide if inactive
-                hideTimerRef.current = setTimeout(() => {
-                    if (!isHoveringTopRef.current && window.scrollY > 40) {
-                        setHeaderVisible(false);
-                    }
-                }, 2800);
-            } 
-            // Scrolling DOWN -> Disappear smoothly with slide-up animation
-            else if (currentScrollY > lastScrollY.current + 4) {
-                setHeaderVisible(false);
-                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-            }
-
-            lastScrollY.current = currentScrollY;
-        };
-
-        const handleMouseMove = (e) => {
-            // Hovering at top 65px of viewport -> Reappear immediately
-            if (e.clientY <= 65) {
-                isHoveringTopRef.current = true;
-                setIsHoveringTop(true);
-                setHeaderVisible(true);
-                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-            } else if (e.clientY > 80 && isHoveringTopRef.current) {
-                isHoveringTopRef.current = false;
-                setIsHoveringTop(false);
-                if (window.scrollY > 40) {
-                    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                    hideTimerRef.current = setTimeout(() => {
-                        setHeaderVisible(false);
-                    }, 1800);
-                }
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        window.addEventListener('mousemove', handleMouseMove, { passive: true });
-
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            window.removeEventListener('mousemove', handleMouseMove);
-            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-        };
-    }, []);
 
     // Session timer (5 minutes countdown)
     const [secondsLeft, setSecondsLeft] = useState(295);
@@ -308,115 +239,7 @@ export default function EventTickets({ event, tiers = [] }) {
         <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#07111E] text-slate-800 dark:text-slate-100 flex flex-col justify-between selection:bg-[#16A34A] selection:text-white">
             <Head title={`${t('CHECKOUT')} — ${event.title}`} />
 
-            {/* Top Edge Hover Trigger Strip (Detects hover at the very top of the window when navbar is hidden) */}
-            <div 
-                onMouseEnter={() => {
-                    isHoveringTopRef.current = true;
-                    setIsHoveringTop(true);
-                    setHeaderVisible(true);
-                    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                }}
-                className="fixed top-0 left-0 right-0 h-4 z-50 pointer-events-auto"
-            />
 
-            {/* ══════════════════════════════════════════════════════════════
-                1. TOP BRAND NAVIGATION (Organizer Portal Dynamic Behavior)
-               ══════════════════════════════════════════════════════════════ */}
-            <header 
-                onMouseEnter={() => {
-                    isHoveringTopRef.current = true;
-                    setIsHoveringTop(true);
-                    setHeaderVisible(true);
-                    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                }}
-                onMouseLeave={() => {
-                    isHoveringTopRef.current = false;
-                    setIsHoveringTop(false);
-                    if (window.scrollY > 40) {
-                        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                        hideTimerRef.current = setTimeout(() => {
-                            setHeaderVisible(false);
-                        }, 1800);
-                    }
-                }}
-                className={`bg-[#0B2545] border-b border-[#173860] dark:border-white/[0.08] text-white sticky top-0 z-40 backdrop-blur-2xl shadow-[0_4px_25px_rgba(0,0,0,0.3)] transform transition-all duration-300 ease-in-out ${
-                    headerVisible 
-                        ? "translate-y-0 opacity-100 pointer-events-auto" 
-                        : "-translate-y-full opacity-0 pointer-events-none"
-                }`}
-            >
-                <div className="max-w-6xl mx-auto px-4 sm:px-8 h-16 sm:h-18 flex items-center justify-between gap-4">
-                    {/* Brand Logo & Occasion Switcher */}
-                    <div className="flex items-center gap-4 sm:gap-6 overflow-x-auto no-scrollbar py-1">
-                        <Link href={route('tickets.marketplace')} className="flex items-center gap-2 group cursor-pointer shrink-0">
-                            <KardovoLogo light={true} showText={true} textClassName="text-white text-base font-black tracking-widest" imgClassName="h-7 w-7" />
-                        </Link>
-
-                        {/* Occasion Categories */}
-                        <div className="hidden md:flex items-center gap-1.5 shrink-0">
-                            <Link
-                                href="/"
-                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5 shrink-0"
-                            >
-                                <HomeIcon className="w-3.5 h-3.5" />
-                                <span>{t('Home')}</span>
-                            </Link>
-                            <Link
-                                href={route('tickets.marketplace', { category: 'flight' })}
-                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5 shrink-0"
-                            >
-                                <Plane className="w-3.5 h-3.5" />
-                                <span>{t('Flights')}</span>
-                            </Link>
-                            <Link
-                                href={route('tickets.marketplace', { category: 'hotel' })}
-                                className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white hover:bg-white/10 transition flex items-center gap-1.5 shrink-0"
-                            >
-                                <Building2 className="w-3.5 h-3.5" />
-                                <span>{t('Hotels')}</span>
-                            </Link>
-                            <Link
-                                href={route('tickets.marketplace', { category: 'event' })}
-                                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-[#16A34A] text-white shadow-xs transition flex items-center gap-1.5 shrink-0"
-                            >
-                                <TicketIcon className="w-3.5 h-3.5" />
-                                <span>{t('Events')}</span>
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Right links: Support / Language Toggle / Auth */}
-                    <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-slate-300 shrink-0">
-                        <a href="mailto:support@kardovo.com" className="hover:text-white transition hidden sm:inline">
-                            {t('Support')}
-                        </a>
-
-                        {/* Language Toggle matching landing page */}
-                        <button 
-                            type="button"
-                            onClick={toggleLang} 
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 hover:border-white/40 hover:bg-white/10 transition-colors text-xs font-bold text-slate-200 shadow-xs cursor-pointer mr-1"
-                            title={lang === 'en' ? 'Badili lugha kuwa Kiswahili' : 'Switch language to English'}
-                        >
-                            <Globe className="w-3.5 h-3.5 text-[#008EE8]" />
-                            <span>{lang === 'en' ? 'SWA' : 'ENG'}</span>
-                        </button>
-
-                        <Link
-                            href={route('login')}
-                            className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition text-xs"
-                        >
-                            {t('Sign in')}
-                        </Link>
-                        <Link
-                            href={route('register')}
-                            className="px-3.5 py-1.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white font-bold transition text-xs shadow-xs"
-                        >
-                            {t('Sign up')}
-                        </Link>
-                    </div>
-                </div>
-            </header>
 
             {/* ══════════════════════════════════════════════════════════════
                 2. HERO CHECKOUT BANNER
@@ -468,106 +291,18 @@ export default function EventTickets({ event, tiers = [] }) {
             </div>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. SUB-BAR: < Back & Session Countdown Capsule
+                3. SUB-BAR: < Back
                ══════════════════════════════════════════════════════════════ */}
-            <div className="max-w-6xl mx-auto w-full px-4 sm:px-8 pt-5 pb-2">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <button
-                        type="button"
-                        onClick={handleBack}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition w-fit cursor-pointer group"
-                    >
-                        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform text-[#16A34A]" />
-                        <span>{t('Back')}</span>
-                    </button>
-
-                    {/* Centered Session Capsule */}
-                    {step < 4 && (
-                        <div className="mx-auto sm:mr-auto sm:ml-auto">
-                            <div className="px-5 py-2 rounded-full border border-slate-300 dark:border-white/15 bg-white dark:bg-[#0B1524] shadow-xs text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                                <Clock className="w-3.5 h-3.5 text-[#16A34A]" />
-                                <span>
-                                    {lang === 'sw' ? 'Kipindi chako kitaisha baada ya ' : 'Your session will expire in '}
-                                    <strong className="text-[#16A34A] dark:text-emerald-400 font-bold font-mono">
-                                        {formatTimer(secondsLeft)}
-                                    </strong>
-                                </span>
-                            </div>
-                        </div>
-                    )}
-                </div>
+            <div className="max-w-6xl mx-auto w-full px-4 sm:px-8 pt-5 pb-1">
+                <button
+                    type="button"
+                    onClick={handleBack}
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition w-fit cursor-pointer group"
+                >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform text-[#16A34A]" />
+                    <span>{t('Back')}</span>
+                </button>
             </div>
-
-            {/* ══════════════════════════════════════════════════════════════
-                4. STEP PROGRESS BAR (Steps 1, 2, 3)
-               ══════════════════════════════════════════════════════════════ */}
-            {step < 4 && (
-                <div className="max-w-6xl mx-auto w-full px-4 sm:px-8 py-3">
-                    <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-200 dark:border-white/10 shadow-xs">
-                        <div className="flex items-center justify-between max-w-xl mx-auto">
-                            {/* Step 1: Booking */}
-                            <div className="flex items-center gap-2">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                                    step > 1 
-                                        ? 'bg-[#16A34A] text-white' 
-                                        : 'bg-[#111E2E] dark:bg-white text-white dark:text-slate-900'
-                                }`}>
-                                    {step > 1 ? <Check className="w-4 h-4 stroke-[3]" /> : '1'}
-                                </div>
-                                <span className={`text-xs font-bold ${
-                                    step >= 1 ? 'text-slate-900 dark:text-white' : 'text-slate-400'
-                                }`}>
-                                    {t('Booking')}
-                                </span>
-                            </div>
-
-                            {/* Line 1 -> 2 */}
-                            <div className={`flex-1 h-0.5 mx-3 sm:mx-6 transition-colors duration-300 ${
-                                step > 1 ? 'bg-[#16A34A]' : 'bg-slate-200 dark:bg-white/10'
-                            }`} />
-
-                            {/* Step 2: Details */}
-                            <div className="flex items-center gap-2">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                                    step > 2 
-                                        ? 'bg-[#16A34A] text-white' 
-                                        : step === 2 
-                                            ? 'bg-[#111E2E] dark:bg-white text-white dark:text-slate-900' 
-                                            : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-slate-500'
-                                }`}>
-                                    {step > 2 ? <Check className="w-4 h-4 stroke-[3]" /> : '2'}
-                                </div>
-                                <span className={`text-xs font-bold ${
-                                    step >= 2 ? 'text-slate-900 dark:text-white' : 'text-slate-400'
-                                }`}>
-                                    {t('Details')}
-                                </span>
-                            </div>
-
-                            {/* Line 2 -> 3 */}
-                            <div className={`flex-1 h-0.5 mx-3 sm:mx-6 transition-colors duration-300 ${
-                                step > 2 ? 'bg-[#16A34A]' : 'bg-slate-200 dark:bg-white/10'
-                            }`} />
-
-                            {/* Step 3: Payment */}
-                            <div className="flex items-center gap-2">
-                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                                    step === 3 
-                                        ? 'bg-[#111E2E] dark:bg-white text-white dark:text-slate-900' 
-                                        : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-slate-500'
-                                }`}>
-                                    3
-                                </div>
-                                <span className={`text-xs font-bold ${
-                                    step === 3 ? 'text-slate-900 dark:text-white' : 'text-slate-400'
-                                }`}>
-                                    {t('Payment')}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* ══════════════════════════════════════════════════════════════
                 5. MAIN CONTENT AREA
@@ -657,19 +392,101 @@ export default function EventTickets({ event, tiers = [] }) {
                    ───────────────────────────────────────────────────────────── */}
                 {step < 4 && (
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                        {/* ──────── LEFT COLUMN: STEP FORM ──────── */}
+                        {/* ──────── LEFT COLUMN: UNIFIED STEP CONTAINER ──────── */}
                         <div className="lg:col-span-7 xl:col-span-8 space-y-4">
-                            {/* ── STEP 1: BOOKING ── */}
-                            {step === 1 && (
-                                <div className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200 dark:border-white/10 shadow-xs space-y-5 animate-fadeIn">
-                                    <div>
-                                        <h2 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                            {t('booking_step_title')}
-                                        </h2>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                            {t('booking_step_subtitle')}
-                                        </p>
+                            {/* Unified Card Header: Session Expire Capsule & 1 Booking - 2 Details - 3 Payment Bar */}
+                            <div className="rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200 dark:border-white/10 shadow-xs overflow-hidden">
+                                {/* Top Strip: Session Expiration Countdown */}
+                                <div className="px-6 py-3 bg-slate-50/70 dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/[0.06] flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                    <div className="flex items-center gap-2">
+                                        <Clock className="w-3.5 h-3.5 text-[#16A34A]" />
+                                        <span>
+                                            {lang === 'sw' ? 'Kipindi kitaisha baada ya: ' : 'Your session will expire in '}
+                                        </span>
                                     </div>
+                                    <span className="text-[#16A34A] dark:text-emerald-400 font-bold font-mono text-xs">
+                                        {formatTimer(secondsLeft)}
+                                    </span>
+                                </div>
+
+                                {/* Stepper Row: 1 Booking - 2 Details - 3 Payment */}
+                                <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-white/[0.06]">
+                                    <div className="flex items-center justify-between max-w-lg mx-auto">
+                                        {/* Step 1: Booking */}
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                                                step > 1 
+                                                    ? 'bg-[#16A34A] text-white' 
+                                                    : 'bg-[#111E2E] dark:bg-white text-white dark:text-slate-900'
+                                            }`}>
+                                                {step > 1 ? <Check className="w-4 h-4 stroke-[3]" /> : '1'}
+                                            </div>
+                                            <span className={`text-xs font-bold ${
+                                                step >= 1 ? 'text-slate-900 dark:text-white' : 'text-slate-400'
+                                            }`}>
+                                                {t('Booking')}
+                                            </span>
+                                        </div>
+
+                                        {/* Line 1 -> 2 */}
+                                        <div className={`flex-1 h-0.5 mx-3 sm:mx-5 transition-colors duration-300 ${
+                                            step > 1 ? 'bg-[#16A34A]' : 'bg-slate-200 dark:bg-white/10'
+                                        }`} />
+
+                                        {/* Step 2: Details */}
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                                                step > 2 
+                                                    ? 'bg-[#16A34A] text-white' 
+                                                    : step === 2 
+                                                        ? 'bg-[#111E2E] dark:bg-white text-white dark:text-slate-900' 
+                                                        : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-slate-500'
+                                            }`}>
+                                                {step > 2 ? <Check className="w-4 h-4 stroke-[3]" /> : '2'}
+                                            </div>
+                                            <span className={`text-xs font-bold ${
+                                                step >= 2 ? 'text-slate-900 dark:text-white' : 'text-slate-400'
+                                            }`}>
+                                                {t('Details')}
+                                            </span>
+                                        </div>
+
+                                        {/* Line 2 -> 3 */}
+                                        <div className={`flex-1 h-0.5 mx-3 sm:mx-5 transition-colors duration-300 ${
+                                            step > 2 ? 'bg-[#16A34A]' : 'bg-slate-200 dark:bg-white/10'
+                                        }`} />
+
+                                        {/* Step 3: Payment */}
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                                                step === 3 
+                                                    ? 'bg-[#111E2E] dark:bg-white text-white dark:text-slate-900' 
+                                                    : 'bg-slate-100 dark:bg-white/10 text-slate-400 dark:text-slate-500'
+                                            }`}>
+                                                3
+                                            </div>
+                                            <span className={`text-xs font-bold ${
+                                                step === 3 ? 'text-slate-900 dark:text-white' : 'text-slate-400'
+                                            }`}>
+                                                {t('Payment')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Step Content Body */}
+                                <div className="p-6 sm:p-7 space-y-5">
+                                    {/* ── STEP 1: BOOKING ── */}
+                                    {step === 1 && (
+                                        <div className="space-y-5 animate-fadeIn">
+                                            <div>
+                                                <h2 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+                                                    {t('booking_step_title')}
+                                                </h2>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    {t('booking_step_subtitle')}
+                                                </p>
+                                            </div>
 
                                     {/* Event-Level Notice Banner */}
                                     {isEventSoldOut && (
@@ -814,356 +631,354 @@ export default function EventTickets({ event, tiers = [] }) {
                                         <span>{isEventSoldOut ? (lang === 'sw' ? 'Zimekwisha' : 'Fully Booked') : t('Continue')}</span>
                                         {!isEventSoldOut && <ArrowRight className="w-4 h-4" />}
                                     </button>
-                                </div>
-                            )}
-
-                            {/* ── STEP 2: DETAILS ── */}
-                            {step === 2 && (
-                                <form onSubmit={handleContinueToPayment} className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200 dark:border-white/10 shadow-xs space-y-5 animate-fadeIn">
-                                    <div>
-                                        <h2 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                            {t('personal_info_title')}
-                                        </h2>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                            {t('personal_info_subtitle')}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-4">
-                                        {/* Full Name */}
-                                        <div>
-                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                                                {t('Full Name *')}
-                                            </label>
-                                            <input
-                                                type="text"
-                                                placeholder={t('Enter full name')}
-                                                value={buyerForm.buyer_name}
-                                                onChange={(e) => setBuyerForm({ ...buyerForm, buyer_name: e.target.value })}
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#08121E] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#16A34A] transition"
-                                                required
-                                            />
-                                            {formErrors.buyer_name && (
-                                                <p className="text-[11px] text-rose-500 mt-1">{formErrors.buyer_name}</p>
-                                            )}
                                         </div>
-
-                                        {/* Email Address */}
-                                        <div>
-                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                                                {t('Email Address')}
-                                            </label>
-                                            <input
-                                                type="email"
-                                                placeholder={t('Enter your email address')}
-                                                value={buyerForm.buyer_email}
-                                                onChange={(e) => setBuyerForm({ ...buyerForm, buyer_email: e.target.value })}
-                                                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#08121E] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#16A34A] transition"
-                                            />
-                                            {formErrors.buyer_email && (
-                                                <p className="text-[11px] text-rose-500 mt-1">{formErrors.buyer_email}</p>
-                                            )}
-                                        </div>
-
-                                        {/* Phone Number with Country Flag Pill */}
-                                        <div>
-                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                                                {t('phone_label')}
-                                            </label>
-                                            <div className="flex items-center rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#08121E] overflow-hidden focus-within:border-[#16A34A] transition">
-                                                <div className="px-3.5 py-3 bg-slate-100 dark:bg-white/[0.05] border-r border-slate-200 dark:border-white/10 flex items-center gap-1.5 shrink-0 select-none">
-                                                    <span className="text-sm">🇹🇿</span>
-                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 font-mono">+255</span>
-                                                </div>
-                                                <input
-                                                    type="tel"
-                                                    placeholder={t('phone_placeholder')}
-                                                    value={buyerForm.buyer_phone}
-                                                    onChange={(e) => setBuyerForm({ ...buyerForm, buyer_phone: e.target.value })}
-                                                    className="w-full px-3.5 py-3 bg-transparent text-xs font-mono font-semibold text-slate-900 dark:text-white focus:outline-none"
-                                                    required
-                                                />
-                                            </div>
-                                            {formErrors.buyer_phone && (
-                                                <p className="text-[11px] text-rose-500 mt-1">{formErrors.buyer_phone}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Continue Button */}
-                                    <button
-                                        type="submit"
-                                        className="w-full py-3.5 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-xs font-bold transition shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 cursor-pointer"
-                                    >
-                                        <span>{t('Continue to payment')}</span>
-                                        <ArrowRight className="w-4 h-4" />
-                                    </button>
-                                </form>
-                            )}
-
-                            {/* ── STEP 3: PAYMENT ── */}
-                            {step === 3 && (
-                                <form onSubmit={handleFinalCheckout} className="p-6 sm:p-7 rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200 dark:border-white/10 shadow-xs space-y-5 animate-fadeIn">
-                                    <div>
-                                        <h2 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                            {t('payment_method_title')}
-                                        </h2>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                            {t('payment_method_subtitle')}
-                                        </p>
-                                    </div>
-
-                                    {/* Payment Radio Options */}
-                                    <div className="space-y-3">
-                                        {/* Option 1: Mobile Money */}
-                                        <label
-                                            onClick={() => setBuyerForm({ ...buyerForm, payment_method: 'Mobile Money' })}
-                                            className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
-                                                buyerForm.payment_method === 'Mobile Money'
-                                                    ? 'border-[#16A34A] bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-xs'
-                                                    : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3.5">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.05] flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0">
-                                                    <Smartphone className="w-5 h-5 text-[#16A34A]" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white">
-                                                        {t('Pay Via Mobile Money')}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        {t('mobile_money_desc')}
-                                                    </div>
-                                                </div>
+                                    )}
+                                    {/* ── STEP 2: DETAILS ── */}
+                                    {step === 2 && (
+                                        <form onSubmit={handleContinueToPayment} className="space-y-5 animate-fadeIn">
+                                            <div>
+                                                <h2 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+                                                    {t('personal_info_title')}
+                                                </h2>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    {t('personal_info_subtitle')}
+                                                </p>
                                             </div>
 
-                                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                                                buyerForm.payment_method === 'Mobile Money'
-                                                    ? 'border-[#16A34A] bg-[#16A34A]'
-                                                    : 'border-slate-300 dark:border-white/20'
-                                            }`}>
-                                                {buyerForm.payment_method === 'Mobile Money' && (
-                                                    <div className="w-2 h-2 rounded-full bg-white" />
-                                                )}
-                                            </div>
-                                        </label>
-
-                                        {/* Mobile Money Configuration: Operator + Payment Phone */}
-                                        {buyerForm.payment_method === 'Mobile Money' && (
-                                            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-4 animate-fadeIn">
-                                                {/* Carrier selection pills */}
+                                            <div className="space-y-4">
+                                                {/* Full Name */}
                                                 <div>
-                                                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-2">
-                                                        {lang === 'sw' ? 'Chagua Mtandao wa Simu' : 'Select Mobile Carrier'}
-                                                    </span>
-                                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                                                        {[
-                                                            { id: 'M-Pesa', color: 'hover:border-red-500', active: 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400' },
-                                                            { id: 'Tigo Pesa', color: 'hover:border-blue-500', active: 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400' },
-                                                            { id: 'Airtel Money', color: 'hover:border-rose-500', active: 'border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-400' },
-                                                            { id: 'Halopesa', color: 'hover:border-orange-500', active: 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400' },
-                                                        ].map(({ id, active }) => {
-                                                            const isSelected = buyerForm.carrier === id;
-                                                            return (
-                                                                <button
-                                                                    key={id}
-                                                                    type="button"
-                                                                    onClick={() => setBuyerForm({ ...buyerForm, carrier: id })}
-                                                                    className={`py-2 px-3 rounded-xl text-xs font-bold transition border cursor-pointer flex items-center justify-center gap-1.5 ${
-                                                                        isSelected
-                                                                            ? `${active} shadow-xs font-black`
-                                                                            : 'bg-white dark:bg-[#0B1524] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-slate-300'
-                                                                    }`}
-                                                                >
-                                                                    <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-current' : 'bg-slate-300 dark:bg-white/20'}`} />
-                                                                    {id}
-                                                                </button>
-                                                            );
-                                                        })}
-                                                    </div>
+                                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                                                        {t('Full Name *')}
+                                                    </label>
+                                                    <input
+                                                        type="text"
+                                                        placeholder={t('Enter full name')}
+                                                        value={buyerForm.buyer_name}
+                                                        onChange={(e) => setBuyerForm({ ...buyerForm, buyer_name: e.target.value })}
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#08121E] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#16A34A] transition"
+                                                        required
+                                                    />
+                                                    {formErrors.buyer_name && (
+                                                        <p className="text-[11px] text-rose-500 mt-1">{formErrors.buyer_name}</p>
+                                                    )}
                                                 </div>
 
-                                                {/* Mobile Money Payment Phone Number Input */}
+                                                {/* Email Address */}
                                                 <div>
-                                                    <div className="flex items-center justify-between mb-1.5">
-                                                        <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                                                            {t('payment_phone_label')} *
-                                                        </label>
-                                                        {buyerForm.buyer_phone && buyerForm.payment_phone !== buyerForm.buyer_phone && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setBuyerForm({ ...buyerForm, payment_phone: buyerForm.buyer_phone })}
-                                                                className="text-[11px] font-semibold text-[#16A34A] dark:text-emerald-400 hover:underline cursor-pointer"
-                                                            >
-                                                                {lang === 'sw' ? `Tumia nambari ya ${buyerForm.buyer_phone}` : `Use attendee phone (${buyerForm.buyer_phone})`}
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                                                        {t('Email Address')}
+                                                    </label>
+                                                    <input
+                                                        type="email"
+                                                        placeholder={t('Enter your email address')}
+                                                        value={buyerForm.buyer_email}
+                                                        onChange={(e) => setBuyerForm({ ...buyerForm, buyer_email: e.target.value })}
+                                                        className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#08121E] text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-[#16A34A] transition"
+                                                    />
+                                                    {formErrors.buyer_email && (
+                                                        <p className="text-[11px] text-rose-500 mt-1">{formErrors.buyer_email}</p>
+                                                    )}
+                                                </div>
 
-                                                    <div className="flex items-center rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#08121E] overflow-hidden focus-within:border-[#16A34A] transition shadow-inner">
+                                                {/* Phone Number with Country Flag Pill */}
+                                                <div>
+                                                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                                                        {t('phone_label')}
+                                                    </label>
+                                                    <div className="flex items-center rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#08121E] overflow-hidden focus-within:border-[#16A34A] transition">
                                                         <div className="px-3.5 py-3 bg-slate-100 dark:bg-white/[0.05] border-r border-slate-200 dark:border-white/10 flex items-center gap-1.5 shrink-0 select-none">
                                                             <span className="text-sm">🇹🇿</span>
                                                             <span className="text-xs font-bold text-slate-700 dark:text-slate-200 font-mono">+255</span>
                                                         </div>
                                                         <input
                                                             type="tel"
-                                                            placeholder={t('payment_phone_placeholder')}
-                                                            value={buyerForm.payment_phone !== undefined ? buyerForm.payment_phone : buyerForm.buyer_phone}
-                                                            onChange={(e) => setBuyerForm({ ...buyerForm, payment_phone: e.target.value })}
+                                                            placeholder={t('phone_placeholder')}
+                                                            value={buyerForm.buyer_phone}
+                                                            onChange={(e) => setBuyerForm({ ...buyerForm, buyer_phone: e.target.value })}
                                                             className="w-full px-3.5 py-3 bg-transparent text-xs font-mono font-semibold text-slate-900 dark:text-white focus:outline-none"
                                                             required
                                                         />
                                                     </div>
-
-                                                    {formErrors.payment_phone && (
-                                                        <p className="text-[11px] text-rose-500 mt-1">{formErrors.payment_phone}</p>
+                                                    {formErrors.buyer_phone && (
+                                                        <p className="text-[11px] text-rose-500 mt-1">{formErrors.buyer_phone}</p>
                                                     )}
-
-                                                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-start gap-1.5">
-                                                        <Smartphone className="w-3.5 h-3.5 text-[#16A34A] shrink-0 mt-0.5" />
-                                                        <span>{t('payment_phone_hint')}</span>
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Option 2: Card */}
-                                        <label
-                                            onClick={() => setBuyerForm({ ...buyerForm, payment_method: 'Card' })}
-                                            className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
-                                                buyerForm.payment_method === 'Card'
-                                                    ? 'border-[#16A34A] bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-xs'
-                                                    : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
-                                            }`}
-                                        >
-                                            <div className="flex items-center gap-3.5">
-                                                <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.05] flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0">
-                                                    <CreditCard className="w-5 h-5 text-[#008EE8]" />
-                                                </div>
-                                                <div>
-                                                    <div className="text-xs font-bold text-slate-900 dark:text-white">
-                                                        {t('Pay Via Card')}
-                                                    </div>
-                                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                                                        {t('card_desc')}
-                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
-                                                buyerForm.payment_method === 'Card'
-                                                    ? 'border-[#16A34A] bg-[#16A34A]'
-                                                    : 'border-slate-300 dark:border-white/20'
-                                            }`}>
-                                                {buyerForm.payment_method === 'Card' && (
-                                                    <div className="w-2 h-2 rounded-full bg-white" />
-                                                )}
-                                            </div>
-                                        </label>
-                                    </div>
-
-                                    {/* Policy Agreement Checkbox */}
-                                    <div className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-2.5">
-                                        <label className="flex items-start gap-2.5 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={buyerForm.accepted_terms}
-                                                onChange={(e) => setBuyerForm({ ...buyerForm, accepted_terms: e.target.checked })}
-                                                className="w-4 h-4 rounded text-[#16A34A] border-slate-300 dark:border-white/20 focus:ring-[#16A34A] mt-0.5 shrink-0"
-                                            />
-                                            <span className="text-xs font-bold text-slate-900 dark:text-white">
-                                                {t('accept_no_refund_terms')}
-                                            </span>
-                                        </label>
-                                        <p className="text-[11px] text-slate-500 dark:text-slate-400 pl-6.5 leading-relaxed">
-                                            {t('terms_body_1')}
-                                        </p>
-                                        <div className="pl-6.5 pt-1">
-                                            <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                                                {t('NO-REFUND POLICY')}
-                                            </div>
-                                            <div className="text-[10px] text-slate-400 leading-normal">
-                                                {t('terms_body_2')}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {formErrors.terms && (
-                                        <p className="text-[11px] text-rose-500 font-semibold">{formErrors.terms}</p>
-                                    )}
-
-                                    {apiError && (
-                                        <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex items-center gap-2">
-                                            <AlertCircle className="w-4 h-4 shrink-0" />
-                                            <span>{apiError}</span>
-                                        </div>
-                                    )}
-
-                                    {/* Buy Now Button */}
-                                    <button
-                                        type="submit"
-                                        disabled={loading || !buyerForm.accepted_terms}
-                                        className="w-full py-3.5 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 cursor-pointer"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                                <span>{t('Processing Booking...')}</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span>{t('Buy Now')} ({formatTzs(totalOrderAmount)})</span>
+                                            {/* Continue Button */}
+                                            <button
+                                                type="submit"
+                                                className="w-full py-3.5 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-xs font-bold transition shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 cursor-pointer"
+                                            >
+                                                <span>{t('Continue to payment')}</span>
                                                 <ArrowRight className="w-4 h-4" />
-                                            </>
-                                        )}
-                                    </button>
-
-                                    {!buyerForm.payment_method && (
-                                        <p className="text-center text-[11px] text-amber-500 font-semibold">
-                                            {t('select_payment_method_to_continue')}
-                                        </p>
+                                            </button>
+                                        </form>
                                     )}
-                                </form>
-                            )}
+
+                                    {/* ── STEP 3: PAYMENT ── */}
+                                    {step === 3 && (
+                                        <form onSubmit={handleFinalCheckout} className="space-y-5 animate-fadeIn">
+                                            <div>
+                                                <h2 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+                                                    {t('payment_method_title')}
+                                                </h2>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    {t('payment_method_subtitle')}
+                                                </p>
+                                            </div>
+
+                                            {/* Payment Radio Options */}
+                                            <div className="space-y-3">
+                                                {/* Option 1: Mobile Money */}
+                                                <label
+                                                    onClick={() => setBuyerForm({ ...buyerForm, payment_method: 'Mobile Money' })}
+                                                    className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                                                        buyerForm.payment_method === 'Mobile Money'
+                                                            ? 'border-[#16A34A] bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-xs'
+                                                            : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3.5">
+                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.05] flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0">
+                                                            <Smartphone className="w-5 h-5 text-[#16A34A]" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-xs font-bold text-slate-900 dark:text-white">
+                                                                {t('Pay Via Mobile Money')}
+                                                            </div>
+                                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                {t('mobile_money_desc')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                                                        buyerForm.payment_method === 'Mobile Money'
+                                                            ? 'border-[#16A34A] bg-[#16A34A]'
+                                                            : 'border-slate-300 dark:border-white/20'
+                                                    }`}>
+                                                        {buyerForm.payment_method === 'Mobile Money' && (
+                                                            <div className="w-2 h-2 rounded-full bg-white" />
+                                                        )}
+                                                    </div>
+                                                </label>
+
+                                                {/* Mobile Money Configuration: Operator + Payment Phone */}
+                                                {buyerForm.payment_method === 'Mobile Money' && (
+                                                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200 dark:border-white/10 space-y-4 animate-fadeIn">
+                                                        {/* Carrier selection pills */}
+                                                        <div>
+                                                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 block mb-2">
+                                                                {lang === 'sw' ? 'Chagua Mtandao wa Simu' : 'Select Mobile Carrier'}
+                                                            </span>
+                                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                                                {[
+                                                                    { id: 'M-Pesa', color: 'hover:border-red-500', active: 'border-red-500 bg-red-500/10 text-red-700 dark:text-red-400' },
+                                                                    { id: 'Tigo Pesa', color: 'hover:border-blue-500', active: 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-400' },
+                                                                    { id: 'Airtel Money', color: 'hover:border-rose-500', active: 'border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-400' },
+                                                                    { id: 'Halopesa', color: 'hover:border-orange-500', active: 'border-orange-500 bg-orange-500/10 text-orange-700 dark:text-orange-400' },
+                                                                ].map(({ id, active }) => {
+                                                                    const isSelected = buyerForm.carrier === id;
+                                                                    return (
+                                                                        <button
+                                                                            key={id}
+                                                                            type="button"
+                                                                            onClick={() => setBuyerForm({ ...buyerForm, carrier: id })}
+                                                                            className={`py-2 px-3 rounded-xl text-xs font-bold transition border cursor-pointer flex items-center justify-center gap-1.5 ${
+                                                                                isSelected
+                                                                                    ? `${active} shadow-xs font-black`
+                                                                                    : 'bg-white dark:bg-[#0B1524] text-slate-700 dark:text-slate-300 border-slate-200 dark:border-white/10 hover:border-slate-300'
+                                                                            }`}
+                                                                        >
+                                                                            <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-current' : 'bg-slate-300 dark:bg-white/20'}`} />
+                                                                            {id}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Mobile Money Payment Phone Number Input */}
+                                                        <div>
+                                                            <div className="flex items-center justify-between mb-1.5">
+                                                                <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                                                                    {t('payment_phone_label')} *
+                                                                </label>
+                                                                {buyerForm.buyer_phone && buyerForm.payment_phone !== buyerForm.buyer_phone && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setBuyerForm({ ...buyerForm, payment_phone: buyerForm.buyer_phone })}
+                                                                        className="text-[11px] font-semibold text-[#16A34A] dark:text-emerald-400 hover:underline cursor-pointer"
+                                                                    >
+                                                                        {lang === 'sw' ? `Tumia nambari ya ${buyerForm.buyer_phone}` : `Use attendee phone (${buyerForm.buyer_phone})`}
+                                                                    </button>
+                                                                )}
+                                                            </div>
+
+                                                            <div className="flex items-center rounded-xl border border-slate-300 dark:border-white/15 bg-white dark:bg-[#08121E] overflow-hidden focus-within:border-[#16A34A] transition shadow-inner">
+                                                                <div className="px-3.5 py-3 bg-slate-100 dark:bg-white/[0.05] border-r border-slate-200 dark:border-white/10 flex items-center gap-1.5 shrink-0 select-none">
+                                                                    <span className="text-sm">🇹🇿</span>
+                                                                    <span className="text-xs font-bold text-slate-700 dark:text-slate-200 font-mono">+255</span>
+                                                                </div>
+                                                                <input
+                                                                    type="tel"
+                                                                    placeholder={t('payment_phone_placeholder')}
+                                                                    value={buyerForm.payment_phone !== undefined ? buyerForm.payment_phone : buyerForm.buyer_phone}
+                                                                    onChange={(e) => setBuyerForm({ ...buyerForm, payment_phone: e.target.value })}
+                                                                    className="w-full px-3.5 py-3 bg-transparent text-xs font-mono font-semibold text-slate-900 dark:text-white focus:outline-none"
+                                                                    required
+                                                                />
+                                                            </div>
+
+                                                            {formErrors.payment_phone && (
+                                                                <p className="text-[11px] text-rose-500 mt-1">{formErrors.payment_phone}</p>
+                                                            )}
+
+                                                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 flex items-start gap-1.5">
+                                                                <Smartphone className="w-3.5 h-3.5 text-[#16A34A] shrink-0 mt-0.5" />
+                                                                <span>{t('payment_phone_hint')}</span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Option 2: Card */}
+                                                <label
+                                                    onClick={() => setBuyerForm({ ...buyerForm, payment_method: 'Card' })}
+                                                    className={`p-4 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                                                        buyerForm.payment_method === 'Card'
+                                                            ? 'border-[#16A34A] bg-emerald-500/[0.04] dark:bg-emerald-500/[0.08] shadow-xs'
+                                                            : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-3.5">
+                                                        <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-white/[0.05] flex items-center justify-center text-slate-700 dark:text-slate-200 shrink-0">
+                                                            <CreditCard className="w-5 h-5 text-[#008EE8]" />
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-xs font-bold text-slate-900 dark:text-white">
+                                                                {t('Pay Via Card')}
+                                                            </div>
+                                                            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                                                                {t('card_desc')}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${
+                                                        buyerForm.payment_method === 'Card'
+                                                            ? 'border-[#16A34A] bg-[#16A34A]'
+                                                            : 'border-slate-300 dark:border-white/20'
+                                                    }`}>
+                                                        {buyerForm.payment_method === 'Card' && (
+                                                            <div className="w-2 h-2 rounded-full bg-white" />
+                                                        )}
+                                                    </div>
+                                                </label>
+                                            </div>
+
+                                            {/* Policy Agreement Checkbox */}
+                                            <div className="p-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-white/[0.02] space-y-2.5">
+                                                <label className="flex items-start gap-2.5 cursor-pointer">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={buyerForm.accepted_terms}
+                                                        onChange={(e) => setBuyerForm({ ...buyerForm, accepted_terms: e.target.checked })}
+                                                        className="w-4 h-4 rounded text-[#16A34A] border-slate-300 dark:border-white/20 focus:ring-[#16A34A] mt-0.5 shrink-0"
+                                                    />
+                                                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                                        {t('accept_no_refund_terms')}
+                                                    </span>
+                                                </label>
+                                                <p className="text-[11px] text-slate-500 dark:text-slate-400 pl-6.5 leading-relaxed">
+                                                    {t('terms_body_1')}
+                                                </p>
+                                                <div className="pl-6.5 pt-1">
+                                                    <div className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                                        {t('NO-REFUND POLICY')}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 leading-normal">
+                                                        {t('terms_body_2')}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {formErrors.terms && (
+                                                <p className="text-[11px] text-rose-500 font-semibold">{formErrors.terms}</p>
+                                            )}
+
+                                            {apiError && (
+                                                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex items-center gap-2">
+                                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                                    <span>{apiError}</span>
+                                                </div>
+                                            )}
+
+                                            {/* Buy Now Button */}
+                                            <button
+                                                type="submit"
+                                                disabled={loading || !buyerForm.accepted_terms}
+                                                className="w-full py-3.5 px-4 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold transition shadow-md shadow-emerald-700/20 flex items-center justify-center gap-2 cursor-pointer"
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                                        <span>{t('Processing Booking...')}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>{t('Buy Now')} ({formatTzs(totalOrderAmount)})</span>
+                                                        <ArrowRight className="w-4 h-4" />
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            {!buyerForm.payment_method && (
+                                                <p className="text-center text-[11px] text-amber-500 font-semibold">
+                                                    {t('select_payment_method_to_continue')}
+                                                </p>
+                                            )}
+                                        </form>
+                                    )}
+                                </div>
+                            </div>
                         </div>
 
                         {/* ──────── RIGHT COLUMN: STICKY ORDER SUMMARY CARD ──────── */}
-                        <div className="lg:col-span-5 xl:col-span-4 sticky top-20 space-y-4">
+                        <div className="lg:col-span-5 xl:col-span-4 sticky top-20 space-y-3">
                             <div className="rounded-3xl bg-white dark:bg-[#0B1524] border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden">
-                                {/* Cover Banner Art */}
-                                <div className="relative aspect-[16/9] w-full overflow-hidden bg-slate-900">
-                                    <img
-                                        src={coverPhoto}
-                                        alt={event.title}
-                                        className="w-full h-full object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-                                    {event.city && (
-                                        <div className="absolute top-3 right-3 text-[10px] font-bold px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-md text-white border border-white/15">
-                                            {event.city}
-                                        </div>
-                                    )}
+                                {/* Cover Banner Art - Inset with even spacing on all sides */}
+                                <div className="p-3 pb-0">
+                                    <div className="relative aspect-[4/3] sm:aspect-[1/1] max-h-[360px] w-full overflow-hidden rounded-2xl bg-white dark:bg-[#0B1524] flex items-center justify-center">
+                                        {/* Full artwork shown cleanly */}
+                                        <img
+                                            src={coverPhoto}
+                                            alt={event.title}
+                                            className="w-full h-full object-contain rounded-2xl select-none"
+                                        />
+                                    </div>
                                 </div>
 
-                                {/* Event Info */}
-                                <div className="p-5 space-y-4">
-                                    <div className="space-y-2">
-                                        <h3 className="text-base font-black text-slate-900 dark:text-white font-display uppercase tracking-tight leading-snug">
+                                {/* Event Info - Compact & neat typography */}
+                                <div className="p-3.5 sm:p-4 space-y-2.5">
+                                    <div className="space-y-1">
+                                        <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-display uppercase tracking-tight leading-snug">
                                             {event.title}
                                         </h3>
 
-                                        <div className="space-y-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                        <div className="space-y-0.5 text-[10px] sm:text-[11px] text-slate-500 dark:text-slate-400">
                                             {event.venue && (
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="w-3.5 h-3.5 text-[#16A34A] shrink-0" />
+                                                <div className="flex items-center gap-1.5">
+                                                    <MapPin className="w-3 h-3 text-[#16A34A] shrink-0" />
                                                     <span className="truncate">{event.venue}</span>
                                                 </div>
                                             )}
                                             {event.event_date && (
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="w-3.5 h-3.5 text-[#16A34A] shrink-0" />
-                                                    <span>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Clock className="w-3 h-3 text-[#16A34A] shrink-0" />
+                                                    <span className="truncate">
                                                         {t('Start:')} {event.event_date}
                                                         {event.event_time ? `, ${event.event_time}` : ''}
                                                     </span>
@@ -1172,24 +987,24 @@ export default function EventTickets({ event, tiers = [] }) {
                                         </div>
                                     </div>
 
-                                    {/* Divider */}
-                                    <div className="border-t border-slate-100 dark:border-white/[0.06] pt-3 space-y-2.5">
-                                        <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                    {/* Divider & Tickets Breakdown */}
+                                    <div className="border-t border-slate-100 dark:border-white/[0.06] pt-2 space-y-1">
+                                        <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
                                             {t('Tickets')}
                                         </div>
 
                                         {orderItems.length === 0 ? (
-                                            <div className="text-xs text-slate-400 italic">
+                                            <div className="text-[10px] text-slate-400 italic">
                                                 {t('no_tickets_selected')}
                                             </div>
                                         ) : (
-                                            <div className="space-y-1.5">
+                                            <div className="space-y-0.5">
                                                 {orderItems.map((item) => (
-                                                    <div key={item.tier_id} className="flex justify-between items-center text-xs">
-                                                        <span className="text-slate-700 dark:text-slate-300">
+                                                    <div key={item.tier_id} className="flex justify-between items-center text-[10px] sm:text-[11px]">
+                                                        <span className="text-slate-700 dark:text-slate-300 truncate max-w-[180px]">
                                                             {item.tier.name} x{item.quantity}
                                                         </span>
-                                                        <span className="font-mono font-bold text-slate-900 dark:text-white">
+                                                        <span className="font-mono font-bold text-slate-900 dark:text-white shrink-0">
                                                             {formatTzs(item.subtotal)}
                                                         </span>
                                                     </div>
@@ -1199,19 +1014,19 @@ export default function EventTickets({ event, tiers = [] }) {
                                     </div>
 
                                     {/* Divider & Subtotal */}
-                                    <div className="border-t border-slate-100 dark:border-white/[0.06] pt-3 space-y-2">
-                                        <div className="flex justify-between items-center text-xs">
+                                    <div className="border-t border-slate-100 dark:border-white/[0.06] pt-2 space-y-1">
+                                        <div className="flex justify-between items-center text-[10px] sm:text-[11px]">
                                             <span className="text-slate-500 dark:text-slate-400">{t('Subtotal')}</span>
                                             <span className="font-bold text-slate-800 dark:text-slate-200 font-mono">
                                                 {formatTzs(totalOrderAmount)}
                                             </span>
                                         </div>
 
-                                        <p className="text-[10px] text-slate-400 leading-tight">
+                                        <p className="text-[8.5px] text-slate-400 leading-tight">
                                             {t('subtotal_notice')}
                                         </p>
 
-                                        <div className="pt-2 text-xl font-black text-slate-900 dark:text-white font-mono tracking-tight">
+                                        <div className="pt-0.5 text-base sm:text-lg font-black text-slate-900 dark:text-white font-mono tracking-tight">
                                             {formatTzs(totalOrderAmount)}
                                         </div>
                                     </div>

@@ -8,6 +8,8 @@ use App\Models\Guest;
 use App\Models\Message;
 use App\Models\ScanLog;
 use App\Models\SystemSetting;
+use App\Models\Ticket;
+use App\Models\TicketOrder;
 use App\Models\User;
 use App\Services\AuditLogger;
 use App\Services\PhoneNormalizer;
@@ -155,6 +157,13 @@ class AdminController extends Controller
         $totalCheckins = Guest::where('entries_used', '>', 0)->sum('entries_used');
         $totalScans = ScanLog::count();
 
+        // Commercial Ticketing Platform Metrics
+        $totalTicketsSold = Ticket::count();
+        $validTickets = Ticket::where('status', 'valid')->count();
+        $checkedInTickets = Ticket::where('status', 'checked_in')->count();
+        $paidOrdersCount = TicketOrder::where('status', 'paid')->count();
+        $totalTicketRevenue = TicketOrder::where('status', 'paid')->sum('total_amount');
+
         $whatsappCount = Message::where('channel', 'whatsapp')->count();
         $smsCount = Message::where('channel', 'sms')->count();
         $totalMessagesCount = $whatsappCount + $smsCount;
@@ -249,6 +258,11 @@ class AdminController extends Controller
                 'total_checkins' => $totalCheckins,
                 'total_scans' => $totalScans,
                 'scans_growth' => ($scansGrowth > 0 ? '+' : '').$scansGrowth.'%',
+                'total_tickets_sold' => $totalTicketsSold,
+                'valid_tickets' => $validTickets,
+                'checked_in_tickets' => $checkedInTickets,
+                'paid_ticket_orders' => $paidOrdersCount,
+                'ticket_revenue' => $totalTicketRevenue,
                 'whatsapp_delivered' => $whatsappCount,
                 'whatsapp_growth' => ($waGrowth > 0 ? '+' : '').$waGrowth.'%',
                 'sms_delivered' => $smsCount,

@@ -30,6 +30,9 @@
             } catch (e) {}
         </script>
 
+        <!-- Preload Hero Art for Instant Seamless Render -->
+        <link rel="preload" as="image" href="/images/hero-art.jpg">
+
         <!-- Scripts -->
         @routes
         @viteReactRefresh

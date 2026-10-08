@@ -22,7 +22,7 @@ export default function KardovoLogo({
                     <span className={`font-black tracking-[0.14em] font-display leading-tight uppercase ${
                         isLg ? "text-[18.5px] sm:text-[20px]" : "text-[17px]"
                     } ${
-                        light ? "text-white" : (textClassName ? textClassName : "text-slate-900 dark:text-white")
+                        textClassName ? textClassName : (light ? "text-white" : "text-slate-900 dark:text-white")
                     }`}>
                         KARDOVO
                     </span>

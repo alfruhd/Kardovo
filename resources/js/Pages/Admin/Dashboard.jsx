@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Head, Link } from '@inertiajs/react';
 import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
@@ -14,7 +14,11 @@ import {
     ShieldCheck,
     ArrowRight,
     CircleDollarSign,
-    TrendingUp
+    TrendingUp,
+    Tag,
+    Send,
+    ChevronRight,
+    Sparkles
 } from 'lucide-react';
 
 export default function AdminDashboard({ 
@@ -28,6 +32,8 @@ export default function AdminDashboard({
     stats = {}, 
     gateways = {} 
 }) {
+    const [viewMode, setViewMode] = useState('all'); // 'all' | 'invitations' | 'ticketing'
+
     const safeRoute = (name, fallback = '#') => {
         try {
             return typeof route === 'function' && route().has(name) ? route(name) : fallback;
@@ -36,44 +42,10 @@ export default function AdminDashboard({
         }
     };
 
-    const modules = [
-        {
-            title: 'Users',
-            detail: `${customers.length} Organisers · ${gateStaff.length} Staff${isSuperAdmin && subAdmins.length ? ` · ${subAdmins.length} Admins` : ''}`,
-            href: safeRoute('admin.users', '/admin/users'),
-            icon: Users,
-        },
-        {
-            title: 'Audit Logs',
-            detail: 'Security & system activities',
-            href: safeRoute('admin.auditLogs', '/admin/audit-logs'),
-            icon: ShieldCheck,
-        },
-        {
-            title: 'Gateways',
-            detail: 'WhatsApp, SMS & AzamPay',
-            href: safeRoute('admin.gateways', '/admin/gateways'),
-            icon: Server,
-        },
-        {
-            title: 'Events',
-            detail: `${allEvents.length} Active events`,
-            href: safeRoute('events.index', '/events'),
-            icon: Calendar,
-        },
-        {
-            title: 'Templates',
-            detail: `${globalTemplates.length} Invitation designs`,
-            href: safeRoute('templates.index', '/templates'),
-            icon: Palette,
-        },
-        {
-            title: 'Finance',
-            detail: 'Cashflow, inflows & expenses',
-            href: safeRoute('admin.finance', '/admin/finance'),
-            icon: CircleDollarSign,
-        },
-    ];
+    const formatTzs = (amount) => {
+        const num = parseFloat(amount) || 0;
+        return `${num.toLocaleString()} TZS`;
+    };
 
     return (
         <KardovoAppLayout
@@ -84,191 +56,240 @@ export default function AdminDashboard({
                         href={safeRoute('admin.users', '/admin/users')}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95"
                     >
-                        <Users className="w-3.5 h-3.5 text-emerald-400" />
+                        <Users className="w-3.5 h-3.5 text-[#16A34A]" />
                         <span>Users</span>
                     </Link>
                     <Link
                         href={safeRoute('admin.gateways', '/admin/gateways')}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95"
                     >
-                        <Server className="w-3.5 h-3.5 text-amber-400" />
+                        <Server className="w-3.5 h-3.5 text-[#16A34A]" />
                         <span>Gateways</span>
                     </Link>
                 </div>
             }
         >
-            <Head title="Platform Operations Center - Kardovo" />
+            <Head title="Platform Operations Center — Kardovo" />
 
-            <div className="max-w-7xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-3.5 flex flex-col justify-between">
                 
-                {/* 1. MINIMALISTIC EXECUTIVE HEADER */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-slate-200/60 dark:border-white/[0.06]">
+                {/* 1. EXECUTIVE HEADER WITH UNIFIED VIEW SWITCHER */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/60 dark:border-white/[0.06]">
                     <div>
-                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight flex items-center gap-2.5">
-                            <Shield className="w-6 h-6 text-[#16A34A]" />
+                        <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-display tracking-tight flex items-center gap-2">
+                            <Shield className="w-5 h-5 text-[#16A34A]" />
                             Platform Operations Center
                         </h1>
-                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                            Executive command center for system health, verification telemetry, and cross-module governance.
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Unified command center for VIP invitations, commercial ticketing, gate telemetry, and APIs.
                         </p>
                     </div>
-                    <div className="flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            All Systems Operational
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                        {/* Scope Toggle: All | Invitations | Ticketing */}
+                        <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-200/60 dark:bg-white/[0.04] border border-slate-300/50 dark:border-white/[0.08] text-[11px] font-semibold">
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('all')}
+                                className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                                    viewMode === 'all'
+                                        ? 'bg-white dark:bg-[#07111D] text-slate-900 dark:text-white shadow-xs font-bold'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                            >
+                                All Operations
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('invitations')}
+                                className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                                    viewMode === 'invitations'
+                                        ? 'bg-white dark:bg-[#07111D] text-[#16A34A] dark:text-[#16A34A] shadow-xs font-bold'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                            >
+                                Invitations
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('ticketing')}
+                                className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
+                                    viewMode === 'ticketing'
+                                        ? 'bg-white dark:bg-[#07111D] text-[#16A34A] dark:text-[#16A34A] shadow-xs font-bold'
+                                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                                }`}
+                            >
+                                Ticketing
+                            </button>
+                        </div>
+
+                        <span className="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Live
                         </span>
                     </div>
                 </div>
 
-                {/* 2. EXECUTIVE ANALYTICS DASHBOARD */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {/* Platform Activity Chart */}
-                    <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col h-full min-h-[340px]">
-                        <div className="flex items-center justify-between mb-4">
-                            <div>
-                                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Platform Throughput</h3>
-                                <p className="text-[11px] text-slate-500">7-day WhatsApp vs SMS dispatch volume</p>
-                            </div>
-                            <div className="flex items-center gap-3 text-[10px] font-bold">
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                                    <span className="text-slate-600 dark:text-slate-400">WhatsApp</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                    <span className="text-slate-600 dark:text-slate-400">SMS</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex-1 min-h-0 w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={stats.traffic_data || []} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
-                                    <defs>
-                                        <linearGradient id="colorWhatsapp" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.25}/>
-                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                                        </linearGradient>
-                                        <linearGradient id="colorSms" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25}/>
-                                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" strokeOpacity={0.15} />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
-                                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
-                                    <Tooltip 
-                                        contentStyle={{ backgroundColor: '#0f172a', border: 'none', borderRadius: '12px', fontSize: '11px', color: '#fff', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                        itemStyle={{ color: '#e2e8f0', fontSize: '12px', fontWeight: 'bold' }}
-                                    />
-                                    <Area type="monotone" dataKey="whatsapp" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorWhatsapp)" />
-                                    <Area type="monotone" dataKey="sms" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorSms)" />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Quick Stats Mini-Grid */}
-                    <div className="grid grid-cols-2 gap-4 h-full">
-                        <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
-                            <div>
-                                <div className="w-10 h-10 rounded-xl bg-slate-500/10 text-slate-600 dark:text-slate-400 flex items-center justify-center mb-3">
-                                    <QrCode className="w-5 h-5" />
-                                </div>
-                                <h4 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-display mb-1 tracking-tight">
-                                    {stats.total_scans?.toLocaleString() || 0}
-                                </h4>
-                                <p className="text-xs text-slate-500 font-medium">Total Passes Scanned</p>
-                            </div>
-                            <div className="mt-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3" />
-                                <span>{stats.scans_growth || '+0%'} vs last week</span>
-                            </div>
-                        </div>
-
-                        <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
-                            <div>
-                                <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-3">
-                                    <Calendar className="w-5 h-5" />
-                                </div>
-                                <h4 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-display mb-1 tracking-tight">
-                                    {stats.total_events || allEvents.length || 0}
-                                </h4>
-                                <p className="text-xs text-slate-500 font-medium">Live Events</p>
-                            </div>
-                            <div className="mt-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3" />
-                                <span>{stats.events_growth || '+0%'} vs last week</span>
-                            </div>
-                        </div>
-
-                        <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
-                            <div>
-                                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-3">
-                                    <Smartphone className="w-5 h-5" />
-                                </div>
-                                <h4 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-display mb-1 tracking-tight">
-                                    {stats.whatsapp_delivered?.toLocaleString() || 0}
-                                </h4>
-                                <p className="text-xs text-slate-500 font-medium">WhatsApp Delivered</p>
-                            </div>
-                            <div className="mt-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3" />
-                                <span>{stats.whatsapp_growth || '+0%'} vs last week</span>
-                            </div>
-                        </div>
-
-                        <div className="p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
-                            <div>
-                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3">
-                                    <MessageSquare className="w-5 h-5" />
-                                </div>
-                                <h4 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-display mb-1 tracking-tight">
-                                    {stats.sms_delivered?.toLocaleString() || 0}
-                                </h4>
-                                <p className="text-xs text-slate-500 font-medium">SMS Delivered</p>
-                            </div>
-                            <div className="mt-2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3" />
-                                <span>{stats.sms_growth || '+0%'} vs last week</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 3. MINIMALISTIC QUICK ACCESS TILES */}
-                <div className="space-y-2.5">
-                    <div className="flex items-center justify-between px-0.5">
-                        <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                            Modules
-                        </h2>
-                    </div>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-                        {modules.map((mod) => {
-                            const IconComponent = mod.icon;
-                            return (
-                                <Link
-                                    key={mod.title}
-                                    href={mod.href}
-                                    className="group p-3 rounded-xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.06] hover:border-[#16A34A]/50 dark:hover:border-[#16A34A]/50 shadow-2xs hover:shadow-xs transition-all flex flex-col justify-between gap-3"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-white/[0.05] group-hover:bg-[#16A34A]/10 text-slate-600 dark:text-slate-300 group-hover:text-[#16A34A] flex items-center justify-center transition-colors">
-                                            <IconComponent className="w-4 h-4" />
+                {/* 2. DUAL OPERATIONAL PILLARS (UNIFORM KARDOVO PALETTE) */}
+                {(viewMode === 'all' || viewMode === 'invitations' || viewMode === 'ticketing') && (
+                    <div className={`grid grid-cols-1 ${viewMode === 'all' ? 'md:grid-cols-2' : 'grid-cols-1'} gap-3`}>
+                        
+                        {/* ── PILLAR 1: DIGITAL PASSES & INVITATIONS ── */}
+                        {(viewMode === 'all' || viewMode === 'invitations') && (
+                            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between hover:border-[#16A34A]/30 transition-all">
+                                <div>
+                                    <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-white/[0.05]">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-[#16A34A] flex items-center justify-center">
+                                                <Send className="w-3.5 h-3.5" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-display">
+                                                    Invitations
+                                                </h2>
+                                                <p className="text-[10px] text-slate-400">
+                                                    Personalized cards, WhatsApp &amp; SMS delivery
+                                                </p>
+                                            </div>
                                         </div>
-                                        <ArrowRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-[#16A34A] group-hover:translate-x-0.5 transition-all" />
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#16A34A] transition-colors truncate">
-                                            {mod.title}
-                                        </h3>
-                                        <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                                            {mod.detail}
-                                        </p>
+
+                                    {/* Metrics Trio */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04]">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                                Invited Guests
+                                            </span>
+                                            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display">
+                                                {(stats.total_guests || 0).toLocaleString()}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04]">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                                WhatsApp
+                                            </span>
+                                            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display">
+                                                {(stats.whatsapp_delivered || 0).toLocaleString()}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04]">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                                SMS Sent
+                                            </span>
+                                            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display">
+                                                {(stats.sms_delivered || 0).toLocaleString()}
+                                            </div>
+                                        </div>
                                     </div>
-                                </Link>
-                            );
-                        })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── PILLAR 2: COMMERCIAL TICKETING & BOX OFFICE ── */}
+                        {(viewMode === 'all' || viewMode === 'ticketing') && (
+                            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between hover:border-[#16A34A]/30 transition-all">
+                                <div>
+                                    <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-white/[0.05]">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-[#16A34A] flex items-center justify-center">
+                                                <Tag className="w-3.5 h-3.5" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white font-display">
+                                                    Ticketing
+                                                </h2>
+                                                <p className="text-[10px] text-slate-400">
+                                                    Online sales, revenue &amp; gate admissions
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Metrics Trio */}
+                                    <div className="grid grid-cols-3 gap-2">
+                                        <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04]">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                                Revenue
+                                            </span>
+                                            <div className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-display truncate">
+                                                {formatTzs(stats.ticket_revenue)}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04]">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                                Tickets Sold
+                                            </span>
+                                            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display">
+                                                {(stats.total_tickets_sold || 0).toLocaleString()}
+                                            </div>
+                                        </div>
+
+                                        <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-100 dark:border-white/[0.04]">
+                                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                                                Admitted
+                                            </span>
+                                            <div className="text-base sm:text-lg font-black text-slate-900 dark:text-white font-display">
+                                                {(stats.checked_in_tickets || 0).toLocaleString()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </div>
+                )}
+
+                {/* 3. PLATFORM TELEMETRY & DISPATCH VELOCITY (FULL WIDTH) */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                        <div>
+                            <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white font-display">
+                                Platform Dispatch Velocity
+                            </h3>
+                            <p className="text-[10px] text-slate-400">
+                                7-day WhatsApp vs SMS message volume
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3 text-[11px] font-bold">
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-[#16A34A]" />
+                                <span className="text-slate-600 dark:text-slate-300">WhatsApp</span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-slate-400 dark:bg-slate-500" />
+                                <span className="text-slate-600 dark:text-slate-300">SMS</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full h-[180px] sm:h-[220px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={stats.traffic_data || []} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorWhatsapp" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#16A34A" stopOpacity={0.25}/>
+                                        <stop offset="95%" stopColor="#16A34A" stopOpacity={0}/>
+                                    </linearGradient>
+                                    <linearGradient id="colorSms" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#64748b" stopOpacity={0.2}/>
+                                        <stop offset="95%" stopColor="#64748b" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" strokeOpacity={0.12} />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={4} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} />
+                                <Tooltip 
+                                    contentStyle={{ backgroundColor: '#07111D', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', fontSize: '11px', color: '#fff' }}
+                                    itemStyle={{ color: '#e2e8f0', fontSize: '11px', fontWeight: 'bold' }}
+                                />
+                                <Area type="monotone" dataKey="whatsapp" stroke="#16A34A" strokeWidth={2} fillOpacity={1} fill="url(#colorWhatsapp)" />
+                                <Area type="monotone" dataKey="sms" stroke="#64748b" strokeWidth={1.5} fillOpacity={1} fill="url(#colorSms)" />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
 

@@ -52,6 +52,13 @@ import {
     Layers,
     TrendingUp,
     Palette,
+    Briefcase,
+    Crown,
+    CreditCard,
+    Building2,
+    ShieldCheck,
+    Wallet,
+    ArrowUpRight,
     X
 } from 'lucide-react';
 
@@ -79,6 +86,7 @@ export default function TicketingPortal({
     const [passDesignerOpen, setPassDesignerOpen] = useState(false);
     const [designerTab, setDesignerTab] = useState('card'); // 'card' | 'stub' | 'details'
     const [coverUploadPreview, setCoverUploadPreview] = useState(null);
+    const [settingsCoverPreview, setSettingsCoverPreview] = useState(null);
     const [expandedOrderId, setExpandedOrderId] = useState(null);
 
     useEffect(() => {
@@ -143,6 +151,11 @@ export default function TicketingPortal({
         occasion_type: selectedEvent?.occasion_type || 'event',
         cover_photo: selectedEvent?.cover_photo || '',
         cover_image: null,
+        payout_method: selectedEvent?.payout_method || 'mobile_money',
+        payout_provider: selectedEvent?.payout_provider || 'M-Pesa (Vodacom)',
+        payout_account_number: selectedEvent?.payout_account_number || '',
+        payout_account_name: selectedEvent?.payout_account_name || '',
+        payout_bank_branch: selectedEvent?.payout_bank_branch || '',
     });
 
     const [customDesignPreview, setCustomDesignPreview] = useState(null);
@@ -278,7 +291,8 @@ export default function TicketingPortal({
     const occasionCategories = [
         { id: 'event', label: 'Festival / Event', icon: PartyPopper, placeholder: 'Serengeti Safari & Cultural Festival 2026', presetVenue: 'Mlimani City Conference Hall' },
         { id: 'concert', label: 'Concert / Music', icon: Music, placeholder: 'Nandy Live in Concert: Dar Tour', presetVenue: 'Warehouse Arena Dar' },
-        { id: 'flight', label: 'Flight / Air Travel', icon: Plane, placeholder: 'Precision Air: DAR to JRO Express Flight', presetVenue: "Julius Nyerere Int'l Airport (JNIA)" },
+        { id: 'fashion', label: 'Fashion & Runway', icon: Crown, placeholder: 'Swahili Fashion Week & Awards 2026', presetVenue: 'The Warehouse Arena Masaki' },
+        { id: 'corporate', label: 'Corporate Event', icon: Briefcase, placeholder: 'Tanzania CEO Leadership & Investment Summit', presetVenue: 'JNICC Conference Centre Dar' },
         { id: 'hotel', label: 'Hotel & Getaway', icon: Hotel, placeholder: 'Serena Zanzibar Weekend Luxury Retreat', presetVenue: 'Zanzibar Serena Hotel' },
         { id: 'nightlife', label: 'Nightlife & Cruise', icon: Sparkles, placeholder: 'All White Sunset Yacht Party', presetVenue: 'Slipway Waterfront Marina' },
         { id: 'sports', label: 'Sports & Marathon', icon: Trophy, placeholder: 'Kilimanjaro Half Marathon 2026', presetVenue: 'Moshi Sports Stadium' },
@@ -287,7 +301,8 @@ export default function TicketingPortal({
 
     const curatedCovers = [
         { type: 'concert', label: 'Live Arena', url: 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=1200&q=80' },
-        { type: 'flight', label: 'Air Wing / Plane', url: 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80' },
+        { type: 'fashion', label: 'Runway Gala', url: '/images/categories/fashion.jpg' },
+        { type: 'corporate', label: 'Executive Summit', url: '/images/categories/corporate.jpg' },
         { type: 'hotel', label: 'Serena Resort', url: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80' },
         { type: 'nightlife', label: 'Nightlife Vibes', url: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80' },
         { type: 'sports', label: 'Marathon Runners', url: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1200&q=80' },
@@ -642,27 +657,27 @@ export default function TicketingPortal({
                             )}
                         </div>
 
-                        {/* Right: Storefront, Pass Design & Settings buttons */}
+                        {/* Right: Storefront, Pass Design & Settings buttons (Responsive Flex Wrap) */}
                         {selectedEvent && (
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:shrink-0 pt-1 sm:pt-0">
                                 <a
                                     href={route('events.publicTickets', selectedEvent.id)}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] shadow-xs transition active:scale-95"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] shadow-xs transition active:scale-95"
                                 >
-                                    <ExternalLink className="w-3.5 h-3.5" />
+                                    <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                                     <span>Storefront</span>
                                 </a>
 
                                 <button
                                     type="button"
                                     onClick={openPassDesigner}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition cursor-pointer shadow-xs active:scale-95"
-                                    title="Customize Ticket Pass Theme & Layout"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/50 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition cursor-pointer shadow-xs active:scale-95"
+                                    title="Customize Ticket Theme & Layout"
                                 >
-                                    <Palette className="w-3.5 h-3.5 text-[#16A34A] dark:text-emerald-400" />
-                                    <span>Pass Design</span>
+                                    <Palette className="w-3.5 h-3.5 text-[#16A34A] dark:text-emerald-400 shrink-0" />
+                                    <span>Ticket Design</span>
                                 </button>
 
                                 <button
@@ -679,10 +694,16 @@ export default function TicketingPortal({
                                             occasion_type: selectedEvent.occasion_type || 'event',
                                             cover_photo: selectedEvent.cover_photo || '',
                                             cover_image: null,
+                                            payout_method: selectedEvent.payout_method || 'mobile_money',
+                                            payout_provider: selectedEvent.payout_provider || (selectedEvent.payout_method === 'bank' ? 'CRDB Bank' : 'M-Pesa (Vodacom)'),
+                                            payout_account_number: selectedEvent.payout_account_number || '',
+                                            payout_account_name: selectedEvent.payout_account_name || '',
+                                            payout_bank_branch: selectedEvent.payout_bank_branch || '',
                                         });
+                                        setSettingsCoverPreview(selectedEvent.cover_photo || null);
                                         setSettingsModalOpen(true);
                                     }}
-                                    className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] transition cursor-pointer"
+                                    className="p-1.5 sm:p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] transition cursor-pointer"
                                     title="Occasion Settings"
                                 >
                                     <Settings className="w-4 h-4" />
@@ -703,7 +724,7 @@ export default function TicketingPortal({
                                 No Ticketed Occasion Yet
                             </h3>
                             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                                Create your first event, concert, flight, or hotel getaway to start selling tickets and digital passes.
+                                Create your first event, concert, or hotel getaway to start selling tickets and digital passes.
                             </p>
                         </div>
                         <button
@@ -720,20 +741,21 @@ export default function TicketingPortal({
                         {/* 3. CLEAN 4-METRIC GRID (No Duplicate Cards) */}
                         {selectedEventStats && (
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                                {/* Metric 1: Revenue */}
+                                {/* Metric 1: Organizer Net Revenue (94%) & Gross Total */}
                                 <div className="bg-white dark:bg-[#0B1524] p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs transition hover:border-emerald-500/30">
                                     <div className="flex items-center justify-between text-slate-400 mb-2">
-                                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Gross Revenue</span>
+                                        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Net Income (94%)</span>
                                         <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                            <DollarSign className="w-3.5 h-3.5" />
+                                            <Wallet className="w-3.5 h-3.5" />
                                         </div>
                                     </div>
                                     <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
-                                        {currency} {(selectedEventStats.total_revenue || 0).toLocaleString()}
+                                        {currency} {(selectedEventStats.total_organizer_net || 0).toLocaleString()}
                                     </div>
-                                    <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-1">
-                                        Completed ticket sales
-                                    </p>
+                                    <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 font-medium mt-1 pt-1 border-t border-slate-100 dark:border-white/[0.04]">
+                                        <span>Gross: {currency} {(selectedEventStats.total_revenue || 0).toLocaleString()}</span>
+                                        <span className="text-slate-400 dark:text-slate-500">6% fee: {currency} {(selectedEventStats.total_platform_fee || 0).toLocaleString()}</span>
+                                    </div>
                                 </div>
 
                                 {/* Metric 2: Tickets Sold */}
@@ -794,19 +816,19 @@ export default function TicketingPortal({
                             </div>
                         )}
 
-                        {/* 4. CLEAN SEGMENTED TAB SWITCHER */}
-                        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/[0.08] pb-2">
+                        {/* 4. CLEAN SEGMENTED TAB SWITCHER (Touch-friendly & Horizontally Scrollable on Mobile) */}
+                        <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/[0.08] pb-2 overflow-x-auto scrollbar-none -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('tiers')}
-                                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     activeTab === 'tiers'
                                         ? 'bg-[#16A34A] text-white shadow-xs'
                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
                                 }`}
                             >
-                                <Tag className="w-3.5 h-3.5" />
-                                <span>Ticket Tiers & Pricing</span>
+                                <Tag className="w-3.5 h-3.5 shrink-0" />
+                                <span>Ticket Tiers</span>
                                 <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                                     activeTab === 'tiers' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-white/[0.08] text-slate-500 dark:text-slate-400'
                                 }`}>
@@ -817,14 +839,14 @@ export default function TicketingPortal({
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('tickets')}
-                                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     activeTab === 'tickets'
                                         ? 'bg-[#16A34A] text-white shadow-xs'
                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
                                 }`}
                             >
-                                <Ticket className="w-3.5 h-3.5" />
-                                <span>Attendees & Issued Passes</span>
+                                <Ticket className="w-3.5 h-3.5 shrink-0" />
+                                <span>Attendees & Passes</span>
                                 <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                                     activeTab === 'tickets' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-white/[0.08] text-slate-500 dark:text-slate-400'
                                 }`}>
@@ -835,18 +857,38 @@ export default function TicketingPortal({
                             <button
                                 type="button"
                                 onClick={() => setActiveTab('orders')}
-                                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                     activeTab === 'orders'
                                         ? 'bg-[#16A34A] text-white shadow-xs'
                                         : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
                                 }`}
                             >
-                                <ShoppingBag className="w-3.5 h-3.5" />
+                                <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
                                 <span>Recent Orders</span>
                                 <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full ${
                                     activeTab === 'orders' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-white/[0.08] text-slate-500 dark:text-slate-400'
                                 }`}>
                                     {selectedEventOrders.length}
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('payout')}
+                                className={`shrink-0 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                    activeTab === 'payout'
+                                        ? 'bg-[#16A34A] text-white shadow-xs'
+                                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20'
+                                }`}
+                            >
+                                <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                                <span>Payout (94% Net)</span>
+                                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                    selectedEvent?.payout_account_number
+                                        ? (activeTab === 'payout' ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400')
+                                        : (activeTab === 'payout' ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-white/[0.08] text-slate-500 dark:text-slate-400')
+                                }`}>
+                                    {selectedEvent?.payout_account_number ? 'Connected' : 'Setup'}
                                 </span>
                             </button>
                         </div>
@@ -993,7 +1035,7 @@ export default function TicketingPortal({
                                 {/* Search & Filters Toolbar */}
                                 <div className="p-4 border-b border-slate-100 dark:border-white/[0.08] flex flex-col md:flex-row md:items-center justify-between gap-3">
                                     <form onSubmit={handleFilterSubmit} className="flex flex-wrap items-center gap-2.5 flex-1">
-                                        <div className="relative min-w-[220px] flex-1 max-w-sm">
+                                        <div className="relative w-full sm:w-auto sm:min-w-[220px] flex-1 max-w-sm">
                                             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                                             <input
                                                 type="text"
@@ -1290,6 +1332,278 @@ export default function TicketingPortal({
                                 )}
                             </div>
                         )}
+
+                        {/* ── TAB 4: CONNECTED PAYOUT ACCOUNT & 6% / 94% SPLIT ── */}
+                        {activeTab === 'payout' && (
+                            <div className="space-y-6">
+                                {/* Payout Split Explanation Header Card */}
+                                <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs p-5 sm:p-6">
+                                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                        <div className="flex items-start gap-3.5">
+                                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-[#16A34A] dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+                                                <Building2 className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                                                    Organizer Payout Routing & Revenue Split
+                                                </h2>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                                                    Connect your Mobile Money wallet or Bank Account where your ticket revenue is disbursed.
+                                                    Kardovo takes a standard <strong className="text-slate-700 dark:text-slate-200">6% platform fee</strong> per ticket issued, and the remaining <strong className="text-emerald-600 dark:text-emerald-400">94% of funds</strong> are directed straight to your connected account.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 self-start md:self-center shrink-0">
+                                            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full ${
+                                                selectedEvent?.payout_account_number
+                                                    ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20'
+                                                    : 'bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/10'
+                                            }`}>
+                                                {selectedEvent?.payout_account_number ? (
+                                                    <>
+                                                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                        <span>Account Connected</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <AlertCircle className="w-3.5 h-3.5 text-slate-400" />
+                                                        <span>Not Configured</span>
+                                                    </>
+                                                )}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Financial Split Visualizer - Clean Kardovo Styling */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-6 pt-6 border-t border-slate-100 dark:border-white/[0.06]">
+                                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#08121E] border border-slate-200/70 dark:border-white/[0.08]">
+                                            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                                <span>Gross Sales</span>
+                                                <span className="font-mono text-[10px] text-slate-400">100%</span>
+                                            </div>
+                                            <div className="text-xl font-black text-slate-900 dark:text-white font-display mt-1">
+                                                {currency} {(selectedEventStats?.total_revenue || 0).toLocaleString()}
+                                            </div>
+                                            <div className="text-[11px] text-slate-400 mt-0.5">
+                                                Total collected from ticket buyers
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#08121E] border border-slate-200/70 dark:border-white/[0.08]">
+                                            <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                                                <span>Kardovo Fee</span>
+                                                <span className="font-mono text-[10px] text-slate-500 dark:text-slate-400 font-bold">6.0%</span>
+                                            </div>
+                                            <div className="text-xl font-black text-slate-900 dark:text-white font-display mt-1">
+                                                {currency} {(selectedEventStats?.total_platform_fee || 0).toLocaleString()}
+                                            </div>
+                                            <div className="text-[11px] text-slate-400 mt-0.5">
+                                                Platform & ticketing processing fee
+                                            </div>
+                                        </div>
+
+                                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#08121E] border border-emerald-500/30 dark:border-emerald-500/30">
+                                            <div className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                                                <span>Net Income</span>
+                                                <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">94.0%</span>
+                                            </div>
+                                            <div className="text-xl font-black text-emerald-600 dark:text-emerald-400 font-display mt-1">
+                                                {currency} {(selectedEventStats?.total_organizer_net || 0).toLocaleString()}
+                                            </div>
+                                            <div className="text-[11px] text-slate-400 mt-0.5">
+                                                Directly payable to your account
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Form to Connect / Update Account */}
+                                <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] shadow-xs p-5 sm:p-6">
+                                    <form onSubmit={handleSettingsSubmit} className="space-y-5 max-w-3xl">
+                                        <div>
+                                            <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                                                Connected Account Details
+                                            </h3>
+                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                Choose whether to receive money via Mobile Money (M-Pesa, TigoPesa, Airtel Money, HaloPesa) or direct Bank Transfer.
+                                            </p>
+                                        </div>
+
+                                        {/* Payout Method Toggle */}
+                                        <div>
+                                            <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
+                                                Payout Method *
+                                            </label>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-md">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        settingsForm.setData({
+                                                            ...settingsForm.data,
+                                                            payout_method: 'mobile_money',
+                                                            payout_provider: 'M-Pesa (Vodacom)',
+                                                        });
+                                                    }}
+                                                    className={`p-3 rounded-xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                                                        settingsForm.data.payout_method === 'mobile_money'
+                                                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-[#16A34A] text-emerald-900 dark:text-emerald-300 font-bold shadow-2xs'
+                                                            : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                                                    }`}
+                                                >
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                                        settingsForm.data.payout_method === 'mobile_money' ? 'bg-[#16A34A] text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
+                                                    }`}>
+                                                        <Phone className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-bold">Mobile Money</div>
+                                                        <div className="text-[10px] text-slate-400">M-Pesa, Tigo, Airtel</div>
+                                                    </div>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        settingsForm.setData({
+                                                            ...settingsForm.data,
+                                                            payout_method: 'bank',
+                                                            payout_provider: 'CRDB Bank',
+                                                        });
+                                                    }}
+                                                    className={`p-3 rounded-xl border text-left transition flex items-center gap-3 cursor-pointer ${
+                                                        settingsForm.data.payout_method === 'bank'
+                                                            ? 'bg-emerald-50 dark:bg-emerald-950/40 border-[#16A34A] text-emerald-900 dark:text-emerald-300 font-bold shadow-2xs'
+                                                            : 'bg-slate-50 dark:bg-white/[0.02] border-slate-200 dark:border-white/10 text-slate-600 dark:text-slate-400 hover:border-slate-300'
+                                                    }`}
+                                                >
+                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                                        settingsForm.data.payout_method === 'bank' ? 'bg-[#16A34A] text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400'
+                                                    }`}>
+                                                        <Building2 className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-xs font-bold">Bank Transfer</div>
+                                                        <div className="text-[10px] text-slate-400">CRDB, NMB, etc.</div>
+                                                    </div>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Provider / Network */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <InputLabel
+                                                    htmlFor="payout_provider"
+                                                    value={settingsForm.data.payout_method === 'bank' ? 'Bank Name *' : 'Mobile Network *'}
+                                                    className="text-xs font-bold"
+                                                />
+                                                <select
+                                                    id="payout_provider"
+                                                    className="w-full text-xs mt-1 rounded-xl border-slate-300 dark:border-white/10 dark:bg-[#08121E] dark:text-white"
+                                                    value={settingsForm.data.payout_provider}
+                                                    onChange={(e) => settingsForm.setData('payout_provider', e.target.value)}
+                                                    required
+                                                >
+                                                    {settingsForm.data.payout_method === 'bank' ? (
+                                                        <>
+                                                            <option value="CRDB Bank">CRDB Bank</option>
+                                                            <option value="NMB Bank">NMB Bank</option>
+                                                            <option value="Stanbic Bank">Stanbic Bank</option>
+                                                            <option value="Standard Chartered">Standard Chartered</option>
+                                                            <option value="Absa Bank">Absa Bank</option>
+                                                            <option value="KCB Bank">KCB Bank</option>
+                                                            <option value="Exim Bank">Exim Bank</option>
+                                                            <option value="NCBA Bank">NCBA Bank</option>
+                                                            <option value="Diamond Trust Bank (DTB)">Diamond Trust Bank (DTB)</option>
+                                                            <option value="Other Bank">Other Bank</option>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <option value="M-Pesa (Vodacom)">M-Pesa (Vodacom)</option>
+                                                            <option value="TigoPesa (Yas)">TigoPesa (Yas)</option>
+                                                            <option value="Airtel Money">Airtel Money</option>
+                                                            <option value="HaloPesa">HaloPesa</option>
+                                                        </>
+                                                    )}
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <InputLabel
+                                                    htmlFor="payout_account_number"
+                                                    value={settingsForm.data.payout_method === 'bank' ? 'Account Number *' : 'Mobile Phone Number *'}
+                                                    className="text-xs font-bold"
+                                                />
+                                                <TextInput
+                                                    id="payout_account_number"
+                                                    type="text"
+                                                    className="w-full text-xs mt-1 font-mono"
+                                                    placeholder={settingsForm.data.payout_method === 'bank' ? 'e.g. 0150244983000' : 'e.g. 0754123456'}
+                                                    value={settingsForm.data.payout_account_number}
+                                                    onChange={(e) => settingsForm.setData('payout_account_number', e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <InputLabel
+                                                    htmlFor="payout_account_name"
+                                                    value="Account Name / Registered Owner *"
+                                                    className="text-xs font-bold"
+                                                />
+                                                <TextInput
+                                                    id="payout_account_name"
+                                                    type="text"
+                                                    className="w-full text-xs mt-1"
+                                                    placeholder="e.g. John Doe / Safari Ventures LTD"
+                                                    value={settingsForm.data.payout_account_name}
+                                                    onChange={(e) => settingsForm.setData('payout_account_name', e.target.value)}
+                                                    required
+                                                />
+                                            </div>
+
+                                            {settingsForm.data.payout_method === 'bank' && (
+                                                <div>
+                                                    <InputLabel
+                                                        htmlFor="payout_bank_branch"
+                                                        value="Bank Branch (Optional)"
+                                                        className="text-xs font-bold"
+                                                    />
+                                                    <TextInput
+                                                        id="payout_bank_branch"
+                                                        type="text"
+                                                        className="w-full text-xs mt-1"
+                                                        placeholder="e.g. Oysterbay Branch"
+                                                        value={settingsForm.data.payout_bank_branch}
+                                                        onChange={(e) => settingsForm.setData('payout_bank_branch', e.target.value)}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/60 dark:border-white/[0.06] flex items-start gap-3">
+                                            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                                                <strong>Automated Settlement:</strong> Kardovo retains 6% for card/ticketing infrastructure, and your 94% net balance is accounted for under this connected account.
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <PrimaryButton
+                                                type="submit"
+                                                disabled={settingsForm.processing}
+                                                className="text-xs bg-[#16A34A] hover:bg-[#15803D]"
+                                            >
+                                                {settingsForm.processing ? 'Saving...' : 'Save Connected Account'}
+                                            </PrimaryButton>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
             </div>
@@ -1511,7 +1825,8 @@ export default function TicketingPortal({
                                 >
                                     <option value="event">Festival / Event</option>
                                     <option value="concert">Concert / Music</option>
-                                    <option value="flight">Flight / Travel</option>
+                                    <option value="fashion">Fashion & Runway</option>
+                                    <option value="corporate">Corporate Event</option>
                                     <option value="hotel">Hotel & Getaway</option>
                                     <option value="nightlife">Nightlife & Cruise</option>
                                     <option value="sports">Sports & Match</option>
@@ -1557,6 +1872,155 @@ export default function TicketingPortal({
                             />
                         </div>
 
+                        {/* Portrait Poster / Flyer Upload */}
+                        <div>
+                            <div className="flex items-center justify-between">
+                                <InputLabel value="Occasion Poster / Flyer (Portrait)" className="text-xs font-bold" />
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Recommended: 3:4 Portrait</span>
+                            </div>
+                            <div className="mt-1.5 flex items-start gap-3">
+                                {settingsCoverPreview ? (
+                                    <div className="relative w-20 aspect-[3/4] rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-xs shrink-0 group">
+                                        <img src={settingsCoverPreview} alt="Poster" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                settingsForm.setData({
+                                                    ...settingsForm.data,
+                                                    cover_image: null,
+                                                    cover_photo: '',
+                                                });
+                                                setSettingsCoverPreview(null);
+                                            }}
+                                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 hover:bg-black text-white text-[10px] flex items-center justify-center cursor-pointer transition"
+                                            title="Remove image"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="w-20 aspect-[3/4] rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] flex flex-col items-center justify-center text-slate-400 shrink-0">
+                                        <Upload className="w-4 h-4 mb-0.5" />
+                                        <span className="text-[9px] font-medium">3:4</span>
+                                    </div>
+                                )}
+                                <div className="flex-1 space-y-1.5">
+                                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] cursor-pointer">
+                                        <Upload className="w-3.5 h-3.5 text-[#16A34A]" />
+                                        <span>{settingsCoverPreview ? 'Change Portrait Poster' : 'Upload Portrait Poster'}</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    settingsForm.setData('cover_image', file);
+                                                    setSettingsCoverPreview(URL.createObjectURL(file));
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                                        Upload a vertical flyer or artwork (PNG, JPG, WebP) to display on the public marketplace cards and pass details.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Connected Payout Account (6% / 94% Revenue Routing) */}
+                        <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-white/[0.02] border border-slate-200/80 dark:border-white/[0.08] space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <CreditCard className="w-4 h-4 text-[#16A34A] dark:text-emerald-400" />
+                                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                                        Payout Account (94% Net)
+                                    </span>
+                                </div>
+                                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full font-mono">
+                                    Admin Fee: 6%
+                                </span>
+                            </div>
+
+                            <p className="text-[11px] text-slate-400 leading-relaxed">
+                                Money collected from ticket buyers will be routed to this account after the 6% Kardovo service fee.
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-2.5">
+                                <div>
+                                    <InputLabel value="Payout Method" className="text-[11px] font-bold" />
+                                    <select
+                                        className="w-full text-xs mt-1 rounded-xl border-slate-300 dark:border-white/10 dark:bg-[#08121E] dark:text-white"
+                                        value={settingsForm.data.payout_method}
+                                        onChange={(e) => {
+                                            const m = e.target.value;
+                                            settingsForm.setData({
+                                                ...settingsForm.data,
+                                                payout_method: m,
+                                                payout_provider: m === 'bank' ? 'CRDB Bank' : 'M-Pesa (Vodacom)',
+                                            });
+                                        }}
+                                    >
+                                        <option value="mobile_money">Mobile Money</option>
+                                        <option value="bank">Bank Account</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <InputLabel value={settingsForm.data.payout_method === 'bank' ? 'Bank' : 'Network'} className="text-[11px] font-bold" />
+                                    <select
+                                        className="w-full text-xs mt-1 rounded-xl border-slate-300 dark:border-white/10 dark:bg-[#08121E] dark:text-white"
+                                        value={settingsForm.data.payout_provider}
+                                        onChange={(e) => settingsForm.setData('payout_provider', e.target.value)}
+                                    >
+                                        {settingsForm.data.payout_method === 'bank' ? (
+                                            <>
+                                                <option value="CRDB Bank">CRDB Bank</option>
+                                                <option value="NMB Bank">NMB Bank</option>
+                                                <option value="Stanbic Bank">Stanbic Bank</option>
+                                                <option value="Standard Chartered">Standard Chartered</option>
+                                                <option value="Absa Bank">Absa Bank</option>
+                                                <option value="KCB Bank">KCB Bank</option>
+                                                <option value="Exim Bank">Exim Bank</option>
+                                                <option value="Other Bank">Other Bank</option>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <option value="M-Pesa (Vodacom)">M-Pesa (Vodacom)</option>
+                                                <option value="TigoPesa (Yas)">TigoPesa (Yas)</option>
+                                                <option value="Airtel Money">Airtel Money</option>
+                                                <option value="HaloPesa">HaloPesa</option>
+                                            </>
+                                        )}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                                <div>
+                                    <InputLabel value={settingsForm.data.payout_method === 'bank' ? 'Account Number' : 'Phone Number'} className="text-[11px] font-bold" />
+                                    <TextInput
+                                        type="text"
+                                        className="w-full text-xs mt-1 font-mono"
+                                        placeholder={settingsForm.data.payout_method === 'bank' ? '0150244983000' : '0754123456'}
+                                        value={settingsForm.data.payout_account_number}
+                                        onChange={(e) => settingsForm.setData('payout_account_number', e.target.value)}
+                                    />
+                                </div>
+
+                                <div>
+                                    <InputLabel value="Account Name" className="text-[11px] font-bold" />
+                                    <TextInput
+                                        type="text"
+                                        className="w-full text-xs mt-1"
+                                        placeholder="Full Name as Registered"
+                                        value={settingsForm.data.payout_account_name}
+                                        onChange={(e) => settingsForm.setData('payout_account_name', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Ticket Pass Customizer Shortcut Tile */}
                         <div className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-white/[0.02] hover:border-emerald-500/40 transition-all">
                             <div className="flex items-center gap-3 min-w-0">
@@ -1565,10 +2029,10 @@ export default function TicketingPortal({
                                 </div>
                                 <div className="min-w-0">
                                     <div className="text-xs font-bold text-slate-900 dark:text-white">
-                                        Ticket Pass Customizer
+                                        Ticket Design Customizer
                                     </div>
                                     <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                                        Customize pass colors, flyer artwork, and entry QR stub
+                                        Customize ticket colors, flyer artwork, and entry QR stub
                                     </div>
                                 </div>
                             </div>
@@ -1617,7 +2081,7 @@ export default function TicketingPortal({
                             </div>
                             <div>
                                 <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">
-                                    Ticket Pass Customizer
+                                    Ticket Design Customizer
                                 </h3>
                                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
                                     Personalize the authentic gate pass for attendee downloads and mobile display
@@ -1901,10 +2365,10 @@ export default function TicketingPortal({
                                                     <label className="flex flex-col items-center justify-center py-4 rounded-lg border border-dashed border-emerald-300 dark:border-emerald-500/30 hover:border-[#16A34A] cursor-pointer transition bg-white dark:bg-slate-900/40">
                                                         <Upload className="w-5 h-5 text-[#16A34A] mb-1" />
                                                         <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
-                                                            Click to Upload Pass Flyer
+                                                            Click to Upload Portrait Pass Flyer
                                                         </span>
                                                         <span className="text-[10px] text-slate-400">
-                                                            PNG, JPG, WebP up to 10MB
+                                                            Vertical / Portrait image (PNG, JPG, WebP)
                                                         </span>
                                                         <input type="file" accept="image/*" onChange={handleCustomDesignFile} className="hidden" />
                                                     </label>
@@ -2127,7 +2591,7 @@ export default function TicketingPortal({
                                     disabled={passDesignForm.processing}
                                     className="text-xs bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] shadow-xs"
                                 >
-                                    {passDesignForm.processing ? 'Saving...' : 'Save Pass Design'}
+                                    {passDesignForm.processing ? 'Saving...' : 'Save Ticket Design'}
                                 </PrimaryButton>
                             </div>
                         </div>
@@ -2302,29 +2766,55 @@ export default function TicketingPortal({
                             </div>
                         </div>
 
-                        {/* 5. Cover Image */}
+                        {/* 5. Portrait Cover / Poster Image */}
                         <div>
-                            <InputLabel value="Cover Image (Optional)" className="text-xs font-bold" />
-                            <div className="mt-1 flex items-center gap-2">
-                                <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] cursor-pointer">
-                                    <Upload className="w-3.5 h-3.5" />
-                                    <span>Upload Image</span>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        className="hidden"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                occasionForm.setData('cover_image', file);
-                                                setCoverUploadPreview(URL.createObjectURL(file));
-                                            }
-                                        }}
-                                    />
-                                </label>
-                                {coverUploadPreview && (
-                                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Image attached</span>
+                            <div className="flex items-center justify-between">
+                                <InputLabel value="Occasion Poster / Flyer (Portrait)" className="text-xs font-bold" />
+                                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">Recommended: 3:4 Portrait</span>
+                            </div>
+                            <div className="mt-1.5 flex items-start gap-3">
+                                {coverUploadPreview ? (
+                                    <div className="relative w-20 aspect-[3/4] rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-xs shrink-0 group">
+                                        <img src={coverUploadPreview} alt="Poster Preview" className="w-full h-full object-cover" />
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                occasionForm.setData('cover_image', null);
+                                                setCoverUploadPreview(null);
+                                            }}
+                                            className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 hover:bg-black text-white text-[10px] flex items-center justify-center cursor-pointer transition"
+                                            title="Remove image"
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="w-20 aspect-[3/4] rounded-xl border border-dashed border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/[0.02] flex flex-col items-center justify-center text-slate-400 shrink-0">
+                                        <Upload className="w-4 h-4 mb-0.5" />
+                                        <span className="text-[9px] font-medium">3:4</span>
+                                    </div>
                                 )}
+                                <div className="flex-1 space-y-1.5">
+                                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/10 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/[0.05] cursor-pointer">
+                                        <Upload className="w-3.5 h-3.5 text-[#16A34A]" />
+                                        <span>{coverUploadPreview ? 'Change Portrait Poster' : 'Upload Portrait Poster'}</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    occasionForm.setData('cover_image', file);
+                                                    setCoverUploadPreview(URL.createObjectURL(file));
+                                                }
+                                            }}
+                                        />
+                                    </label>
+                                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                                        Upload a vertical flyer/poster (PNG, JPG, WebP). Displayed in portrait format across the tickets marketplace.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>

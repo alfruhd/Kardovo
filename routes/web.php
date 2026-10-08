@@ -41,8 +41,10 @@ Route::post('/t/{ticket_number}/email', [PublicTicketController::class, 'sendEma
 Route::post('/events/{event}/checkout-tickets', [TicketCheckoutController::class, 'checkout'])->middleware('throttle:60,1')->name('tickets.checkout');
 Route::get('/tickets/order/{order_number}', [TicketCheckoutController::class, 'orderSuccess'])->name('tickets.orderSuccess');
 
-// Instant Dev Role Switcher
-Route::post('/dev/switch-user', [AuthenticatedSessionController::class, 'switchUser'])->name('dev.switchUser');
+// Instant Dev Role Switcher (Local & Testing environments only)
+if (app()->environment('local', 'testing')) {
+    Route::post('/dev/switch-user', [AuthenticatedSessionController::class, 'switchUser'])->name('dev.switchUser');
+}
 
 // Public Root Redirect
 Route::get('/', function () {

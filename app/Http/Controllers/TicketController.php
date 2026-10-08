@@ -34,6 +34,8 @@ class TicketController extends Controller
 
         $events = $eventsQuery->latest('event_date')->get()->map(function ($ev) {
             $ev->total_revenue = (float) $ev->ticketOrders()->where('payment_status', 'paid')->sum('total_amount');
+            $ev->total_platform_fee = (float) $ev->ticketOrders()->where('payment_status', 'paid')->sum('platform_fee');
+            $ev->total_organizer_net = (float) $ev->ticketOrders()->where('payment_status', 'paid')->sum('organizer_net_amount');
             $ev->total_sold = (int) $ev->tickets()->where('status', '!=', 'cancelled')->count();
             $ev->total_capacity = (int) $ev->ticketTiers()->sum('capacity');
 
@@ -44,6 +46,8 @@ class TicketController extends Controller
 
         $globalStats = [
             'total_revenue' => (float) TicketOrder::whereIn('event_id', $allEventIds)->where('payment_status', 'paid')->sum('total_amount'),
+            'total_platform_fee' => (float) TicketOrder::whereIn('event_id', $allEventIds)->where('payment_status', 'paid')->sum('platform_fee'),
+            'total_organizer_net' => (float) TicketOrder::whereIn('event_id', $allEventIds)->where('payment_status', 'paid')->sum('organizer_net_amount'),
             'total_tickets_sold' => (int) Ticket::whereIn('event_id', $allEventIds)->where('status', '!=', 'cancelled')->count(),
             'total_orders' => (int) TicketOrder::whereIn('event_id', $allEventIds)->count(),
             'total_checked_in' => (int) Ticket::whereIn('event_id', $allEventIds)->where('status', 'checked_in')->count(),
@@ -67,10 +71,30 @@ class TicketController extends Controller
         $selectedEventTickets = null;
 
         if ($selectedEvent) {
+            $totalRevenue = (float) $selectedEvent->ticketOrders()->where('payment_status', 'paid')->sum('total_amount');
+            $totalPlatformFee = (float) $selectedEvent->ticketOrders()->where('payment_status', 'paid')->sum('platform_fee');
+            $totalOrganizerNet = (float) $selectedEvent->ticketOrders()->where('payment_status', 'paid')->sum('organizer_net_amount');
+
+            // Fallback for orders created before split fields if any
+            if ($totalRevenue > 0 && $totalPlatformFee <= 0 && $totalOrganizerNet <= 0) {
+                $totalPlatformFee = round($totalRevenue * 0.06, 2);
+                $totalOrganizerNet = round($totalRevenue * 0.94, 2);
+            }
+
             $selectedEventStats = [
                 'ticketing_enabled' => (bool) $selectedEvent->ticketing_enabled,
                 'total_sold' => (int) $selectedEvent->tickets()->where('status', '!=', 'cancelled')->count(),
-                'total_revenue' => (float) $selectedEvent->ticketOrders()->where('payment_status', 'paid')->sum('total_amount'),
+                'total_revenue' => $totalRevenue,
+                'total_platform_fee' => $totalPlatformFee,
+                'total_organizer_net' => $totalOrganizerNet,
+                'platform_fee_percent' => 6.0,
+                'organizer_net_percent' => 94.0,
+                'payout_status' => $selectedEvent->payout_status ?? 'unconfigured',
+                'payout_method' => $selectedEvent->payout_method ?? 'mobile_money',
+                'payout_provider' => $selectedEvent->payout_provider,
+                'payout_account_number' => $selectedEvent->payout_account_number,
+                'payout_account_name' => $selectedEvent->payout_account_name,
+                'payout_bank_branch' => $selectedEvent->payout_bank_branch,
                 'total_capacity' => (int) $selectedEvent->ticketTiers()->sum('capacity'),
                 'total_checked_in' => (int) $selectedEvent->tickets()->where('status', 'checked_in')->count(),
             ];
@@ -165,7 +189,7 @@ class TicketController extends Controller
 
         $validated = $request->validate([
             'title' => 'required|string|min:3|max:255',
-            'occasion_type' => 'required|string|in:event,concert,flight,hotel,nightlife,sports,conference,other',
+            'occasion_type' => 'required|string|in:event,concert,hotel,nightlife,sports,fashion,corporate,conference,other',
             'event_date' => 'required|date',
             'event_time' => 'nullable|string|max:50',
             'venue' => 'required|string|min:2|max:255',
@@ -199,11 +223,11 @@ class TicketController extends Controller
         if (! $coverPhoto) {
             $coverPhoto = match ($validated['occasion_type']) {
                 'concert' => 'https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?auto=format&fit=crop&w=1200&q=80',
-                'flight' => 'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=1200&q=80',
                 'hotel' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
                 'nightlife' => 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=1200&q=80',
                 'sports' => 'https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1200&q=80',
-                'conference' => 'https://images.unsplash.com/photo-1505373877841-8d25f7d46678?auto=format&fit=crop&w=1200&q=80',
+                'fashion' => '/images/categories/fashion.jpg',
+                'corporate', 'conference' => '/images/categories/corporate.jpg',
                 default => 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1200&q=80',
             };
         }
@@ -258,9 +282,15 @@ class TicketController extends Controller
             'ticket_instructions' => 'nullable|string|max:2000',
             'ticket_sales_end_at' => 'nullable|date',
             'is_public' => 'nullable|boolean',
-            'occasion_type' => 'nullable|string|in:event,concert,flight,hotel,nightlife,sports,conference,other',
+            'occasion_type' => 'nullable|string|in:event,concert,hotel,nightlife,sports,fashion,corporate,conference,other',
             'cover_photo' => 'nullable|string|max:2000',
             'cover_image' => 'nullable|file|mimes:jpeg,png,jpg,webp,avif|max:10240',
+            // Connected payout account fields
+            'payout_method' => 'nullable|string|in:mobile_money,bank',
+            'payout_provider' => 'nullable|string|max:60',
+            'payout_account_number' => 'nullable|string|max:60',
+            'payout_account_name' => 'nullable|string|max:120',
+            'payout_bank_branch' => 'nullable|string|max:100',
         ]);
 
         $updateData = [
@@ -269,6 +299,21 @@ class TicketController extends Controller
             'ticket_instructions' => $validated['ticket_instructions'] ?? null,
             'ticket_sales_end_at' => $validated['ticket_sales_end_at'] ?? null,
         ];
+
+        // Process payout account settings if submitted
+        if ($request->has('payout_method')) {
+            $updateData['payout_method'] = $validated['payout_method'] ?? 'mobile_money';
+            $updateData['payout_provider'] = $validated['payout_provider'] ?? null;
+            $updateData['payout_account_number'] = $validated['payout_account_number'] ?? null;
+            $updateData['payout_account_name'] = $validated['payout_account_name'] ?? null;
+            $updateData['payout_bank_branch'] = $validated['payout_bank_branch'] ?? null;
+
+            if (! empty($updateData['payout_account_number']) && ! empty($updateData['payout_provider'])) {
+                $updateData['payout_status'] = 'active';
+            } elseif (empty($updateData['payout_account_number'])) {
+                $updateData['payout_status'] = 'unconfigured';
+            }
+        }
 
         if ($request->has('is_public')) {
             $updateData['is_public'] = $request->boolean('is_public');

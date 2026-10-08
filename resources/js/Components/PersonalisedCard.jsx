@@ -88,9 +88,16 @@ function isColorDark(hex) {
 
 export default function PersonalisedCard({ 
     guest, 
+    guestName: guestNameProp,
+    cardNumber: cardNumberProp,
+    allowance: allowanceProp,
     event, 
     template, 
     interactive = false,
+    editorMode = false,
+    activeElementKey = null,
+    onSelectElement = null,
+    onStartDrag = null,
     onDownload,
     className = "" 
 }) {
@@ -101,7 +108,7 @@ export default function PersonalisedCard({
     const [isFullscreen, setIsFullscreen] = useState(false);
 
     // Guest data with smart fallbacks
-    const guestName = guest?.name || 'Alfred Mashauri';
+    const guestName = guestNameProp || guest?.name || 'Alfred Mashauri';
     const eventTitle = event?.title || 'Neema & Baraka — Wedding Reception';
     const eventDate = event?.event_date ? (
         typeof event.event_date === 'string' && event.event_date.match(/^\d{4}-\d{2}-\d{2}/)
@@ -110,11 +117,11 @@ export default function PersonalisedCard({
     ) : 'Monday, 14 September 2026';
     const eventTime = event?.event_time || '4:00 PM — Reception & Dinner';
     const venue = event?.venue || 'Kunduchi Beach Gardens, Dar es Salaam';
-    const cardNumber = guest?.card_number || 'KDV-2026-004821';
+    const cardNumber = cardNumberProp || guest?.card_number || 'KDV-2026-004821';
     const uniqueCode = guest?.unique_code || '29841872';
     const qrToken = guest?.qr_token || 'kdv_alfred_mashauri_29841872';
     const maxEntries = guest?.max_entries || 2;
-    const cleanAllowance = guest?.category || (guest?.allowance_label && !guest.allowance_label.includes('scan up') && !guest.allowance_label.includes('•') ? guest.allowance_label : (maxEntries > 1 ? (maxEntries === 2 ? 'Double Entry' : `${maxEntries} Entries`) : 'Single Entry'));
+    const cleanAllowance = allowanceProp || guest?.category || (guest?.allowance_label && !guest.allowance_label.includes('scan up') && !guest.allowance_label.includes('•') ? guest.allowance_label : (maxEntries > 1 ? (maxEntries === 2 ? 'Double Entry' : `${maxEntries} Entries`) : 'Single Entry'));
     const category = cleanAllowance;
     const allowanceLabel = cleanAllowance.toUpperCase();
     const categoryText = cleanAllowance.toUpperCase();
@@ -198,7 +205,7 @@ export default function PersonalisedCard({
 
     const brandColorFrom = template?.brand_color_from || '#EBF4FF';
     const brandColorTo = template?.brand_color_to || '#C7E2FE';
-    const headline = elementsConfig.headline_text || template?.headline || 'EXCLUSIVE INVITATION PASS';
+    const headline = elementsConfig.headline_text || template?.headline || '';
     const footerText = elementsConfig.footer_text || template?.footer_text || '';
 
     // Accent color logic
@@ -232,7 +239,7 @@ export default function PersonalisedCard({
     // Text & Container Palette depending on Light/Dark background
 
     // Custom art text fields
-    const headlineText = elementsConfig.headline_text || template?.headline || (isEngagement ? 'Engagement Invitation' : 'WEDDING INVITATION');
+    const headlineText = elementsConfig.headline_text || template?.headline || (isEngagement ? 'Engagement Invitation' : '');
     const coupleNames = elementsConfig.couple_names || (isEngagement ? 'Adel & Laila' : 'Zamroth & Husna');
     const subtitleText = elementsConfig.subtitle_text || 'We invite your pleasure to come to our Engagement Party of';
     const dateMonth = elementsConfig.date_month || (isEngagement ? 'APRIL' : 'JANUARY');
@@ -335,15 +342,23 @@ export default function PersonalisedCard({
         hide_badge_box: false
     };
 
-    const isCleanName = Boolean(
+    const isCustomArt = Boolean(template?.template_type === 'custom_art' || template?.image_path || imagePath);
+
+    const isCleanName = isCustomArt || Boolean(
         nameCfg.clean_text === true || nameCfg.clean_text === 'true' || nameCfg.clean_text === 1 || nameCfg.clean_text === '1' ||
         nameCfg.hide_plaque_box === true || nameCfg.hide_plaque_box === 'true' || nameCfg.hide_plaque_box === 1 || nameCfg.hide_plaque_box === '1' ||
         nameCfg.hide_name_box === true || nameCfg.hide_name_box === 'true' || nameCfg.hide_name_box === 1 || nameCfg.hide_name_box === '1'
     );
 
-    const isCleanAllowance = Boolean(
+    const isCleanAllowance = isCustomArt || Boolean(
         allowanceCfg.clean_text === true || allowanceCfg.clean_text === 'true' || allowanceCfg.clean_text === 1 || allowanceCfg.clean_text === '1' ||
         allowanceCfg.hide_badge_box === true || allowanceCfg.hide_badge_box === 'true' || allowanceCfg.hide_badge_box === 1 || allowanceCfg.hide_badge_box === '1'
+    );
+
+    const isTransparentQr = Boolean(
+        qrCfg.transparent_bg === true || qrCfg.transparent_bg === 'true' || qrCfg.transparent_bg === 1 || qrCfg.transparent_bg === '1' ||
+        qrCfg.no_bg === true || qrCfg.no_bg === 'true' || qrCfg.no_bg === 1 || qrCfg.no_bg === '1' ||
+        qrCfg.transparentBg === true || qrCfg.lightColor === 'transparent' || qrCfg.lightColor === '#00000000'
     );
 
     const cardNumCfg = elementsConfig.card_number || { 
@@ -358,12 +373,15 @@ export default function PersonalisedCard({
         const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000';
         const scanUrl = `${origin}/card/${qrToken}`;
 
+        const qrDark = qrCfg.color || qrCfg.darkColor || (isEngagement ? '#6B1D2F' : '#0F172A');
+        const qrLight = isTransparentQr ? '#00000000' : (qrCfg.lightColor || '#FFFFFF');
+
         QRCode.toDataURL(scanUrl, {
             width: 400,
-            margin: 1,
+            margin: isTransparentQr ? 0 : 1,
             color: {
-                dark: qrCfg.darkColor || (isEngagement ? '#6B1D2F' : '#0F172A'),
-                light: '#FFFFFF',
+                dark: qrDark,
+                light: qrLight,
             },
             errorCorrectionLevel: 'M',
         }).then((url) => {
@@ -373,7 +391,7 @@ export default function PersonalisedCard({
         });
 
         return () => { isMounted = false; };
-    }, [qrToken, cardNumber, qrCfg.darkColor, qrCfg.size, isEngagement]);
+    }, [qrToken, cardNumber, qrCfg.darkColor, qrCfg.color, qrCfg.size, qrCfg.transparent_bg, qrCfg.no_bg, qrCfg.lightColor, isTransparentQr, isEngagement]);
 
     useEffect(() => {
         const handleKeyDown = (e) => {
@@ -534,7 +552,7 @@ export default function PersonalisedCard({
                     <div 
                         ref={cardRef}
                         id="kardovo-invitation-card"
-                        className={`${cardMaxWidthClass} rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 relative select-none bg-[#121212] group transition-all`}
+                        className={`${cardMaxWidthClass} rounded-none overflow-hidden shadow-2xl border border-slate-700/80 relative select-none bg-[#121212] group transition-all`}
                         style={{ aspectRatio: cardAspectRatio }}
                     >
                         <img 
@@ -548,8 +566,8 @@ export default function PersonalisedCard({
                             className="w-full h-full object-cover pointer-events-none absolute inset-0" 
                         />
 
-                        {/* Top Headline / Badge */}
-                        {template?.show_category_badge !== false && template?.show_headline !== false && elementsConfig.show_headline !== false && elementsConfig.show_category_badge !== false && (
+                        {/* Top Headline / Badge (Only if explicitly enabled) */}
+                        {Boolean(elementsConfig.show_headline === true && elementsConfig.headline_text) && (
                             isEngagement ? (
                                 <div 
                                     className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-4 py-1 rounded-full bg-white/90 border border-[#7A1E28]/30 shadow-sm transition-all whitespace-nowrap z-20"
@@ -697,7 +715,7 @@ export default function PersonalisedCard({
                         )}
 
                         {/* Guest Plaque */}
-                        {elementsConfig.show_guest_name !== false && (
+                        {Boolean(elementsConfig.show_guest_name === true) && (
                             <div 
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
                                 style={{ 
@@ -766,7 +784,7 @@ export default function PersonalisedCard({
                         )}
 
                         {/* Invitation Category / Allowance Badge */}
-                        {elementsConfig.show_allowance_badge !== false && (
+                        {Boolean(elementsConfig.show_allowance_badge === true) && (
                             <div 
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
                                 style={{ 
@@ -817,10 +835,10 @@ export default function PersonalisedCard({
                         )}
 
                         {/* QR Code Pass */}
-                        {template?.show_qr !== false && elementsConfig.show_qr !== false && (
+                        {Boolean(elementsConfig.show_qr === true) && (
                             <div className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all drop-shadow-md z-20"
                                 style={{ left: `${qrCfg.x || 50}%`, top: `${qrCfg.y || 85.5}%` }}>
-                                <div className="inline-block bg-white rounded-md overflow-hidden">
+                                <div className={`inline-block rounded-none overflow-hidden ${isTransparentQr ? 'bg-transparent' : 'bg-white p-1'}`}>
                                     {qrDataUrl ? (
                                         <img src={qrDataUrl} alt="QR Pass" style={{ width: `${parseFloat(qrCfg.size) || 72}px`, height: `${parseFloat(qrCfg.size) || 72}px` }} className="block" />
                                     ) : (
@@ -831,9 +849,9 @@ export default function PersonalisedCard({
                         )}
 
                         {/* Security Verification Code */}
-                        {template?.show_unique_code !== false && elementsConfig.show_unique_code !== false && (
-                            <div className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none font-mono transition-all drop-shadow-md z-20"
-                                style={{ left: `${cardNumCfg.x || 50}%`, top: `${cardNumCfg.y || 96}%`, color: isEngagement ? '#7A1E28' : (cardNumCfg.color || '#FFFFFF'), fontSize: `${cardNumCfg.fontSize || 9.5}px`, letterSpacing: '0.22em', fontWeight: 'bold', textShadow: isEngagement ? '0 1px 2px rgba(255,255,255,0.8)' : '0 2px 4px rgba(0,0,0,0.8)' }}>
+                        {Boolean(elementsConfig.show_unique_code === true) && (
+                            <div className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all drop-shadow-md z-20"
+                                style={{ left: `${cardNumCfg.x || 50}%`, top: `${cardNumCfg.y || 96}%`, color: isEngagement ? '#7A1E28' : (cardNumCfg.color || '#FFFFFF'), fontSize: `${cardNumCfg.fontSize || 9.5}px`, fontFamily: cardNumCfg.fontFamily || 'monospace', letterSpacing: '0.22em', fontWeight: 'bold', textShadow: isEngagement ? '0 1px 2px rgba(255,255,255,0.8)' : '0 2px 4px rgba(0,0,0,0.8)' }}>
                                 <span>{uniqueCode}</span>
                             </div>
                         )}
@@ -858,7 +876,7 @@ export default function PersonalisedCard({
                     <div 
                         ref={cardRef}
                         id="kardovo-invitation-card"
-                        className={`${cardMaxWidthClass} rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 relative select-none bg-[#121212] group transition-all`}
+                        className={`${cardMaxWidthClass} rounded-none overflow-hidden shadow-2xl border border-slate-700/80 relative select-none bg-[#121212] group transition-all`}
                         style={{ aspectRatio: cardAspectRatio }}
                     >
                         {/* Background Artwork */}
@@ -873,8 +891,8 @@ export default function PersonalisedCard({
                             className="w-full h-full object-cover pointer-events-none absolute inset-0" 
                         />
 
-                        {/* Top Headline Banner / Badge */}
-                        {template?.show_category_badge !== false && (elementsConfig.show_headline === true || elementsConfig.show_category_badge === true) && (
+                        {/* Top Headline Banner / Badge (Only if explicitly enabled) */}
+                        {Boolean(elementsConfig.show_headline === true && elementsConfig.headline_text) && (
                             <div 
                                 className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none px-3.5 py-0.5 rounded-full bg-black/60 border border-white/20 shadow-md transition-all whitespace-nowrap z-20"
                                 style={{
@@ -948,15 +966,37 @@ export default function PersonalisedCard({
                         )}
 
                         {/* 1. GUEST NAME (Fetched attendee name only - Zero shadow on clean text) */}
-                        {elementsConfig.show_guest_name !== false && (
+                        {Boolean(elementsConfig.show_guest_name === true) && (
                             <div 
-                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
+                                onPointerDown={editorMode && onStartDrag ? (e) => onStartDrag('guest_name', e) : undefined}
+                                onClick={editorMode && onSelectElement ? (e) => { e.stopPropagation(); onSelectElement('guest_name'); } : undefined}
+                                className={`absolute -translate-x-1/2 -translate-y-1/2 text-center z-20 ${
+                                    editorMode 
+                                        ? `pointer-events-auto cursor-grab active:cursor-grabbing select-none rounded-sm ${
+                                            activeElementKey === 'guest_name' 
+                                                ? 'ring-2 ring-emerald-500 bg-emerald-500/10 shadow-lg' 
+                                                : 'hover:ring-1 hover:ring-emerald-400/70'
+                                          }` 
+                                        : 'pointer-events-none transition-all'
+                                }`}
                                 style={{ 
                                     left: `${nameCfg.x ?? 50}%`, 
-                                    top: `${nameCfg.y ?? 71.5}%`, 
+                                    top: `${nameCfg.y ?? 70.5}%`, 
                                     width: isCleanName ? 'auto' : `${nameCfg.plaqueWidth ?? 84}%`,
+                                    padding: editorMode ? '4px 8px' : undefined
                                 }}
                             >
+                                {editorMode && activeElementKey === 'guest_name' && (
+                                    <>
+                                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-emerald-600 text-[9px] font-bold text-white uppercase tracking-wider whitespace-nowrap shadow-xs pointer-events-none">
+                                            Attendee Name
+                                        </div>
+                                        <span className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -bottom-1 -left-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                    </>
+                                )}
                                 {isCleanName ? (
                                     <div 
                                         className="font-black uppercase truncate"
@@ -997,15 +1037,37 @@ export default function PersonalisedCard({
                         )}
 
                         {/* 2. INVITATION CATEGORY (Same customizability as guest name - Zero shadow on clean text) */}
-                        {elementsConfig.show_allowance_badge !== false && (
+                        {Boolean(elementsConfig.show_allowance_badge === true) && (
                             <div 
-                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
+                                onPointerDown={editorMode && onStartDrag ? (e) => onStartDrag('allowance_badge', e) : undefined}
+                                onClick={editorMode && onSelectElement ? (e) => { e.stopPropagation(); onSelectElement('allowance_badge'); } : undefined}
+                                className={`absolute -translate-x-1/2 -translate-y-1/2 text-center z-20 ${
+                                    editorMode 
+                                        ? `pointer-events-auto cursor-grab active:cursor-grabbing select-none rounded-sm ${
+                                            activeElementKey === 'allowance_badge' 
+                                                ? 'ring-2 ring-emerald-500 bg-emerald-500/10 shadow-lg' 
+                                                : 'hover:ring-1 hover:ring-emerald-400/70'
+                                          }` 
+                                        : 'pointer-events-none transition-all'
+                                }`}
                                 style={{ 
                                     left: `${allowanceCfg.x ?? 50}%`, 
-                                    top: `${allowanceCfg.y ?? (finalRatioNum <= 0.62 ? 77.0 : 78.5)}%`, 
+                                    top: `${allowanceCfg.y ?? 64.5}%`, 
                                     width: isCleanAllowance ? 'auto' : (allowanceCfg.plaqueWidth ? `${allowanceCfg.plaqueWidth}%` : 'auto'),
+                                    padding: editorMode ? '3px 6px' : undefined
                                 }}
                             >
+                                {editorMode && activeElementKey === 'allowance_badge' && (
+                                    <>
+                                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-emerald-600 text-[9px] font-bold text-white uppercase tracking-wider whitespace-nowrap shadow-xs pointer-events-none">
+                                            Category Badge
+                                        </div>
+                                        <span className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -bottom-1 -left-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                    </>
+                                )}
                                 {isCleanAllowance ? (
                                     <div 
                                         className="font-extrabold tracking-widest uppercase truncate"
@@ -1048,12 +1110,37 @@ export default function PersonalisedCard({
                         )}
 
                         {/* 3. QR CODE PASS (Minimum size starting at 20px) */}
-                        {template?.show_qr !== false && elementsConfig.show_qr !== false && (
+                        {Boolean(elementsConfig.show_qr === true) && (
                             <div 
-                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all drop-shadow-md z-20"
-                                style={{ left: `${qrCfg.x ?? 50}%`, top: `${qrCfg.y ?? (finalRatioNum <= 0.62 ? 84.5 : 86.5)}%` }}
+                                onPointerDown={editorMode && onStartDrag ? (e) => onStartDrag('qr_code', e) : undefined}
+                                onClick={editorMode && onSelectElement ? (e) => { e.stopPropagation(); onSelectElement('qr_code'); } : undefined}
+                                className={`absolute -translate-x-1/2 -translate-y-1/2 text-center z-20 ${
+                                    editorMode 
+                                        ? `pointer-events-auto cursor-grab active:cursor-grabbing select-none rounded-sm ${
+                                            activeElementKey === 'qr_code' 
+                                                ? 'ring-2 ring-emerald-500 bg-emerald-500/10 shadow-lg' 
+                                                : 'hover:ring-1 hover:ring-emerald-400/70'
+                                          }` 
+                                        : 'pointer-events-none transition-all drop-shadow-md'
+                                }`}
+                                style={{ 
+                                    left: `${qrCfg.x ?? 50}%`, 
+                                    top: `${qrCfg.y ?? 85.5}%`,
+                                    padding: editorMode ? '3px' : undefined
+                                }}
                             >
-                                <div className="inline-block bg-white rounded-md overflow-hidden">
+                                {editorMode && activeElementKey === 'qr_code' && (
+                                    <>
+                                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-emerald-600 text-[9px] font-bold text-white uppercase tracking-wider whitespace-nowrap shadow-xs pointer-events-none">
+                                            QR Token
+                                        </div>
+                                        <span className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -bottom-1 -left-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                    </>
+                                )}
+                                <div className={`inline-block rounded-none overflow-hidden ${isTransparentQr ? 'bg-transparent' : 'bg-white p-1'}`}>
                                     {qrDataUrl ? (
                                         <img src={qrDataUrl} alt="QR Pass" style={{ width: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px`, height: `${Math.max(20, parseFloat(qrCfg.size) || 72)}px` }} className="block" />
                                     ) : (
@@ -1064,20 +1151,42 @@ export default function PersonalisedCard({
                         )}
 
                         {/* 4. SECURITY VERIFICATION CODE (Custom typography, size, color & optional shadow) */}
-                        {template?.show_unique_code !== false && elementsConfig.show_unique_code !== false && (
+                        {Boolean(elementsConfig.show_unique_code === true) && (
                             <div 
-                                className="absolute -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none transition-all z-20"
+                                onPointerDown={editorMode && onStartDrag ? (e) => onStartDrag('card_number', e) : undefined}
+                                onClick={editorMode && onSelectElement ? (e) => { e.stopPropagation(); onSelectElement('card_number'); } : undefined}
+                                className={`absolute -translate-x-1/2 -translate-y-1/2 text-center z-20 ${
+                                    editorMode 
+                                        ? `pointer-events-auto cursor-grab active:cursor-grabbing select-none rounded-sm ${
+                                            activeElementKey === 'card_number' 
+                                                ? 'ring-2 ring-emerald-500 bg-emerald-500/10 shadow-lg' 
+                                                : 'hover:ring-1 hover:ring-emerald-400/70'
+                                          }` 
+                                        : 'pointer-events-none transition-all'
+                                }`}
                                 style={{ 
                                     left: `${cardNumCfg.x ?? 50}%`, 
-                                    top: `${cardNumCfg.y ?? (finalRatioNum <= 0.62 ? 94.0 : 96.0)}%`, 
+                                    top: `${cardNumCfg.y ?? 99}%`, 
                                     color: cardNumCfg.color || '#FFFFFF', 
                                     fontSize: `${parseFloat(cardNumCfg.fontSize) || 9.5}px`, 
                                     fontFamily: cardNumCfg.fontFamily || 'ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace',
                                     letterSpacing: '0.22em', 
                                     fontWeight: 'bold', 
-                                    textShadow: cardNumCfg.hide_shadow ? 'none' : '0 2px 4px rgba(0,0,0,0.9)' 
+                                    textShadow: cardNumCfg.hide_shadow ? 'none' : '0 2px 4px rgba(0,0,0,0.9)',
+                                    padding: editorMode ? '3px 6px' : undefined
                                 }}
                             >
+                                {editorMode && activeElementKey === 'card_number' && (
+                                    <>
+                                        <div className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded bg-emerald-600 text-[9px] font-bold text-white uppercase tracking-wider whitespace-nowrap shadow-xs pointer-events-none">
+                                            Gate Code
+                                        </div>
+                                        <span className="absolute -top-1 -left-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -bottom-1 -left-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                        <span className="absolute -bottom-1 -right-1 w-2 h-2 rounded-full bg-white border-2 border-emerald-600 pointer-events-none" />
+                                    </>
+                                )}
                                 <span>{uniqueCode}</span>
                             </div>
                         )}
@@ -1221,15 +1330,17 @@ export default function PersonalisedCard({
 
                         {/* ──── 2. HEADLINE & EVENT TITLE ──── */}
                         <div style={{ textAlign: 'center' }} className="space-y-1.5 pt-1">
-                            <div style={{ 
-                                fontSize: `${headlineFontSize}px`, 
-                                fontWeight: 900, 
-                                letterSpacing: headlineSpacing, 
-                                color: headlineColor, 
-                                textTransform: 'uppercase' 
-                            }}>
-                                {headline}
-                            </div>
+                            {headline && (
+                                <div style={{ 
+                                    fontSize: `${headlineFontSize}px`, 
+                                    fontWeight: 900, 
+                                    letterSpacing: headlineSpacing, 
+                                    color: headlineColor, 
+                                    textTransform: 'uppercase' 
+                                }}>
+                                    {headline}
+                                </div>
+                            )}
                             <h2 style={{ 
                                 fontSize: `${eventTitleFontSize}px`, 
                                 fontWeight: eventTitleFontWeight, 

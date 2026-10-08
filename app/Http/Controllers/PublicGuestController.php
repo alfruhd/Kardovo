@@ -9,7 +9,6 @@ use App\Models\Message;
 use App\Models\SystemSetting;
 use App\Services\PhoneNormalizer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -44,9 +43,7 @@ class PublicGuestController extends Controller
             'city' => $event?->city ?? 'Dar es Salaam',
         ];
 
-        $allTemplates = Cache::remember('card_templates_global', 3600, function () {
-            return CardTemplate::whereNull('user_id')->orderBy('id', 'asc')->get();
-        });
+        $allTemplates = CardTemplate::whereNull('user_id')->orderBy('id', 'asc')->get();
 
         $config = $this->resolveMicrositeConfig($event, $demoGuest);
 
@@ -76,17 +73,31 @@ class PublicGuestController extends Controller
         }
 
         $userId = $guest->event->user_id ?? 0;
-        $allTemplates = Cache::remember("card_templates_user_{$userId}", 3600, function () use ($userId) {
-            return CardTemplate::whereNull('user_id')
-                ->orWhere('user_id', $userId ?: null)
-                ->orderBy('id', 'asc')
-                ->get();
-        });
+        $allTemplates = CardTemplate::whereNull('user_id')
+            ->orWhere('user_id', $userId ?: null)
+            ->orderBy('id', 'asc')
+            ->get();
 
         $config = $this->resolveMicrositeConfig($guest->event, $guest);
 
+        $sanitizedGuest = [
+            'id' => $guest->id,
+            'name' => $guest->name,
+            'phone' => ! empty($guest->phone) ? (substr($guest->phone, 0, 4).'••••'.substr($guest->phone, -3)) : null,
+            'card_number' => $guest->card_number,
+            'unique_code' => $guest->unique_code,
+            'qr_token' => $guest->qr_token,
+            'category' => $guest->category,
+            'max_entries' => $guest->max_entries,
+            'allowance_label' => $guest->allowance_label,
+            'rsvp_status' => $guest->rsvp_status,
+            'event_id' => $guest->event_id,
+            'table_number' => $guest->table_number,
+            'seat_number' => $guest->seat_number,
+        ];
+
         return Inertia::render('Public/GuestPass', [
-            'guest' => $guest,
+            'guest' => $sanitizedGuest,
             'event' => $guest->event,
             'template' => $guest->event->cardTemplate,
             'allTemplates' => $allTemplates,

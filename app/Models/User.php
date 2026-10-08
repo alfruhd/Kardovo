@@ -153,6 +153,7 @@ class User extends Authenticatable
             'can_send_broadcasts' => true,
             'can_customize_templates' => true,
             'can_manage_scanners' => true,
+            'can_access_ticketing' => true,
             'can_export_data' => true,
         ];
     }
@@ -205,6 +206,11 @@ class User extends Authenticatable
     public function canManageScanners(): bool
     {
         return $this->hasPermission('can_manage_scanners');
+    }
+
+    public function canAccessTicketing(): bool
+    {
+        return $this->hasPermission('can_access_ticketing');
     }
 
     public function canExportData(): bool

@@ -2,9 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { 
     CheckCircle2, Sparkles, Smartphone, QrCode, MessageCircle, 
-    Users, BarChart3, Clock, ShieldCheck, ChevronRight, HandCoins, ChartPie, Globe,
+    Users, BarChart3, Clock, ShieldCheck, ChevronLeft, ChevronRight, HandCoins, ChartPie, Globe,
     Send, Play, ArrowRight, Moon, Sun, ExternalLink, Ticket,
-    Calendar, MapPin, Tag, Layers, Check, Zap, Building2, Plane, PartyPopper, Trophy, Plus
+    Calendar, MapPin, Tag, Layers, Check, Zap, Building2, Plane, PartyPopper, Trophy, Plus, Briefcase, Crown, Gem, Heart, Eye,
+    Download, Share2, CreditCard, ScanLine, CalendarPlus, UserCheck,
+    Search, ClipboardCheck, BookOpen, BarChart2, Target
 } from "lucide-react";
 import Login from './Auth/Login';
 import Modal from '@/Components/Modal';
@@ -796,6 +798,16 @@ export default function Welcome({ auth }) {
     }, []);
 
     const t = (key) => translations[key] ? translations[key][lang] : key;
+
+    // Apply the landing page hero background to body only while on Welcome page to prevent refresh glitch,
+    // and clean up so it never bleeds into ScannerApp or other pages.
+    useEffect(() => {
+        document.body.classList.add('bg-[#8ABEE0]');
+        return () => {
+            document.body.classList.remove('bg-[#8ABEE0]');
+        };
+    }, []);
+
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [authModalMode, setAuthModalMode] = useState('register');
 
@@ -805,12 +817,79 @@ export default function Welcome({ auth }) {
     };
     const [activeSection, setActiveSection] = React.useState('');
 
-    // ── TOP NAVBAR STATIC WITH TRANSLUCENT SCROLL EFFECT ──
+    // ── TOP NAVBAR TRANSPARENT ON TOP SECTION, SOLID NAVY ON TICKETING & BELOW ──
     const [isScrolled, setIsScrolled] = useState(false);
+    const ticketCategories = [
+        {
+            key: 'events',
+            img: '/images/categories/events.jpg',
+            icon: Ticket,
+            labelEn: 'Concerts & Festivals',
+            labelSw: 'Matamasha ya Muziki',
+            tagEn: 'Live Shows',
+            tagSw: 'Muziki Moja kwa Moja',
+        },
+        {
+            key: 'nightlife',
+            img: '/images/categories/nightlife.jpg',
+            icon: PartyPopper,
+            labelEn: 'Nightlife & DJ Parties',
+            labelSw: 'Maisha ya Usiku & Vilabu',
+            tagEn: 'Clubs & Lounges',
+            tagSw: 'Vilabu & Burudani',
+        },
+        {
+            key: 'sports',
+            img: '/images/categories/sports.jpg',
+            position: 'center 20%',
+            icon: Trophy,
+            labelEn: 'Sports & Marathons',
+            labelSw: 'Michezo & Marathoni',
+            tagEn: 'Matches & Races',
+            tagSw: 'Mechi & Mashindano',
+        },
+        {
+            key: 'hotels',
+            img: '/images/categories/hotels.jpg',
+            icon: Building2,
+            labelEn: 'Resorts & Stays',
+            labelSw: 'Hoteli & Malazi',
+            tagEn: 'Beach & Safari Lodges',
+            tagSw: 'Loji & Fukwe za Kifahari',
+        },
+        {
+            key: 'fashion',
+            img: '/images/categories/fashion.jpg',
+            position: 'center 28%',
+            icon: Crown,
+            labelEn: 'Fashion & Runway Shows',
+            labelSw: 'Mitindo & Maonyesho',
+            tagEn: 'Runway & Galas',
+            tagSw: 'Mitindo & Gala',
+        },
+        {
+            key: 'corporate',
+            img: '/images/categories/corporate.jpg',
+            position: 'center 40%',
+            icon: Briefcase,
+            labelEn: 'Corporate Events & Summits',
+            labelSw: 'Matukio ya Kibiashara & Kongamano',
+            tagEn: 'Summits & Galas',
+            tagSw: 'Mikutano & Gala za Kampuni',
+        },
+    ];
 
     useEffect(() => {
         const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
+            const ticketingEl = document.getElementById('ticketing-services');
+            if (ticketingEl) {
+                const navHeight = 56; // h-14 navbar
+                const rect = ticketingEl.getBoundingClientRect();
+                // When top of ticketing section reaches the navbar bottom, switch to solid navy
+                setIsScrolled(rect.top <= navHeight);
+            } else {
+                setIsScrolled(window.scrollY > 400);
+            }
         };
         window.addEventListener('scroll', handleScroll, { passive: true });
         handleScroll();
@@ -824,26 +903,29 @@ export default function Welcome({ auth }) {
 
         const navHeight = 56; // h-14 sticky header
         const rect = el.getBoundingClientRect();
-        const elementTop = rect.top + window.scrollY;
+        const targetTop = rect.top + window.scrollY - navHeight;
 
         window.scrollTo({
-            top: Math.max(0, Math.round(elementTop - navHeight)),
+            top: Math.max(0, Math.round(targetTop)),
             behavior: 'smooth'
         });
 
-        if (window.history?.pushState) {
-            window.history.pushState(null, '', `#${sectionId}`);
+        if (window.history?.replaceState) {
+            window.history.replaceState(null, '', `#${sectionId}`);
         }
         setActiveSection(sectionId);
     };
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && window.location.hash) {
-            const hash = window.location.hash.replace('#', '');
-            if (['ticketing-services', 'invitations', 'how-it-works', 'payment', 'faq'].includes(hash)) {
-                setTimeout(() => {
-                    scrollToSection(null, hash);
-                }, 300);
+        // Ensure page always starts at top on fresh page load/reload
+        if (typeof window !== 'undefined') {
+            if ('scrollRestoration' in window.history) {
+                window.history.scrollRestoration = 'manual';
+            }
+            // If the browser reloaded with an anchor hash in the URL, remove hash and scroll to top
+            if (window.location.hash) {
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+                window.scrollTo(0, 0);
             }
         }
     }, []);
@@ -963,10 +1045,26 @@ export default function Welcome({ auth }) {
                 .animate-wave-fast { animation: move-forever 15s cubic-bezier(.55,.5,.45,.5) infinite; }
                 .animate-wave-fastest { animation: move-forever 10s cubic-bezier(.55,.5,.45,.5) infinite; }
                 
+                /* Silky-smooth Page Loaded Reveal Transition */
+                @keyframes heroBackdropReveal {
+                    0% {
+                        opacity: 0;
+                        transform: scale(1.04);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: scale(1);
+                    }
+                }
+                .hero-backdrop-reveal {
+                    animation: heroBackdropReveal 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    will-change: transform, opacity;
+                }
+
                 @keyframes hero-fade-up {
                     0% {
                         opacity: 0;
-                        transform: translateY(22px);
+                        transform: translateY(24px);
                     }
                     100% {
                         opacity: 1;
@@ -984,42 +1082,137 @@ export default function Welcome({ auth }) {
                     }
                 }
                 .animate-hero-headline {
-                    animation: hero-fade-up 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                    animation: hero-fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
                 }
                 .animate-hero-gradient {
                     background-size: 200% 200%;
                     animation: shimmer-gradient 6s ease-in-out infinite;
                 }
                 .animate-hero-subtitle {
-                    animation: hero-fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.18s both;
+                    animation: hero-fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
                 }
                 .animate-hero-cta {
-                    animation: hero-fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.32s both;
+                    animation: hero-fade-up 1s cubic-bezier(0.16, 1, 0.3, 1) 0.38s both;
+                }
+                @keyframes float-gentle-1 {
+                    0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+                    33% { transform: translate(12px, -18px) rotate(4deg); }
+                    66% { transform: translate(-8px, 10px) rotate(-3deg); }
+                }
+                @keyframes float-gentle-2 {
+                    0%, 100% { transform: translate(0px, 0px) rotate(0deg); }
+                    33% { transform: translate(-14px, 14px) rotate(-5deg); }
+                    66% { transform: translate(10px, -12px) rotate(3deg); }
+                }
+                @keyframes float-gentle-3 {
+                    0%, 100% { transform: translate(0px, 0px) scale(1); }
+                    50% { transform: translate(15px, -15px) scale(1.05); }
+                }
+                @keyframes float-gentle-4 {
+                    0%, 100% { transform: translate(0px, 0px) scale(1); }
+                    33% { transform: translate(-16px, -12px) scale(1.08); }
+                    66% { transform: translate(12px, 14px) scale(0.95); }
+                }
+                @keyframes float-gentle-5 {
+                    0%, 100% { transform: translate(0px, 0px) scale(1); }
+                    50% { transform: translate(-20px, 18px) scale(1.12); }
+                }
+                @keyframes float-gentle-6 {
+                    0%, 100% { transform: translate(0px, 0px) scale(1); }
+                    40% { transform: translate(18px, -16px) scale(1.06); }
+                    80% { transform: translate(-10px, 8px) scale(0.96); }
+                }
+                @keyframes float-orbit {
+                    0% { transform: rotate(0deg) translateX(25px) rotate(0deg); }
+                    100% { transform: rotate(360deg) translateX(25px) rotate(-360deg); }
+                }
+                .hero-float-1 { animation: float-gentle-1 9s ease-in-out infinite; }
+                .hero-float-2 { animation: float-gentle-2 11s ease-in-out infinite; }
+                .hero-float-3 { animation: float-gentle-3 8s ease-in-out infinite; }
+                .hero-float-4 { animation: float-gentle-4 10s ease-in-out infinite; }
+                .hero-float-5 { animation: float-gentle-5 13s ease-in-out infinite; }
+                .hero-float-6 { animation: float-gentle-6 12s ease-in-out infinite; }
+                .hero-float-orbit { animation: float-orbit 20s linear infinite; }
+
+                /* Hero Asymmetric Cards Cascading Entrance - Silky Smooth */
+                @keyframes heroCardFadeIn1 {
+                    0% { opacity: 0; transform: translateY(32px) rotate(-6deg) scale(0.95); }
+                    100% { opacity: 1; transform: translateY(0) rotate(-3deg) scale(1); }
+                }
+                @keyframes heroCardFadeIn2 {
+                    0% { opacity: 0; transform: translateY(32px) rotate(6deg) scale(0.95); }
+                    100% { opacity: 1; transform: translateY(0) rotate(3deg) scale(1); }
+                }
+                @keyframes heroCardFadeIn3 {
+                    0% { opacity: 0; transform: translateY(36px) scale(0.94); }
+                    100% { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .hero-card-anim-1 {
+                    animation: heroCardFadeIn1 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
+                }
+                .hero-card-anim-2 {
+                    animation: heroCardFadeIn2 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.35s both;
+                }
+                .hero-card-anim-3 {
+                    animation: heroCardFadeIn3 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.45s both;
+                }
+
+                /* Hero Floating Stats Bar Entrance */
+                @keyframes heroStatsBarSlide {
+                    0% { opacity: 0; transform: translateY(28px) scale(0.98); }
+                    100% { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .hero-stats-anim {
+                    animation: heroStatsBarSlide 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.5s both;
+                }
+
+                /* Category Card Staggered Pop-In for Ticketing Section */
+                @keyframes ticketCategoryPop {
+                    0% {
+                        opacity: 0;
+                        transform: translateY(28px) scale(0.94);
+                    }
+                    60% {
+                        opacity: 1;
+                        transform: translateY(-4px) scale(1.01);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
+                .is-visible .ticket-category-card {
+                    animation: ticketCategoryPop 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
                 }
             `}} />
             <Head title={t("Kadi za Kidigitali na Usimamizi Kisasa")} />
 
-            {/* Top Navigation Bar (Compact & Solid Navy with Subtle Blur on Scroll) */}
+            {/* Top Navigation Bar (Glassmorphic like Create Invitation button, crisp white line, zero text shadow) */}
             <header 
-                className={`sticky top-0 z-50 text-white transition-all duration-300 ${
+                className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
                     isScrolled 
-                        ? "bg-[#0B2545]/95 backdrop-blur-md border-b border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.25)]" 
-                        : "bg-[#0B2545] border-b border-[#173860]"
+                        ? "bg-[#0B2545]/95 backdrop-blur-md border-b border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.25)]" 
+                        : "bg-white/[0.1] backdrop-blur-xl border-b border-white/25 shadow-lg"
                 }`}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4 text-white">
                     {/* Brand Logo */}
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="cursor-pointer focus:outline-none flex items-center shrink-0">
-                        <KardovoLogo light={true} showText={true} textClassName="text-white text-base font-black tracking-widest" imgClassName="h-7 w-7" />
+                        <KardovoLogo 
+                            light={true} 
+                            showText={true} 
+                            textClassName="text-white text-base font-black tracking-widest" 
+                            imgClassName="h-7 w-7" 
+                        />
                     </button>
                     
-                    {/* Navigation Pills */}
-                    <nav className="hidden lg:flex items-center gap-1.5 shrink-0 text-xs font-bold text-slate-300">
+                    {/* Navigation Pills (Crisp Clean White without shadows) */}
+                    <nav className="hidden lg:flex items-center gap-1.5 shrink-0 text-xs font-bold text-white">
                         {/* 1. Sell & Buy Tickets (Before Invitations & RSVP) */}
                         <a 
                             href="#ticketing-services" 
                             onClick={(e) => scrollToSection(e, 'ticketing-services')}
-                            className={`px-3 py-1.5 rounded-xl transition hover:text-white hover:bg-white/10 cursor-pointer ${activeSection === 'ticketing-services' ? 'text-white bg-white/15' : ''}`}
+                            className={`px-3 py-1.5 rounded-xl transition cursor-pointer hover:bg-white/15 hover:text-white ${activeSection === 'ticketing-services' ? 'bg-white/20 text-white' : ''}`}
                         >
                             {lang === 'sw' ? 'Tiketi za Matukio' : 'Sell & Buy Tickets'}
                         </a>
@@ -1028,7 +1221,7 @@ export default function Welcome({ auth }) {
                         <a 
                             href="#invitations" 
                             onClick={(e) => scrollToSection(e, 'invitations')}
-                            className={`px-3 py-1.5 rounded-xl transition hover:text-white hover:bg-white/10 cursor-pointer ${activeSection === 'invitations' ? 'text-white bg-white/15' : ''}`}
+                            className={`px-3 py-1.5 rounded-xl transition cursor-pointer hover:bg-white/15 hover:text-white ${activeSection === 'invitations' ? 'bg-white/20 text-white' : ''}`}
                         >
                             {t('Mialiko & RSVP')}
                         </a>
@@ -1043,7 +1236,7 @@ export default function Welcome({ auth }) {
                                 key={link.id}
                                 href={`#${link.id}`} 
                                 onClick={(e) => scrollToSection(e, link.id)}
-                                className={`px-3 py-1.5 rounded-xl transition hover:text-white hover:bg-white/10 cursor-pointer ${activeSection === link.id ? 'text-white bg-white/15' : ''}`}
+                                className={`px-3 py-1.5 rounded-xl transition cursor-pointer hover:bg-white/15 hover:text-white ${activeSection === link.id ? 'bg-white/20 text-white' : ''}`}
                             >
                                 {link.label}
                             </a>
@@ -1051,15 +1244,15 @@ export default function Welcome({ auth }) {
                     </nav>
 
                     {/* Right-Side Controls: Language Toggle & Auth */}
-                    <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold text-slate-300 shrink-0">
-                        {/* Language Toggle matching landing page & tickets */}
+                    <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold shrink-0 text-white">
+                        {/* Language Toggle: Icon and text only, no shape */}
                         <button 
                             type="button"
                             onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} 
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/20 hover:border-white/40 hover:bg-white/10 transition-colors text-xs font-bold text-slate-200 shadow-xs cursor-pointer mr-1"
+                            className="flex items-center gap-1.5 px-2 py-1.5 text-white/90 hover:text-white transition-colors text-xs font-semibold cursor-pointer"
                             title={lang === 'en' ? 'Badili lugha kuwa Kiswahili' : 'Switch language to English'}
                         >
-                            <Globe className="w-3.5 h-3.5 text-[#008EE8]" />
+                            <Globe className="w-4 h-4 text-sky-300" />
                             <span>{lang === 'en' ? 'SWA' : 'ENG'}</span>
                         </button>
                         
@@ -1074,7 +1267,7 @@ export default function Welcome({ auth }) {
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => openAuthModal('login')}
-                                    className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold transition text-xs cursor-pointer"
+                                    className="px-3.5 py-1.5 rounded-xl font-bold transition text-xs cursor-pointer bg-white/[0.1] hover:bg-white/[0.18] text-white backdrop-blur-md border border-white/25"
                                 >
                                     {t("Log In")}
                                 </button>
@@ -1092,272 +1285,682 @@ export default function Welcome({ auth }) {
 
             <main>
                 {/* Hero Section (Fills Initial Viewport with Anchored Metrics - Zero White Space) */}
-                <section id="hero" className="min-h-[calc(100vh-3.5rem+6px)] min-h-[calc(100dvh-3.5rem+6px)] bg-gradient-to-b from-[#0B2545] via-[#091D35] to-[#07111E] text-white relative overflow-hidden flex flex-col justify-between">
-                    {/* Subtle Ambient Tech Mesh matching Ticket Marketplace */}
-                    <div 
-                        className="absolute inset-0 opacity-15 pointer-events-none"
-                        style={{
-                            backgroundImage: 'radial-gradient(#008EE8 1.5px, transparent 1.5px)',
-                            backgroundSize: '24px 24px',
-                        }}
-                    />
-                    <div className="absolute top-0 right-1/4 w-[600px] h-[350px] bg-[#16A34A]/10 rounded-full blur-[140px] pointer-events-none" />
-                    <div className="absolute bottom-10 left-1/4 w-[500px] h-[300px] bg-[#008EE8]/10 rounded-full blur-[140px] pointer-events-none" />
+                {/* Hero Section (Clean, Minimalist, High-Tech Event & Invitation Canvas) */}
+                {/* Hero Section — Modern Asymmetric Two-Column Conference/Event Layout */}
+                <section id="hero" className="min-h-screen min-h-[100dvh] pt-14 bg-[#8ABEE0] text-white relative overflow-hidden flex flex-col justify-between select-none">
+                    {/* Full Hero Background Image with subtle gentle overlay and smooth reveal transition */}
+                    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#8ABEE0] hero-backdrop-reveal">
+                        <img
+                            src="/images/hero-art.jpg"
+                            alt="Digital event passes, invitations and ticketing background"
+                            className="w-full h-full object-cover object-center"
+                        />
+                        {/* Subtle gentle overlay to elevate text clarity while keeping the 3D art vivid */}
+                        <div className="absolute inset-0 bg-[#0B2545]/20 dark:bg-[#07111E]/30" />
 
-                    {/* Hero Content (Centered) */}
-                    <div className="flex-1 flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 relative z-10 py-10 sm:py-14">
-                        <div className="max-w-5xl lg:max-w-6xl mx-auto flex flex-col items-center">
-                            {/* Headline */}
-                            <h1 className="animate-hero-headline text-4xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-black font-display tracking-tight text-white max-w-5xl mx-auto leading-[1.06] sm:leading-[1.03] mb-4 sm:mb-6 drop-shadow-sm">
-                                {lang === 'sw' ? (
-                                    <>
-                                        <span>Mialiko ya Kidigitali</span>
-                                        <br />
-                                        <span className="animate-hero-gradient text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400">
-                                            & Tiketi za Matukio
-                                        </span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <span>Digital Invitations</span>
-                                        <br />
-                                        <span className="animate-hero-gradient text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400">
-                                            & Event Ticketing
-                                        </span>
-                                    </>
-                                )}
-                            </h1>
+                        {/* Aesthetic Floating Geometric & Glass Elements matching the background artwork */}
+                        <div className="hero-float-1 absolute top-[20%] left-[22%] w-28 h-28 sm:w-44 sm:h-44 rounded-full border border-white/20 bg-white/[0.06] backdrop-blur-md shadow-xl pointer-events-none" />
+                        <div className="hero-float-2 absolute bottom-[26%] left-[6%] w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-sky-300/30 via-sky-400/20 to-blue-600/20 border border-white/20 backdrop-blur-sm pointer-events-none" />
+                        <div className="hero-float-3 absolute top-[14%] right-[10%] w-32 h-32 sm:w-48 sm:h-48 rounded-full border-2 border-sky-300/20 bg-sky-400/[0.03] backdrop-blur-xs pointer-events-none" />
+                        
+                        {/* Additional Floating Moving Circles for Richer Atmosphere */}
+                        <div className="hero-float-4 absolute top-[8%] left-[10%] w-20 h-20 sm:w-28 sm:h-28 rounded-full border border-emerald-400/30 bg-emerald-400/[0.05] backdrop-blur-sm shadow-lg pointer-events-none" />
+                        <div className="hero-float-5 absolute top-[38%] left-[2%] w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-cyan-400/25 to-blue-500/15 border border-cyan-300/30 backdrop-blur-xs pointer-events-none" />
+                        <div className="hero-float-6 absolute bottom-[18%] left-[30%] w-20 h-20 sm:w-32 sm:h-32 rounded-full border border-white/15 bg-white/[0.04] backdrop-blur-md shadow-lg pointer-events-none" />
+                        <div className="hero-float-1 absolute top-[5%] right-[28%] w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-sky-200/25 bg-sky-300/[0.06] backdrop-blur-xs pointer-events-none" />
+                        <div className="hero-float-2 absolute bottom-[12%] right-[5%] w-24 h-24 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-indigo-500/20 via-sky-500/15 to-transparent border border-white/20 backdrop-blur-sm shadow-xl pointer-events-none" />
+                        <div className="hero-float-4 absolute top-[45%] right-[22%] w-10 h-10 sm:w-14 sm:h-14 rounded-full border border-emerald-300/25 bg-emerald-400/[0.08] backdrop-blur-xs pointer-events-none" />
+                        <div className="hero-float-5 absolute bottom-[35%] right-[38%] w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-sky-400/20 border border-sky-300/40 pointer-events-none shadow-md" />
 
-                            {/* Subtitle */}
-                            <p className="animate-hero-subtitle text-base sm:text-xl md:text-[1.25rem] text-slate-300/90 font-normal max-w-3xl mx-auto leading-relaxed mb-8 sm:mb-10">
-                                {lang === 'sw' 
-                                    ? 'Tuma mialiko ya kisasa kupitia WhatsApp na SMS yenye QR Code mlangoni, au uza na ununue tiketi za matukio nchini Tanzania kwa mitandao yote ya simu.'
-                                    : 'Send modern invitations via WhatsApp and SMS with door QR verification, or sell and book event tickets across Tanzania with mobile money.'
-                                }
-                            </p>
+                        {/* Modern Decorative Dot Matrix Grids (from reference layout) */}
+                        <div className="absolute top-20 left-8 sm:left-14 w-28 h-28 grid grid-cols-6 gap-2 opacity-25 pointer-events-none">
+                            {Array.from({ length: 36 }).map((_, i) => (
+                                <span key={i} className="w-1 h-1 rounded-full bg-white/70" />
+                            ))}
+                        </div>
+                        <div className="absolute bottom-28 right-8 sm:right-14 w-28 h-28 grid grid-cols-6 gap-2 opacity-20 pointer-events-none">
+                            {Array.from({ length: 36 }).map((_, i) => (
+                                <span key={i} className="w-1 h-1 rounded-full bg-white/70" />
+                            ))}
+                        </div>
+                    </div>
 
-                            {/* Standout Aesthetic Buttons */}
-                            <div className="animate-hero-cta flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-                                <Link
-                                    href={route('tickets.marketplace')}
-                                    className="w-full sm:w-auto group relative inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] active:scale-[0.98] text-white text-base font-bold shadow-md hover:shadow-lg transition-all duration-300 cursor-pointer"
-                                >
-                                    <Ticket className="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" />
-                                    <span>{lang === 'sw' ? 'Kununua Tiketi' : 'Browse Tickets'}</span>
-                                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
-                                </Link>
+                    {/* Main Two-Column Hero Content */}
+                    <div className="flex-1 flex items-center relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center w-full">
+                            
+                            {/* Left Column: Bold Headline, Subtitle, and Pill CTAs */}
+                            <div className="lg:col-span-7 flex flex-col items-start text-left pt-2 lg:pt-0">
+                                {/* Main Headline */}
+                                <h1 className="animate-hero-headline text-3xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-black font-display tracking-tight text-white leading-[1.08] mb-5 max-w-2xl">
+                                    {lang === 'sw' ? (
+                                        <>
+                                            <span>Mialiko ya Kidigitali</span>
+                                            <br />
+                                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-300">
+                                                & Tiketi za Matukio
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>Digital Invitations</span>
+                                            <br />
+                                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-300">
+                                                & Event Ticketing
+                                            </span>
+                                        </>
+                                    )}
+                                </h1>
 
-                                <button
-                                    type="button"
-                                    onClick={() => openAuthModal('register')}
-                                    className="w-full sm:w-auto group relative inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/15 active:scale-[0.98] border border-white/20 hover:border-white/35 text-white text-base font-bold backdrop-blur-xl shadow-lg transition-all duration-300 cursor-pointer"
-                                >
-                                    <Plus className="w-5 h-5 text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
-                                    <span>{lang === 'sw' ? 'Tengeneza Mwaliko' : 'Create Invitation'}</span>
-                                </button>
+                                {/* Subtitle copy */}
+                                <p className="text-sm sm:text-base md:text-lg text-slate-300/90 font-medium leading-relaxed max-w-xl mb-7 sm:mb-8">
+                                    {lang === 'sw' 
+                                        ? 'Mfumo thabiti wa kununua na kuuza tiketi za matukio mtandaoni, kutuma mialiko ya kidigitali yenye majibu (RSVP), na kurahisisha uingiaji wa wageni mlangoni.'
+                                        : 'A modern, unified platform to buy and sell event tickets online, send elegant digital invitations with real-time RSVPs, and streamline door access.'
+                                    }
+                                </p>
+
+                                {/* Action Buttons matching layout aesthetic */}
+                                <div className="animate-hero-cta flex flex-wrap items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
+                                    <Link
+                                        href={route('tickets.marketplace')}
+                                        className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#16A34A] hover:bg-[#15803D] active:scale-[0.98] text-white text-sm sm:text-base font-bold shadow-xl shadow-emerald-950/50 hover:shadow-emerald-900/60 transition-all duration-300 cursor-pointer"
+                                    >
+                                        <Ticket className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
+                                        <span>{lang === 'sw' ? 'Kununua Tiketi' : 'Browse Tickets'}</span>
+                                    </Link>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => openAuthModal('register')}
+                                        className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.18] active:scale-[0.98] border border-white/25 hover:border-white/40 text-white text-sm sm:text-base font-bold backdrop-blur-xl transition-all duration-300 cursor-pointer"
+                                    >
+                                        <Plus className="w-4 h-4 text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
+                                        <span>{lang === 'sw' ? 'Tengeneza Mwaliko' : 'Create Invitation'}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Right Column: Cascading 3 Asymmetrical Rounded Image Cards (Spacious Breathing Room) */}
+                            <div className="lg:col-span-5 relative flex justify-center lg:justify-end items-center mt-6 lg:mt-0">
+                                <div className="relative w-full max-w-[390px] sm:max-w-[460px] lg:max-w-[500px] h-[380px] sm:h-[440px] lg:h-[470px]">
+                                    
+                                    {/* Back Card 1 (Top Left): Live Event Crowd & Presentation */}
+                                    <div className="hero-card-anim-1 absolute top-0 left-0 w-[50%] sm:w-[52%] h-[50%] sm:h-[52%] rounded-3xl overflow-hidden shadow-2xl shadow-black/50 transform -rotate-3 hover:rotate-0 transition-transform duration-500 z-10 group">
+                                        <img 
+                                            src="/images/categories/events.jpg" 
+                                            alt="Events and Conferences" 
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                                    </div>
+
+                                    {/* Card 2 (Top Right): Safari & Adventure Showcase */}
+                                    <div className="hero-card-anim-2 absolute top-2 right-0 w-[48%] sm:w-[50%] h-[52%] sm:h-[54%] rounded-3xl overflow-hidden shadow-2xl shadow-black/50 transform rotate-3 hover:rotate-0 transition-transform duration-500 z-20 group">
+                                        <img 
+                                            src="/images/hero_safari_adventure.jpg" 
+                                            alt="Serengeti Sunset Safari Adventure" 
+                                            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                                    </div>
+
+                                    {/* Front Card 3 (Center Lower Front): Fashion & Runway Shows */}
+                                    <div className="hero-card-anim-3 absolute bottom-0 left-[16%] sm:left-[18%] w-[66%] sm:w-[68%] h-[58%] sm:h-[60%] rounded-3xl overflow-hidden shadow-2xl shadow-black/70 transform hover:scale-[1.02] transition-transform duration-500 z-30 group">
+                                        <img 
+                                            src="/images/categories/fashion.jpg" 
+                                            alt="Fashion and Runway Shows" 
+                                            className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
+                                        />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Metrics Bar (Anchored at the bottom of the first screen - Perfectly fits viewport) */}
-                    <div className="w-full border-t border-white/10 bg-black/25 backdrop-blur-md relative z-10 py-5 sm:py-6">
-                        <div className="max-w-7xl mx-auto px-6">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 divide-x divide-white/10">
-                                <div className="text-center px-4">
-                                    <h3 className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight drop-shadow-sm">
+                    {/* Bottom Floating Stats Pill Card (Clean Frosted Translucent Glass Aesthetic) */}
+                    <div className="w-full relative z-20 pb-4 sm:pb-6 px-4 sm:px-6 lg:px-8 hero-stats-anim">
+                        <div className="max-w-5xl mx-auto bg-white/[0.12] dark:bg-white/[0.08] backdrop-blur-2xl rounded-[2.25rem] border border-white/25 shadow-2xl shadow-black/40 px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between gap-4">
+                            
+                            {/* 4 Key Metrics */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full divide-x divide-white/15">
+                                <div className="text-center px-2">
+                                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-300 tracking-tight drop-shadow-sm">
                                         <AnimatedCounter end={10} suffix="K+" />
                                     </h3>
-                                    <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-1 uppercase tracking-wider">{t("Mialiko Iliyotumwa")}</p>
+                                    <p className="text-[10px] sm:text-xs font-bold text-slate-200/90 mt-0.5 uppercase tracking-wider">{t("Mialiko Iliyotumwa")}</p>
                                 </div>
-                                <div className="text-center px-4">
-                                    <h3 className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight drop-shadow-sm">
+                                <div className="text-center px-2">
+                                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-300 tracking-tight drop-shadow-sm">
                                         <AnimatedCounter end={99.9} decimals={1} suffix="%" />
                                     </h3>
-                                    <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-1 uppercase tracking-wider">{t("Uhakika wa Kufika")}</p>
+                                    <p className="text-[10px] sm:text-xs font-bold text-slate-200/90 mt-0.5 uppercase tracking-wider">{t("Uhakika wa Kufika")}</p>
                                 </div>
-                                <div className="text-center px-4">
-                                    <h3 className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight drop-shadow-sm">
+                                <div className="text-center px-2">
+                                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-300 tracking-tight drop-shadow-sm">
                                         <AnimatedCounter end={24} suffix="/7" />
                                     </h3>
-                                    <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-1 uppercase tracking-wider">{t("Huduma kwa Wateja")}</p>
+                                    <p className="text-[10px] sm:text-xs font-bold text-slate-200/90 mt-0.5 uppercase tracking-wider">{t("Huduma kwa Wateja")}</p>
                                 </div>
-                                <div className="text-center px-4">
-                                    <h3 className="text-3xl sm:text-4xl font-black text-emerald-400 tracking-tight drop-shadow-sm">
-                                        <AnimatedCounter end={0.2} decimals={1} suffix="s" />
+                                <div className="text-center px-2">
+                                    <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-300 tracking-tight drop-shadow-sm">
+                                        <AnimatedCounter end={100} suffix="%" />
                                     </h3>
-                                    <p className="text-[11px] sm:text-xs font-bold text-slate-300 mt-1 uppercase tracking-wider">{t("Kuscan Mlangoni")}</p>
+                                    <p className="text-[10px] sm:text-xs font-bold text-slate-200/90 mt-0.5 uppercase tracking-wider">{lang === 'sw' ? 'Tiketi za Kidigitali' : 'Instant E-Tickets'}</p>
                                 </div>
                             </div>
+
+                            {/* Floating Next-Section Arrow */}
+                            <a
+                                href="#ticketing-services"
+                                onClick={(e) => scrollToSection(e, 'ticketing-services')}
+                                title="Scroll down"
+                                className="hidden sm:flex w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-[#16A34A] hover:bg-[#15803D] active:scale-95 text-white items-center justify-center shrink-0 shadow-lg shadow-emerald-500/30 border border-white/25 transition-all cursor-pointer"
+                            >
+                                <ArrowRight className="w-4 h-4 rotate-90" />
+                            </a>
                         </div>
                     </div>
                 </section>
 
-                {/* Ticketing Services Section */}
-                <section id="ticketing-services" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-6 sm:py-8 bg-white relative scroll-mt-14 border-b border-slate-100">
-                    <div className="max-w-7xl mx-auto px-6 w-full">
-                        {/* Section Header */}
-                        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 scroll-animate">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1">
+                {/* Ticketing Services Section — 6 Large Aesthetic Category Grid Boxes */}
+                <section id="ticketing-services" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-7 sm:py-8 lg:py-9 bg-[#F8FAFC] dark:bg-[#07111E] relative scroll-mt-14 border-b border-slate-200/60 dark:border-white/10 overflow-hidden">
+                    {/* Ambient glows for aesthetic depth */}
+                    <div className="absolute top-1/3 left-1/4 -translate-y-1/2 w-[32rem] h-[32rem] bg-emerald-400/10 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute bottom-1/3 right-1/4 w-[32rem] h-[32rem] bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col">
+                        {/* Section Header - Single Row Title and Short Subtitle */}
+                        <div className="text-center max-w-4xl mx-auto mb-6 sm:mb-8 scroll-animate">
+                            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.65rem] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-1.5 font-display pb-0.5 tracking-tight sm:whitespace-nowrap">
                                 {lang === 'sw' ? 'Kuuza & Kununua Tiketi Mtandaoni' : 'Sell & Buy Event Tickets Online'}
                             </h2>
-                            <p className="text-base sm:text-lg text-slate-500 leading-relaxed">
+                            <p className="text-xs sm:text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium sm:whitespace-nowrap">
                                 {lang === 'sw' 
-                                    ? 'Mfumo rahisi na wa uhakika wa tiketi kwa ajili ya matamasha, mikutano, ndege na matukio ya kijamii wenye malipo ya haraka ya simu.'
-                                    : 'A simple, reliable ticketing platform for concerts, conferences, flights, and social events with seamless mobile checkout.'
+                                    ? 'Tiketi za kidigitali zenye malipo ya haraka ya simu kote Tanzania.'
+                                    : 'Instant digital tickets with seamless mobile money checkout across Tanzania.'
                                 }
                             </p>
                         </div>
 
-                        {/* 3 Core Value Cards matching Features layout */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-                            {/* Card 1 */}
-                            <div className="group p-5 sm:p-6 rounded-2xl scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-300">
-                                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-xs flex items-center justify-center mb-3.5 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
-                                    <Users className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">
-                                    {lang === 'sw' ? 'Bila Kufungua Akaunti' : 'No Account Needed'}
-                                </h3>
-                                <p className="text-slate-500 leading-relaxed text-sm font-medium">
-                                    {lang === 'sw'
-                                        ? 'Weka tu jina na namba ya simu. Malipo yanakamilika chini ya dakika moja kwa kutumia M-Pesa, TigoPesa, Airtel Money au Kadi.'
-                                        : 'Just enter your name and phone number. Checkout takes under a minute using M-Pesa, TigoPesa, Airtel Money, or Cards.'
-                                    }
-                                </p>
-                            </div>
+                        {/* 6 Aesthetic Category Grid Boxes — Perfectly proportioned with breathing room */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-7 max-w-6xl mx-auto w-full">
+                            {ticketCategories.map((item, idx) => {
+                                const CatIcon = item.icon || Ticket;
+                                const isInternalCategory = ['events', 'hotels', 'nightlife', 'sports', 'fashion', 'corporate'].includes(item.key);
+                                const targetUrl = isInternalCategory 
+                                    ? route('tickets.marketplace', { category: item.key }) 
+                                    : route('tickets.marketplace', { search: item.key });
 
-                            {/* Card 2 */}
-                            <div className="group p-5 sm:p-6 rounded-2xl scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-300">
-                                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-xs flex items-center justify-center mb-3.5 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
-                                    <QrCode className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">
-                                    {lang === 'sw' ? 'Pass ya Papo Hapo, SMS & Email' : 'Instant Digital Pass, SMS & Email'}
-                                </h3>
-                                <p className="text-slate-500 leading-relaxed text-sm font-medium">
-                                    {lang === 'sw'
-                                        ? 'Baada ya malipo kukamilika, pasi yako ya kidigitali inaonekana papo hapo skrini ikiwa na QR code salama, huku ukipokea kiungo cha pasi kwa SMS na barua pepe ikiwa na vocha ya PDF.'
-                                        : 'Once payment completes, your authentic digital pass displays immediately on screen with a dynamic QR code, and is delivered directly to your phone via SMS and email with an attached PDF voucher.'
-                                    }
-                                </p>
-                            </div>
+                                return (
+                                    <Link
+                                        key={item.key}
+                                        href={targetUrl}
+                                        style={{ animationDelay: `${(idx % 3) * 120 + Math.floor(idx / 3) * 180}ms` }}
+                                        className="group relative h-40 sm:h-48 md:h-52 lg:h-56 rounded-2xl sm:rounded-3xl overflow-hidden shadow-md shadow-slate-900/10 dark:shadow-black/40 border border-slate-200/50 dark:border-white/10 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-500/40 block focus:outline-none scroll-animate ticket-category-card"
+                                    >
+                                        {/* Background Photo with Smooth Hover Scale */}
+                                        <img
+                                            src={item.img}
+                                            alt={lang === 'sw' ? item.labelSw : item.labelEn}
+                                            loading="lazy"
+                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                                            style={{ objectPosition: item.position || 'center' }}
+                                        />
 
-                            {/* Card 3 */}
-                            <div className="group p-5 sm:p-6 rounded-2xl scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-300">
-                                <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-xs flex items-center justify-center mb-3.5 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
-                                    <BarChart3 className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">
-                                    {lang === 'sw' ? 'Udhibiti wa Waandaaji' : 'Organizer Control'}
-                                </h3>
-                                <p className="text-slate-500 leading-relaxed text-sm font-medium">
-                                    {lang === 'sw'
-                                        ? 'Panga madaraja ya VIP na Regular, fuatilia mauzo mubashara, dhibiti ukomo wa idadi (quotas), na hakiki tiketi getini kwa simu yoyote.'
-                                        : 'Set up VIP and regular tiers, track live sales, manage quotas, and verify tickets at the gate using any smartphone.'
-                                    }
-                                </p>
-                            </div>
-                        </div>
+                                        {/* Cinematic Contrast Overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-[#07111E]/95 via-[#07111E]/40 to-black/10 transition-opacity duration-300 group-hover:from-[#07111E]/90 group-hover:via-[#07111E]/30" />
 
-                        {/* Clean Action Callout Banner */}
-                        <div className="mt-6 sm:mt-8 p-5 sm:p-6 rounded-2xl scroll-animate bg-[#0B2545] text-white flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 shadow-xl">
-                            <div className="text-center md:text-left space-y-1">
-                                <h3 className="text-xl sm:text-2xl font-black text-white font-display">
-                                    {lang === 'sw' ? 'Unatafuta tiketi au unapanga kuuza zako?' : 'Looking for event tickets or planning to sell your own?'}
-                                </h3>
-                                <p className="text-sm text-slate-300">
-                                    {lang === 'sw' ? 'Tazama tiketi zinazopatikana kote nchini Tanzania.' : 'Explore available tickets across Tanzania.'}
-                                </p>
-                            </div>
-                            <div className="flex flex-wrap items-center justify-center gap-3 shrink-0">
-                                <Link
-                                    href={route('tickets.marketplace')}
-                                    className="px-6 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-sm font-bold shadow-xs transition"
-                                >
-                                    {lang === 'sw' ? 'Kununua Tiketi' : 'Browse Tickets'}
-                                </Link>
-                            </div>
+                                        {/* Bottom Information & Interactive Arrow Button */}
+                                        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 z-10 flex items-end justify-between gap-3">
+                                            <div className="space-y-0.5">
+                                                <h3 className="text-lg sm:text-xl font-black text-white font-display tracking-tight leading-snug drop-shadow-md group-hover:text-emerald-300 transition-colors">
+                                                    {lang === 'sw' ? item.labelSw : item.labelEn}
+                                                </h3>
+                                                <p className="text-[11px] sm:text-xs text-slate-300 font-medium line-clamp-1 opacity-90">
+                                                    {lang === 'sw' ? 'Gundua na kata tiketi sasa' : 'Explore & book passes'}
+                                                </p>
+                                            </div>
+
+                                            {/* Action Icon Button */}
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#16A34A] group-hover:border-[#16A34A] group-hover:scale-110 shadow-md">
+                                                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
+                                            </div>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
                         </div>
                     </div>
                 </section>
 
-                {/* Features & Invitations Section */}
-                <section id="invitations" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-6 sm:py-8 bg-white relative scroll-mt-14 border-b border-slate-100">
-                    <div className="max-w-7xl mx-auto px-6 w-full">
-                        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 scroll-animate">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1">{t("All-in-One Event Toolkit")}</h2>
-                            <p className="text-base sm:text-lg text-slate-500">{t("Kila kitu unachokihitaji kurahisisha usimamizi wa sherehe yako kuanzia maandalizi hadi siku ya tukio yenyewe.")}</p>
+                {/* Features & Invitations Section — Neumorphic Infographic Circles Style */}
+                <section id="invitations" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-12 sm:py-20 bg-[#F0F2F5] dark:bg-[#07111E] relative scroll-mt-14 border-b border-slate-200/80 dark:border-white/10 overflow-hidden">
+                    {/* Keyframes & Transition Styles */}
+                    <style dangerouslySetInnerHTML={{__html: `
+                        @keyframes neuDiscPopIn {
+                            0% {
+                                opacity: 0;
+                                transform: scale(0.85) translateY(24px);
+                            }
+                            60% {
+                                opacity: 1;
+                                transform: scale(1.02) translateY(-4px);
+                            }
+                            100% {
+                                opacity: 1;
+                                transform: scale(1) translateY(0);
+                            }
+                        }
+                        @keyframes neuArcDraw {
+                            0% {
+                                stroke-dashoffset: 300;
+                            }
+                            100% {
+                                stroke-dashoffset: 0;
+                            }
+                        }
+                        @keyframes neuDotFade {
+                            0% {
+                                opacity: 0;
+                                transform: scale(0);
+                            }
+                            70% {
+                                opacity: 1;
+                                transform: scale(1.3);
+                            }
+                            100% {
+                                opacity: 1;
+                                transform: scale(1);
+                            }
+                        }
+                        @keyframes neuIconGlow {
+                            0%, 100% {
+                                transform: translateY(0px) scale(1);
+                            }
+                            50% {
+                                transform: translateY(-3px) scale(1.08);
+                            }
+                        }
+                        .is-visible .neu-card-anim {
+                            animation: neuDiscPopIn 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+                        }
+                        .is-visible .neu-arc-path {
+                            stroke-dasharray: 300;
+                            stroke-dashoffset: 300;
+                            animation: neuArcDraw 1.1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+                        }
+                        .is-visible .neu-dot-anim {
+                            animation: neuDotFade 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+                        }
+                        .neu-icon-pulse {
+                            animation: neuIconGlow 4s ease-in-out infinite;
+                        }
+                    `}} />
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                        {/* Section Header */}
+                        <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 scroll-animate">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1 tracking-tight">
+                                {t("All-in-One Event Toolkit")}
+                            </h2>
+                            <p className="text-base sm:text-lg text-slate-500 dark:text-slate-400 font-medium">
+                                {t("Kila kitu unachokihitaji kurahisisha usimamizi wa sherehe yako kuanzia maandalizi hadi siku ya tukio yenyewe.")}
+                            </p>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                        {/* 6 Neumorphic Circular Infographic Elements: 3 Top and 3 Bottom */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 sm:gap-12 lg:gap-10 justify-items-center items-center">
                             {[
-                                { icon: Smartphone, title: t("Kadi za Kidigitali"), desc: t("Tengeneza kadi zenye muonekano wa kisasa. Jumuisha namba ya kiti, ramani, na QR Code kwa ajili ya mlangoni.") },
-                                { icon: MessageCircle, title: t("WhatsApp & SMS"), desc: t("Watumie wageni wako kadi zao moja kwa moja kwenye namba zao za simu kwa uharaka na uhakika mkubwa.") },
-                                { icon: HandCoins, title: t("Usimamizi wa Michango"), desc: t("Dhibiti ahadi na michango kwa urahisi. Tuma jumbe za kukumbusha wageni kuhusu ahadi zao kiotomatiki.") },
-                                { icon: Users, title: t("Majibu ya Wageni (RSVP)"), desc: t("Pata majibu ya uhakika (RSVP) moja kwa moja kwenye mfumo wakati wageni wanapothibitisha ushiriki wao.") },
-                                { icon: QrCode, title: t("Kuscan QR Mlangoni"), desc: t("Ondoa kero ya watu wasioalikwa. Tumia simu kuscan QR Code mlangoni na kuhakiki taarifa za mgeni sekunde chache tu.") },
-                                { icon: ChartPie, title: t("Ripoti za Moja kwa Moja"), desc: t("Fuatilia kwa ukaribu idadi ya mialiko iliyofika, majibu ya RSVP, na wageni waliokwisha ingia ukumbini.") }
-                            ].map((feature, idx) => (
-                                <div key={idx} className={`group p-4.5 sm:p-5 rounded-2xl scroll-animate bg-slate-50 border border-slate-100 hover:bg-white hover:shadow-xl hover:shadow-slate-200/50 hover:-translate-y-1.5 transition-all duration-300`}>
-                                    <div className="w-11 h-11 rounded-xl bg-white border border-slate-200 text-kardovo-blue-dark shadow-xs flex items-center justify-center mb-3 group-hover:scale-110 group-hover:text-emerald-500 transition-transform duration-300">
-                                        <feature.icon className="w-5 h-5" />
-                                    </div>
-                                    <h3 className="text-base sm:text-lg font-bold text-slate-900 mb-1.5">{feature.title}</h3>
-                                    <p className="text-slate-500 leading-relaxed text-xs sm:text-sm font-medium">{feature.desc}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* HOW IT WORKS */}
-                <section id="how-it-works" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-12 sm:py-16 bg-white relative scroll-mt-14 border-t border-slate-100">
-                    <div className="absolute inset-0 bg-slate-50/50 pointer-events-none"></div>
-                    <div className="max-w-7xl mx-auto px-6 relative z-10 w-full">
-                        <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 scroll-animate">
-                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-3 font-display pb-1">{t("Jinsi Inavyofanya Kazi")}</h2>
-                            <p className="text-base sm:text-lg text-slate-500">{t("Hatua tano tu zinazokutenganisha wewe na usimamizi bora wa tukio lako kidigitali.")}</p>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-6 relative">
-                            {/* Connecting Line (Desktop) */}
-                            <div className="hidden lg:block absolute top-10 left-[12%] right-[12%] h-[2px] bg-slate-200 border-t-2 border-dashed border-slate-200"></div>
-                            
-                            {[
-                                { 
-                                    num: '1', 
-                                    title: t('Sajili Tukio Lako'), 
-                                    desc: t("Tengeneza akaunti na uchague muonekano wa kadi yako ya kidigitali katika mfumo.")
+                                {
+                                    title: t("Kadi za Kidigitali"),
+                                    desc: t("Tengeneza kadi zenye muonekano wa kisasa. Jumuisha namba ya kiti, ramani, na QR Code kwa ajili ya mlangoni."),
+                                    icon: Smartphone,
+                                    gradientId: "neugrad1",
+                                    startColor: "#06B6D4", // Cyan
+                                    endColor: "#8B5CF6",   // Violet / Purple
+                                    arcPosition: "top",    // arc across top
                                 },
-                                { 
-                                    num: '2', 
-                                    title: t("Fanya Malipo"), 
-                                    desc: t("Nunua kifurushi kufungua huduma zote muhimu na kuendelea na maandalizi.")
+                                {
+                                    title: t("WhatsApp & SMS"),
+                                    desc: t("Watumie wageni wako kadi zao moja kwa moja kwenye namba zao za simu kwa uharaka na uhakika mkubwa."),
+                                    icon: MessageCircle,
+                                    gradientId: "neugrad2",
+                                    startColor: "#0284C7", // Sky Blue
+                                    endColor: "#A855F7",   // Purple
+                                    arcPosition: "bottom", // arc across bottom
                                 },
-                                { 
-                                    num: '3', 
-                                    title: t("Tuma Mialiko"), 
-                                    desc: t("Weka majina ya wageni wako kisha watumie mialiko yao moja kwa moja kwa WhatsApp au SMS.")
+                                {
+                                    title: t("Usimamizi wa Michango"),
+                                    desc: t("Dhibiti ahadi na michango kwa urahisi. Tuma jumbe za kukumbusha wageni kuhusu ahadi zao kiotomatiki."),
+                                    icon: HandCoins,
+                                    gradientId: "neugrad3",
+                                    startColor: "#00BAF2", // Bright Cyan
+                                    endColor: "#6366F1",   // Indigo
+                                    arcPosition: "top",    // arc across top
                                 },
-                                { 
-                                    num: '4', 
-                                    title: t('Pokea Majibu'), 
-                                    desc: t("Wageni watafungua kadi zao na kuthibitisha (RSVP) mtandaoni kama watahudhuria au la.")
+                                {
+                                    title: t("Majibu ya Wageni (RSVP)"),
+                                    desc: t("Pata majibu ya uhakika (RSVP) moja kwa moja kwenye mfumo wakati wageni wanapothibitisha ushiriki wao."),
+                                    icon: Users,
+                                    gradientId: "neugrad4",
+                                    startColor: "#10B981", // Emerald
+                                    endColor: "#06B6D4",   // Cyan / Teal
+                                    arcPosition: "bottom", // arc across bottom
                                 },
-                                { 
-                                    num: '5', 
-                                    title: t('Scan QR Mlangoni'), 
-                                    desc: t("Siku ya tukio, scan QR code kwenye kadi zao mlangoni kuruhusu walioalikwa tu kuingia.")
+                                {
+                                    title: t("Kuscan QR Mlangoni"),
+                                    desc: t("Ondoa kero ya watu wasioalikwa. Tumia simu kuscan QR Code mlangoni na kuhakiki taarifa za mgeni sekunde chache tu."),
+                                    icon: QrCode,
+                                    gradientId: "neugrad5",
+                                    startColor: "#3B82F6", // Royal Blue
+                                    endColor: "#8B5CF6",   // Violet
+                                    arcPosition: "top",    // arc across top
+                                },
+                                {
+                                    title: t("Ripoti za Moja kwa Moja"),
+                                    desc: t("Fuatilia kwa ukaribu idadi ya mialiko iliyofika, majibu ya RSVP, na wageni waliokwisha ingia ukumbini."),
+                                    icon: ChartPie,
+                                    gradientId: "neugrad6",
+                                    startColor: "#14B8A6", // Teal
+                                    endColor: "#3B82F6",   // Blue
+                                    arcPosition: "bottom", // arc across bottom
                                 }
-                            ].map((step, idx) => (
-                                <div key={idx} className={`relative flex flex-col items-center text-center group scroll-animate`}>
-                                    <div className="w-20 h-20 rounded-full shadow-lg shadow-slate-200/50 flex items-center justify-center text-2xl font-black text-white bg-[#0B2545] mb-5 relative z-10 border-4 border-slate-50 group-hover:scale-110 group-hover:bg-[#16A34A] transition-all duration-300">
-                                        {step.num}
+                            ].map((item, idx) => {
+                                const cardDelay = `${(idx % 3) * 150 + Math.floor(idx / 3) * 200}ms`;
+                                const arcDelay = `${(idx % 3) * 150 + Math.floor(idx / 3) * 200 + 350}ms`;
+                                const dotDelay = `${(idx % 3) * 150 + Math.floor(idx / 3) * 200 + 800}ms`;
+
+                                return (
+                                    <div 
+                                        key={idx} 
+                                        className="group relative flex flex-col items-center justify-center w-full max-w-[340px] sm:max-w-[360px] aspect-square rounded-full p-4 scroll-animate neu-card-anim transition-transform duration-500 hover:scale-[1.03]"
+                                        style={{ animationDelay: cardDelay }}
+                                    >
+                                        {/* Neumorphic Outer Raised Ring Foundation */}
+                                        <div 
+                                            className="absolute inset-0 rounded-full bg-[#F0F2F5] dark:bg-[#0c1626] transition-all duration-300"
+                                            style={{
+                                                boxShadow: `
+                                                    16px 16px 36px rgba(166, 178, 196, 0.45),
+                                                    -16px -16px 36px rgba(255, 255, 255, 0.95),
+                                                    inset 1px 1px 2px rgba(255, 255, 255, 0.8),
+                                                    inset -1px -1px 2px rgba(166, 178, 196, 0.25)
+                                                `
+                                            }}
+                                        />
+
+                                        {/* SVG Orbital Track & Vibrantly Colored Arc with Terminal Pin Dots */}
+                                        <div className="absolute inset-0 pointer-events-none p-2 sm:p-2.5">
+                                            <svg 
+                                                className="w-full h-full" 
+                                                viewBox="0 0 340 340" 
+                                                fill="none"
+                                            >
+                                                <defs>
+                                                    <linearGradient id={item.gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+                                                        <stop offset="0%" stopColor={item.startColor} />
+                                                        <stop offset="100%" stopColor={item.endColor} />
+                                                    </linearGradient>
+                                                </defs>
+
+                                                {/* Full 360-degree Fine Grey Guide Orbit (Radius 145, Center 170,170) */}
+                                                <circle 
+                                                    cx="170" 
+                                                    cy="170" 
+                                                    r="145" 
+                                                    stroke="#D5DCE5" 
+                                                    strokeWidth="1.6" 
+                                                    className="dark:stroke-slate-700/60"
+                                                />
+
+                                                {/* Colored Gradient Arc Segment with Rounded Ends */}
+                                                {item.arcPosition === "top" ? (
+                                                    // Arc across the top perimeter
+                                                    <g>
+                                                        <path 
+                                                            d="M 51 90 A 145 145 0 0 1 289 90" 
+                                                            stroke={`url(#${item.gradientId})`} 
+                                                            strokeWidth="5.5" 
+                                                            strokeLinecap="round" 
+                                                            className="neu-arc-path"
+                                                            style={{ animationDelay: arcDelay }}
+                                                        />
+                                                        {/* Terminal anchor dots on the track */}
+                                                        <circle cx="51" cy="90" r="3" fill="#64748B" className="neu-dot-anim opacity-0" style={{ transformOrigin: '51px 90px', animationDelay: dotDelay }} />
+                                                        <circle cx="289" cy="90" r="3" fill="#64748B" className="neu-dot-anim opacity-0" style={{ transformOrigin: '289px 90px', animationDelay: dotDelay }} />
+                                                    </g>
+                                                ) : (
+                                                    // Arc across the bottom perimeter
+                                                    <g>
+                                                        <path 
+                                                            d="M 51 250 A 145 145 0 0 0 289 250" 
+                                                            stroke={`url(#${item.gradientId})`} 
+                                                            strokeWidth="5.5" 
+                                                            strokeLinecap="round" 
+                                                            className="neu-arc-path"
+                                                            style={{ animationDelay: arcDelay }}
+                                                        />
+                                                        {/* Terminal anchor dots on the track */}
+                                                        <circle cx="51" cy="250" r="3" fill="#64748B" className="neu-dot-anim opacity-0" style={{ transformOrigin: '51px 250px', animationDelay: dotDelay }} />
+                                                        <circle cx="289" cy="250" r="3" fill="#64748B" className="neu-dot-anim opacity-0" style={{ transformOrigin: '289px 250px', animationDelay: dotDelay }} />
+                                                    </g>
+                                                )}
+                                            </svg>
+                                        </div>
+
+                                        {/* Neumorphic Recessed / Inner Well Center Disk */}
+                                        <div 
+                                            className="relative z-10 w-[80%] h-[80%] rounded-full bg-[#F0F2F5] dark:bg-[#0c1626] flex flex-col items-center justify-center text-center p-6 sm:p-7 transition-all duration-300"
+                                            style={{
+                                                boxShadow: `
+                                                    inset 6px 6px 14px rgba(166, 178, 196, 0.4),
+                                                    inset -6px -6px 14px rgba(255, 255, 255, 0.95),
+                                                    0 2px 8px rgba(0,0,0,0.02)
+                                                `
+                                            }}
+                                        >
+                                            {/* Feature Title */}
+                                            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-snug mb-2 font-display">
+                                                {item.title}
+                                            </h3>
+
+                                            {/* Feature Description */}
+                                            <p className="text-[10px] sm:text-[11.5px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal max-w-[210px] line-clamp-3 mb-3">
+                                                {item.desc}
+                                            </p>
+
+                                            {/* Minimalist Tech Gradient Icon at bottom center */}
+                                            <div 
+                                                className="flex items-center justify-center transition-transform duration-300 group-hover:scale-125 neu-icon-pulse"
+                                                style={{ color: item.startColor }}
+                                            >
+                                                <item.icon className="w-5 h-5 sm:w-5.5 sm:h-5.5 stroke-[2]" />
+                                            </div>
+                                        </div>
                                     </div>
-                                    <h3 className="text-lg font-bold text-[#0B2545] mb-2">{step.title}</h3>
-                                    <p className="text-slate-500 leading-relaxed text-xs sm:text-sm font-medium">{step.desc}</p>
-                                </div>
-                            ))}
+                                );
+                            })}
+                        </div>
+                    </div>
+                </section>
+
+                {/* HOW IT WORKS — CURVED WAVE INFOGRAPHIC STYLE */}
+                <section id="how-it-works" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-8 sm:py-12 bg-[#FBFBFC] dark:bg-[#07111E] relative scroll-mt-14 border-t border-slate-200/60 dark:border-white/10 overflow-hidden">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col justify-center">
+                        {/* Section Header */}
+                        <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 scroll-animate">
+                            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1 tracking-tight">
+                                {t("Jinsi Inavyofanya Kazi")}
+                            </h2>
+                            <p className="text-base sm:text-lg text-slate-500 dark:text-slate-400 font-medium">
+                                {t("Hatua tano tu zinazokutenganisha wewe na usimamizi bora wa tukio lako kidigitali.")}
+                            </p>
+                        </div>
+
+                        {/* Infographic Wave & Steps Container */}
+                        <div className="relative w-full py-6">
+                            <style dangerouslySetInnerHTML={{__html: `
+                                @keyframes ribbonDrawStep0 {
+                                    0% { stroke-dashoffset: 480; }
+                                    100% { stroke-dashoffset: 0; }
+                                }
+                                @keyframes ribbonDrawStep1 {
+                                    0% { stroke-dashoffset: 320; }
+                                    100% { stroke-dashoffset: 0; }
+                                }
+                                @keyframes ribbonDrawStep2 {
+                                    0% { stroke-dashoffset: 320; }
+                                    100% { stroke-dashoffset: 0; }
+                                }
+                                @keyframes ribbonDrawStep3 {
+                                    0% { stroke-dashoffset: 320; }
+                                    100% { stroke-dashoffset: 0; }
+                                }
+                                @keyframes ribbonDrawStep4 {
+                                    0% { stroke-dashoffset: 300; }
+                                    100% { stroke-dashoffset: 0; }
+                                }
+                                @keyframes arrowHeadPop {
+                                    0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+                                    60% { transform: scale(1.2) rotate(3deg); opacity: 1; }
+                                    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+                                }
+                                .is-visible .ribbon-anim-0 {
+                                    stroke-dasharray: 480;
+                                    animation: ribbonDrawStep0 0.85s cubic-bezier(0.25, 1, 0.5, 1) forwards 0.2s;
+                                }
+                                .is-visible .ribbon-anim-1 {
+                                    stroke-dasharray: 320;
+                                    animation: ribbonDrawStep1 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards 0.95s;
+                                }
+                                .is-visible .ribbon-anim-2 {
+                                    stroke-dasharray: 320;
+                                    animation: ribbonDrawStep2 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards 1.6s;
+                                }
+                                .is-visible .ribbon-anim-3 {
+                                    stroke-dasharray: 320;
+                                    animation: ribbonDrawStep3 0.75s cubic-bezier(0.25, 1, 0.5, 1) forwards 2.25s;
+                                }
+                                .is-visible .ribbon-anim-4 {
+                                    stroke-dasharray: 300;
+                                    animation: ribbonDrawStep4 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards 2.9s;
+                                }
+                                .is-visible .arrowhead-anim {
+                                    transform-origin: 5px 8px;
+                                    animation: arrowHeadPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards 3.6s;
+                                }
+                            `}} />
+
+                            {/* 5 Circular Discs & Labels Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 sm:gap-10 lg:gap-0 relative z-10 w-full items-start">
+                                {[
+                                    {
+                                        stepNum: "01",
+                                        title: t("Sajili Tukio Lako"),
+                                        desc: t("Tengeneza akaunti na uchague muonekano wa kadi yako ya kidigitali katika mfumo."),
+                                        icon: CalendarPlus,
+                                    },
+                                    {
+                                        stepNum: "02",
+                                        title: t("Fanya Malipo"),
+                                        desc: t("Nunua kifurushi kufungua huduma zote muhimu na kuendelea na maandalizi."),
+                                        icon: CreditCard,
+                                    },
+                                    {
+                                        stepNum: "03",
+                                        title: t("Tuma Mialiko"),
+                                        desc: t("Weka majina ya wageni wako kisha watumie mialiko yao moja kwa moja kwa WhatsApp au SMS."),
+                                        icon: Send,
+                                    },
+                                    {
+                                        stepNum: "04",
+                                        title: t("Scan QR Mlangoni"),
+                                        desc: t("Siku ya tukio, scan QR code kwenye kadi zao mlangoni kuruhusu walioalikwa tu kuingia."),
+                                        icon: QrCode,
+                                    },
+                                    {
+                                        stepNum: "05",
+                                        title: t("Pokea Majibu"),
+                                        desc: t("Wageni watafungua kadi zao na kuthibitisha (RSVP) mtandaoni kama watahudhuria au la."),
+                                        icon: UserCheck,
+                                    }
+                                ].map((step, idx) => {
+                                    // Kardovo brand palette gradient: Emerald Green (#117534) -> Teal (#0D9488) -> Light Blue (#008EE8) -> Dark Blue (#1144A0) -> Deep Navy (#111E2E)
+                                    const ribbonColors = ['#117534', '#0D9488', '#008EE8', '#1144A0', '#1E3A8A', '#111E2E'];
+                                    const orbitPaths = [
+                                        { solid: 'M 100 200 A 100 100 0 1 1 200 100', dashed: 'M 200 100 A 100 100 0 0 1 100 200', defaultOffset: 480 },
+                                        { solid: 'M 0 100 A 100 100 0 0 0 200 100', dashed: 'M 0 100 A 100 100 0 0 1 200 100', defaultOffset: 320 },
+                                        { solid: 'M 0 100 A 100 100 0 0 1 200 100', dashed: 'M 0 100 A 100 100 0 0 0 200 100', defaultOffset: 320 },
+                                        { solid: 'M 0 100 A 100 100 0 0 0 200 100', dashed: 'M 0 100 A 100 100 0 0 1 200 100', defaultOffset: 320 },
+                                        { solid: 'M 0 100 A 100 100 0 0 1 142 9', dashed: 'M 160 20 A 100 100 0 1 1 0 100', defaultOffset: 300 },
+                                    ];
+                                    const isLastStep = idx === orbitPaths.length - 1;
+                                    const delays = ['delay-100', 'delay-200', 'delay-300', 'delay-400', 'delay-500'];
+
+                                    return (
+                                    <div key={idx} className={`flex flex-col items-center text-center group relative scroll-animate ${delays[idx]}`}>
+                                        {/* Square orbit area: orbit radius = half column width, so neighbouring orbits touch */}
+                                        <div className="relative w-full flex items-center justify-center mb-6 lg:mb-4 lg:aspect-square">
+                                            <svg
+                                                className="hidden lg:block absolute inset-0 w-full h-full overflow-visible pointer-events-none z-0"
+                                                viewBox="0 0 200 200"
+                                                fill="none"
+                                            >
+                                                <defs>
+                                                    <linearGradient id={`howItWorksRibbon-${idx}`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="200" y2="0">
+                                                        <stop offset="0%" stopColor={ribbonColors[idx]} />
+                                                        <stop offset="100%" stopColor={ribbonColors[idx + 1]} />
+                                                    </linearGradient>
+                                                    {isLastStep && (
+                                                        <marker id="howItWorksArrow" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="5" refY="8" orient="auto">
+                                                            <polygon points="0 0, 16 8, 0 16" fill={ribbonColors[idx + 1]} className="arrowhead-anim opacity-0" />
+                                                        </marker>
+                                                    )}
+                                                </defs>
+                                                <path d={orbitPaths[idx].dashed} stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="5 5" className="opacity-60 dark:opacity-40 transition-opacity duration-700" />
+                                                <path
+                                                    d={orbitPaths[idx].solid}
+                                                    stroke={`url(#howItWorksRibbon-${idx})`}
+                                                    strokeWidth="3.5"
+                                                    strokeLinecap={isLastStep ? 'butt' : 'round'}
+                                                    className={`ribbon-anim-${idx}`}
+                                                    style={{ strokeDashoffset: orbitPaths[idx].defaultOffset }}
+                                                    markerEnd={isLastStep ? 'url(#howItWorksArrow)' : undefined}
+                                                />
+                                            </svg>
+
+                                            {/* Circular Disc */}
+                                            <div className="w-28 h-28 sm:w-32 sm:h-32 lg:w-[62%] lg:h-auto lg:aspect-square rounded-full bg-white dark:bg-[#0c1626] shadow-[0_18px_40px_rgba(0,0,0,0.10),0_4px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_36px_rgba(0,0,0,0.45)] flex items-center justify-center transition-all duration-500 hover:scale-105 group-hover:shadow-[0_22px_45px_rgba(0,0,0,0.14)] relative z-10">
+                                                <step.icon className="w-10 h-10 sm:w-11 sm:h-11 xl:w-12 xl:h-12 text-slate-800 dark:text-slate-100 stroke-[1.6] group-hover:scale-110 transition-transform duration-300" />
+                                            </div>
+                                        </div>
+
+                                        {/* Text Section Below */}
+                                        <div className="px-2 max-w-[240px]">
+                                            {/* Step Number in Kardovo Brand Color */}
+                                            <span 
+                                                className="block text-sm sm:text-base font-black uppercase font-mono tracking-wider mb-1.5 transition-transform duration-300 group-hover:-translate-y-0.5"
+                                                style={{ color: ribbonColors[idx] }}
+                                            >
+                                                {step.stepNum}
+                                            </span>
+
+                                            {/* Title */}
+                                            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug mb-2">
+                                                {step.title}
+                                            </h3>
+
+                                            {/* Description */}
+                                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                                                {step.desc}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    );
+                                })}
+                            </div>
                         </div>
                     </div>
                 </section>
@@ -1476,7 +2079,7 @@ export default function Welcome({ auth }) {
                                     { label: 'halo',    sub: 'Pesa',     labelColor: '#F97316', subColor: '#64748b' },
                                     { label: 'Azam',    sub: 'Pesa',     labelColor: '#16a34a', subColor: '#64748b' },
                                 ].map((p, i) => (
-                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5 hover:border-emerald-300 hover:shadow-md transition-all">
+                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5">
                                         <span className="font-black text-base leading-none tracking-tight" style={{ color: p.labelColor, fontStyle: p.italic ? 'italic' : 'normal' }}>{p.label}</span>
                                         <span className="text-[11px] font-bold leading-none tracking-widest uppercase" style={{ color: p.subColor }}>{p.sub}</span>
                                     </div>
@@ -1494,7 +2097,7 @@ export default function Welcome({ auth }) {
                                     { label: 'Amex',       sub: 'American Express', labelColor: '#007BC1' },
                                     { label: 'UnionPay',   sub: 'Union Pay',        labelColor: '#D40000' },
                                 ].map((p, i) => (
-                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5 hover:border-emerald-300 hover:shadow-md transition-all">
+                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5">
                                         <span className="font-black text-base leading-none tracking-tight" style={{ color: p.labelColor }}>{p.label}</span>
                                         <span className="text-[10px] font-semibold leading-none text-slate-400 uppercase tracking-wider">{p.sub}</span>
                                     </div>
@@ -1511,7 +2114,7 @@ export default function Welcome({ auth }) {
                                     { label: 'QR Code',       sub: 'Scan to pay instantly', labelColor: '#1a1a2e' },
                                     { label: 'Lipia Link',    sub: 'AzamPay invoice link',  labelColor: '#16a34a' },
                                 ].map((p, i) => (
-                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5 hover:border-emerald-300 hover:shadow-md transition-all">
+                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5">
                                         <span className="font-black text-base leading-none tracking-tight" style={{ color: p.labelColor }}>{p.label}</span>
                                         <span className="text-[10px] font-semibold leading-none text-slate-400 text-center px-2">{p.sub}</span>
                                     </div>

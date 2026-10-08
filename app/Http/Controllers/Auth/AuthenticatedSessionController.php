@@ -51,7 +51,9 @@ class AuthenticatedSessionController extends Controller
 
             $request->session()->put('auth.2fa_user_id', $user->id);
             $request->session()->put('auth.2fa_remember', $request->boolean('remember'));
-            $request->session()->put('auth.2fa_dev_code', $code);
+            if (app()->environment('local', 'testing')) {
+                $request->session()->put('auth.2fa_dev_code', $code);
+            }
 
             return redirect()->route('two-factor.index');
         }

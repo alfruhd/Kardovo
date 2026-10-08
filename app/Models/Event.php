@@ -28,6 +28,12 @@ class Event extends Model
         'ticket_instructions',
         'ticket_sales_end_at',
         'ticket_template_config',
+        'payout_method',
+        'payout_provider',
+        'payout_account_number',
+        'payout_account_name',
+        'payout_bank_branch',
+        'payout_status',
     ];
 
     protected $casts = [

@@ -230,6 +230,7 @@ class TicketingTest extends TestCase
             'ticket_order_id' => $order->id,
             'ticket_tier_id' => $tier->id,
             'ticket_number' => 'TKT-EMAIL-1234',
+            'attendee_email' => 'attendee@example.com',
         ]);
 
         $response = $this->post(route('tickets.sendEmail', $ticket->ticket_number), [
@@ -612,5 +613,70 @@ class TicketingTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertStringContainsString('text/csv', $response->headers->get('content-type'));
+    }
+
+    public function test_organizer_can_configure_connected_payout_account(): void
+    {
+        $event = Event::first();
+        $organizer = $event->user;
+
+        $response = $this->actingAs($organizer)->post(route('events.ticketingSettings', $event->id), [
+            'ticketing_enabled' => true,
+            'ticket_currency' => 'TZS',
+            'payout_method' => 'mobile_money',
+            'payout_provider' => 'M-Pesa (Vodacom)',
+            'payout_account_number' => '0754112233',
+            'payout_account_name' => 'Safari Events Organizer',
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHasNoErrors();
+
+        $freshEvent = $event->fresh();
+        $this->assertEquals('mobile_money', $freshEvent->payout_method);
+        $this->assertEquals('M-Pesa (Vodacom)', $freshEvent->payout_provider);
+        $this->assertEquals('0754112233', $freshEvent->payout_account_number);
+        $this->assertEquals('Safari Events Organizer', $freshEvent->payout_account_name);
+        $this->assertEquals('active', $freshEvent->payout_status);
+    }
+
+    public function test_checkout_calculates_6_percent_kardovo_fee_and_94_percent_organizer_net(): void
+    {
+        $event = Event::first();
+        $event->update([
+            'ticketing_enabled' => true,
+            'payout_method' => 'bank',
+            'payout_provider' => 'CRDB Bank',
+            'payout_account_number' => '0150244983000',
+            'payout_account_name' => 'Grand Gala Organizers',
+        ]);
+
+        $tier = TicketTier::factory()->create([
+            'event_id' => $event->id,
+            'name' => 'Gala Dinner Pass',
+            'price' => 100000,
+            'capacity' => 10,
+            'status' => 'active',
+        ]);
+
+        $response = $this->postJson(route('tickets.checkout', $event->id), [
+            'buyer_name' => 'Salim Bakari',
+            'buyer_phone' => '0712334455',
+            'items' => [
+                ['tier_id' => $tier->id, 'quantity' => 1],
+            ],
+        ]);
+
+        $response->assertStatus(200);
+
+        $order = TicketOrder::latest()->first();
+        $this->assertNotNull($order);
+        $this->assertEquals(100000, (float) $order->subtotal);
+        $this->assertEquals(6.00, (float) $order->platform_fee_percent);
+        $this->assertEquals(6000, (float) $order->platform_fee); // 6% of 100,000 = 6,000
+        $this->assertEquals(94000, (float) $order->organizer_net_amount); // 94% of 100,000 = 94,000
+        $this->assertEquals(100000, (float) $order->total_amount);
+        $this->assertEquals('CRDB Bank', $order->metadata['payout_provider']);
+        $this->assertEquals('0150244983000', $order->metadata['payout_account_number']);
     }
 }

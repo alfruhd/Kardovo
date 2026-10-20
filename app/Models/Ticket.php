@@ -117,6 +117,23 @@ class Ticket extends Model
         return url('/t/'.$this->ticket_number);
     }
 
+    public function isPaid(): bool
+    {
+        if ((float) $this->price_paid <= 0) {
+            return true;
+        }
+
+        if ($this->status === 'cancelled') {
+            return false;
+        }
+
+        if ($this->ticketOrder) {
+            return $this->ticketOrder->isPaid();
+        }
+
+        return in_array($this->status, ['valid', 'checked_in'], true);
+    }
+
     public function markCheckedIn(?int $scannerId = null, string $gateLabel = 'Main Gate'): bool
     {
         if ($this->status === 'checked_in') {

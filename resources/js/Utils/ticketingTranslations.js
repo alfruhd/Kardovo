@@ -13,6 +13,7 @@ export const ticketingTranslations = {
     'Corporate Events': { en: 'Corporate Events', sw: 'Matukio ya Kibiashara' },
     'Corporate': { en: 'Corporate', sw: 'Kibiashara' },
     'Support': { en: 'Support', sw: 'Msaada' },
+    'Contact Us': { en: 'Contact Us', sw: 'Wasiliana Nasi' },
     'Sign in': { en: 'Sign in', sw: 'Ingia' },
     'Sign up': { en: 'Sign up', sw: 'Jiunge' },
     'Dashboard': { en: 'Dashboard', sw: 'Dashibodi' },
@@ -21,11 +22,11 @@ export const ticketingTranslations = {
     // Marketplace Hero
     'hero_title': {
         en: 'Experience the hottest events across Tanzania.',
-        sw: 'Pata uzoefu wa matukio maarufu zaidi Tanzania.',
+        sw: 'Shiriki matukio maarufu zaidi kote Tanzania.',
     },
     'hero_subtitle': {
         en: 'From comedy nights to city marathons, discover the moments everyone is booking. No account required — instant mobile checkout and live QR passes.',
-        sw: 'Kuanzia vichekesho hadi mbio za jiji, gundua matukio yanayopendwa zaidi. Hakuna akaunti inayohitajika — malipo ya simu papo hapo na tiketi za QR.',
+        sw: 'Kuanzia maonyesho ya vichekesho hadi mbio za marathoni, pata tiketi za matukio unayoyapenda. Huhitaji akaunti — lipa kwa simu papo hapo na upate tiketi yako ya QR papo hapo.',
     },
     'search_placeholder': {
         en: 'Search events, hotels, or cities (e.g. Dar, Serengeti, Moshi)...',
@@ -99,7 +100,7 @@ export const ticketingTranslations = {
     'Seconds': { en: 'Seconds', sw: 'Sekunde' },
 
     // Steps
-    'Booking': { en: 'Booking', sw: 'Uwekaji' },
+    'Booking': { en: 'Booking', sw: 'Chagua Tiketi' },
     'Details': { en: 'Details', sw: 'Taarifa' },
     'Payment': { en: 'Payment', sw: 'Malipo' },
 
@@ -111,7 +112,7 @@ export const ticketingTranslations = {
     },
     'TICKETS': { en: 'TICKETS', sw: 'TIKETI' },
     'each': { en: 'each', sw: 'kila moja' },
-    'Booking subtotal': { en: 'Booking subtotal', sw: 'Jumla ndogo ya uwekaji' },
+    'Booking subtotal': { en: 'Booking subtotal', sw: 'Jumla ndogo ya tiketi' },
     'Continue': { en: 'Continue', sw: 'Endelea' },
     'select_at_least_1': {
         en: 'Please select at least 1 ticket to continue.',
@@ -172,7 +173,7 @@ export const ticketingTranslations = {
     'NO-REFUND POLICY': { en: 'NO-REFUND POLICY', sw: 'SERA YA KUTOREJESHA FEDHA' },
     'terms_body_2': {
         en: 'All completed event payments are final. Refunds are only processed if the event is cancelled or the organizer announces a refund exception.',
-        sw: 'Malipo yote yaliyokamilika ni ya mwisho. Marejesho hufanyika tu endapo tukio litafutwa au muandaaji ataidhinisha ubaguzi maalum.',
+        sw: 'Malipo yote ya tiketi ni ya mwisho. Fedha hurejeshwa endapo tu tukio litafutwa au muandaaji akiridhia kurejesha fedha.',
     },
     'must_accept_terms': {
         en: 'You must accept the no-refund policy to continue.',
@@ -189,11 +190,11 @@ export const ticketingTranslations = {
     'Buy Now': { en: 'Buy Now', sw: 'Lipa Sasa' },
     'Processing Booking...': { en: 'Processing Booking...', sw: 'Inashughulikia Malipo...' },
 
-    // Step 4: Booking Created
-    'Booking Created': { en: 'Booking Created', sw: 'Tiketi Imewekwa Kikamilifu' },
+    // Step 4: Booking Created & Payment Verification
+    'Booking Created': { en: 'Booking Created', sw: 'Agizo la Tiketi Limekamilika' },
     'booking_created_subtitle': {
         en: 'Payment request sent. Approve the prompt on your phone to complete the booking.',
-        sw: 'Ombi la malipo limetumwa. Weka nenosiri (PIN) kuthibitisha kwenye simu yako ili kukamilisha ununuzi.',
+        sw: 'Ombi la malipo limetumwa. Weka namba yako ya siri (PIN) kuthibitisha kwenye simu yako ili kukamilisha agizo.',
     },
     'Booking Ref': { en: 'Booking Ref', sw: 'Namba ya Kumbukumbu' },
     'Event': { en: 'Event', sw: 'Tukio' },
@@ -203,6 +204,27 @@ export const ticketingTranslations = {
     'Total': { en: 'Total', sw: 'Jumla Kuu' },
     'Status': { en: 'Status', sw: 'Hali' },
     'PENDING': { en: 'PENDING', sw: 'INASUBIRI' },
+    'CONFIRMED': { en: 'CONFIRMED', sw: 'IMETHIBITISHWA' },
+    'PAID': { en: 'PAID', sw: 'IMELIPWA' },
+    'PENDING VERIFICATION': { en: 'PENDING VERIFICATION', sw: 'INASUBIRI UTHIBITISHO' },
+    'Check Payment Status': { en: 'Check Payment Status', sw: 'Hakiki Hali ya Malipo' },
+    'Checking Status...': { en: 'Checking Status...', sw: 'Inahakiki Hali...' },
+    'payment_pending_gate_notice': {
+        en: 'Passes and admission QR codes remain securely locked until payment is confirmed and verified.',
+        sw: 'Tiketi na QR code za kuingilia zimefungwa kwa usalama hadi malipo yatakapothibitishwa.',
+    },
+    'payment_prompt_hint': {
+        en: 'A mobile money payment prompt was sent to your phone. Please enter your PIN to approve.',
+        sw: 'Ombi la malipo limetumwa kwenye simu yako. Tafadhali weka namba yako ya siri (PIN) kuthibitisha.',
+    },
+    'payment_confirmed_unlocked': {
+        en: 'Payment verified! Your digital passes are unlocked and ready.',
+        sw: 'Malipo yamethibitishwa! Tiketi zako sasa ziko tayari kutumika.',
+    },
+    'Ticket viewing is locked until payment is confirmed': {
+        en: 'Ticket viewing is locked until payment is confirmed',
+        sw: 'Ufunguzi wa tiketi umefungwa hadi malipo yathibitishwe',
+    },
     'keep_ref_safe': {
         en: 'Keep your booking reference safe. View all tickets in My Tickets.',
         sw: 'Hifadhi namba yako ya kumbukumbu salama. Tazama tiketi zako zote kwenye ukurasa wako.',

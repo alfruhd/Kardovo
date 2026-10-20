@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'azampay' => [
+        'webhook_secret' => env('AZAMPAY_WEBHOOK_SECRET'),
+    ],
+
 ];

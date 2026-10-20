@@ -476,8 +476,8 @@ export default function CardTemplates({
                 ) : myTemplates.length === 0 ? (
                     /* ── EMPTY STATE ── */
                     <div className="flex flex-col items-center justify-center py-16 px-6 text-center border border-dashed border-slate-300 dark:border-white/[0.1] rounded-2xl bg-white dark:bg-[#0B1524]">
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200/60 dark:border-emerald-500/20 flex items-center justify-center mb-3">
-                            <Upload className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-500/10 border border-sky-200/60 dark:border-sky-500/20 flex items-center justify-center mb-3">
+                            <Upload className="w-5 h-5 text-[#154F7C] dark:text-sky-400" />
                         </div>
                         <h2 className="text-sm font-bold text-slate-900 dark:text-white">No custom artwork uploaded yet</h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
@@ -486,7 +486,7 @@ export default function CardTemplates({
                         <button
                             type="button"
                             onClick={() => setUploadModalOpen(true)}
-                            className="mt-5 inline-flex items-center gap-2 px-3.5 py-2 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                            className="mt-5 inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 text-white text-xs font-bold shadow-xs shadow-[#154F7C]/20 transition active:scale-95 cursor-pointer"
                         >
                             <Plus className="w-4 h-4 stroke-[2.5]" />
                             <span>Upload Your First Artwork</span>
@@ -516,7 +516,7 @@ export default function CardTemplates({
                                             onClick={() => handleSelectTemplate(tpl)}
                                             className={`group relative shrink-0 w-36 rounded-xl border-2 transition-all cursor-pointer overflow-hidden ${
                                                 isSelected
-                                                    ? 'border-[#16A34A] bg-emerald-50/30 dark:bg-emerald-950/20 shadow-xs ring-1 ring-[#16A34A]/30'
+                                                    ? 'border-[#154F7C] dark:border-sky-400 bg-sky-50/50 dark:bg-sky-950/20 shadow-xs ring-1 ring-[#154F7C]/30'
                                                     : 'border-slate-200 dark:border-white/[0.08] bg-slate-50/60 dark:bg-white/[0.02] hover:border-slate-300 dark:hover:border-white/20'
                                             }`}
                                         >
@@ -555,7 +555,7 @@ export default function CardTemplates({
                                 <button
                                     type="button"
                                     onClick={() => setUploadModalOpen(true)}
-                                    className="shrink-0 w-28 h-[100px] rounded-xl border-2 border-dashed border-slate-300 dark:border-white/10 hover:border-[#16A34A] text-slate-400 hover:text-[#16A34A] flex flex-col items-center justify-center gap-1 transition cursor-pointer"
+                                    className="shrink-0 w-28 h-[100px] rounded-xl border-2 border-dashed border-slate-300 dark:border-white/10 hover:border-[#154F7C] dark:hover:border-sky-400 text-slate-400 hover:text-[#154F7C] dark:hover:text-sky-400 flex flex-col items-center justify-center gap-1 transition cursor-pointer"
                                 >
                                     <Plus className="w-4 h-4" />
                                     <span className="text-[11px] font-bold">New Pass</span>
@@ -579,7 +579,7 @@ export default function CardTemplates({
                                             value={form.data.name}
                                             onChange={(e) => form.setData('name', e.target.value)}
                                             placeholder="e.g. VIP Pass"
-                                            className="w-36 sm:w-48 px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#07111D] text-slate-900 dark:text-white focus:border-emerald-500 focus:bg-white dark:focus:bg-[#07111D] outline-none transition"
+                                            className="w-36 sm:w-48 px-2.5 py-1 text-xs font-bold rounded-lg border border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#07111D] text-slate-900 dark:text-white focus:border-[#154F7C] dark:focus:border-sky-400 focus:bg-white dark:focus:bg-[#07111D] outline-none transition"
                                         />
                                         {isCurrentCustomOrAdmin && (
                                             <button
@@ -673,7 +673,7 @@ export default function CardTemplates({
                                         <button
                                             type="submit"
                                             disabled={form.processing}
-                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] rounded-xl shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-50"
+                                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 shadow-xs shadow-[#154F7C]/20 transition active:scale-95 cursor-pointer disabled:opacity-50"
                                         >
                                             {form.processing ? (
                                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -687,12 +687,12 @@ export default function CardTemplates({
 
                                 {/* CONTEXTUAL SETTINGS PANEL: Only displayed when a specific element is clicked */}
                                 {activeElementKey && (
-                                    <div className="bg-white dark:bg-[#0B1524] rounded-2xl p-4 border border-emerald-500/30 dark:border-emerald-500/20 shadow-xs transition-all">
+                                    <div className="bg-white dark:bg-[#0B1524] rounded-2xl p-4 border border-sky-500/30 dark:border-sky-500/20 shadow-xs transition-all">
                                         
                                         {/* Header of Active Element */}
                                         <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100 dark:border-white/[0.06]">
                                             <div className="flex items-center gap-2.5">
-                                                <div className="w-7 h-7 rounded-lg bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                                                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#154F7C] to-[#327FB5] text-white flex items-center justify-center shrink-0 shadow-xs">
                                                     {activeElementKey === 'guest_name' && <Type className="w-4 h-4" />}
                                                     {activeElementKey === 'allowance_badge' && <ShieldCheck className="w-4 h-4" />}
                                                     {activeElementKey === 'qr_code' && <QrCode className="w-4 h-4" />}
@@ -720,7 +720,7 @@ export default function CardTemplates({
                                                             onClick={() => updateDirectConfig('show_guest_name', true)}
                                                             className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition cursor-pointer ${
                                                                 form.data.elements_config?.show_guest_name === true
-                                                                    ? 'bg-[#16A34A] text-white shadow-2xs'
+                                                                    ? 'bg-[#154F7C] text-white shadow-2xs'
                                                                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                                                             }`}
                                                         >
@@ -747,7 +747,7 @@ export default function CardTemplates({
                                                             onClick={() => updateDirectConfig('show_allowance_badge', true)}
                                                             className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition cursor-pointer ${
                                                                 form.data.elements_config?.show_allowance_badge === true
-                                                                    ? 'bg-[#16A34A] text-white shadow-2xs'
+                                                                    ? 'bg-[#154F7C] text-white shadow-2xs'
                                                                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                                                             }`}
                                                         >
@@ -777,7 +777,7 @@ export default function CardTemplates({
                                                             }}
                                                             className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition cursor-pointer ${
                                                                 form.data.elements_config?.show_qr === true
-                                                                    ? 'bg-[#16A34A] text-white shadow-2xs'
+                                                                    ? 'bg-[#154F7C] text-white shadow-2xs'
                                                                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                                                             }`}
                                                         >
@@ -810,7 +810,7 @@ export default function CardTemplates({
                                                             }}
                                                             className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition cursor-pointer ${
                                                                 form.data.elements_config?.show_unique_code === true
-                                                                    ? 'bg-[#16A34A] text-white shadow-2xs'
+                                                                    ? 'bg-[#154F7C] text-white shadow-2xs'
                                                                     : 'text-slate-500 hover:text-slate-800 dark:hover:text-white'
                                                             }`}
                                                         >
@@ -851,7 +851,7 @@ export default function CardTemplates({
                                                 <div>
                                                     <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                                         <span>Font Size</span>
-                                                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                                        <span className="font-mono text-[#154F7C] dark:text-sky-400 font-bold">
                                                             {parseFloat(form.data.elements_config?.guest_name?.fontSize ?? 20)}px
                                                         </span>
                                                     </div>
@@ -859,7 +859,7 @@ export default function CardTemplates({
                                                         type="range" min="8" max="48" step="0.5"
                                                         value={form.data.elements_config?.guest_name?.fontSize ?? 20}
                                                         onChange={(e) => updateNestedConfig('guest_name', 'fontSize', parseFloat(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#16A34A]"
+                                                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#154F7C] dark:accent-sky-400"
                                                     />
                                                 </div>
                                                 <div>
@@ -869,7 +869,7 @@ export default function CardTemplates({
                                                     <select
                                                         value={form.data.elements_config?.guest_name?.fontFamily ?? 'Georgia, serif'}
                                                         onChange={(e) => updateNestedConfig('guest_name', 'fontFamily', e.target.value)}
-                                                        className="w-full text-xs font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#07111D] text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-emerald-500"
+                                                        className="w-full text-xs font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#07111D] text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-[#154F7C] dark:focus:border-sky-400"
                                                     >
                                                         {FONT_OPTIONS.map(f => (
                                                             <option key={f.value} value={f.value}>{f.label}</option>
@@ -900,7 +900,7 @@ export default function CardTemplates({
                                                 <div>
                                                     <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                                         <span>Badge Size</span>
-                                                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                                        <span className="font-mono text-[#154F7C] dark:text-sky-400 font-bold">
                                                             {parseFloat(form.data.elements_config?.allowance_badge?.fontSize ?? 10)}px
                                                         </span>
                                                     </div>
@@ -908,7 +908,7 @@ export default function CardTemplates({
                                                         type="range" min="8" max="32" step="0.5"
                                                         value={form.data.elements_config?.allowance_badge?.fontSize ?? 10}
                                                         onChange={(e) => updateNestedConfig('allowance_badge', 'fontSize', parseFloat(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#16A34A]"
+                                                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#154F7C] dark:accent-sky-400"
                                                     />
                                                 </div>
                                                 <div>
@@ -918,7 +918,7 @@ export default function CardTemplates({
                                                     <select
                                                         value={form.data.elements_config?.allowance_badge?.fontFamily ?? 'sans-serif'}
                                                         onChange={(e) => updateNestedConfig('allowance_badge', 'fontFamily', e.target.value)}
-                                                        className="w-full text-xs font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#07111D] text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-emerald-500"
+                                                        className="w-full text-xs font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#07111D] text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-[#154F7C] dark:focus:border-sky-400"
                                                     >
                                                         {FONT_OPTIONS.map(f => (
                                                             <option key={f.value} value={f.value}>{f.label}</option>
@@ -949,7 +949,7 @@ export default function CardTemplates({
                                                 <div>
                                                     <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                                         <span>QR Code Size</span>
-                                                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                                        <span className="font-mono text-[#154F7C] dark:text-sky-400 font-bold">
                                                             {form.data.elements_config?.qr_code?.size ?? 88}px
                                                         </span>
                                                     </div>
@@ -957,7 +957,7 @@ export default function CardTemplates({
                                                         type="range" min="30" max="180" step="2"
                                                         value={form.data.elements_config?.qr_code?.size ?? 88}
                                                         onChange={(e) => updateNestedConfig('qr_code', 'size', parseInt(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#16A34A]"
+                                                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#154F7C] dark:accent-sky-400"
                                                     />
                                                 </div>
                                                 <div>
@@ -987,7 +987,7 @@ export default function CardTemplates({
                                                             type="checkbox"
                                                             checked={Boolean(form.data.elements_config?.qr_code?.transparent_bg)}
                                                             onChange={(e) => updateNestedConfig('qr_code', 'transparent_bg', e.target.checked)}
-                                                            className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4 cursor-pointer"
+                                                            className="rounded text-[#154F7C] focus:ring-sky-500 h-4 w-4 cursor-pointer"
                                                         />
                                                         <span>Transparent Background (no white plaque)</span>
                                                     </label>
@@ -1000,7 +1000,7 @@ export default function CardTemplates({
                                                 <div>
                                                     <div className="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                                                         <span>Code Font Size</span>
-                                                        <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold">
+                                                        <span className="font-mono text-[#154F7C] dark:text-sky-400 font-bold">
                                                             {parseFloat(form.data.elements_config?.card_number?.fontSize ?? 9.5)}px
                                                         </span>
                                                     </div>
@@ -1008,7 +1008,7 @@ export default function CardTemplates({
                                                         type="range" min="8" max="24" step="0.5"
                                                         value={form.data.elements_config?.card_number?.fontSize ?? 9.5}
                                                         onChange={(e) => updateNestedConfig('card_number', 'fontSize', parseFloat(e.target.value))}
-                                                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#16A34A]"
+                                                        className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-[#154F7C] dark:accent-sky-400"
                                                     />
                                                 </div>
                                                 <div>
@@ -1018,7 +1018,7 @@ export default function CardTemplates({
                                                     <select
                                                         value={form.data.elements_config?.card_number?.fontFamily ?? 'monospace'}
                                                         onChange={(e) => updateNestedConfig('card_number', 'fontFamily', e.target.value)}
-                                                        className="w-full text-xs font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#07111D] text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-emerald-500"
+                                                        className="w-full text-xs font-medium py-1.5 px-2.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50/70 dark:bg-[#07111D] text-slate-800 dark:text-slate-200 outline-none cursor-pointer focus:border-[#154F7C] dark:focus:border-sky-400"
                                                     >
                                                         {FONT_OPTIONS.map(f => (
                                                             <option key={f.value} value={f.value}>{f.label}</option>
@@ -1088,7 +1088,7 @@ export default function CardTemplates({
                                     <div 
                                         ref={stageContainerRef}
                                         onClick={() => setActiveElementKey(null)}
-                                        className="p-6 sm:p-12 flex items-center justify-center bg-slate-100/70 dark:bg-[#060D17] min-h-[580px] relative select-none"
+                                        className="p-3 sm:p-8 lg:p-12 flex items-center justify-center bg-slate-100/70 dark:bg-[#060D17] min-h-[380px] sm:min-h-[580px] relative select-none"
                                         style={{
                                             backgroundImage: 'radial-gradient(circle, rgba(148, 163, 184, 0.22) 1px, transparent 1px)',
                                             backgroundSize: '20px 20px'
@@ -1150,7 +1150,7 @@ export default function CardTemplates({
                             value={uploadForm.data.name}
                             onChange={(e) => uploadForm.setData('name', e.target.value)}
                             placeholder="e.g. Wedding VIP Invitation"
-                            className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-[#07111D] text-slate-900 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 outline-none transition"
+                            className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-white/[0.1] bg-white dark:bg-[#07111D] text-slate-900 dark:text-white focus:border-[#154F7C] dark:focus:border-sky-400 focus:ring-1 focus:ring-sky-500/30 outline-none transition"
                         />
                         {uploadForm.errors.name && <p className="text-rose-500 text-[11px] mt-1">{uploadForm.errors.name}</p>}
                     </div>
@@ -1163,13 +1163,13 @@ export default function CardTemplates({
                         <label className="block w-full cursor-pointer">
                             <div className={`flex flex-col items-center justify-center gap-1.5 border-2 border-dashed rounded-xl py-6 transition ${
                                 uploadForm.data.image_file
-                                    ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-950/20'
-                                    : 'border-slate-300 dark:border-white/[0.1] hover:border-[#16A34A] bg-slate-50 dark:bg-white/[0.02]'
+                                    ? 'border-sky-400 bg-sky-50 dark:bg-sky-950/20'
+                                    : 'border-slate-300 dark:border-white/[0.1] hover:border-[#154F7C] dark:hover:border-sky-400 bg-slate-50 dark:bg-white/[0.02]'
                             }`}>
                                 {uploadForm.data.image_file ? (
                                     <>
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                        <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 text-center px-4 truncate max-w-full">
+                                        <CheckCircle2 className="w-5 h-5 text-[#154F7C] dark:text-sky-400" />
+                                        <span className="text-xs font-bold text-[#154F7C] dark:text-sky-400 text-center px-4 truncate max-w-full">
                                             {uploadForm.data.image_file.name}
                                         </span>
                                         <span className="text-[10px] text-slate-400">Click to replace file</span>
@@ -1218,7 +1218,7 @@ export default function CardTemplates({
                         <button
                             type="submit"
                             disabled={isUploadingArtwork || uploadForm.processing}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl shadow-xs transition active:scale-95 cursor-pointer disabled:opacity-50"
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 text-white text-xs font-bold shadow-xs shadow-[#154F7C]/20 transition active:scale-95 cursor-pointer disabled:opacity-50"
                         >
                             {isUploadingArtwork || uploadForm.processing ? (
                                 <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Uploading…</>

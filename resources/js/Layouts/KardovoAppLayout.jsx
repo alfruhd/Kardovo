@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, usePage } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Link, usePage, router } from '@inertiajs/react';
 import { 
     Calendar, 
     Palette, 
@@ -48,14 +48,31 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
         return false;
     });
     const [toast, setToast] = useState(null);
-
-    // Smart Dynamic Auto-Hiding Topbar Logic
-    const [headerVisible, setHeaderVisible] = useState(true);
-    const [isHoveringTop, setIsHoveringTop] = useState(false);
-    const lastScrollY = useRef(0);
-    const hideTimerRef = useRef(null);
-
     const { theme, isDark, toggleTheme } = useTheme();
+
+    // Lock body scroll when mobile sidebar drawer is open
+    useEffect(() => {
+        if (typeof document !== 'undefined') {
+            if (sidebarOpen) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.body.style.overflow = '';
+            }
+        };
+    }, [sidebarOpen]);
+
+    // Automatically close mobile sidebar on page navigation
+    useEffect(() => {
+        const removeListener = router.on('navigate', () => {
+            setSidebarOpen(false);
+        });
+        return () => removeListener();
+    }, []);
 
     const toggleSidebarCollapse = () => {
         setSidebarCollapsed((prev) => {
@@ -66,67 +83,6 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
             return next;
         });
     };
-
-    useEffect(() => {
-        const handleScroll = () => {
-            const currentScrollY = window.scrollY;
-
-            // Always show when at the very top of the page
-            if (currentScrollY < 15) {
-                setHeaderVisible(true);
-                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                lastScrollY.current = currentScrollY;
-                return;
-            }
-
-            // Scrolling UP -> Reappear immediately
-            if (currentScrollY < lastScrollY.current - 4) {
-                setHeaderVisible(true);
-                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                // Keep visible for a couple of seconds after scrolling up then auto-hide if inactive
-                hideTimerRef.current = setTimeout(() => {
-                    if (!isHoveringTop && window.scrollY > 40) {
-                        setHeaderVisible(false);
-                    }
-                }, 2800);
-            } 
-            // Scrolling DOWN -> Disappear smoothly
-            else if (currentScrollY > lastScrollY.current + 4) {
-                if (!isHoveringTop) {
-                    setHeaderVisible(false);
-                }
-                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-            }
-
-            lastScrollY.current = currentScrollY;
-        };
-
-        const handleMouseMove = (e) => {
-            // Hovering at the top of the screen (top 65px) -> Reappear immediately
-            if (e.clientY <= 65) {
-                setIsHoveringTop(true);
-                setHeaderVisible(true);
-                if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-            } else if (e.clientY > 80 && isHoveringTop) {
-                setIsHoveringTop(false);
-                if (window.scrollY > 40) {
-                    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                    hideTimerRef.current = setTimeout(() => {
-                        setHeaderVisible(false);
-                    }, 1800);
-                }
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        window.addEventListener('mousemove', handleMouseMove, { passive: true });
-
-        return () => {
-            window.removeEventListener('scroll', handleScroll);
-            window.removeEventListener('mousemove', handleMouseMove);
-            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-        };
-    }, [isHoveringTop]);
 
     useEffect(() => {
         if (flash?.success) {
@@ -379,6 +335,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         href: safeRoute('ticketing.index', '/ticketing'),
                         icon: Tag,
                         active: pageUrl.startsWith('/ticketing'),
+                        show: !isSuspended && perms.can_access_ticketing !== false,
                     },
                     {
                         name: 'Calendar',
@@ -386,7 +343,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         icon: Calendar,
                         active: pageUrl === '/calendar' || pageUrl.startsWith('/calendar'),
                     },
-                ],
+                ].filter((item) => item.show !== false),
             },
             {
                 title: 'Studio & Access',
@@ -560,26 +517,26 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
     }
 
     return (
-        <div className="min-h-screen bg-[#F1F5F9] dark:bg-[#0F172A] flex flex-col md:flex-row text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+        <div className="min-h-screen min-h-[100dvh] bg-[#F1F5F9] dark:bg-[#0F172A] flex flex-col md:flex-row text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-[#154F7C] selection:text-white transition-colors duration-200 overflow-x-clip overscroll-none">
             
             {/* 📱 MOBILE SLEEK TOPBAR (Minimalist & Dynamic) */}
             <div className="md:hidden sticky top-0 z-30 bg-[#0B2545] text-white border-b border-[#173860] shadow-sm">
-                <div className="px-3.5 h-13 flex items-center justify-between">
+                <div className="px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
                     {/* Left: Brand + Section Title */}
-                    <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                         <Link href="/dashboard" className="flex-shrink-0 flex items-center">
                             <KardovoLogo light={true} showText={false} imgClassName="h-7 w-7" />
                         </Link>
                         <div className="h-4 w-px bg-white/20 flex-shrink-0" />
-                        <h1 className="text-xs font-bold text-white uppercase tracking-wider font-display truncate max-w-[130px] xs:max-w-[170px] sm:max-w-xs">
+                        <h1 className="text-xs font-bold text-white uppercase tracking-wider font-display truncate min-w-0">
                             {title || 'Dashboard'}
                         </h1>
                     </div>
 
                     {/* Right: Actions, Theme Toggle & Profile Avatar */}
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
                         {headerActions && (
-                            <div className="flex items-center gap-1.5 scale-90 sm:scale-100 origin-right">
+                            <div className="flex items-center gap-1 sm:gap-1.5 max-w-[52vw] sm:max-w-none overflow-x-auto scrollbar-none [&_button]:shrink-0 [&_a]:shrink-0">
                                 {headerActions}
                             </div>
                         )}
@@ -587,22 +544,22 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         <button
                             type="button"
                             onClick={toggleTheme}
-                            className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-amber-400 active:scale-90 transition-all duration-150 cursor-pointer"
+                            className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.1] text-amber-400 active:scale-90 transition-all duration-150 cursor-pointer"
                             title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
                         >
                             {isDark ? (
                                 <Sun className="w-4 h-4 text-amber-400" />
                             ) : (
-                                <Moon className="w-4 h-4 text-emerald-300" />
+                                <Moon className="w-4 h-4 text-sky-300" />
                             )}
                         </button>
 
                         <Link
                             href={route('profile.edit')}
-                            className={`w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center active:scale-90 transition-all duration-150 cursor-pointer ${
+                            className={`w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0 active:scale-90 transition-all duration-150 cursor-pointer ${
                                 currentUrl === '/profile'
-                                    ? 'border-2 border-[#16A34A] ring-1 ring-emerald-500/30'
-                                    : 'border border-white/[0.15] hover:border-emerald-400/50 bg-white/[0.08]'
+                                    ? 'border-2 border-sky-400 ring-1 ring-sky-500/30'
+                                    : 'border border-white/[0.15] hover:border-sky-400/50 bg-white/[0.08]'
                             }`}
                             title={user?.name ? `${user.name} — Profile` : "Profile"}
                         >
@@ -620,10 +577,18 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 </div>
             </div>
 
-            {/* Sidebar Navigation (Themed #0B2545 Dark Slate Blue & Vibrant Emerald) */}
+            {/* Sidebar Mobile Backdrop (z-40: sits behind drawer, above page) */}
+            {sidebarOpen && (
+                <div 
+                    onClick={() => setSidebarOpen(false)}
+                    className="fixed inset-0 bg-slate-950/70 z-40 md:hidden backdrop-blur-xs transition-opacity cursor-pointer"
+                    aria-hidden="true"
+                />
+            )}
+
+            {/* Sidebar Navigation (Fixed Full-Height Desktop Sidebar & Mobile Drawer) - z-50 to ensure clean priority over backdrop */}
             <aside className={`
-                fixed inset-y-0 left-0 z-50 bg-[#0B2545] text-slate-200 flex flex-col justify-between transition-all duration-300 ease-in-out border-r border-[#173860] dark:border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5)]
-                md:sticky md:top-0 md:h-screen md:translate-x-0 md:flex-shrink-0
+                fixed inset-y-0 left-0 z-50 bg-[#0B2545] text-slate-200 flex flex-col justify-between transition-all duration-300 ease-in-out border-r border-[#173860] dark:border-white/[0.08] shadow-[0_4px_30px_rgba(0,0,0,0.5)] h-full h-[100dvh]
                 ${sidebarCollapsed ? 'md:w-20' : 'md:w-64'}
                 ${sidebarOpen ? 'translate-x-0 w-72 sm:w-80' : '-translate-x-full md:translate-x-0'}
             `}>
@@ -631,7 +596,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                     <button
                         type="button"
                         onClick={toggleSidebarCollapse}
-                        className="hidden md:flex absolute -right-3.5 top-6 z-50 w-7 h-7 rounded-full bg-[#0E3058] border border-emerald-500/40 text-emerald-300 hover:text-white hover:bg-emerald-600 hover:border-emerald-400 shadow-md items-center justify-center transition-all duration-200 active:scale-90 cursor-pointer"
+                        className="hidden md:flex absolute -right-3.5 top-6 z-50 w-7 h-7 rounded-full bg-[#0E3058] border border-sky-400/40 text-sky-300 hover:text-white hover:bg-[#154F7C] hover:border-sky-300 shadow-md items-center justify-center transition-all duration-200 active:scale-90 cursor-pointer"
                         title={sidebarCollapsed ? "Expand Sidebar Menu" : "Collapse / Hide Sidebar Menu"}
                     >
                         {sidebarCollapsed ? (
@@ -687,13 +652,13 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                                                 onClick={() => setSidebarOpen(false)}
                                                 title={sidebarCollapsed ? item.name : undefined}
                                                 className={`
-                                                    flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2'} rounded-xl text-xs font-semibold transition-all duration-150 relative group active:scale-[0.98]
+                                                    flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2'} rounded-xl text-xs font-semibold transition-all duration-150 relative group active:scale-[0.98] cursor-pointer
                                                     ${item.active 
-                                                        ? 'bg-[#16A34A] text-white font-bold shadow-xs border border-[#16A34A]' 
+                                                        ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] text-white font-bold shadow-md shadow-[#154F7C]/30 border border-sky-400/30' 
                                                         : 'text-slate-300 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.08] border border-transparent'}
                                                 `}
                                             >
-                                                <Icon className={`w-4 h-4 transition-colors duration-150 flex-shrink-0 ${item.active ? 'text-white' : 'text-slate-400 group-hover:text-emerald-300'}`} />
+                                                <Icon className={`w-4 h-4 transition-colors duration-150 flex-shrink-0 ${item.active ? 'text-white' : 'text-slate-400 group-hover:text-sky-300'}`} />
                                                 {!sidebarCollapsed && <span className="truncate">{item.name}</span>}
                                             </Link>
                                         );
@@ -704,7 +669,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                     </nav>
                 </div>
 
-                <div className="p-3 flex-shrink-0 transition-colors duration-200">
+                <div className="p-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] flex-shrink-0 transition-colors duration-200">
                     {/* Bottom Sign Out Button */}
                     <Link
                         href={route('logout')}
@@ -722,108 +687,73 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 </div>
             </aside>
 
-            {/* Sidebar Mobile Backdrop */}
-            {sidebarOpen && (
-                <div 
-                    onClick={() => setSidebarOpen(false)}
-                    className="fixed inset-0 bg-slate-950/70 z-40 md:hidden backdrop-blur-xs transition-opacity"
-                />
-            )}
-
             {/* Main Content Area */}
-            <main className="flex-1 flex flex-col min-w-0 relative pb-24 md:pb-6">
-                
-                {/* Top Edge Hover Trigger Strip (Detects hover at the very top of the window) */}
-                <div 
-                    onMouseEnter={() => {
-                        setIsHoveringTop(true);
-                        setHeaderVisible(true);
-                        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                    }}
-                    className="fixed top-0 left-0 right-0 h-4 z-50 pointer-events-auto"
-                />
-
+            <main className={`flex-1 flex flex-col min-w-0 min-h-screen min-h-[100dvh] relative pb-24 md:pb-6 transition-all duration-300 ${
+                sidebarCollapsed ? 'md:pl-20' : 'md:pl-64'
+            }`}>
                 {/* Minimalist, Clean & Themed Sticky Topbar */}
-                <header 
-                    onMouseEnter={() => {
-                        setIsHoveringTop(true);
-                        setHeaderVisible(true);
-                        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                    }}
-                    onMouseLeave={() => {
-                        setIsHoveringTop(false);
-                        if (window.scrollY > 40) {
-                            if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-                            hideTimerRef.current = setTimeout(() => {
-                                setHeaderVisible(false);
-                            }, 1800);
-                        }
-                    }}
-                    className={`hidden md:flex h-14 bg-[#0B2545] text-white backdrop-blur-2xl border-b border-[#173860] shadow-[0_4px_25px_rgba(0,0,0,0.3)] sticky top-0 z-40 px-4 sm:px-6 items-center justify-between gap-4 transition-all duration-300 ease-in-out ${
-                        headerVisible 
-                            ? "translate-y-0 opacity-100 pointer-events-auto" 
-                            : "-translate-y-full opacity-0 pointer-events-none"
-                    }`}
-                >
-                    {/* Left: Minimalist Breadcrumb & Section Title */}
-                    <div className="flex items-center gap-2 min-w-0">
-                        <div className="flex items-center gap-1.5 text-xs font-extrabold text-emerald-400 select-none">
-                            <span>Kardovo</span>
-                            <span className="text-slate-400">/</span>
-                        </div>
-                        <h1 className="text-sm sm:text-base font-black text-white tracking-tight truncate font-display">
-                            {title || "Dashboard"}
-                        </h1>
-                    </div>
-
-                    {/* Right: Actions & Theme Toggle */}
-                    <div className="flex items-center gap-2">
-                        {headerActions && (
-                            <div className="flex items-center gap-1.5">
-                                {headerActions}
+                <header className="hidden md:flex h-14 bg-[#0B2545] text-white backdrop-blur-2xl border-b border-[#173860] shadow-sm sticky top-0 z-30">
+                    <div className="max-w-7xl mx-auto w-full px-3 sm:px-5 lg:px-6 flex items-center justify-between gap-4">
+                        {/* Left: Minimalist Breadcrumb & Section Title */}
+                        <div className="flex items-center gap-2 min-w-0">
+                            <div className="flex items-center gap-1.5 text-xs font-extrabold text-sky-400 select-none">
+                                <span>Kardovo</span>
+                                <span className="text-slate-400">/</span>
                             </div>
-                        )}
+                            <h1 className="text-sm sm:text-base font-black text-white tracking-tight truncate font-display">
+                                {title || "Dashboard"}
+                            </h1>
+                        </div>
 
-                        {/* Complementary Theme Mode Toggle */}
-                        <button
-                            type="button"
-                            onClick={toggleTheme}
-                            className="w-8 h-8 rounded-xl text-slate-200 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] shadow-2xs transition flex items-center justify-center cursor-pointer active:scale-95"
-                            title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
-                        >
-                            {isDark ? (
-                                <Sun className="w-4 h-4 text-amber-400" />
-                            ) : (
-                                <Moon className="w-4 h-4 text-emerald-300" />
+                        {/* Right: Actions & Theme Toggle */}
+                        <div className="flex items-center gap-2">
+                            {headerActions && (
+                                <div className="flex items-center gap-1.5">
+                                    {headerActions}
+                                </div>
                             )}
-                        </button>
 
-                        {/* Account Profile Link */}
-                        <Link
-                            href={route('profile.edit')}
-                            className={`w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center transition active:scale-95 shadow-2xs cursor-pointer ${
-                                currentUrl === '/profile'
-                                    ? 'border-2 border-[#16A34A] ring-2 ring-emerald-500/30'
-                                    : 'border border-white/[0.15] hover:border-emerald-400/50 bg-white/[0.08] hover:bg-white/[0.14]'
-                            }`}
-                            title={user?.name ? `${user.name} — Profile & Settings` : "Account Profile & Settings"}
-                        >
-                            {user?.avatar ? (
-                                <img 
-                                    src={user.avatar} 
-                                    alt={user.name || 'Profile'} 
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <UserIcon className="w-4 h-4 text-slate-200" />
-                            )}
-                        </Link>
+                            {/* Complementary Theme Mode Toggle */}
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                className="w-8 h-8 rounded-xl text-slate-200 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] shadow-2xs transition flex items-center justify-center cursor-pointer active:scale-95"
+                                title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+                            >
+                                {isDark ? (
+                                    <Sun className="w-4 h-4 text-amber-400" />
+                                ) : (
+                                    <Moon className="w-4 h-4 text-sky-300" />
+                                )}
+                            </button>
+
+                            {/* Account Profile Link */}
+                            <Link
+                                href={route('profile.edit')}
+                                className={`w-8 h-8 rounded-xl overflow-hidden flex items-center justify-center transition active:scale-95 shadow-2xs cursor-pointer ${
+                                    currentUrl === '/profile'
+                                        ? 'border-2 border-sky-400 ring-2 ring-sky-500/30'
+                                        : 'border border-white/[0.15] hover:border-sky-400/50 bg-white/[0.08] hover:bg-white/[0.14]'
+                                }`}
+                                title={user?.name ? `${user.name} — Profile & Settings` : "Account Profile & Settings"}
+                            >
+                                {user?.avatar ? (
+                                    <img 
+                                        src={user.avatar} 
+                                        alt={user.name || 'Profile'} 
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <UserIcon className="w-4 h-4 text-slate-200" />
+                                )}
+                            </Link>
+                        </div>
                     </div>
                 </header>
 
                 {/* Account Suspension Banner */}
                 {isSuspended && (
-                    <div className="px-6 pt-4">
+                    <div className="max-w-7xl mx-auto w-full px-3 sm:px-5 lg:px-6 pt-4">
                         <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-800 dark:text-rose-200 flex items-start gap-3 shadow-xs">
                             <div className="w-8 h-8 rounded-xl bg-rose-500/20 flex items-center justify-center flex-shrink-0 text-rose-600 dark:text-rose-400">
                                 <Lock className="w-5 h-5" />
@@ -842,7 +772,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
 
                 {/* Toast Notification Banner */}
                 {toast && (
-                    <div className="px-6 pt-4">
+                    <div className="max-w-7xl mx-auto w-full px-3 sm:px-5 lg:px-6 pt-4">
                         <div className={`p-4 rounded-2xl flex items-center justify-between border shadow-sm ${
                             toast.type === 'success' 
                                 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-200 border-emerald-200 dark:border-emerald-800/50' 
@@ -871,7 +801,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 )}
 
                 {/* Main Content View */}
-                <div className="p-3.5 sm:p-6 max-w-7xl mx-auto w-full">
+                <div className="p-3 sm:p-5 lg:p-6 max-w-7xl mx-auto w-full flex-1 min-w-0 overflow-x-hidden">
                     {children}
                 </div>
             </main>
@@ -879,7 +809,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
             {/* 📱 WHATSAPP / INSTAGRAM STYLE MOBILE BOTTOM NAVIGATION BAR */}
             <nav 
                 aria-label="Mobile Navigation"
-                className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0B2545]/95 dark:bg-[#07192F]/95 backdrop-blur-xl border-t border-[#173860] dark:border-white/[0.08] shadow-[0_-4px_25px_rgba(0,0,0,0.35)] px-2 pt-1.5 pb-[max(env(safe-area-inset-bottom),0.5rem)] flex items-center justify-around transition-all duration-200"
+                className="md:hidden fixed bottom-0 left-0 right-0 z-30 bg-[#0B2545]/95 dark:bg-[#07192F]/95 backdrop-blur-xl border-t border-[#173860] dark:border-white/[0.08] shadow-[0_-4px_25px_rgba(0,0,0,0.35)] px-2 pt-1.5 pb-[max(env(safe-area-inset-bottom),0.5rem)] flex items-center justify-around transition-all duration-200"
             >
                 {bottomNavItems.map((item) => {
                     const Icon = item.icon;
@@ -895,7 +825,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                                 aria-label="Toggle Navigation Menu"
                             >
                                 <div className={`relative px-3 py-1 rounded-full transition-all duration-200 ${
-                                    sidebarOpen ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'
+                                    sidebarOpen ? 'bg-sky-500/20 text-sky-400' : 'text-slate-400 group-hover:text-slate-200'
                                 }`}>
                                     {sidebarOpen ? (
                                         <X className="w-5 h-5 stroke-[2.5] text-rose-400" />
@@ -920,15 +850,15 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                             className="flex-1 flex flex-col items-center justify-center py-1 rounded-xl transition-all duration-150 active:scale-90 group cursor-pointer focus:outline-none"
                         >
                             <div className={`relative px-3 py-1 rounded-full transition-all duration-200 ${
-                                isActive ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-400 group-hover:text-slate-200'
+                                isActive ? 'bg-sky-500/20 text-sky-400' : 'text-slate-400 group-hover:text-slate-200'
                             }`}>
-                                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5] text-emerald-400' : 'stroke-[2]'}`} />
+                                <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5] text-sky-400' : 'stroke-[2]'}`} />
                                 {isActive && (
-                                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(16,185,129,0.8)]" />
+                                    <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,0.8)]" />
                                 )}
                             </div>
                             <span className={`text-[10px] tracking-tight mt-0.5 ${
-                                isActive ? 'font-black text-emerald-400' : 'font-semibold text-slate-400 group-hover:text-slate-200'
+                                isActive ? 'font-black text-sky-400' : 'font-semibold text-slate-400 group-hover:text-slate-200'
                             }`}>
                                 {item.name}
                             </span>

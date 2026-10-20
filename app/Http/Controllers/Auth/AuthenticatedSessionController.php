@@ -37,8 +37,14 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
-        // If Two-Factor Authentication is enabled, generate code and redirect to 2FA screen
-        if ($user->two_factor_enabled) {
+        $trustedDeviceCookieName = 'kdv_trusted_device_'.$user->id;
+        $expectedDeviceToken = hash_hmac('sha256', $user->id.'|'.$user->email, (string) config('app.key'));
+        $isKnownTrustedDevice = hash_equals($expectedDeviceToken, (string) $request->cookie($trustedDeviceCookieName));
+
+        $requiresAdaptiveTwoFactor = ($request->isAccountUnderDistributedAttack() || LoginRequest::isSystemUnderDistributedAttack()) && ! $isKnownTrustedDevice;
+
+        // If Two-Factor Authentication is enabled OR account is under distributed attack from an unrecognized device
+        if ($user->two_factor_enabled || $requiresAdaptiveTwoFactor) {
             $code = $user->generateTwoFactorCode();
 
             try {
@@ -65,15 +71,11 @@ class AuthenticatedSessionController extends Controller
 
         AuditLogger::log('login_success', User::class, (string) $user->id, ['role' => $user->role], 'success', $user->id);
 
-        if ($user->isScanner()) {
-            return redirect()->route('scanner.index');
-        }
+        $redirect = $user->isScanner()
+            ? redirect()->route('scanner.index')
+            : ($user->isAdmin() ? redirect()->route('admin.dashboard') : redirect()->route('dashboard'));
 
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
-
-        return redirect()->route('dashboard');
+        return $redirect->withCookie(cookie()->forever($trustedDeviceCookieName, $expectedDeviceToken));
     }
 
     /**

@@ -11,7 +11,7 @@ class PassImageGeneratorService
     public static function generate(Guest $guest, ?CardTemplate $template = null, ?string $baseUrl = null): string
     {
         $event = $guest->event;
-        $template = $template ?: ($event?->cardTemplate ?: CardTemplate::first());
+        $template = $template ?: $event?->cardTemplate;
 
         $outputDir = public_path('generated_passes');
         if (! file_exists($outputDir)) {

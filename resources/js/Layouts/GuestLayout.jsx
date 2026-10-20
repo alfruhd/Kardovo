@@ -1,37 +1,41 @@
 import React from 'react';
 import { Link } from '@inertiajs/react';
 import KardovoLogo from '@/Components/KardovoLogo';
-import { Sun, Moon } from 'lucide-react';
+import WaveBackground from '@/Components/WaveBackground';
+import { Home } from 'lucide-react';
 
 export default function GuestLayout({ children }) {
-    const isDark = false;
-
     return (
-        <div className="min-h-screen bg-[#F4F6F9] flex flex-col justify-center items-center p-4 sm:p-6 lg:p-10 font-sans text-slate-800 relative overflow-hidden selection:bg-emerald-500 selection:text-white transition-colors duration-300">
-            
-            {/* 🌓 Floating Light / Dark Mode Toggle Button */}
-            {/* Ambient Background Radial Glows */}
-            <div className="absolute -top-40 -left-40 w-[550px] h-[550px] bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none" />
-            <div className="absolute -bottom-40 -right-40 w-[550px] h-[550px] bg-emerald-600/10 blur-[130px] rounded-full pointer-events-none" />
-            <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none" />
+        <div className="fixed inset-0 h-screen h-[100dvh] max-h-screen max-h-[100dvh] w-screen w-[100dvw] max-w-full bg-white flex flex-col items-center justify-center lg:items-end p-3 sm:p-5 lg:p-6 lg:pr-14 xl:pr-24 2xl:pr-32 font-sans text-slate-800 overflow-y-auto overflow-x-hidden selection:bg-emerald-500 selection:text-white transition-colors duration-300">
+            {/* Wave Animated SVG Background */}
+            <WaveBackground />
 
-            {/* Header Brand Logo */}
-            <div className="mb-6 relative z-10">
-                <Link href="/" className="inline-block transition active:scale-95">
-                    <KardovoLogo light={isDark} showText={true} />
+            {/* 🏠 Floating Top Left Control */}
+            <div className="absolute top-3.5 left-3.5 sm:top-6 sm:left-6 z-50">
+                <Link
+                    href="/"
+                    className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-2xl bg-white/70 hover:bg-white/95 backdrop-blur-xl border border-white/60 text-slate-700 hover:text-emerald-600 transition-all duration-200 active:scale-95 flex items-center gap-2 shadow-sm hover:shadow-md group cursor-pointer"
+                    title="Back to Landing Page"
+                >
+                    <Home className="w-4 h-4 text-slate-600 group-hover:text-emerald-600 transition-colors" />
+                    <span className="text-xs font-bold font-mono">Home</span>
                 </Link>
             </div>
 
-            {/* Main Luxury Glassmorphic Card */}
-            <div className="w-full sm:max-w-md rounded-[28px] overflow-hidden backdrop-blur-2xl bg-white border border-slate-200/80 p-6 sm:p-8 shadow-[0_25px_70px_rgba(0,0,0,0.08)] relative z-10 transition-colors duration-300">
-                {children}
-            </div>
+            {/* Single Unified Container Column (Locks perfect alignment between card and badge) */}
+            <div className="w-full sm:max-w-lg flex flex-col items-center relative z-10 min-w-0 my-auto py-4 sm:py-6 px-1">
+                {/* Main Luxury Card (Crisp White Card with Deep Wave Palette Shadow) */}
+                <div className="w-full rounded-3xl sm:rounded-[32px] overflow-hidden bg-white/95 backdrop-blur-2xl border border-slate-100 shadow-[0_24px_50px_-12px_rgba(11,37,69,0.18),0_12px_24px_-6px_rgba(11,37,69,0.10),0_0_1px_rgba(11,37,69,0.15)] p-6 sm:p-8 relative transition-all duration-300 text-slate-800 min-w-0">
+                    {children}
+                </div>
 
-            {/* Bottom Security Badge */}
-            <div className="mt-6 text-center text-[11px] font-mono text-slate-400 relative z-10 flex items-center justify-center gap-2">
-                <span>KARDOVO ACCESS &amp; SECURITY</span>
-                <span>&bull;</span>
-                <span>ENCRYPTED</span>
+                {/* Bottom Security Badge (Aligned with Container) */}
+                <div className="mt-4 sm:mt-5 text-center text-[11px] font-mono text-slate-500 flex items-center justify-center gap-2 tracking-wider select-none shrink-0 relative z-20">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span>KARDOVO ACCESS &amp; SECURITY</span>
+                    <span className="text-slate-400 font-bold">&bull;</span>
+                    <span className="text-emerald-600 font-bold tracking-widest">ENCRYPTED</span>
+                </div>
             </div>
         </div>
     );

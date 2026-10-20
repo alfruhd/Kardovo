@@ -57,16 +57,21 @@ class NewPasswordController extends Controller
             'email.required' => 'Please provide your email address or phone number.',
         ]);
 
-        $throttleKey = 'pwd_reset_verify_'.$request->ip();
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
+        $identity = trim((string) $request->input('email'));
+        $submittedToken = trim((string) $request->input('token'));
+
+        $ipThrottleKey = 'pwd_reset_verify_ip|'.$request->ip();
+        $idThrottleKey = 'pwd_reset_verify_id|'.strtolower($identity);
+
+        if (RateLimiter::tooManyAttempts($ipThrottleKey, 5) || RateLimiter::tooManyAttempts($idThrottleKey, 5)) {
+            $seconds = max(
+                RateLimiter::availableIn($ipThrottleKey),
+                RateLimiter::availableIn($idThrottleKey)
+            );
             throw ValidationException::withMessages([
                 'token' => "Too many incorrect verification attempts. Please wait {$seconds} seconds.",
             ]);
         }
-
-        $identity = trim((string) $request->input('email'));
-        $submittedToken = trim((string) $request->input('token'));
 
         // Lookup user by email or phone
         $user = null;
@@ -84,7 +89,8 @@ class NewPasswordController extends Controller
         }
 
         if (! $user) {
-            RateLimiter::hit($throttleKey, 300);
+            RateLimiter::hit($ipThrottleKey, 300);
+            RateLimiter::hit($idThrottleKey, 300);
             throw ValidationException::withMessages([
                 'email' => 'We could not find an account associated with this email or phone number.',
             ]);
@@ -93,7 +99,8 @@ class NewPasswordController extends Controller
         $record = DB::table('password_reset_tokens')->where('email', $user->email)->first();
 
         if (! $record) {
-            RateLimiter::hit($throttleKey, 300);
+            RateLimiter::hit($ipThrottleKey, 300);
+            RateLimiter::hit($idThrottleKey, 300);
             throw ValidationException::withMessages([
                 'token' => 'No active password reset request found. Please request a new code.',
             ]);
@@ -102,7 +109,8 @@ class NewPasswordController extends Controller
         // Check if code has expired (15 minutes)
         if (Carbon::parse($record->created_at)->addMinutes(15)->isPast()) {
             DB::table('password_reset_tokens')->where('email', $user->email)->delete();
-            RateLimiter::hit($throttleKey, 300);
+            RateLimiter::hit($ipThrottleKey, 300);
+            RateLimiter::hit($idThrottleKey, 300);
             throw ValidationException::withMessages([
                 'token' => 'The verification code has expired. Please request a fresh code.',
             ]);
@@ -112,13 +120,15 @@ class NewPasswordController extends Controller
         $isValid = Hash::check($submittedToken, $record->token) || $record->token === $submittedToken;
 
         if (! $isValid) {
-            RateLimiter::hit($throttleKey, 300);
+            RateLimiter::hit($ipThrottleKey, 300);
+            RateLimiter::hit($idThrottleKey, 300);
             throw ValidationException::withMessages([
                 'token' => 'The provided security code is invalid.',
             ]);
         }
 
-        RateLimiter::clear($throttleKey);
+        RateLimiter::clear($ipThrottleKey);
+        RateLimiter::clear($idThrottleKey);
 
         $user->forceFill([
             'password' => Hash::make($request->password),

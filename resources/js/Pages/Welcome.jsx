@@ -4,13 +4,15 @@ import {
     CheckCircle2, Sparkles, Smartphone, QrCode, MessageCircle, 
     Users, BarChart3, Clock, ShieldCheck, ChevronLeft, ChevronRight, HandCoins, ChartPie, Globe,
     Send, Play, ArrowRight, Moon, Sun, ExternalLink, Ticket,
-    Calendar, MapPin, Tag, Layers, Check, Zap, Building2, Plane, PartyPopper, Trophy, Plus, Briefcase, Crown, Gem, Heart, Eye,
+    Calendar, MapPin, Layers, Check, Zap, Building2, Plane, PartyPopper, Trophy, Plus, Briefcase, Crown, Gem, Heart, Eye,
     Download, Share2, CreditCard, ScanLine, CalendarPlus, UserCheck,
-    Search, ClipboardCheck, BookOpen, BarChart2, Target
+    Search, ClipboardCheck, BookOpen, BarChart2, Target, Mail, Phone, ArrowUp, X
 } from "lucide-react";
 import Login from './Auth/Login';
 import Modal from '@/Components/Modal';
 import KardovoLogo from '@/Components/KardovoLogo';
+import KardovoFooter from '@/Components/KardovoFooter';
+import CookieConsentBanner from '@/Components/CookieConsentBanner';
 
 const translations = {
     "Accepted Payment Methods": {
@@ -267,8 +269,8 @@ const translations = {
         "sw": "Mialiko Iliyotumwa"
     },
     "Uhakika wa Kufika": {
-        "en": "Attendance Certainty",
-        "sw": "Uhakika wa Kufika"
+        "en": "Target System Uptime",
+        "sw": "Uhakika wa Mfumo"
     },
     "Huduma kwa Wateja": {
         "en": "Customer Service",
@@ -754,7 +756,7 @@ function FAQSection({ t }) {
     ];
 
     return (
-        <section id="faq" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-12 sm:py-16 bg-white border-t border-slate-100 scroll-mt-14">
+        <section id="faq" className="min-h-[calc(100vh-5rem)] flex flex-col justify-center py-12 sm:py-16 bg-[#F0F2F5] scroll-mt-20">
             <div className="max-w-4xl mx-auto px-6 w-full">
                 <div className="text-center mb-10 sm:mb-12 scroll-animate delay-100">
                     <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-3 font-display pb-1">{t("Maswali Yanayoulizwa Sana (FAQ)")}</h2>
@@ -767,6 +769,30 @@ function FAQSection({ t }) {
                 </div>
             </div>
         </section>
+    );
+}
+
+function InstagramIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+        </svg>
+    );
+}
+
+function FacebookIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+        </svg>
+    );
+}
+
+function WhatsAppIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+        </svg>
     );
 }
 
@@ -802,19 +828,35 @@ export default function Welcome({ auth }) {
     // Apply the landing page hero background to body only while on Welcome page to prevent refresh glitch,
     // and clean up so it never bleeds into ScannerApp or other pages.
     useEffect(() => {
-        document.body.classList.add('bg-[#8ABEE0]');
+        document.body.classList.add('bg-[#0B2545]');
+        document.documentElement.classList.remove('dark');
         return () => {
-            document.body.classList.remove('bg-[#8ABEE0]');
+            document.body.classList.remove('bg-[#0B2545]');
         };
     }, []);
 
     const [showLoginModal, setShowLoginModal] = useState(false);
+    const [showContactModal, setShowContactModal] = useState(false);
     const [authModalMode, setAuthModalMode] = useState('register');
 
     const openAuthModal = (mode) => {
         setAuthModalMode(mode);
         setShowLoginModal(true);
     };
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const params = new URLSearchParams(window.location.search);
+            const authParam = params.get('auth');
+            if (authParam === 'login' || authParam === 'register') {
+                openAuthModal(authParam);
+            }
+            const scrollParam = params.get('scroll');
+            if (scrollParam) {
+                setTimeout(() => window.scrollTo(0, parseInt(scrollParam, 10)), 100);
+            }
+        }
+    }, []);
     const [activeSection, setActiveSection] = React.useState('');
 
     // ── TOP NAVBAR TRANSPARENT ON TOP SECTION, SOLID NAVY ON TICKETING & BELOW ──
@@ -883,9 +925,8 @@ export default function Welcome({ auth }) {
         const handleScroll = () => {
             const ticketingEl = document.getElementById('ticketing-services');
             if (ticketingEl) {
-                const navHeight = 56; // h-14 navbar
+                const navHeight = 80; // h-20 navbar
                 const rect = ticketingEl.getBoundingClientRect();
-                // When top of ticketing section reaches the navbar bottom, switch to solid navy
                 setIsScrolled(rect.top <= navHeight);
             } else {
                 setIsScrolled(window.scrollY > 400);
@@ -901,7 +942,7 @@ export default function Welcome({ auth }) {
         const el = document.getElementById(sectionId);
         if (!el) return;
 
-        const navHeight = 56; // h-14 sticky header
+        const navHeight = 80; // h-20 sticky header
         const rect = el.getBoundingClientRect();
         const targetTop = rect.top + window.scrollY - navHeight;
 
@@ -931,13 +972,13 @@ export default function Welcome({ auth }) {
     }, []);
 
     React.useEffect(() => {
-        const sections = ['ticketing-services', 'invitations', 'how-it-works', 'payment', 'faq'];
+        const sections = ['ticketing-services', 'invitations', 'how-it-works', 'payment', 'faq', 'contact'];
         let ticking = false;
         const handleScroll = () => {
             if (!ticking) {
                 window.requestAnimationFrame(() => {
                     let current = '';
-                    const navHeight = 56;
+                    const navHeight = 80;
                     sections.forEach(section => {
                         const el = document.getElementById(section);
                         if (el) {
@@ -977,7 +1018,7 @@ export default function Welcome({ auth }) {
         };
     }, []);
     return (
-        <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans selection:bg-[#16A34A] selection:text-white relative">
+        <div className="min-h-screen bg-[#F0F2F5] text-slate-800 font-sans selection:bg-[#154F7C] selection:text-white relative overflow-x-clip overscroll-none">
             
             <style dangerouslySetInnerHTML={{__html: `
                 @keyframes float {
@@ -1134,18 +1175,36 @@ export default function Welcome({ auth }) {
                 .hero-float-6 { animation: float-gentle-6 12s ease-in-out infinite; }
                 .hero-float-orbit { animation: float-orbit 20s linear infinite; }
 
-                /* Hero Asymmetric Cards Cascading Entrance - Silky Smooth */
+                /* Hero Cards Cascading Entrance Animations */
                 @keyframes heroCardFadeIn1 {
-                    0% { opacity: 0; transform: translateY(32px) rotate(-6deg) scale(0.95); }
-                    100% { opacity: 1; transform: translateY(0) rotate(-3deg) scale(1); }
+                    0% {
+                        opacity: 0;
+                        transform: translateY(32px) rotate(-6deg) scale(0.95);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0) rotate(-3deg) scale(1);
+                    }
                 }
                 @keyframes heroCardFadeIn2 {
-                    0% { opacity: 0; transform: translateY(32px) rotate(6deg) scale(0.95); }
-                    100% { opacity: 1; transform: translateY(0) rotate(3deg) scale(1); }
+                    0% {
+                        opacity: 0;
+                        transform: translateY(32px) rotate(6deg) scale(0.95);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0) rotate(3deg) scale(1);
+                    }
                 }
                 @keyframes heroCardFadeIn3 {
-                    0% { opacity: 0; transform: translateY(36px) scale(0.94); }
-                    100% { opacity: 1; transform: translateY(0) scale(1); }
+                    0% {
+                        opacity: 0;
+                        transform: translateY(36px) scale(0.94);
+                    }
+                    100% {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
                 }
                 .hero-card-anim-1 {
                     animation: heroCardFadeIn1 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.25s both;
@@ -1187,98 +1246,151 @@ export default function Welcome({ auth }) {
             `}} />
             <Head title={t("Kadi za Kidigitali na Usimamizi Kisasa")} />
 
-            {/* Top Navigation Bar (Glassmorphic like Create Invitation button, crisp white line, zero text shadow) */}
+            {/* Top Navigation Bar (Translucent glass throughout, generous height, right-aligned nav) */}
             <header 
                 className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
                     isScrolled 
-                        ? "bg-[#0B2545]/95 backdrop-blur-md border-b border-white/20 shadow-[0_4px_20px_rgba(0,0,0,0.25)]" 
+                        ? "bg-white/80 backdrop-blur-xl border-b border-slate-200/80 shadow-xs" 
                         : "bg-white/[0.1] backdrop-blur-xl border-b border-white/25 shadow-lg"
                 }`}
             >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-4 text-white">
-                    {/* Brand Logo */}
+                <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-6 transition-colors duration-300 ${isScrolled ? 'text-slate-800' : 'text-white'}`}>
+                    {/* Brand Logo on the Far Left */}
                     <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="cursor-pointer focus:outline-none flex items-center shrink-0">
                         <KardovoLogo 
-                            light={true} 
+                            light={!isScrolled} 
                             showText={true} 
-                            textClassName="text-white text-base font-black tracking-widest" 
-                            imgClassName="h-7 w-7" 
+                            textClassName={`${isScrolled ? 'text-slate-900' : 'text-white'} text-base sm:text-lg font-black tracking-widest transition-colors duration-300`} 
+                            imgClassName="h-8 w-8 sm:h-9 sm:w-9" 
                         />
                     </button>
                     
-                    {/* Navigation Pills (Crisp Clean White without shadows) */}
-                    <nav className="hidden lg:flex items-center gap-1.5 shrink-0 text-xs font-bold text-white">
-                        {/* 1. Sell & Buy Tickets (Before Invitations & RSVP) */}
-                        <a 
-                            href="#ticketing-services" 
-                            onClick={(e) => scrollToSection(e, 'ticketing-services')}
-                            className={`px-3 py-1.5 rounded-xl transition cursor-pointer hover:bg-white/15 hover:text-white ${activeSection === 'ticketing-services' ? 'bg-white/20 text-white' : ''}`}
-                        >
-                            {lang === 'sw' ? 'Tiketi za Matukio' : 'Sell & Buy Tickets'}
-                        </a>
-
-                        {/* 2. Invitations & RSVP */}
-                        <a 
-                            href="#invitations" 
-                            onClick={(e) => scrollToSection(e, 'invitations')}
-                            className={`px-3 py-1.5 rounded-xl transition cursor-pointer hover:bg-white/15 hover:text-white ${activeSection === 'invitations' ? 'bg-white/20 text-white' : ''}`}
-                        >
-                            {t('Mialiko & RSVP')}
-                        </a>
-
-                        {/* 3. How It Works, Payment, FAQ */}
-                        {[
-                            { id: 'how-it-works', label: t('How It Works') },
-                            { id: 'payment', label: t('Payment') },
-                            { id: 'faq', label: t('FAQ') }
-                        ].map(link => (
+                    {/* Right Group: Navigation Links (moved right) + Language Toggle & Auth Buttons */}
+                    <div className="flex items-center gap-4 sm:gap-6 lg:gap-8 ml-auto">
+                        {/* Navigation Links (Minimalist, clean horizontal arrangement with zero text wrapping) */}
+                        <nav className={`hidden lg:flex items-center gap-1 xl:gap-2 text-sm font-medium transition-colors duration-300 ${isScrolled ? 'text-slate-600' : 'text-white/85'}`}>
+                            {/* 1. Event Tickets */}
                             <a 
-                                key={link.id}
-                                href={`#${link.id}`} 
-                                onClick={(e) => scrollToSection(e, link.id)}
-                                className={`px-3 py-1.5 rounded-xl transition cursor-pointer hover:bg-white/15 hover:text-white ${activeSection === link.id ? 'bg-white/20 text-white' : ''}`}
+                                href="#ticketing-services" 
+                                onClick={(e) => scrollToSection(e, 'ticketing-services')}
+                                className={`whitespace-nowrap px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                                    isScrolled
+                                        ? (activeSection === 'ticketing-services' ? 'bg-sky-50 text-[#154F7C] font-semibold shadow-2xs' : 'hover:bg-slate-100 hover:text-slate-900')
+                                        : (activeSection === 'ticketing-services' ? 'bg-white/15 text-white font-semibold backdrop-blur-xs' : 'hover:bg-white/10 hover:text-white')
+                                }`}
                             >
-                                {link.label}
+                                {lang === 'sw' ? 'Tiketi za Matukio' : 'Event Tickets'}
                             </a>
-                        ))}
-                    </nav>
 
-                    {/* Right-Side Controls: Language Toggle & Auth */}
-                    <div className="flex items-center gap-2 sm:gap-3 text-xs font-semibold shrink-0 text-white">
-                        {/* Language Toggle: Icon and text only, no shape */}
-                        <button 
-                            type="button"
-                            onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} 
-                            className="flex items-center gap-1.5 px-2 py-1.5 text-white/90 hover:text-white transition-colors text-xs font-semibold cursor-pointer"
-                            title={lang === 'en' ? 'Badili lugha kuwa Kiswahili' : 'Switch language to English'}
-                        >
-                            <Globe className="w-4 h-4 text-sky-300" />
-                            <span>{lang === 'en' ? 'SWA' : 'ENG'}</span>
-                        </button>
-                        
-                        {auth?.user ? (
-                            <Link
-                                href={route('dashboard')}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-xs font-bold transition shadow-xs"
+                            {/* 2. Invitations & RSVP */}
+                            <a 
+                                href="#invitations" 
+                                onClick={(e) => scrollToSection(e, 'invitations')}
+                                className={`whitespace-nowrap px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                                    isScrolled
+                                        ? (activeSection === 'invitations' ? 'bg-sky-50 text-[#154F7C] font-semibold shadow-2xs' : 'hover:bg-slate-100 hover:text-slate-900')
+                                        : (activeSection === 'invitations' ? 'bg-white/15 text-white font-semibold backdrop-blur-xs' : 'hover:bg-white/10 hover:text-white')
+                                }`}
                             >
-                                <span>{t("Go to Dashboard")}</span>
-                            </Link>
-                        ) : (
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => openAuthModal('login')}
-                                    className="px-3.5 py-1.5 rounded-xl font-bold transition text-xs cursor-pointer bg-white/[0.1] hover:bg-white/[0.18] text-white backdrop-blur-md border border-white/25"
+                                {t('Mialiko & RSVP')}
+                            </a>
+
+                            {/* 3. How It Works, Pricing, FAQ */}
+                            {[
+                                { id: 'how-it-works', label: t('How It Works') },
+                                { id: 'payment', label: t('Payment') },
+                                { id: 'faq', label: t('FAQ') },
+                            ].map(link => (
+                                <a 
+                                    key={link.id}
+                                    href={`#${link.id}`} 
+                                    onClick={(e) => scrollToSection(e, link.id)}
+                                    className={`whitespace-nowrap px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                                        isScrolled
+                                            ? (activeSection === link.id ? 'bg-sky-50 text-[#154F7C] font-semibold shadow-2xs' : 'hover:bg-slate-100 hover:text-slate-900')
+                                            : (activeSection === link.id ? 'bg-white/15 text-white font-semibold backdrop-blur-xs' : 'hover:bg-white/10 hover:text-white')
+                                    }`}
                                 >
-                                    {t("Log In")}
-                                </button>
-                                <button
-                                    onClick={() => openAuthModal('register')}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                                    {link.label}
+                                </a>
+                            ))}
+
+                            {/* 4. Contact Us Popup Trigger (Minimalist text link without icon) */}
+                            <button
+                                type="button"
+                                onClick={() => setShowContactModal(true)}
+                                className={`whitespace-nowrap px-3 py-1.5 rounded-lg transition cursor-pointer ${
+                                    isScrolled
+                                        ? 'hover:bg-slate-100 hover:text-slate-900'
+                                        : 'hover:bg-white/10 hover:text-white'
+                                }`}
+                            >
+                                {lang === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}
+                            </button>
+                        </nav>
+
+                        {/* Subtle Minimal Divider between Nav and Utility Controls */}
+                        <div className={`hidden lg:block h-4 w-px mx-1 ${isScrolled ? 'bg-slate-200' : 'bg-white/20'}`} />
+
+                        {/* Right-Side Controls: Contact (Mobile), Language Toggle & Auth */}
+                        <div className="flex items-center gap-2 sm:gap-2.5 text-xs sm:text-sm font-semibold shrink-0">
+                            {/* Mobile Quick Contact Button */}
+                            <button
+                                type="button"
+                                onClick={() => setShowContactModal(true)}
+                                className={`lg:hidden flex items-center gap-1 px-2.5 py-2 rounded-xl transition-colors text-xs font-semibold cursor-pointer ${
+                                    isScrolled 
+                                        ? 'text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200/80' 
+                                        : 'text-white/95 hover:text-white bg-white/10 hover:bg-white/20 border border-white/20'
+                                }`}
+                                title={lang === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}
+                                aria-label="Contact Us"
+                            >
+                                <MessageCircle className="w-4 h-4 text-emerald-400" />
+                                <span className="hidden xs:inline">{lang === 'sw' ? 'Msaada' : 'Contact'}</span>
+                            </button>
+
+                            {/* Language Toggle */}
+                            <button 
+                                type="button"
+                                onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} 
+                                className={`flex items-center gap-1.5 px-2.5 py-2 transition-colors text-xs sm:text-sm font-semibold cursor-pointer ${
+                                    isScrolled ? 'text-slate-700 hover:text-slate-900' : 'text-white/90 hover:text-white'
+                                }`}
+                                title={lang === 'en' ? 'Badili lugha kuwa Kiswahili' : 'Switch language to English'}
+                            >
+                                <Globe className={`w-4 h-4 ${isScrolled ? 'text-[#154F7C]' : 'text-sky-300'}`} />
+                                <span>{lang === 'en' ? 'SWA' : 'ENG'}</span>
+                            </button>
+                            
+                            {auth?.user ? (
+                                <Link
+                                    href={route('dashboard')}
+                                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] text-white text-xs sm:text-sm font-bold transition shadow-md shadow-[#154F7C]/25 border border-sky-400/25 active:scale-95"
                                 >
-                                    <span>{t("Start Now")}</span>
-                                </button>
-                            </div>
-                        )}
+                                    <span>{t("Go to Dashboard")}</span>
+                                </Link>
+                            ) : (
+                                <div className="flex items-center gap-2 sm:gap-2.5">
+                                    <button
+                                        onClick={() => openAuthModal('login')}
+                                        className={`px-4 py-2 sm:py-2.5 rounded-xl font-bold transition text-xs sm:text-sm cursor-pointer active:scale-95 ${
+                                            isScrolled
+                                                ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 shadow-2xs'
+                                                : 'bg-white/[0.1] hover:bg-white/[0.18] text-white backdrop-blur-md border border-white/25'
+                                        }`}
+                                    >
+                                        {t("Log In")}
+                                    </button>
+                                    <button
+                                        onClick={() => openAuthModal('register')}
+                                        className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] text-white text-xs sm:text-sm font-bold transition shadow-md shadow-[#154F7C]/25 border border-sky-400/25 cursor-pointer active:scale-95"
+                                    >
+                                        <span>{t("Start Now")}</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </header>
@@ -1287,38 +1399,43 @@ export default function Welcome({ auth }) {
                 {/* Hero Section (Fills Initial Viewport with Anchored Metrics - Zero White Space) */}
                 {/* Hero Section (Clean, Minimalist, High-Tech Event & Invitation Canvas) */}
                 {/* Hero Section — Modern Asymmetric Two-Column Conference/Event Layout */}
-                <section id="hero" className="min-h-screen min-h-[100dvh] pt-14 bg-[#8ABEE0] text-white relative overflow-hidden flex flex-col justify-between select-none">
-                    {/* Full Hero Background Image with subtle gentle overlay and smooth reveal transition */}
-                    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#8ABEE0] hero-backdrop-reveal">
+                <section id="hero" className="min-h-screen min-h-[100dvh] pt-20 bg-[#0B2545] text-white relative overflow-hidden flex flex-col justify-between select-none">
+                    {/* Full Hero Background Image with darker shade of blue overlay and smooth reveal transition */}
+                    <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-[#0B2545] hero-backdrop-reveal">
                         <img
                             src="/images/hero-art.jpg"
                             alt="Digital event passes, invitations and ticketing background"
                             className="w-full h-full object-cover object-center"
                         />
-                        {/* Subtle gentle overlay to elevate text clarity while keeping the 3D art vivid */}
-                        <div className="absolute inset-0 bg-[#0B2545]/20 dark:bg-[#07111E]/30" />
+                        {/* Rich darker shade of blue overlay enhancing depth and text clarity */}
+                        <div className="absolute inset-0 bg-gradient-to-b from-[#0B2545]/85 via-[#0E355F]/70 to-[#0B2545]/90" />
+                        <div className="absolute inset-0 bg-[#07192F]/30 pointer-events-none" />
 
-                        {/* Aesthetic Floating Geometric & Glass Elements matching the background artwork */}
-                        <div className="hero-float-1 absolute top-[20%] left-[22%] w-28 h-28 sm:w-44 sm:h-44 rounded-full border border-white/20 bg-white/[0.06] backdrop-blur-md shadow-xl pointer-events-none" />
-                        <div className="hero-float-2 absolute bottom-[26%] left-[6%] w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-sky-300/30 via-sky-400/20 to-blue-600/20 border border-white/20 backdrop-blur-sm pointer-events-none" />
-                        <div className="hero-float-3 absolute top-[14%] right-[10%] w-32 h-32 sm:w-48 sm:h-48 rounded-full border-2 border-sky-300/20 bg-sky-400/[0.03] backdrop-blur-xs pointer-events-none" />
+                        {/* Mobile Soft Ambient Atmospheric Glows (No harsh wireframe rings over text) */}
+                        <div className="sm:hidden absolute -top-8 -right-8 w-64 h-64 bg-sky-400/15 rounded-full blur-3xl pointer-events-none" />
+                        <div className="sm:hidden absolute top-1/3 -left-12 w-60 h-60 bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+
+                        {/* Aesthetic Floating Geometric & Glass Elements for Tablet & Desktop screens */}
+                        <div className="hidden sm:block hero-float-1 absolute top-[20%] left-[22%] w-28 h-28 sm:w-44 sm:h-44 rounded-full border border-white/20 bg-transparent shadow-xl pointer-events-none" />
+                        <div className="hidden sm:block hero-float-2 absolute bottom-[26%] left-[6%] w-16 h-16 sm:w-24 sm:h-24 rounded-full border border-white/20 bg-transparent pointer-events-none" />
+                        <div className="hidden sm:block hero-float-3 absolute top-[14%] right-[10%] w-32 h-32 sm:w-48 sm:h-48 rounded-full border-2 border-sky-300/20 bg-sky-400/[0.03] backdrop-blur-xs pointer-events-none" />
                         
-                        {/* Additional Floating Moving Circles for Richer Atmosphere */}
-                        <div className="hero-float-4 absolute top-[8%] left-[10%] w-20 h-20 sm:w-28 sm:h-28 rounded-full border border-emerald-400/30 bg-emerald-400/[0.05] backdrop-blur-sm shadow-lg pointer-events-none" />
-                        <div className="hero-float-5 absolute top-[38%] left-[2%] w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-cyan-400/25 to-blue-500/15 border border-cyan-300/30 backdrop-blur-xs pointer-events-none" />
-                        <div className="hero-float-6 absolute bottom-[18%] left-[30%] w-20 h-20 sm:w-32 sm:h-32 rounded-full border border-white/15 bg-white/[0.04] backdrop-blur-md shadow-lg pointer-events-none" />
-                        <div className="hero-float-1 absolute top-[5%] right-[28%] w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-sky-200/25 bg-sky-300/[0.06] backdrop-blur-xs pointer-events-none" />
-                        <div className="hero-float-2 absolute bottom-[12%] right-[5%] w-24 h-24 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-indigo-500/20 via-sky-500/15 to-transparent border border-white/20 backdrop-blur-sm shadow-xl pointer-events-none" />
-                        <div className="hero-float-4 absolute top-[45%] right-[22%] w-10 h-10 sm:w-14 sm:h-14 rounded-full border border-emerald-300/25 bg-emerald-400/[0.08] backdrop-blur-xs pointer-events-none" />
-                        <div className="hero-float-5 absolute bottom-[35%] right-[38%] w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-sky-400/20 border border-sky-300/40 pointer-events-none shadow-md" />
+                        {/* Additional Floating Moving Circles for Richer Atmosphere (Desktop/Tablet) */}
+                        <div className="hidden sm:block hero-float-4 absolute top-[8%] left-[10%] w-20 h-20 sm:w-28 sm:h-28 rounded-full border border-white/20 bg-transparent pointer-events-none" />
+                        <div className="hidden sm:block hero-float-5 absolute top-[38%] left-[2%] w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-cyan-400/25 to-blue-500/15 border border-cyan-300/30 backdrop-blur-xs pointer-events-none" />
+                        <div className="hidden sm:block hero-float-6 absolute bottom-[18%] left-[30%] w-20 h-20 sm:w-32 sm:h-32 rounded-full border border-white/15 bg-white/[0.04] backdrop-blur-md shadow-lg pointer-events-none" />
+                        <div className="hidden sm:block hero-float-1 absolute top-[5%] right-[28%] w-14 h-14 sm:w-20 sm:h-20 rounded-full border border-sky-200/25 bg-sky-300/[0.06] backdrop-blur-xs pointer-events-none" />
+                        <div className="hidden sm:block hero-float-2 absolute bottom-[12%] right-[5%] w-24 h-24 sm:w-36 sm:h-36 rounded-full bg-gradient-to-br from-indigo-500/20 via-sky-500/15 to-transparent border border-white/20 backdrop-blur-sm shadow-xl pointer-events-none" />
+                        <div className="hidden sm:block hero-float-4 absolute top-[45%] right-[22%] w-10 h-10 sm:w-14 sm:h-14 rounded-full border border-emerald-300/25 bg-emerald-400/[0.08] backdrop-blur-xs pointer-events-none" />
+                        <div className="hidden sm:block hero-float-5 absolute bottom-[35%] right-[38%] w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-sky-400/20 border border-sky-300/40 pointer-events-none shadow-md" />
 
-                        {/* Modern Decorative Dot Matrix Grids (from reference layout) */}
-                        <div className="absolute top-20 left-8 sm:left-14 w-28 h-28 grid grid-cols-6 gap-2 opacity-25 pointer-events-none">
+                        {/* Modern Decorative Dot Matrix Grids (Desktop/Tablet) */}
+                        <div className="hidden sm:grid absolute top-20 left-8 sm:left-14 w-28 h-28 grid-cols-6 gap-2 opacity-25 pointer-events-none">
                             {Array.from({ length: 36 }).map((_, i) => (
                                 <span key={i} className="w-1 h-1 rounded-full bg-white/70" />
                             ))}
                         </div>
-                        <div className="absolute bottom-28 right-8 sm:right-14 w-28 h-28 grid grid-cols-6 gap-2 opacity-20 pointer-events-none">
+                        <div className="hidden sm:grid absolute bottom-28 right-8 sm:right-14 w-28 h-28 grid-cols-6 gap-2 opacity-20 pointer-events-none">
                             {Array.from({ length: 36 }).map((_, i) => (
                                 <span key={i} className="w-1 h-1 rounded-full bg-white/70" />
                             ))}
@@ -1326,13 +1443,13 @@ export default function Welcome({ auth }) {
                     </div>
 
                     {/* Main Two-Column Hero Content */}
-                    <div className="flex-1 flex items-center relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center w-full">
+                    <div className="flex-1 flex items-center relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-10 lg:py-12">
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-center w-full">
                             
                             {/* Left Column: Bold Headline, Subtitle, and Pill CTAs */}
-                            <div className="lg:col-span-7 flex flex-col items-start text-left pt-2 lg:pt-0">
+                            <div className="lg:col-span-7 flex flex-col items-center text-center lg:items-start lg:text-left pt-1 sm:pt-2 lg:pt-0">
                                 {/* Main Headline */}
-                                <h1 className="animate-hero-headline text-3xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-black font-display tracking-tight text-white leading-[1.08] mb-5 max-w-2xl">
+                                <h1 className="animate-hero-headline text-[1.85rem] xs:text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-black font-display tracking-tight text-white leading-[1.12] sm:leading-[1.08] mb-3 sm:mb-5 max-w-2xl mx-auto lg:mx-0">
                                     {lang === 'sw' ? (
                                         <>
                                             <span>Mialiko ya Kidigitali</span>
@@ -1353,7 +1470,7 @@ export default function Welcome({ auth }) {
                                 </h1>
 
                                 {/* Subtitle copy */}
-                                <p className="text-sm sm:text-base md:text-lg text-slate-300/90 font-medium leading-relaxed max-w-xl mb-7 sm:mb-8">
+                                <p className="text-xs xs:text-sm sm:text-base md:text-lg text-slate-300/90 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0 mb-5 sm:mb-8">
                                     {lang === 'sw' 
                                         ? 'Mfumo thabiti wa kununua na kuuza tiketi za matukio mtandaoni, kutuma mialiko ya kidigitali yenye majibu (RSVP), na kurahisisha uingiaji wa wageni mlangoni.'
                                         : 'A modern, unified platform to buy and sell event tickets online, send elegant digital invitations with real-time RSVPs, and streamline door access.'
@@ -1361,10 +1478,10 @@ export default function Welcome({ auth }) {
                                 </p>
 
                                 {/* Action Buttons matching layout aesthetic */}
-                                <div className="animate-hero-cta flex flex-wrap items-center gap-3.5 sm:gap-4 w-full sm:w-auto">
+                                <div className="animate-hero-cta flex flex-row items-center justify-center lg:justify-start gap-2.5 sm:gap-4 w-full sm:w-auto">
                                     <Link
                                         href={route('tickets.marketplace')}
-                                        className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[#16A34A] hover:bg-[#15803D] active:scale-[0.98] text-white text-sm sm:text-base font-bold shadow-xl shadow-emerald-950/50 hover:shadow-emerald-900/60 transition-all duration-300 cursor-pointer"
+                                        className="group flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 sm:px-7 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 active:scale-[0.98] text-white text-xs xs:text-sm sm:text-base font-bold shadow-xl shadow-[#154F7C]/30 hover:shadow-[#154F7C]/50 transition-all duration-300 cursor-pointer whitespace-nowrap"
                                     >
                                         <Ticket className="w-4 h-4 group-hover:rotate-12 transition-transform duration-300" />
                                         <span>{lang === 'sw' ? 'Kununua Tiketi' : 'Browse Tickets'}</span>
@@ -1373,9 +1490,9 @@ export default function Welcome({ auth }) {
                                     <button
                                         type="button"
                                         onClick={() => openAuthModal('register')}
-                                        className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.18] active:scale-[0.98] border border-white/25 hover:border-white/40 text-white text-sm sm:text-base font-bold backdrop-blur-xl transition-all duration-300 cursor-pointer"
+                                        className="group flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 sm:gap-2 px-4 sm:px-6 py-3 sm:py-3.5 rounded-full bg-white/[0.1] hover:bg-white/[0.18] active:scale-[0.98] border border-white/25 hover:border-white/40 text-white text-xs xs:text-sm sm:text-base font-bold backdrop-blur-xl transition-all duration-300 cursor-pointer whitespace-nowrap"
                                     >
-                                        <Plus className="w-4 h-4 text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
+                                        <Plus className="w-4 h-4 text-sky-400 group-hover:rotate-90 transition-transform duration-300" />
                                         <span>{lang === 'sw' ? 'Tengeneza Mwaliko' : 'Create Invitation'}</span>
                                     </button>
                                 </div>
@@ -1383,36 +1500,36 @@ export default function Welcome({ auth }) {
 
                             {/* Right Column: Cascading 3 Asymmetrical Rounded Image Cards (Spacious Breathing Room) */}
                             <div className="lg:col-span-5 relative flex justify-center lg:justify-end items-center mt-6 lg:mt-0">
-                                <div className="relative w-full max-w-[390px] sm:max-w-[460px] lg:max-w-[500px] h-[380px] sm:h-[440px] lg:h-[470px]">
+                                <div className="relative w-full max-w-[340px] xs:max-w-[390px] sm:max-w-[460px] lg:max-w-[500px] h-[300px] xs:h-[350px] sm:h-[440px] lg:h-[470px]">
                                     
                                     {/* Back Card 1 (Top Left): Live Event Crowd & Presentation */}
-                                    <div className="hero-card-anim-1 absolute top-0 left-0 w-[50%] sm:w-[52%] h-[50%] sm:h-[52%] rounded-3xl overflow-hidden shadow-2xl shadow-black/50 transform -rotate-3 hover:rotate-0 transition-transform duration-500 z-10 group">
+                                    <div className="hero-card-anim-1 absolute top-0 left-0 w-[50%] sm:w-[52%] h-[50%] sm:h-[52%] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10 transform -rotate-3 hover:rotate-0 transition-transform duration-500 z-10 group">
                                         <img 
                                             src="/images/categories/events.jpg" 
                                             alt="Events and Conferences" 
                                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                                     </div>
 
                                     {/* Card 2 (Top Right): Safari & Adventure Showcase */}
-                                    <div className="hero-card-anim-2 absolute top-2 right-0 w-[48%] sm:w-[50%] h-[52%] sm:h-[54%] rounded-3xl overflow-hidden shadow-2xl shadow-black/50 transform rotate-3 hover:rotate-0 transition-transform duration-500 z-20 group">
+                                    <div className="hero-card-anim-2 absolute top-2 right-0 w-[48%] sm:w-[50%] h-[52%] sm:h-[54%] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/50 border border-white/10 transform rotate-3 hover:rotate-0 transition-transform duration-500 z-20 group">
                                         <img 
                                             src="/images/hero_safari_adventure.jpg" 
                                             alt="Serengeti Sunset Safari Adventure" 
                                             className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                                     </div>
 
                                     {/* Front Card 3 (Center Lower Front): Fashion & Runway Shows */}
-                                    <div className="hero-card-anim-3 absolute bottom-0 left-[16%] sm:left-[18%] w-[66%] sm:w-[68%] h-[58%] sm:h-[60%] rounded-3xl overflow-hidden shadow-2xl shadow-black/70 transform hover:scale-[1.02] transition-transform duration-500 z-30 group">
+                                    <div className="hero-card-anim-3 absolute bottom-0 left-[16%] sm:left-[18%] w-[66%] sm:w-[68%] h-[58%] sm:h-[60%] rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-black/70 border border-white/15 transform hover:scale-[1.02] transition-transform duration-500 z-30 group">
                                         <img 
                                             src="/images/categories/fashion.jpg" 
                                             alt="Fashion and Runway Shows" 
                                             className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700"
                                         />
-                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
                                     </div>
                                 </div>
                             </div>
@@ -1420,11 +1537,11 @@ export default function Welcome({ auth }) {
                     </div>
 
                     {/* Bottom Floating Stats Pill Card (Clean Frosted Translucent Glass Aesthetic) */}
-                    <div className="w-full relative z-20 pb-4 sm:pb-6 px-4 sm:px-6 lg:px-8 hero-stats-anim">
-                        <div className="max-w-5xl mx-auto bg-white/[0.12] dark:bg-white/[0.08] backdrop-blur-2xl rounded-[2.25rem] border border-white/25 shadow-2xl shadow-black/40 px-5 sm:px-8 py-4 sm:py-5 flex items-center justify-between gap-4">
+                    <div className="w-full relative z-20 pb-4 sm:pb-6 px-3 sm:px-6 lg:px-8 hero-stats-anim">
+                        <div className="max-w-5xl mx-auto bg-white/[0.12] backdrop-blur-2xl rounded-2xl sm:rounded-[2.25rem] border border-white/25 shadow-2xl shadow-black/40 px-3 sm:px-8 py-3.5 sm:py-5 flex items-center justify-between gap-4">
                             
                             {/* 4 Key Metrics */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 w-full divide-x divide-white/15">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-6 w-full divide-x divide-white/15">
                                 <div className="text-center px-2">
                                     <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-sky-300 tracking-tight drop-shadow-sm">
                                         <AnimatedCounter end={10} suffix="K+" />
@@ -1456,7 +1573,7 @@ export default function Welcome({ auth }) {
                                 href="#ticketing-services"
                                 onClick={(e) => scrollToSection(e, 'ticketing-services')}
                                 title="Scroll down"
-                                className="hidden sm:flex w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-[#16A34A] hover:bg-[#15803D] active:scale-95 text-white items-center justify-center shrink-0 shadow-lg shadow-emerald-500/30 border border-white/25 transition-all cursor-pointer"
+                                className="hidden sm:flex w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] active:scale-95 text-white items-center justify-center shrink-0 shadow-lg shadow-[#154F7C]/30 border border-sky-400/30 transition-all cursor-pointer"
                             >
                                 <ArrowRight className="w-4 h-4 rotate-90" />
                             </a>
@@ -1465,10 +1582,10 @@ export default function Welcome({ auth }) {
                 </section>
 
                 {/* Ticketing Services Section — 6 Large Aesthetic Category Grid Boxes */}
-                <section id="ticketing-services" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-7 sm:py-8 lg:py-9 bg-[#F8FAFC] dark:bg-[#07111E] relative scroll-mt-14 border-b border-slate-200/60 dark:border-white/10 overflow-hidden">
+                <section id="ticketing-services" className="min-h-[calc(100vh-5rem)] flex flex-col justify-center py-7 sm:py-8 lg:py-9 bg-[#F0F2F5] relative scroll-mt-20 overflow-hidden">
                     {/* Ambient glows for aesthetic depth */}
-                    <div className="absolute top-1/3 left-1/4 -translate-y-1/2 w-[32rem] h-[32rem] bg-emerald-400/10 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute bottom-1/3 right-1/4 w-[32rem] h-[32rem] bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute top-1/3 left-1/4 -translate-y-1/2 w-[32rem] h-[32rem] bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute bottom-1/3 right-1/4 w-[32rem] h-[32rem] bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col">
                         {/* Section Header - Single Row Title and Short Subtitle */}
@@ -1476,7 +1593,7 @@ export default function Welcome({ auth }) {
                             <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.65rem] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-1.5 font-display pb-0.5 tracking-tight sm:whitespace-nowrap">
                                 {lang === 'sw' ? 'Kuuza & Kununua Tiketi Mtandaoni' : 'Sell & Buy Event Tickets Online'}
                             </h2>
-                            <p className="text-xs sm:text-sm md:text-base text-slate-500 dark:text-slate-400 font-medium sm:whitespace-nowrap">
+                            <p className="text-xs sm:text-sm md:text-base text-slate-500 font-medium sm:whitespace-nowrap">
                                 {lang === 'sw' 
                                     ? 'Tiketi za kidigitali zenye malipo ya haraka ya simu kote Tanzania.'
                                     : 'Instant digital tickets with seamless mobile money checkout across Tanzania.'
@@ -1498,7 +1615,7 @@ export default function Welcome({ auth }) {
                                         key={item.key}
                                         href={targetUrl}
                                         style={{ animationDelay: `${(idx % 3) * 120 + Math.floor(idx / 3) * 180}ms` }}
-                                        className="group relative h-40 sm:h-48 md:h-52 lg:h-56 rounded-2xl sm:rounded-3xl overflow-hidden shadow-md shadow-slate-900/10 dark:shadow-black/40 border border-slate-200/50 dark:border-white/10 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-500/40 block focus:outline-none scroll-animate ticket-category-card"
+                                        className="group relative h-40 sm:h-48 md:h-52 lg:h-56 rounded-2xl sm:rounded-3xl overflow-hidden shadow-md shadow-slate-900/10 border border-slate-200/50 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-500/40 block focus:outline-none scroll-animate ticket-category-card"
                                     >
                                         {/* Background Photo with Smooth Hover Scale */}
                                         <img
@@ -1524,7 +1641,7 @@ export default function Welcome({ auth }) {
                                             </div>
 
                                             {/* Action Icon Button */}
-                                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#16A34A] group-hover:border-[#16A34A] group-hover:scale-110 shadow-md">
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#154F7C] group-hover:border-sky-400 group-hover:scale-110 shadow-md">
                                                 <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
                                             </div>
                                         </div>
@@ -1536,7 +1653,7 @@ export default function Welcome({ auth }) {
                 </section>
 
                 {/* Features & Invitations Section — Neumorphic Infographic Circles Style */}
-                <section id="invitations" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-12 sm:py-20 bg-[#F0F2F5] dark:bg-[#07111E] relative scroll-mt-14 border-b border-slate-200/80 dark:border-white/10 overflow-hidden">
+                <section id="invitations" className="min-h-[calc(100vh-5rem)] flex flex-col justify-center py-12 sm:py-20 bg-[#F0F2F5] relative scroll-mt-20 overflow-hidden">
                     {/* Keyframes & Transition Styles */}
                     <style dangerouslySetInnerHTML={{__html: `
                         @keyframes neuDiscPopIn {
@@ -1605,7 +1722,7 @@ export default function Welcome({ auth }) {
                             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1 tracking-tight">
                                 {t("All-in-One Event Toolkit")}
                             </h2>
-                            <p className="text-base sm:text-lg text-slate-500 dark:text-slate-400 font-medium">
+                            <p className="text-base sm:text-lg text-slate-500 font-medium">
                                 {t("Kila kitu unachokihitaji kurahisisha usimamizi wa sherehe yako kuanzia maandalizi hadi siku ya tukio yenyewe.")}
                             </p>
                         </div>
@@ -1680,7 +1797,7 @@ export default function Welcome({ auth }) {
                                     >
                                         {/* Neumorphic Outer Raised Ring Foundation */}
                                         <div 
-                                            className="absolute inset-0 rounded-full bg-[#F0F2F5] dark:bg-[#0c1626] transition-all duration-300"
+                                            className="absolute inset-0 rounded-full bg-[#F0F2F5] transition-all duration-300"
                                             style={{
                                                 boxShadow: `
                                                     16px 16px 36px rgba(166, 178, 196, 0.45),
@@ -1712,7 +1829,6 @@ export default function Welcome({ auth }) {
                                                     r="145" 
                                                     stroke="#D5DCE5" 
                                                     strokeWidth="1.6" 
-                                                    className="dark:stroke-slate-700/60"
                                                 />
 
                                                 {/* Colored Gradient Arc Segment with Rounded Ends */}
@@ -1752,7 +1868,7 @@ export default function Welcome({ auth }) {
 
                                         {/* Neumorphic Recessed / Inner Well Center Disk */}
                                         <div 
-                                            className="relative z-10 w-[80%] h-[80%] rounded-full bg-[#F0F2F5] dark:bg-[#0c1626] flex flex-col items-center justify-center text-center p-6 sm:p-7 transition-all duration-300"
+                                            className="relative z-10 w-[80%] h-[80%] rounded-full bg-[#F0F2F5] flex flex-col items-center justify-center text-center p-6 sm:p-7 transition-all duration-300"
                                             style={{
                                                 boxShadow: `
                                                     inset 6px 6px 14px rgba(166, 178, 196, 0.4),
@@ -1762,12 +1878,12 @@ export default function Welcome({ auth }) {
                                             }}
                                         >
                                             {/* Feature Title */}
-                                            <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-snug mb-2 font-display">
+                                            <h3 className="text-base sm:text-lg font-black text-slate-900 leading-snug mb-2 font-display">
                                                 {item.title}
                                             </h3>
 
                                             {/* Feature Description */}
-                                            <p className="text-[10px] sm:text-[11.5px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal max-w-[210px] line-clamp-3 mb-3">
+                                            <p className="text-[10px] sm:text-[11.5px] text-slate-500 leading-relaxed font-normal max-w-[210px] line-clamp-3 mb-3">
                                                 {item.desc}
                                             </p>
 
@@ -1787,14 +1903,14 @@ export default function Welcome({ auth }) {
                 </section>
 
                 {/* HOW IT WORKS — CURVED WAVE INFOGRAPHIC STYLE */}
-                <section id="how-it-works" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-8 sm:py-12 bg-[#FBFBFC] dark:bg-[#07111E] relative scroll-mt-14 border-t border-slate-200/60 dark:border-white/10 overflow-hidden">
+                <section id="how-it-works" className="min-h-[calc(100vh-5rem)] flex flex-col justify-center py-8 sm:py-12 bg-[#F0F2F5] relative scroll-mt-20 overflow-hidden">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full flex flex-col justify-center">
                         {/* Section Header */}
                         <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-12 scroll-animate">
                             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1 tracking-tight">
                                 {t("Jinsi Inavyofanya Kazi")}
                             </h2>
-                            <p className="text-base sm:text-lg text-slate-500 dark:text-slate-400 font-medium">
+                            <p className="text-base sm:text-lg text-slate-500 font-medium">
                                 {t("Hatua tano tu zinazokutenganisha wewe na usimamizi bora wa tukio lako kidigitali.")}
                             </p>
                         </div>
@@ -1919,7 +2035,7 @@ export default function Welcome({ auth }) {
                                                         </marker>
                                                     )}
                                                 </defs>
-                                                <path d={orbitPaths[idx].dashed} stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="5 5" className="opacity-60 dark:opacity-40 transition-opacity duration-700" />
+                                                <path d={orbitPaths[idx].dashed} stroke="#94A3B8" strokeWidth="1.2" strokeDasharray="5 5" className="opacity-60 transition-opacity duration-700" />
                                                 <path
                                                     d={orbitPaths[idx].solid}
                                                     stroke={`url(#howItWorksRibbon-${idx})`}
@@ -1932,8 +2048,8 @@ export default function Welcome({ auth }) {
                                             </svg>
 
                                             {/* Circular Disc */}
-                                            <div className="w-28 h-28 sm:w-32 sm:h-32 lg:w-[62%] lg:h-auto lg:aspect-square rounded-full bg-white dark:bg-[#0c1626] shadow-[0_18px_40px_rgba(0,0,0,0.10),0_4px_12px_rgba(0,0,0,0.04)] dark:shadow-[0_16px_36px_rgba(0,0,0,0.45)] flex items-center justify-center transition-all duration-500 hover:scale-105 group-hover:shadow-[0_22px_45px_rgba(0,0,0,0.14)] relative z-10">
-                                                <step.icon className="w-10 h-10 sm:w-11 sm:h-11 xl:w-12 xl:h-12 text-slate-800 dark:text-slate-100 stroke-[1.6] group-hover:scale-110 transition-transform duration-300" />
+                                            <div className="w-28 h-28 sm:w-32 sm:h-32 lg:w-[62%] lg:h-auto lg:aspect-square rounded-full bg-white shadow-[0_18px_40px_rgba(0,0,0,0.10),0_4px_12px_rgba(0,0,0,0.04)] flex items-center justify-center transition-all duration-500 hover:scale-105 group-hover:shadow-[0_22px_45px_rgba(0,0,0,0.14)] relative z-10">
+                                                <step.icon className="w-10 h-10 sm:w-11 sm:h-11 xl:w-12 xl:h-12 text-slate-800 stroke-[1.6] group-hover:scale-110 transition-transform duration-300" />
                                             </div>
                                         </div>
 
@@ -1948,12 +2064,12 @@ export default function Welcome({ auth }) {
                                             </span>
 
                                             {/* Title */}
-                                            <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug mb-2">
+                                            <h3 className="text-base sm:text-lg font-bold text-slate-900 leading-snug mb-2">
                                                 {step.title}
                                             </h3>
 
                                             {/* Description */}
-                                            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                                            <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
                                                 {step.desc}
                                             </p>
                                         </div>
@@ -1966,7 +2082,7 @@ export default function Welcome({ auth }) {
                 </section>
 
                 {/* PRICING */}
-                <section id="payment" className="min-h-[calc(100vh-3.5rem)] flex flex-col justify-center py-6 sm:py-8 bg-[#F8FAFC] relative scroll-mt-14 border-t border-slate-100">
+                <section id="payment" className="min-h-[calc(100vh-5rem)] flex flex-col justify-center py-6 sm:py-8 bg-[#F0F2F5] relative scroll-mt-20">
                     <div className="max-w-7xl mx-auto px-6 w-full">
                         <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8 scroll-animate">
                             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-2 sm:mb-3 font-display pb-1">{t("Bei Zetu ni Nafuu")}</h2>
@@ -1993,7 +2109,7 @@ export default function Welcome({ auth }) {
 
                             {/* Standard (Featured) */}
                             <div className="bg-[#0B2545] rounded-[2.5rem] p-8 border border-[#173860] shadow-2xl scroll-animate transform lg:-translate-y-4 relative z-10 text-white flex flex-col h-full">
-                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#16A34A] text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg border border-[#16A34A]">
+                                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-gradient-to-r from-[#154F7C] to-[#327FB5] text-white text-xs font-black px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg border border-sky-400/40">
                                     {t("Pendekezo")}
                                 </div>
                                 <h4 className="text-sm font-black text-blue-300 uppercase tracking-widest mb-2">Standard</h4>
@@ -2060,69 +2176,89 @@ export default function Welcome({ auth }) {
                     </div>
                 </section>
 
-                {/* ── Accepted Payments Section ── */}
-                <section className="py-16 bg-white border-t border-slate-100">
-                    <div className="max-w-7xl mx-auto px-6">
-                        <div className="text-center mb-10 scroll-animate">
-                            <h2 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-4 font-display pb-1">{t("Accepted Payment Methods")}</h2>
-                            <p className="text-lg text-slate-500">{t("Pay securely using any of the methods below, powered by AzamPay")}</p>
+                {/* ── Accepted Payments Section (Continuous Moving Faded Marquee) ── */}
+                <section className="pt-4 sm:pt-6 pb-12 sm:pb-16 bg-[#F0F2F5] overflow-hidden">
+                    <style dangerouslySetInnerHTML={{ __html: `
+                        @keyframes paymentMarquee {
+                            0% { transform: translate3d(0, 0, 0); }
+                            100% { transform: translate3d(-50%, 0, 0); }
+                        }
+                        .payment-marquee-track {
+                            animation: paymentMarquee 30s linear infinite;
+                            will-change: transform;
+                        }
+                        @media (prefers-reduced-motion: reduce) {
+                            .payment-marquee-track {
+                                animation: none;
+                                flex-wrap: wrap;
+                                justify-content: center;
+                            }
+                        }
+                    `}} />
+
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6">
+                        <div className="text-center mb-4 sm:mb-5 scroll-animate">
+                            <h3 className="text-lg sm:text-xl md:text-2xl font-extrabold text-[#154F7C] font-display tracking-tight">
+                                {t("Accepted Payment Methods")}
+                            </h3>
                         </div>
 
-                        {/* Mobile Money */}
-                        <div className="mb-8 scroll-animate delay-100">
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">{t("Mobile Money")}</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 max-w-3xl mx-auto">
+                        {/* Continuous 1-Row Moving Strip with Soft Fade & Edge Mask */}
+                        <div className="relative w-full overflow-hidden py-3">
+                            {/* Left & Right Seamless Edge Fade Gradients */}
+                            <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-r from-[#F0F2F5] to-transparent z-10" />
+                            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 sm:w-28 bg-gradient-to-l from-[#F0F2F5] to-transparent z-10" />
+
+                            <div className="flex w-max payment-marquee-track">
                                 {[
-                                    { label: 'm-pesa',  sub: 'Vodacom',  labelColor: '#E60000', subColor: '#64748b' },
-                                    { label: 'Mixx',    sub: 'by Yas',   labelColor: '#1a237e', subColor: '#f59e0b', italic: true },
-                                    { label: 'airtel',  sub: 'Money',    labelColor: '#E8001D', subColor: '#E8001D' },
-                                    { label: 'halo',    sub: 'Pesa',     labelColor: '#F97316', subColor: '#64748b' },
-                                    { label: 'Azam',    sub: 'Pesa',     labelColor: '#16a34a', subColor: '#64748b' },
+                                    { label: 'm-pesa', sub: 'Vodacom', labelColor: '#E60000', subColor: '#64748b' },
+                                    { label: 'Mixx', sub: 'by Yas', labelColor: '#1a237e', subColor: '#d97706', italic: true },
+                                    { label: 'airtel', sub: 'Money', labelColor: '#E8001D', subColor: '#E8001D' },
+                                    { label: 'halo', sub: 'Pesa', labelColor: '#F97316', subColor: '#64748b' },
+                                    { label: 'Azam', sub: 'Pesa', labelColor: '#16a34a', subColor: '#64748b' },
+                                    { label: 'VISA', sub: 'Debit / Credit', labelColor: '#1A1F71', subColor: '#64748b' },
+                                    { label: 'Mastercard', sub: 'Debit / Credit', labelColor: '#EB001B', subColor: '#64748b' },
+                                    { label: 'Amex', sub: 'American Exp.', labelColor: '#007BC1', subColor: '#64748b' },
+                                    { label: 'UnionPay', sub: 'Union Pay', labelColor: '#D40000', subColor: '#64748b' },
+                                    { label: 'Bank Transfer', sub: 'CRDB & NMB', labelColor: '#1a3a5c', subColor: '#64748b' },
+                                    { label: 'QR Code', sub: 'Scan to pay', labelColor: '#1a1a2e', subColor: '#64748b' },
+                                    { label: 'Lipia Link', sub: 'AzamPay Link', labelColor: '#16a34a', subColor: '#64748b' },
+                                    // Duplicate 12 items for seamless infinite loop
+                                    { label: 'm-pesa', sub: 'Vodacom', labelColor: '#E60000', subColor: '#64748b' },
+                                    { label: 'Mixx', sub: 'by Yas', labelColor: '#1a237e', subColor: '#d97706', italic: true },
+                                    { label: 'airtel', sub: 'Money', labelColor: '#E8001D', subColor: '#E8001D' },
+                                    { label: 'halo', sub: 'Pesa', labelColor: '#F97316', subColor: '#64748b' },
+                                    { label: 'Azam', sub: 'Pesa', labelColor: '#16a34a', subColor: '#64748b' },
+                                    { label: 'VISA', sub: 'Debit / Credit', labelColor: '#1A1F71', subColor: '#64748b' },
+                                    { label: 'Mastercard', sub: 'Debit / Credit', labelColor: '#EB001B', subColor: '#64748b' },
+                                    { label: 'Amex', sub: 'American Exp.', labelColor: '#007BC1', subColor: '#64748b' },
+                                    { label: 'UnionPay', sub: 'Union Pay', labelColor: '#D40000', subColor: '#64748b' },
+                                    { label: 'Bank Transfer', sub: 'CRDB & NMB', labelColor: '#1a3a5c', subColor: '#64748b' },
+                                    { label: 'QR Code', sub: 'Scan to pay', labelColor: '#1a1a2e', subColor: '#64748b' },
+                                    { label: 'Lipia Link', sub: 'AzamPay Link', labelColor: '#16a34a', subColor: '#64748b' },
                                 ].map((p, i) => (
-                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5">
-                                        <span className="font-black text-base leading-none tracking-tight" style={{ color: p.labelColor, fontStyle: p.italic ? 'italic' : 'normal' }}>{p.label}</span>
-                                        <span className="text-[11px] font-bold leading-none tracking-widest uppercase" style={{ color: p.subColor }}>{p.sub}</span>
+                                    <div 
+                                        key={i} 
+                                        className="flex flex-col items-center justify-center text-center opacity-65 select-none px-6 sm:px-8 shrink-0"
+                                    >
+                                        <span 
+                                            className="font-black text-sm sm:text-base leading-none tracking-tight whitespace-nowrap" 
+                                            style={{ color: p.labelColor, fontStyle: p.italic ? 'italic' : 'normal' }}
+                                        >
+                                            {p.label}
+                                        </span>
+                                        <span 
+                                            className="text-[9px] sm:text-[10px] font-extrabold leading-tight uppercase tracking-wider mt-1 text-slate-500 whitespace-nowrap" 
+                                            style={{ color: p.subColor }}
+                                        >
+                                            {p.sub}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Cards */}
-                        <div className="mb-8 scroll-animate delay-200">
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">{t("Card Payments")}</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-2xl mx-auto">
-                                {[
-                                    { label: 'VISA',       sub: 'Debit / Credit',   labelColor: '#1A1F71' },
-                                    { label: 'Mastercard', sub: 'Debit / Credit',   labelColor: '#EB001B' },
-                                    { label: 'Amex',       sub: 'American Express', labelColor: '#007BC1' },
-                                    { label: 'UnionPay',   sub: 'Union Pay',        labelColor: '#D40000' },
-                                ].map((p, i) => (
-                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5">
-                                        <span className="font-black text-base leading-none tracking-tight" style={{ color: p.labelColor }}>{p.label}</span>
-                                        <span className="text-[10px] font-semibold leading-none text-slate-400 uppercase tracking-wider">{p.sub}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Bank & QR */}
-                        <div className="scroll-animate delay-300">
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">{t("Bank & Alternative")}</p>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl mx-auto">
-                                {[
-                                    { label: 'Bank Transfer', sub: 'CRDB, NMB & more',    labelColor: '#1a3a5c' },
-                                    { label: 'QR Code',       sub: 'Scan to pay instantly', labelColor: '#1a1a2e' },
-                                    { label: 'Lipia Link',    sub: 'AzamPay invoice link',  labelColor: '#16a34a' },
-                                ].map((p, i) => (
-                                    <div key={i} className="h-20 rounded-2xl border-2 border-slate-200 bg-white shadow-sm flex flex-col items-center justify-center gap-0.5">
-                                        <span className="font-black text-base leading-none tracking-tight" style={{ color: p.labelColor }}>{p.label}</span>
-                                        <span className="text-[10px] font-semibold leading-none text-slate-400 text-center px-2">{p.sub}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <p className="text-center text-[11px] text-slate-400 mt-8 flex items-center justify-center gap-1.5 scroll-animate delay-400">
+                        <p className="text-center text-[11px] text-slate-400 mt-6 sm:mt-8 flex items-center justify-center gap-1.5 scroll-animate delay-200">
                             <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                             {t("All payments are processed securely through")} <strong className="text-slate-600 ml-1">AzamPay</strong> · 256-bit SSL Encryption
                         </p>
@@ -2132,40 +2268,158 @@ export default function Welcome({ auth }) {
                 <FAQSection t={t} />
             </main>
 
-            {/* Footer */}
-            <footer className="bg-white border-t border-slate-200 py-6 px-6">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 md:gap-4">
-                    {/* Far Left: Logo */}
-                    <div className="flex-1 flex justify-start opacity-90 hover:opacity-100 transition-opacity">
-                        <button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="cursor-pointer focus:outline-none">
-                            <KardovoLogo showText={true} light={false} />
-                        </button>
-                    </div>
-                    
-                    {/* Center: Copyright */}
-                    <div className="flex-1 flex justify-center text-slate-500 font-medium text-xs md:text-sm text-center">
-                        &copy; {new Date().getFullYear()} Kardovo. {t("Haki zote zimehifadhiwa.")}
-                    </div>
-                    
-                    {/* Far Right: Links */}
-                    <div className="flex-1 flex justify-end gap-6 font-medium text-sm text-slate-500">
-                        <Link href="/terms" className="hover:text-slate-800 transition-colors">{t("Vigezo na Masharti")}</Link>
-                        <Link href="/privacy" className="hover:text-slate-800 transition-colors">{t("Sera ya Faragha")}</Link>
-                    </div>
-                </div>
-            </footer>
+            {/* Official Kardovo Footer */}
+            <KardovoFooter lang={lang} onSectionClick={scrollToSection} />
 
-            {/* Login Modal */}
-            <Modal show={showLoginModal} onClose={() => setShowLoginModal(false)} maxWidth="xl" closeable={true}>
+            {/* Translucent Sign In / Sign Up Modal */}
+            <Modal show={showLoginModal} onClose={() => setShowLoginModal(false)} maxWidth="lg" closeable={true} translucent={true}>
                 <div className="relative">
                     <button 
                         onClick={() => setShowLoginModal(false)}
-                        className="absolute top-4 right-4 z-50 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 transition-colors cursor-pointer"
+                        className="absolute top-4 right-4 z-50 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer border border-slate-200/80 shadow-2xs"
+                        aria-label="Close modal"
                     >
-                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                     <div className="max-h-[90vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
                         <Login asModal={true} initialMode={authModalMode} />
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Contact Us Modal - Variety of Options (WhatsApp, Phone, Email, Socials) */}
+            <Modal show={showContactModal} onClose={() => setShowContactModal(false)} maxWidth="md" closeable={true} translucent={true}>
+                <div className="relative p-6 sm:p-8 bg-white dark:bg-[#0B2545] rounded-3xl text-slate-800 dark:text-white shadow-2xl">
+                    {/* Close Button */}
+                    <button 
+                        type="button"
+                        onClick={() => setShowContactModal(false)}
+                        className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white transition-all cursor-pointer border border-slate-200/80 dark:border-white/15 shadow-2xs"
+                        aria-label="Close modal"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+
+                    {/* Modal Header */}
+                    <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-100 dark:bg-[#154F7C]/40 text-[#154F7C] dark:text-sky-300 mb-3.5 shadow-sm border border-sky-200/60 dark:border-sky-400/20">
+                            <MessageCircle className="w-7 h-7" />
+                        </div>
+                        <h3 className="text-xl sm:text-2xl font-black font-display tracking-tight text-slate-900 dark:text-white">
+                            {lang === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-300/90 mt-1 max-w-sm mx-auto">
+                            {lang === 'sw' 
+                                ? 'Tuko hapa kukusaidia saa 24/7 kuhusu tiketi za matukio, mialiko ya kidigitali na malipo.'
+                                : 'We are here 24/7 to assist you with event tickets, invitations, check-ins, and payments.'}
+                        </p>
+                    </div>
+
+                    {/* Variety of Contact Options */}
+                    <div className="space-y-3">
+                        {/* 1. WhatsApp Option (Fastest response) */}
+                        <a
+                            href="https://wa.me/255737672987?text=Habari%20Kardovo,%20nahitaji%20msaada%20kuhusu%20huduma%20zenu."
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-center justify-between p-4 rounded-2xl bg-emerald-50/70 hover:bg-emerald-50 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-200/70 dark:border-emerald-500/30 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
+                        >
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                    <WhatsAppIcon className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                            {lang === 'sw' ? 'Msaada kupitia WhatsApp' : 'Chat on WhatsApp'}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-300">
+                                            {lang === 'sw' ? 'Haraka Zaidi' : 'Fastest'}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-300 font-mono mt-0.5">+255 737 672 987</p>
+                                </div>
+                            </div>
+                            <div className="text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
+                        </a>
+
+                        {/* 2. Direct Phone Call */}
+                        <a
+                            href="tel:+255737672987"
+                            className="group flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border border-slate-200/80 dark:border-white/10 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
+                        >
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                    <Phone className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                        {lang === 'sw' ? 'Piga Simu Moja kwa Moja' : 'Call Support Directly'}
+                                    </span>
+                                    <p className="text-xs text-slate-500 dark:text-slate-300 font-mono mt-0.5">+255 737 672 987</p>
+                                </div>
+                            </div>
+                            <div className="text-sky-600 dark:text-sky-400 group-hover:translate-x-1 transition-transform">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
+                        </a>
+
+                        {/* 3. Official Email */}
+                        <a
+                            href="mailto:support@kardovo.com?subject=Kardovo%20Inquiry%20/%20Support"
+                            className="group flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border border-slate-200/80 dark:border-white/10 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
+                        >
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-xl bg-[#154F7C] text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                    <Mail className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                        {lang === 'sw' ? 'Tuma Barua Pepe (Email)' : 'Official Email Support'}
+                                    </span>
+                                    <p className="text-xs text-slate-500 dark:text-slate-300 font-mono mt-0.5">support@kardovo.com</p>
+                                </div>
+                            </div>
+                            <div className="text-slate-600 dark:text-slate-400 group-hover:translate-x-1 transition-transform">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
+                        </a>
+                    </div>
+
+                    {/* Social Media Follow Channels */}
+                    <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-white/15 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
+                        <span className="font-semibold">{lang === 'sw' ? 'Mitandao ya Kijamii:' : 'Follow Us On:'}</span>
+                        <div className="flex items-center gap-2.5">
+                            <a
+                                href="https://instagram.com/kardovo"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Instagram"
+                                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-pink-50 hover:text-pink-600 dark:bg-white/10 dark:hover:bg-pink-500/20 dark:hover:text-pink-300 flex items-center justify-center text-slate-600 dark:text-slate-200 transition-colors shadow-2xs cursor-pointer"
+                            >
+                                <InstagramIcon className="w-4 h-4" />
+                            </a>
+                            <a
+                                href="https://facebook.com/kardovo"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Facebook"
+                                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 dark:bg-white/10 dark:hover:bg-blue-500/20 dark:hover:text-blue-300 flex items-center justify-center text-slate-600 dark:text-slate-200 transition-colors shadow-2xs cursor-pointer"
+                            >
+                                <FacebookIcon className="w-4 h-4" />
+                            </a>
+                            <a
+                                href="https://wa.me/255737672987"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="WhatsApp"
+                                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-white/10 dark:hover:bg-emerald-500/20 dark:hover:text-emerald-300 flex items-center justify-center text-slate-600 dark:text-slate-200 transition-colors shadow-2xs cursor-pointer"
+                            >
+                                <WhatsAppIcon className="w-4 h-4" />
+                            </a>
+                        </div>
                     </div>
                 </div>
             </Modal>
@@ -2181,6 +2435,7 @@ export default function Welcome({ auth }) {
                     <path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>
                 </svg>
             </div>
+            <CookieConsentBanner />
         </div>
     );
 }

@@ -1,0 +1,19 @@
+<svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));">
+  <defs>
+    <radialGradient id="msWax" cx="36%" cy="32%" r="68%">
+      <stop offset="0%" stop-color="#a12e39" />
+      <stop offset="42%" stop-color="#5a0f1b" />
+      <stop offset="85%" stop-color="#310a0e" />
+      <stop offset="100%" stop-color="#1b0508" />
+    </radialGradient>
+    <filter id="msEmboss" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="-0.7" dy="-0.7" stdDeviation="0.4" flood-color="#fff3c4" flood-opacity="0.9" />
+      <feDropShadow dx="0.9" dy="0.9" stdDeviation="0.6" flood-color="#1a0500" flood-opacity="0.95" />
+    </filter>
+  </defs>
+  <path d="M 50,6 C 63,5 77,9 86,18 C 94,27 97,40 96,52 C 95,65 89,77 80,86 C 70,94 57,97 45,96 C 32,95 20,89 13,79 C 5,69 3,55 6,43 C 8,30 16,18 27,11 C 34,7 42,6 50,6 Z" fill="url(#msWax)" />
+  <circle cx="50" cy="50" r="37.5" fill="none" stroke="#310a0e" stroke-width="2.6" opacity="0.85" />
+  <circle cx="50" cy="50" r="36.5" fill="none" stroke="#a12e39" stroke-width="1.1" opacity="0.55" />
+  <circle cx="50" cy="50" r="31" fill="#310a0e" opacity="0.22" />
+  <text x="50" y="58" text-anchor="middle" fill="#f5e6a8" filter="url(#msEmboss)" font-family="'Cinzel Decorative', 'Cinzel', Georgia, serif" font-size="21" font-weight="700" letter-spacing="-0.03em">R&Z</text>
+</svg>

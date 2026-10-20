@@ -167,8 +167,36 @@ class EventController extends Controller
         $channelFilter = $request->input('channel');
         $rsvpFilter = $request->input('rsvp');
         $categoryFilter = $request->input('category');
+        $pledgeFilter = $request->input('pledge');
 
-        $guestsQuery = $event->guests()->with('messages')->latest();
+        $guestsQuery = $event->guests()->with(['messages', 'pledgePayments.recordedBy'])->latest();
+
+        if ($pledgeFilter && $pledgeFilter !== 'all') {
+            if ($pledgeFilter === 'has_pledge') {
+                $guestsQuery->where('pledge_amount', '>', 0);
+            } elseif ($pledgeFilter === 'unpaid') {
+                $guestsQuery->where(function ($q) {
+                    $q->whereNotIn('pledge_status', ['completed', 'overpaid', 'partial'])
+                        ->orWhereNull('pledge_status');
+                });
+            } elseif ($pledgeFilter === 'partial') {
+                $guestsQuery->where(function ($q) {
+                    $q->where('pledge_status', 'partial')
+                        ->orWhere(function ($q2) {
+                            $q2->where('paid_amount', '>', 0)
+                                ->whereColumn('paid_amount', '<', 'pledge_amount');
+                        });
+                });
+            } elseif ($pledgeFilter === 'completed') {
+                $guestsQuery->where(function ($q) {
+                    $q->whereIn('pledge_status', ['completed', 'overpaid'])
+                        ->orWhere(function ($q2) {
+                            $q2->where('pledge_amount', '>', 0)
+                                ->whereColumn('paid_amount', '>=', 'pledge_amount');
+                        });
+                });
+            }
+        }
 
         if ($search) {
             $guestsQuery->where(function ($q) use ($search) {
@@ -216,6 +244,7 @@ class EventController extends Controller
                 'channel' => $channelFilter ?? 'all',
                 'rsvp' => $rsvpFilter ?? 'all',
                 'category' => $categoryFilter ?? 'all',
+                'pledge' => $pledgeFilter ?? 'all',
             ],
             'stats' => function () use ($event) {
                 $guestStats = $event->guests()
@@ -232,6 +261,8 @@ class EventController extends Controller
                     'attendance_percent' => $totalGuests > 0 ? round(($willAttendCount / $totalGuests) * 100) : 0,
                 ];
             },
+            'pledgeStats' => fn () => $event->getPledgeStats(),
+            'pledgePayments' => fn () => $event->pledgePayments()->with(['guest', 'recordedBy'])->take(50)->get(),
             'recentScanLogs' => fn () => ScanLog::where('event_id', $event->id)
                 ->with(['guest', 'scanner', 'ticket'])
                 ->latest('scanned_at')
@@ -325,6 +356,11 @@ class EventController extends Controller
             'microsite_config' => 'nullable|array',
             'microsite_config_files' => 'nullable|array',
             'microsite_config_files.*' => 'nullable|file|max:10240', // max 10MB
+            'pledge_target' => 'nullable|numeric|min:0',
+            'pledge_currency' => 'nullable|string|max:10',
+            'pledges_enabled' => 'nullable|boolean',
+            'pledge_deadline' => 'nullable|date',
+            'pledge_settings' => 'nullable|array',
         ];
 
         if ($user->isAdmin()) {
@@ -348,8 +384,18 @@ class EventController extends Controller
             unset($validated['status']);
         }
 
+        // Check if user is allowed to customize microsite
+        $canCustomizeMicrosite = $user->isAdmin() || $user->isSubAdmin() || $user->canCustomizeMicrosite() || $event->hasMicrositeEnabled();
+        if (! $canCustomizeMicrosite) {
+            unset($validated['microsite_config'], $validated['microsite_config_files']);
+        } elseif (isset($validated['microsite_config']) && ! $user->isAdmin()) {
+            // Prevent non-admins from tampering with admin override flags
+            $existingOverride = $event->microsite_config['admin_override'] ?? false;
+            $validated['microsite_config']['admin_override'] = $existingOverride;
+        }
+
         // Handle uploaded files
-        if ($request->hasFile('microsite_config_files')) {
+        if (isset($validated['microsite_config_files']) && $request->hasFile('microsite_config_files')) {
             $config = $validated['microsite_config'] ?? $event->microsite_config ?? [];
             foreach ($request->file('microsite_config_files') as $key => $file) {
                 if ($file) {

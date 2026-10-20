@@ -1,5 +1,5 @@
- import React, { useState, useRef } from 'react';
-import { Head } from '@inertiajs/react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Head, Link } from '@inertiajs/react';
 import { 
     Download, 
     Share2, 
@@ -7,28 +7,133 @@ import {
     AlertCircle, 
     Calendar, 
     MapPin, 
-    Users,
-    Check,
-    Loader2,
-    Globe
+    Users, 
+    Check, 
+    Loader2, 
+    Globe,
+    Ticket,
+    X,
+    MessageCircle,
+    Phone,
+    Mail,
+    ArrowRight
 } from 'lucide-react';
 import { toPng, toBlob, toJpeg } from 'html-to-image';
+import Modal from '@/Components/Modal';
 import KardovoLogo from '@/Components/KardovoLogo';
+import KardovoFooter from '@/Components/KardovoFooter';
 import { useTicketingLanguage } from '@/Utils/ticketingTranslations';
+
+function WhatsAppIcon({ className = "w-5 h-5" }) {
+    return (
+        <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+        </svg>
+    );
+}
 
 export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, siblingTickets = [] }) {
     const { lang, toggleLang, t } = useTicketingLanguage();
     const [copied, setCopied] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [exportStatus, setExportStatus] = useState('');
+    const [showContactModal, setShowContactModal] = useState(false);
     const ticketCardRef = useRef(null);
 
-    const isCheckedIn = ticket.status === 'checked_in';
-    const isCancelled = ticket.status === 'cancelled';
-    const isValid = ticket.status === 'valid' && !isCheckedIn && !isCancelled;
+    // Active ticket state & 3D Flip transition state
+    const [activeTicketNumber, setActiveTicketNumber] = useState(ticket.ticket_number);
+    const [flipStage, setFlipStage] = useState('idle'); // 'idle' | 'flipping-out' | 'flipping-in' | 'settling'
+    const [flipDirection, setFlipDirection] = useState('next'); // 'next' | 'prev'
 
-    const shareUrl = ticket.pass_url || window.location.href;
-    const shareText = `🎟️ My Ticket for ${event.title} (${tier?.name || 'Standard'})\nPass Code: #${ticket.ticket_number}\nView & Present at Gate: ${shareUrl}`;
+    const activeSibling = siblingTickets.find((s) => s.ticket_number === activeTicketNumber);
+    const activeTicket = activeSibling ? { ...ticket, ...activeSibling } : ticket;
+    const activeTier = activeSibling?.tier || tier;
+    const activeQrDataUri = activeSibling?.qr_data_uri || qrDataUri;
+
+    const isCheckedIn = activeTicket.status === 'checked_in' || activeTicket.is_checked_in;
+    const isCancelled = activeTicket.status === 'cancelled';
+    const isValid = activeTicket.status === 'valid' && !isCheckedIn && !isCancelled;
+
+    const shareUrl = activeTicket.pass_url || window.location.href;
+    const shareText = `🎟️ My Ticket for ${event.title} (${activeTier?.name || 'Standard'})\nPass Code: #${activeTicket.ticket_number}\nView & Present at Gate: ${shareUrl}`;
+
+    // Perform smooth 3D flip card transition when switching between sibling passes
+    const handleSwitchPass = (targetTicket) => {
+        if (!targetTicket || targetTicket.ticket_number === activeTicketNumber || flipStage !== 'idle') {
+            return;
+        }
+
+        const currentIdx = siblingTickets.findIndex((s) => s.ticket_number === activeTicketNumber);
+        const targetIdx = siblingTickets.findIndex((s) => s.ticket_number === targetTicket.ticket_number);
+        const direction = targetIdx >= currentIdx ? 'next' : 'prev';
+
+        setFlipDirection(direction);
+        setFlipStage('flipping-out');
+
+        // Halfway through rotation (when card is edge-on at 80deg), swap ticket data and set reverse angle
+        setTimeout(() => {
+            setActiveTicketNumber(targetTicket.ticket_number);
+            if (targetTicket.pass_url) {
+                window.history.replaceState({}, '', targetTicket.pass_url);
+            }
+            setFlipStage('flipping-in');
+
+            // Force reflow and smoothly settle into view
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setFlipStage('settling');
+                    setTimeout(() => {
+                        setFlipStage('idle');
+                    }, 280);
+                });
+            });
+        }, 220);
+    };
+
+    // Keep active pass synced if user uses browser history navigation
+    useEffect(() => {
+        const handlePopState = () => {
+            const currentPath = window.location.pathname;
+            const matched = siblingTickets.find((s) => s.pass_url && s.pass_url.includes(currentPath));
+            if (matched && matched.ticket_number !== activeTicketNumber) {
+                setActiveTicketNumber(matched.ticket_number);
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [siblingTickets, activeTicketNumber]);
+
+    // 3D Flip style transformations
+    let cardFlipStyle = {};
+    if (flipStage === 'flipping-out') {
+        const angle = flipDirection === 'next' ? -80 : 80;
+        cardFlipStyle = {
+            transform: `rotateY(${angle}deg) scale(0.92)`,
+            opacity: 0.5,
+            filter: 'blur(0.5px)',
+            transition: 'transform 220ms cubic-bezier(0.4, 0, 0.7, 1), opacity 200ms ease, filter 200ms ease',
+        };
+    } else if (flipStage === 'flipping-in') {
+        const angle = flipDirection === 'next' ? 80 : -80;
+        cardFlipStyle = {
+            transform: `rotateY(${angle}deg) scale(0.92)`,
+            opacity: 0.5,
+            filter: 'blur(0.5px)',
+            transition: 'none',
+        };
+    } else if (flipStage === 'settling') {
+        cardFlipStyle = {
+            transform: 'rotateY(0deg) scale(1)',
+            opacity: 1,
+            filter: 'blur(0px)',
+            transition: 'transform 280ms cubic-bezier(0.16, 1, 0.3, 1), opacity 250ms ease, filter 250ms ease',
+        };
+    } else {
+        cardFlipStyle = {
+            transform: 'rotateY(0deg) scale(1)',
+            transition: 'transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+        };
+    }
 
     // Customization Configuration
     const templateConfig = event.ticket_template_config || {};
@@ -38,10 +143,10 @@ export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, sibl
     const leftDesignMode = templateConfig.left_design_mode || 'default';
     const leftBgColor = templateConfig.left_bg_color || templateConfig.bg_color || '#241645';
     const customBgImage = templateConfig.left_bg_image;
-    const bgArtworkUrl = leftDesignMode === 'custom' && customBgImage ? customBgImage : null;
+    const bgArtworkUrl = customBgImage || event.cover_photo || null;
     const badgeText = templateConfig.badge_text || 'TIER';
-    const showConfetti = templateConfig.show_confetti !== false;
     const showBarcode = templateConfig.show_barcode !== false;
+    const showEventDetails = leftDesignMode === 'custom_graphic' ? Boolean(templateConfig.show_event_details) : true;
 
     // Format Date & Time matching screenshot: "SUNDAY, 25 OCTOBER 2026 • 6:00 AM START"
     const formattedDate = (() => {
@@ -138,7 +243,7 @@ export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, sibl
 
             const ext = (format === 'jpeg' || format === 'jpg') ? 'jpg' : 'png';
             const safeEventName = (event.title || 'event').replace(/[^a-zA-Z0-9_-]/g, '_').toLowerCase();
-            const filename = `Ticket_${ticket.ticket_number}_${safeEventName}.${ext}`;
+            const filename = `Ticket_${activeTicket.ticket_number}_${safeEventName}.${ext}`;
 
             const link = document.createElement('a');
             link.download = filename;
@@ -183,7 +288,7 @@ export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, sibl
             if (imageBlob && navigator.canShare) {
                 const file = new File(
                     [imageBlob], 
-                    `Ticket_${ticket.ticket_number}.png`, 
+                    `Ticket_${activeTicket.ticket_number}.png`, 
                     { type: 'image/png' }
                 );
 
@@ -259,7 +364,7 @@ export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, sibl
                 <!DOCTYPE html>
                 <html>
                 <head>
-                    <title>Ticket #${ticket.ticket_number} - ${event.title}</title>
+                    <title>Ticket #${activeTicket.ticket_number} - ${event.title}</title>
                     <style>
                         @page {
                             size: landscape;
@@ -306,7 +411,7 @@ export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, sibl
                 </head>
                 <body>
                     <div class="print-sheet">
-                        <img src="${dataUrl}" alt="Ticket #${ticket.ticket_number}" onload="window.focus(); window.print();" />
+                        <img src="${dataUrl}" alt="Ticket #${activeTicket.ticket_number}" onload="window.focus(); window.print();" />
                     </div>
                 </body>
                 </html>
@@ -332,8 +437,8 @@ export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, sibl
     };
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col justify-between py-6 px-4 sm:px-6 relative selection:bg-[#16A34A] selection:text-white">
-            <Head title={`Ticket #${ticket.ticket_number} — ${event.title}`} />
+        <div className="min-h-screen bg-gradient-to-b from-[#F0F5FA] via-[#F4F8FC] to-[#FFFFFF] text-slate-800 flex flex-col justify-between relative selection:bg-[#154F7C] selection:text-white">
+            <Head title={`Ticket #${activeTicket.ticket_number} — ${event.title}`} />
 
             {/* Print Stylesheet Overrides (Ensures Cmd+P also prints cleanly) */}
             <style>{`
@@ -387,80 +492,121 @@ export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, sibl
                 }
             `}</style>
 
-            {/* Top Brand & Utility Header */}
-            <header className="max-w-4xl mx-auto w-full flex items-center justify-between py-2 no-print relative z-10 border-b border-slate-200/80 pb-3">
-                <a href={route('tickets.marketplace')} className="flex items-center gap-2 cursor-pointer">
-                    <KardovoLogo light={false} showText={true} textClassName="text-slate-900 text-xs font-black tracking-widest" imgClassName="h-6 w-6" />
-                </a>
+            {/* ══════════════════════════════════════════════════════════════
+                TOP NAVBAR (Full-width glass navbar matching other pages)
+               ══════════════════════════════════════════════════════════════ */}
+            <header className="w-full bg-white/85 dark:bg-[#07111E]/85 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 shadow-xs sticky top-0 z-40 no-print">
+                <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-2 sm:gap-4 text-slate-800 dark:text-slate-100">
+                    {/* Brand Logo & Marketplace Link */}
+                    <div className="flex items-center gap-3 sm:gap-6 shrink-0">
+                        <Link href="/" className="cursor-pointer focus:outline-none flex items-center shrink-0">
+                            <KardovoLogo 
+                                light={false} 
+                                showText={true} 
+                                textClassName="text-slate-900 dark:text-white text-sm sm:text-lg font-black tracking-widest transition-colors duration-300" 
+                                imgClassName="h-7 w-7 sm:h-9 sm:w-9" 
+                            />
+                        </Link>
 
-                <div className="flex items-center gap-2">
-                    {/* Status feedback pill if exporting */}
-                    {exportStatus && (
-                        <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg animate-pulse hidden sm:inline-flex items-center gap-1.5">
-                            {isExporting && <Loader2 className="w-3 h-3 animate-spin" />}
-                            <span>{exportStatus}</span>
-                        </span>
-                    )}
+                        <Link
+                            href={route('tickets.marketplace')}
+                            className="hidden md:inline-flex px-3 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition items-center gap-1.5 shrink-0 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
+                        >
+                            <Ticket className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                            <span>{lang === 'sw' ? 'Tiketi Zote' : 'Marketplace'}</span>
+                        </Link>
+                    </div>
 
-                    {/* Language Switcher */}
-                    <button 
-                        type="button"
-                        onClick={toggleLang} 
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors text-xs font-bold text-slate-700 shadow-2xs cursor-pointer mr-0.5"
-                        title={lang === 'en' ? 'Badili lugha kuwa Kiswahili' : 'Switch language to English'}
-                    >
-                        <Globe className="w-3.5 h-3.5 text-[#008EE8]" />
-                        <span>{lang === 'en' ? 'SWA' : 'ENG'}</span>
-                    </button>
+                    {/* Right-Side Controls: Contact Us, Language Switcher, Share & Download */}
+                    <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs sm:text-sm font-semibold shrink-0">
+                        {/* Status feedback pill if exporting */}
+                        {exportStatus && (
+                            <span className="text-[10px] sm:text-[11px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg animate-pulse hidden sm:inline-flex items-center gap-1.5">
+                                {isExporting && <Loader2 className="w-3 h-3 animate-spin" />}
+                                <span>{exportStatus}</span>
+                            </span>
+                        )}
 
-                    {/* Share Button */}
-                    <button
-                        type="button"
-                        onClick={handleNativeShare}
-                        disabled={isExporting}
-                        className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer disabled:opacity-50"
-                        title="Share Pass"
-                    >
-                        {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Share2 className="w-3.5 h-3.5 text-slate-500" />}
-                        <span className="hidden sm:inline">{copied ? t('Link Copied', 'Link Copied') : t('Share', 'Share')}</span>
-                    </button>
+                        {/* Contact Us: icon on mobile, full text on sm+ */}
+                        <button 
+                            type="button"
+                            onClick={() => setShowContactModal(true)}
+                            className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10 transition cursor-pointer flex items-center gap-1.5"
+                            title={lang === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}
+                        >
+                            <MessageCircle className="w-4 h-4 text-slate-500 sm:hidden" />
+                            <span className="hidden sm:inline">{lang === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}</span>
+                        </button>
 
-                    {/* Download Button (PNG) */}
-                    <button
-                        type="button"
-                        onClick={() => handleDownloadImage('png')}
-                        disabled={isExporting}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] active:bg-[#117534] text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer disabled:opacity-50"
-                        title="Download Pass"
-                    >
-                        {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                        <span>{t('Download', 'Download')}</span>
-                    </button>
+                        {/* Language Toggle: Icon and text only, no shape */}
+                        <button 
+                            type="button"
+                            onClick={toggleLang} 
+                            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1.5 sm:py-2 transition-colors font-semibold cursor-pointer text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white text-xs sm:text-sm"
+                            title={lang === 'en' ? 'Badili lugha kuwa Kiswahili' : 'Switch language to English'}
+                        >
+                            <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600 dark:text-sky-400" />
+                            <span className="text-[11px] sm:text-xs font-bold">{lang === 'en' ? 'SWA' : 'ENG'}</span>
+                        </button>
+
+                        {/* Share Button: icon on mobile, icon + label on sm+ */}
+                        <button
+                            type="button"
+                            onClick={handleNativeShare}
+                            disabled={isExporting}
+                            className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/15 text-slate-800 dark:text-white border border-slate-200/80 dark:border-white/10 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition shadow-2xs cursor-pointer disabled:opacity-50"
+                            title="Share Pass"
+                        >
+                            {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Share2 className="w-4 h-4 text-slate-500" />}
+                            <span className="hidden sm:inline">{copied ? t('Link Copied', 'Link Copied') : t('Share', 'Share')}</span>
+                        </button>
+
+                        {/* Download Button */}
+                        <button
+                            type="button"
+                            onClick={() => handleDownloadImage('png')}
+                            disabled={isExporting}
+                            className="inline-flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] text-white text-xs sm:text-sm font-bold transition shadow-md shadow-[#154F7C]/25 border border-sky-400/25 cursor-pointer active:scale-95 disabled:opacity-50"
+                            title="Download Pass"
+                        >
+                            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            <span className="hidden xs:inline sm:inline">{t('Download', 'Download')}</span>
+                        </button>
+                    </div>
                 </div>
             </header>
 
-            {/* Sibling Tickets Banner (If order includes multiple passes) */}
-            {siblingTickets.length > 1 && (
-                <div className="max-w-4xl mx-auto w-full my-2.5 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs no-print">
-                    <div className="text-slate-500 font-medium">
-                        Order <span className="font-mono font-bold text-slate-800">#{ticket.order_number}</span>
+            {/* Main Stage & Background Glows */}
+            <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 py-6 sm:py-10 relative overflow-hidden">
+                {/* Ambient soft oceanic atmospheric glows matching the Login/Register wave palette */}
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-sky-200/35 to-blue-300/15 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3" />
+                <div className="absolute bottom-10 left-0 w-[450px] h-[450px] bg-gradient-to-tr from-sky-100/50 to-blue-200/20 rounded-full blur-3xl pointer-events-none -translate-x-1/4" />
+
+                {/* Sibling Tickets Banner (If order includes multiple passes) */}
+                {siblingTickets.length > 1 && (
+                    <div className="max-w-3xl mx-auto w-full my-2.5 px-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs no-print relative z-10">
+                        <div className="text-slate-500 font-medium">
+                            Order <span className="font-mono font-bold text-slate-800">#{activeTicket.order_number}</span>
                         <span className="text-slate-400 ml-1.5">({siblingTickets.length} Passes in this order)</span>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                         {siblingTickets.map((sib, idx) => {
-                            const isCurrent = sib.ticket_number === ticket.ticket_number;
+                            const isCurrent = sib.ticket_number === activeTicket.ticket_number;
                             return (
-                                <a
-                                    key={sib.id}
-                                    href={sib.pass_url}
-                                    className={`px-3 py-1 rounded-xl text-xs font-semibold transition ${
+                                <button
+                                    key={sib.id || sib.ticket_number}
+                                    type="button"
+                                    onClick={() => handleSwitchPass(sib)}
+                                    disabled={flipStage !== 'idle'}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all duration-200 cursor-pointer flex items-center gap-1.5 active:scale-95 disabled:pointer-events-none ${
                                         isCurrent
-                                            ? 'bg-slate-900 text-white shadow-xs'
-                                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                                            ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] text-white shadow-sm shadow-[#154F7C]/25 border border-sky-400/30 ring-2 ring-sky-500/20'
+                                            : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs hover:border-slate-300'
                                     }`}
+                                    title={`Flip to Pass ${idx + 1}: ${sib.attendee_name}`}
                                 >
                                     Pass {idx + 1}: {sib.attendee_name}
-                                </a>
+                                </button>
                             );
                         })}
                     </div>
@@ -468,227 +614,290 @@ export default function DigitalTicketPass({ ticket, event, tier, qrDataUri, sibl
             )}
 
             {/* Main Authentic Digital Pass Card */}
-            <main className="max-w-4xl mx-auto w-full my-auto py-4">
+            <main className="max-w-3xl mx-auto w-full my-auto py-4" style={{ perspective: '1600px' }}>
                 <div 
                     ref={ticketCardRef}
-                    className="print-card relative flex flex-col md:flex-row rounded-[28px] md:rounded-[32px] shadow-2xl overflow-hidden transition-all text-slate-100 border border-[#393655]"
-                    style={{ backgroundColor: leftBgColor }}
+                    className="print-card relative flex flex-col md:flex-row rounded-[24px] md:rounded-[28px] shadow-[0_20px_50px_-12px_rgba(15,23,42,0.18)] overflow-hidden text-slate-100 border-0 ring-0"
+                    style={{ 
+                        backgroundColor: leftBgColor,
+                        transformStyle: 'preserve-3d',
+                        backfaceVisibility: 'hidden',
+                        willChange: 'transform, opacity, filter',
+                        ...cardFlipStyle
+                    }}
                 >
+                    {/* Dynamic specular light sheen during 3D flip */}
+                    <div 
+                        className={`absolute inset-0 pointer-events-none rounded-[24px] md:rounded-[28px] transition-opacity duration-300 z-30 ${
+                            flipStage !== 'idle' ? 'opacity-35' : 'opacity-0'
+                        }`}
+                        style={{
+                            background: flipDirection === 'next'
+                                ? 'linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%)'
+                                : 'linear-gradient(285deg, transparent 20%, rgba(255,255,255,0.4) 50%, transparent 80%)',
+                        }}
+                    />
+
                     {/* ── LEFT SECTION (MAIN PASS BODY) ── */}
                     <div 
-                        className="flex-1 flex flex-col justify-between p-6 sm:p-8 relative overflow-hidden"
+                        className={`flex-1 flex flex-col justify-between p-5 sm:p-7 relative overflow-hidden ${
+                            !showEventDetails ? 'min-h-[260px] sm:min-h-[320px] md:min-h-[380px]' : 'min-h-[220px] md:min-h-0'
+                        }`}
                         style={{ backgroundColor: leftBgColor }}
                     >
-                        {/* Background Artwork: only if custom design uploaded */}
+                        {/* Background Artwork: only if custom design uploaded or cover photo */}
                         {bgArtworkUrl && (
-                            <div 
-                                className="artwork-bg absolute inset-0 pointer-events-none bg-cover bg-center opacity-35 filter"
-                                style={{ backgroundImage: `url(${bgArtworkUrl})` }}
-                            />
-                        )}
-                        {bgArtworkUrl && (
-                            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-slate-950/45 to-transparent pointer-events-none" />
-                        )}
-
-                        {/* Geometric Confetti Shapes (exact sampled colors) */}
-                        {showConfetti && (
                             <>
-                                <div className="w-12 h-12 rounded-br-[26px] bg-[#DF1C47] absolute top-0 left-0 pointer-events-none select-none opacity-95" />
-                                <div className="w-8 h-8 rounded-full bg-[#FABF24] absolute -top-2 right-8 pointer-events-none select-none" />
-                                <div className="w-6 h-6 rounded-full bg-[#DF1C47] absolute top-[57%] right-11 pointer-events-none select-none opacity-90" />
-                                <div className="w-10 h-10 rounded-full bg-[#12B780] absolute -bottom-3 right-5 pointer-events-none select-none" />
+                                <div 
+                                    className="artwork-bg absolute inset-0 pointer-events-none bg-cover bg-center"
+                                    style={{ backgroundImage: `url(${bgArtworkUrl})` }}
+                                />
+                                {showEventDetails && (
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/35 pointer-events-none z-0" />
+                                )}
                             </>
                         )}
 
-                        <div className="relative z-10 space-y-3">
-                            {/* Top Status & Category Bar */}
-                            <div className="flex items-center justify-between gap-3">
-                                <div className="text-[10.5px] sm:text-[11px] font-mono font-bold tracking-widest text-[#A285C6] uppercase">
-                                    KARDOVO • {event.category || event.event_type || 'SPORTS & ATHLETICS'}
-                                </div>
+                        {showEventDetails && (
+                            <>
+                                <div className="relative z-10 space-y-2.5 sm:space-y-3">
+                                    {/* Event Title */}
+                                    <div>
+                                        <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold text-white uppercase tracking-tight leading-snug font-display drop-shadow-xs">
+                                            {event.title}
+                                        </h1>
+                                    </div>
 
-                                <div className="flex items-center gap-2">
-                                    {isValid && (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono">
-                                            <CheckCircle2 className="w-3 h-3" /> {t('Valid Pass')}
+                                    {/* Tier Badge */}
+                                    <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xs rounded-xl p-1 pr-3 w-fit border border-white/10">
+                                        <span 
+                                            className="px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-black uppercase tracking-wider text-slate-950 shadow-xs"
+                                            style={{ backgroundColor: accentColor }}
+                                        >
+                                            {badgeText}
                                         </span>
-                                    )}
-                                    {isCheckedIn && (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30 font-mono">
-                                            <CheckCircle2 className="w-3 h-3" /> {t('Admitted')}
+                                        <span className="text-xs sm:text-sm font-bold text-white tracking-wide uppercase">
+                                            {activeTier?.name || 'Standard Entry'}
                                         </span>
-                                    )}
-                                    {isCancelled && (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-rose-500/15 text-rose-400 border border-rose-500/30 font-mono">
-                                            <AlertCircle className="w-3 h-3" /> {t('Cancelled')}
+                                    </div>
+
+                                    {/* Date, Time & Venue */}
+                                    <div className="space-y-1.5 text-xs sm:text-sm pt-0.5">
+                                        <div className="flex items-center gap-2 font-mono font-bold" style={{ color: accentColor }}>
+                                            <Calendar className="w-3.5 h-3.5 shrink-0" />
+                                            <span className="truncate">{scheduleDisplay}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-slate-300 font-medium">
+                                            <MapPin className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                                            <span className="truncate">{event.venue ? `AT ${event.venue}` : ''}{event.city ? `, ${event.city}` : ''}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Event Specifications */}
+                                <div className="mt-4 sm:mt-5 pt-3 sm:pt-3.5 border-t border-white/10 grid grid-cols-3 gap-2 sm:gap-3 text-xs font-mono relative z-10">
+                                    <div className="min-w-0">
+                                        <span className="text-[9px] sm:text-[9.5px] uppercase text-white/50 font-semibold tracking-wider block">
+                                            PRICE
                                         </span>
-                                    )}
+                                        <span className="text-xs sm:text-sm font-bold text-emerald-400 block mt-0.5 font-mono truncate">
+                                            {activeTicket.formatted_price}
+                                        </span>
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <span className="text-[9px] sm:text-[9.5px] uppercase text-white/50 font-semibold tracking-wider block">
+                                            GATE / ACCESS
+                                        </span>
+                                        <span className="text-xs sm:text-sm font-medium text-white block mt-0.5 font-sans truncate">
+                                            {activeTicket.gate_label || 'Main Gate'}
+                                        </span>
+                                    </div>
+
+                                    <div className="min-w-0">
+                                        <span className="text-[9px] sm:text-[9.5px] uppercase text-white/50 font-semibold tracking-wider block">
+                                            ENTRY PASS
+                                        </span>
+                                        <span 
+                                            className="text-xs sm:text-sm font-bold block mt-0.5 font-mono truncate"
+                                            style={{ color: accentColor }}
+                                        >
+                                            #{activeTicket.ticket_number}
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Event Title */}
-                            <div>
-                                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white uppercase tracking-tight leading-tight mt-2 font-display">
-                                    {event.title}
-                                </h1>
-                            </div>
-
-                            {/* Tier Badge */}
-                            <div className="inline-flex items-center gap-2 bg-[#2F234E] rounded-xl p-1 pr-3 w-fit my-1">
-                                <span 
-                                    className="px-2.5 py-0.5 rounded-lg text-xs font-black uppercase tracking-wider text-slate-950 shadow-xs"
-                                    style={{ backgroundColor: accentColor }}
-                                >
-                                    {badgeText}
-                                </span>
-                                <span className="text-xs sm:text-sm font-bold text-white tracking-wide uppercase">
-                                    {tier?.name || 'Standard Entry'}
-                                </span>
-                            </div>
-
-                            {/* Date, Time & Venue */}
-                            <div className="space-y-1.5 text-xs sm:text-sm font-mono font-bold mt-2">
-                                <div className="flex items-center gap-2" style={{ color: accentColor }}>
-                                    <Calendar className="w-4 h-4 shrink-0" />
-                                    <span>{scheduleDisplay}</span>
-                                </div>
-                                <div className="flex items-center gap-2 text-slate-300 font-sans font-medium">
-                                    <MapPin className="w-4 h-4 shrink-0 text-slate-400" />
-                                    <span>{event.venue ? `AT ${event.venue}` : ''}{event.city ? `, ${event.city}` : ''}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Bottom Attendee Details Row */}
-                        <div className="mt-8 pt-5 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs font-mono relative z-10">
-                            <div>
-                                <span className="text-[9.5px] uppercase text-[#A285C6] font-semibold tracking-wider block">
-                                    PASS HOLDER
-                                </span>
-                                <span className="text-sm font-bold text-white truncate block mt-0.5 font-sans">
-                                    {ticket.attendee_name}
-                                </span>
-                            </div>
-
-                            <div>
-                                <span className="text-[9.5px] uppercase text-[#A285C6] font-semibold tracking-wider block">
-                                    PRICE
-                                </span>
-                                <span className="text-sm font-bold text-[#34C392] block mt-0.5 font-mono">
-                                    {ticket.formatted_price}
-                                </span>
-                            </div>
-
-                            <div>
-                                <span className="text-[9.5px] uppercase text-[#A285C6] font-semibold tracking-wider block">
-                                    GATE / ENTRY
-                                </span>
-                                <span className="text-sm font-medium text-white truncate block mt-0.5 font-sans">
-                                    {ticket.gate_label || 'Main Gate'}
-                                </span>
-                            </div>
-
-                            <div>
-                                <span className="text-[9.5px] uppercase text-[#A285C6] font-semibold tracking-wider block">
-                                    TICKET CODE
-                                </span>
-                                <span 
-                                    className="text-sm font-bold block mt-0.5 font-mono"
-                                    style={{ color: accentColor }}
-                                >
-                                    #{ticket.ticket_number}
-                                </span>
-                            </div>
-                        </div>
+                            </>
+                        )}
                     </div>
 
-                    {/* ── PERFORATED DIVIDER WITH CIRCULAR NOTCHES ── */}
-                    <div className="relative flex md:flex-col items-center justify-between shrink-0 select-none">
-                        {/* Top Circular Cutout Notch */}
-                        <div className="hidden md:block absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-[#F8FAFC] border border-[#CBD5E1] z-20" />
-
-                        {/* Left Circular Cutout Notch (Mobile) */}
-                        <div className="md:hidden absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#F8FAFC] border border-[#CBD5E1] z-20" />
-
-                        {/* Perforation Dashed Line */}
-                        <div className="hidden md:block w-0 h-full border-r-2 border-dashed border-[#D8DFE8] mx-1.5" />
-                        <div className="md:hidden w-full h-0 border-t-2 border-dashed border-[#D8DFE8] my-1.5" />
-
-                        {/* Bottom Circular Cutout Notch */}
-                        <div className="hidden md:block absolute -bottom-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-[#F8FAFC] border border-[#CBD5E1] z-20" />
-
-                        {/* Right Circular Cutout Notch (Mobile) */}
-                        <div className="md:hidden absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#F8FAFC] border border-[#CBD5E1] z-20" />
+                    {/* ── PERFORATED DIVIDER WITH CIRCULAR NOTCHES & DOTTED LINE ── */}
+                    {/* Desktop Vertical Perforated Divider */}
+                    <div className="hidden md:block relative w-0 self-stretch border-r-2 border-dotted border-slate-300/80 dark:border-white/30 shrink-0 select-none z-20 pointer-events-none">
+                        <div className="absolute -top-4 -left-4 w-8 h-8 rounded-full bg-[#F0F5FA] border-0 pointer-events-none z-30" />
+                        <div className="absolute -bottom-4 -left-4 w-8 h-8 rounded-full bg-[#F0F5FA] border-0 pointer-events-none z-30" />
                     </div>
 
-                    {/* ── RIGHT SECTION: TEAR-OFF STUB & SCANNABLE QR (CUSTOMIZABLE) ── */}
+                    {/* Mobile Horizontal Perforated Divider */}
+                    <div className="md:hidden relative w-full h-0 self-stretch border-t-2 border-dotted border-slate-300/80 dark:border-white/30 shrink-0 select-none z-20 pointer-events-none">
+                        <div className="absolute -left-4 -top-4 w-8 h-8 rounded-full bg-[#F0F5FA] border-0 pointer-events-none z-30" />
+                        <div className="absolute -right-4 -top-4 w-8 h-8 rounded-full bg-[#F0F5FA] border-0 pointer-events-none z-30" />
+                    </div>
+
+                    {/* ── RIGHT SECTION: TEAR-OFF STUB & SCANNABLE QR ── */}
                     <div 
-                        className="w-full md:w-80 p-6 sm:p-8 flex flex-col justify-between items-center text-center relative overflow-hidden shrink-0"
+                        className="w-full md:w-[260px] p-4 sm:p-5 flex flex-col justify-between items-center text-center relative overflow-hidden shrink-0 border-0"
                         style={{ backgroundColor: rightBgColor }}
                     >
-                        {/* Minimalist Design Overlays for QR Stub */}
-                        {rightOverlay === 'accent_border' && (
-                            <div 
-                                className="absolute inset-2.5 rounded-2xl border pointer-events-none" 
-                                style={{ borderColor: `${accentColor}35` }} 
-                            />
-                        )}
-                        {rightOverlay === 'subtle_dots' && (
-                            <>
-                                <div 
-                                    className="w-2.5 h-2.5 rounded-full absolute top-3 left-3 pointer-events-none opacity-60" 
-                                    style={{ backgroundColor: accentColor }} 
-                                />
-                                <div 
-                                    className="w-2.5 h-2.5 rounded-full absolute bottom-3 right-3 pointer-events-none opacity-60" 
-                                    style={{ backgroundColor: accentColor }} 
-                                />
-                            </>
-                        )}
-                        {rightOverlay === 'top_glow' && (
-                            <div 
-                                className="absolute top-0 left-0 right-0 h-20 pointer-events-none opacity-25" 
-                                style={{ background: `radial-gradient(ellipse at top, ${accentColor}, transparent 75%)` }} 
-                            />
-                        )}
-
-                        {/* Top: SCAN AT GATE • ADMIT ONE */}
-                        <div className="w-full relative z-10 pt-1">
-                            <span className="text-[11px] font-semibold uppercase tracking-widest text-[#A0ADC0] block font-mono">
-                                SCAN AT GATE • ADMIT ONE
-                            </span>
-                        </div>
-
-                        {/* Center: Dynamic QR Code & Unique Code */}
-                        <div className="my-auto py-2 relative z-10 flex flex-col items-center">
-                            <img 
-                                src={qrDataUri} 
-                                alt={`Gate QR Pass #${ticket.ticket_number}`} 
-                                className={`w-44 h-44 sm:w-48 sm:h-48 mx-auto block ${
-                                    isStubDark ? 'p-2 bg-white rounded-2xl shadow-lg' : ''
-                                }`}
-                            />
-                            <div className={`mt-2 text-xl sm:text-2xl font-mono font-black tracking-widest ${
-                                isStubDark ? 'text-white' : 'text-[#242C3D]'
+                        {/* Center: Pass Holder, Dynamic QR Code & Check-in Code */}
+                        <div className="my-auto py-1 relative z-10 flex flex-col items-center justify-center w-full gap-2.5">
+                            {/* Person's Full Name (Prominently displayed on the QR stub) */}
+                            <div className={`w-full px-2.5 py-1.5 rounded-lg border flex flex-col items-center text-center ${
+                                isStubDark ? 'bg-white/10 border-white/10' : 'bg-slate-50/90 border-slate-100'
                             }`}>
-                                {ticket.unique_code}
+                                <div className="flex items-center gap-1 text-[8px] font-mono font-bold tracking-widest text-slate-400 uppercase">
+                                    <Users className="w-2.5 h-2.5 text-slate-400" />
+                                    <span>PASS HOLDER</span>
+                                </div>
+                                <div className={`text-sm sm:text-base font-black font-sans tracking-tight leading-snug break-words ${
+                                    isStubDark ? 'text-white' : 'text-slate-900'
+                                }`}>
+                                    {activeTicket.attendee_name}
+                                </div>
                             </div>
-                        </div>
 
-                        {/* Bottom: Pass Number */}
-                        <div className="w-full relative z-10 pb-1">
-                            <span className="text-xs font-mono text-[#A0ADC0] block">
-                                Pass #{ticket.ticket_number}
-                            </span>
+                            {/* Dynamic QR Code Container */}
+                            <div className="p-2.5 bg-white rounded-xl shadow-xs border border-slate-100 flex items-center justify-center">
+                                <img 
+                                    src={activeQrDataUri} 
+                                    alt={`Gate QR Pass #${activeTicket.ticket_number}`} 
+                                    className="w-28 h-28 sm:w-32 sm:h-32 block object-contain"
+                                />
+                            </div>
+
+                            {/* Check-in Code */}
+                            <div className="text-center">
+                                <span className="text-[8px] font-mono tracking-widest text-slate-400 uppercase block font-semibold">
+                                    CHECK-IN CODE
+                                </span>
+                                <div className={`mt-0.5 text-base sm:text-lg font-mono font-black tracking-[0.16em] ${
+                                    isStubDark ? 'text-white' : 'text-slate-900'
+                                }`}>
+                                    {activeTicket.unique_code}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </main>
+        </div>
 
-            {/* Footer */}
-            <footer className="text-center py-6 text-xs text-slate-400 no-print relative z-10">
-                {t('Powered by Kardovo')}
-            </footer>
+            {/* Standard Platform Footer */}
+            <div className="no-print w-full">
+                <KardovoFooter lang={lang} />
+            </div>
+
+            {/* Contact Us Modal - Variety of Options (WhatsApp, Phone, Email) */}
+            <Modal show={showContactModal} onClose={() => setShowContactModal(false)} maxWidth="md" closeable={true} translucent={true}>
+                <div className="relative p-6 sm:p-8 bg-white dark:bg-[#0B2545] rounded-3xl text-slate-800 dark:text-white shadow-2xl">
+                    {/* Close Button */}
+                    <button 
+                        type="button"
+                        onClick={() => setShowContactModal(false)}
+                        className="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/10 dark:hover:bg-white/20 text-slate-500 hover:text-slate-800 dark:text-slate-300 dark:hover:text-white transition-all cursor-pointer border border-slate-200/80 dark:border-white/15 shadow-2xs"
+                        aria-label="Close modal"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+
+                    {/* Modal Header */}
+                    <div className="text-center mb-6">
+                        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-sky-100 dark:bg-[#154F7C]/40 text-[#154F7C] dark:text-sky-300 mb-3.5 shadow-sm border border-sky-200/60 dark:border-sky-400/20">
+                            <MessageCircle className="w-7 h-7" />
+                        </div>
+                        <h3 className="text-xl sm:text-2xl font-black font-display tracking-tight text-slate-900 dark:text-white">
+                            {lang === 'sw' ? 'Wasiliana Nasi' : 'Contact Us'}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-300/90 mt-1 max-w-sm mx-auto">
+                            {lang === 'sw' 
+                                ? 'Tuko hapa kukusaidia saa 24/7 kuhusu tiketi za matukio, mialiko ya kidigitali na malipo.'
+                                : 'We are here 24/7 to assist you with event tickets, invitations, check-ins, and payments.'}
+                        </p>
+                    </div>
+
+                    {/* Variety of Contact Options */}
+                    <div className="space-y-3">
+                        {/* 1. WhatsApp Option */}
+                        <a
+                            href="https://wa.me/255737672987?text=Habari%20Kardovo,%20nahitaji%20msaada%20kuhusu%20huduma%20zenu."
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex items-center justify-between p-4 rounded-2xl bg-emerald-50/70 hover:bg-emerald-50 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50 border border-emerald-200/70 dark:border-emerald-500/30 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
+                        >
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                    <WhatsAppIcon className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                            {lang === 'sw' ? 'Msaada kupitia WhatsApp' : 'Chat on WhatsApp'}
+                                        </span>
+                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-300">
+                                            {lang === 'sw' ? 'Haraka Zaidi' : 'Fastest'}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-300 font-mono mt-0.5">+255 737 672 987</p>
+                                </div>
+                            </div>
+                            <div className="text-emerald-600 dark:text-emerald-400 group-hover:translate-x-1 transition-transform">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
+                        </a>
+
+                        {/* 2. Direct Phone Call */}
+                        <a
+                            href="tel:+255737672987"
+                            className="group flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border border-slate-200/80 dark:border-white/10 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
+                        >
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-xl bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                    <Phone className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                        {lang === 'sw' ? 'Piga Simu Moja kwa Moja' : 'Call Support Directly'}
+                                    </span>
+                                    <p className="text-xs text-slate-500 dark:text-slate-300 font-mono mt-0.5">+255 737 672 987</p>
+                                </div>
+                            </div>
+                            <div className="text-sky-600 dark:text-sky-400 group-hover:translate-x-1 transition-transform">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
+                        </a>
+
+                        {/* 3. Official Email */}
+                        <a
+                            href="mailto:support@kardovo.com?subject=Kardovo%20Ticket%20Inquiry"
+                            className="group flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-slate-100/80 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] border border-slate-200/80 dark:border-white/10 transition-all duration-200 shadow-2xs hover:shadow-md cursor-pointer"
+                        >
+                            <div className="flex items-center gap-3.5">
+                                <div className="w-11 h-11 rounded-xl bg-[#154F7C] text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                                    <Mail className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                                        {lang === 'sw' ? 'Tuma Barua Pepe (Email)' : 'Official Email Support'}
+                                    </span>
+                                    <p className="text-xs text-slate-500 dark:text-slate-300 font-mono mt-0.5">support@kardovo.com</p>
+                                </div>
+                            </div>
+                            <div className="text-slate-600 dark:text-slate-400 group-hover:translate-x-1 transition-transform">
+                                <ArrowRight className="w-5 h-5" />
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }

@@ -39,12 +39,14 @@ class MessagingController extends Controller
         }
 
         $messagesQuery = Message::with(['guest', 'event', 'event.user'])->latest();
-        if (! $user->isAdmin()) {
+        if ($selectedEvent) {
+            $messagesQuery->where('event_id', $selectedEvent->id);
+        } elseif ($user && ! $user->isAdmin()) {
             $messagesQuery->whereHas('event', function ($q) use ($user) {
                 $q->where('user_id', $user->id);
             });
         }
-        $recentMessages = $messagesQuery->limit(50)->get();
+        $recentMessages = $messagesQuery->limit(100)->get();
 
         $whatsappGateway = SystemSetting::get('whatsapp_gateway', [
             'provider' => 'Meta WhatsApp Cloud API',
@@ -70,9 +72,19 @@ class MessagingController extends Controller
         ]);
 
         $templatesQuery = CardTemplate::query();
-        if ($user) {
+        if ($user && $user->isAdmin()) {
             $templatesQuery->where(function ($q) use ($user) {
                 $q->whereNull('user_id')->orWhere('user_id', $user->id);
+            });
+        } elseif ($user) {
+            $templatesQuery->where(function ($q) use ($user) {
+                $q->whereNull('user_id')->orWhere('user_id', $user->id);
+                if ($user->isSubAdmin()) {
+                    $assignedCustomerIds = $user->assignedOrganizers()->pluck('users.id')->toArray();
+                    if (! empty($assignedCustomerIds)) {
+                        $q->orWhereIn('user_id', $assignedCustomerIds);
+                    }
+                }
             });
         } else {
             $templatesQuery->whereNull('user_id');
@@ -80,6 +92,11 @@ class MessagingController extends Controller
         $templates = $templatesQuery
             ->orderByRaw('CASE WHEN user_id IS NOT NULL THEN 0 ELSE 1 END, id ASC')
             ->get();
+
+        $canCustomizeMicrosite = false;
+        if ($user) {
+            $canCustomizeMicrosite = $user->isAdmin() || $user->isSubAdmin() || $user->canCustomizeMicrosite() || ($selectedEvent && $selectedEvent->hasMicrositeEnabled());
+        }
 
         return Inertia::render('Customer/Messaging', [
             'events' => $events,
@@ -92,6 +109,7 @@ class MessagingController extends Controller
                 'sms' => $smsGateway,
             ],
             'isAdmin' => $user->isAdmin(),
+            'canCustomizeMicrosite' => $canCustomizeMicrosite,
         ]);
     }
 
@@ -103,10 +121,10 @@ class MessagingController extends Controller
         }
 
         $validated = $request->validate([
-            'card_template_id' => 'required|exists:card_templates,id',
+            'card_template_id' => 'nullable|exists:card_templates,id',
         ]);
 
-        $event->update(['card_template_id' => $validated['card_template_id']]);
+        $event->update(['card_template_id' => $validated['card_template_id'] ?: null]);
 
         return back()->with('success', 'Pass template updated for this event.');
     }
@@ -124,15 +142,17 @@ class MessagingController extends Controller
             'event_id' => 'required|exists:events,id',
             'card_template_id' => 'nullable|exists:card_templates,id',
             'channel' => 'required|in:whatsapp,sms',
-            'campaign_type' => 'nullable|in:pass_invitation,pass_only,text_only,text_rsvp',
+            'campaign_type' => 'nullable|in:pass_invitation,pass_only,text_only,text_rsvp,pledge_contribution',
             'include_pass_link' => 'nullable|boolean',
-            'target_filter' => 'required|in:all,draft,failed,pending_rsvp,custom',
+            'target_filter' => 'required|in:all,draft,failed,pending_rsvp,custom,unpledged,pending_balance,partial',
             'selected_guest_ids' => 'nullable|array',
             'selected_guest_ids.*' => 'integer|exists:guests,id',
             'custom_caption' => 'nullable|string|max:1000',
             'enable_auto_reply' => 'nullable|boolean',
             'rsvp_attending_text' => 'nullable|string|max:500',
             'rsvp_declined_text' => 'nullable|string|max:500',
+            'rsvp_button_attending' => 'nullable|string|max:20',
+            'rsvp_button_declined' => 'nullable|string|max:20',
         ]);
 
         $event = Event::findOrFail($validated['event_id']);
@@ -144,23 +164,35 @@ class MessagingController extends Controller
             $event->update(['card_template_id' => $validated['card_template_id']]);
         }
 
-        // Save customized RSVP confirmation reply settings onto the event
-        if ($request->has('enable_auto_reply') || $request->has('rsvp_attending_text')) {
+        // Save customized RSVP confirmation reply and button settings onto the event
+        if ($request->has('enable_auto_reply') || $request->has('rsvp_attending_text') || $request->has('rsvp_button_attending') || $request->has('rsvp_button_declined')) {
+            $existingConfig = is_array($event->rsvp_auto_reply_config) ? $event->rsvp_auto_reply_config : [];
+            $btnAttending = trim((string) $request->input('rsvp_button_attending'));
+            $btnDeclined = trim((string) $request->input('rsvp_button_declined'));
+
             $event->update([
-                'rsvp_auto_reply_config' => [
+                'rsvp_auto_reply_config' => array_merge($existingConfig, [
                     'enabled' => $request->boolean('enable_auto_reply', true),
-                    'attending_text' => $request->input('rsvp_attending_text'),
-                    'declined_text' => $request->input('rsvp_declined_text'),
-                ],
+                    'attending_text' => $request->input('rsvp_attending_text', $existingConfig['attending_text'] ?? null),
+                    'declined_text' => $request->input('rsvp_declined_text', $existingConfig['declined_text'] ?? null),
+                    'button_attending' => ! empty($btnAttending) ? mb_substr($btnAttending, 0, 20) : ($existingConfig['button_attending'] ?? 'Will Attend'),
+                    'button_declined' => ! empty($btnDeclined) ? mb_substr($btnDeclined, 0, 20) : ($existingConfig['button_declined'] ?? 'Cannot Attend'),
+                ]),
             ]);
         }
 
         $campaignType = $validated['campaign_type'] ?? 'pass_invitation';
         $includePassLink = $request->boolean('include_pass_link', false);
 
+        // Digital pass & microsite URL is strictly restricted to Executive Package or admin override
+        $canCustomizeMicrosite = $user->isAdmin() || $user->isSubAdmin() || $user->canCustomizeMicrosite() || $event->hasMicrositeEnabled();
+        if (! $canCustomizeMicrosite) {
+            $includePassLink = false;
+        }
+
         $guestsQuery = $event->guests();
 
-        if ($validated['target_filter'] === 'custom' || (! empty($validated['selected_guest_ids']) && $validated['target_filter'] !== 'all' && $validated['target_filter'] !== 'draft' && $validated['target_filter'] !== 'failed' && $validated['target_filter'] !== 'pending_rsvp')) {
+        if ($validated['target_filter'] === 'custom' || (! empty($validated['selected_guest_ids']) && ! in_array($validated['target_filter'], ['all', 'draft', 'failed', 'pending_rsvp', 'unpledged', 'pending_balance', 'partial']))) {
             $selectedIds = $validated['selected_guest_ids'] ?? [];
             if (empty($selectedIds)) {
                 return back()->with('error', 'Please select at least one recipient.');
@@ -175,6 +207,16 @@ class MessagingController extends Controller
             $guestsQuery->where('delivery_status', 'failed');
         } elseif ($validated['target_filter'] === 'pending_rsvp') {
             $guestsQuery->where('rsvp_status', 'pending');
+        } elseif ($validated['target_filter'] === 'unpledged') {
+            $guestsQuery->where(function ($q) {
+                $q->whereNull('pledge_amount')->orWhere('pledge_amount', '<=', 0);
+            });
+        } elseif ($validated['target_filter'] === 'pending_balance') {
+            $guestsQuery->where('pledge_amount', '>', 0)
+                ->whereRaw('COALESCE(pledge_amount, 0) > COALESCE(paid_amount, 0)');
+        } elseif ($validated['target_filter'] === 'partial') {
+            $guestsQuery->where('paid_amount', '>', 0)
+                ->whereRaw('COALESCE(paid_amount, 0) < COALESCE(pledge_amount, 0)');
         }
 
         $guests = $guestsQuery->get();
@@ -207,6 +249,14 @@ class MessagingController extends Controller
         $failedErrors = [];
         $eventDateStr = $event->event_date ? $event->event_date->format('d M Y') : 'Upcoming';
 
+        // Resolve event pledge & contribution payment details
+        $pledgeSettings = is_array($event->pledge_settings) ? $event->pledge_settings : [];
+        $lipaNumber = trim((string) ($pledgeSettings['lipa_number'] ?? $pledgeSettings['lipa_namba'] ?? ''));
+        $bankName = trim((string) ($pledgeSettings['bank_name'] ?? ''));
+        $bankAccount = trim((string) ($pledgeSettings['account_number'] ?? $pledgeSettings['bank_account'] ?? ''));
+        $accountName = trim((string) ($pledgeSettings['account_name'] ?? ''));
+        $currency = $event->pledge_currency ?: 'TZS';
+
         // Resolve public base URL for links (handling tunnels, proxies, and configured webhooks)
         $baseUrl = $request->getSchemeAndHttpHost();
         if (str_contains($baseUrl, '127.0.0.1') || str_contains($baseUrl, 'localhost')) {
@@ -222,10 +272,14 @@ class MessagingController extends Controller
 
         $activeTemplate = ! empty($validated['card_template_id'])
             ? CardTemplate::find($validated['card_template_id'])
-            : ($event->cardTemplate ?: CardTemplate::first());
+            : $event->cardTemplate;
 
         foreach ($guests as $guest) {
             $passUrl = rtrim($baseUrl, '/').'/card/'.$guest->qr_token;
+            $balance = max(0, (float) ($guest->pledge_amount ?? 0) - (float) ($guest->paid_amount ?? 0));
+            $pledgeBalanceStr = number_format($balance, 0).' '.$currency;
+            $pledgedAmountStr = number_format((float) ($guest->pledge_amount ?? 0), 0).' '.$currency;
+            $amountPaidStr = number_format((float) ($guest->paid_amount ?? 0), 0).' '.$currency;
 
             if (! empty($validated['custom_caption'])) {
                 $caption = str_ireplace(
@@ -235,6 +289,16 @@ class MessagingController extends Controller
                         '{{event_date}}', '{event_date}',
                         '{{venue}}', '{venue}',
                         '{{pass_code}}', '{pass_code}',
+                        '{{lipa_namba}}', '{lipa_namba}',
+                        '{{lipa_number}}', '{lipa_number}',
+                        '{{bank_name}}', '{bank_name}',
+                        '{{bank_account}}', '{bank_account}',
+                        '{{account_number}}', '{account_number}',
+                        '{{account_name}}', '{account_name}',
+                        '{{pledge_balance}}', '{pledge_balance}',
+                        '{{pledge_amount}}', '{pledge_amount}',
+                        '{{amount_paid}}', '{amount_paid}',
+                        '{{paid_amount}}', '{paid_amount}',
                     ],
                     [
                         $guest->name, $guest->name,
@@ -242,11 +306,27 @@ class MessagingController extends Controller
                         $eventDateStr, $eventDateStr,
                         $event->venue ?? '', $event->venue ?? '',
                         $guest->unique_code ?? '', $guest->unique_code ?? '',
+                        $lipaNumber, $lipaNumber,
+                        $lipaNumber, $lipaNumber,
+                        $bankName, $bankName,
+                        $bankAccount, $bankAccount,
+                        $bankAccount, $bankAccount,
+                        $accountName, $accountName,
+                        $pledgeBalanceStr, $pledgeBalanceStr,
+                        $pledgedAmountStr, $pledgedAmountStr,
+                        $amountPaidStr, $amountPaidStr,
+                        $amountPaidStr, $amountPaidStr,
                     ],
                     $validated['custom_caption']
                 );
             } else {
-                if ($campaignType === 'text_only') {
+                if ($campaignType === 'pledge_contribution') {
+                    if ($channel === 'sms') {
+                        $caption = "Habari {$guest->name}! Mchango wa {$event->title}: Lipa Namba: {$lipaNumber}, Benki: {$bankName} {$bankAccount} ({$accountName}). Kuweka ahadi au kuthibitisha mchango, jibu SMS hii au WhatsApp. Ahsante!";
+                    } else {
+                        $caption = "Habari {$guest->name}! Tunakukaribisha kwa moyo mkunjufu kushiriki katika maandalizi ya {$event->title}.\n\nKuweka ahadi yako, tafadhali jibu ujumbe huu kwa kiasi chochote unachopenda kulingana na uwezo wako (mfano: 'Ahadi 50,000' au 'Ahadi 100k' n.k).\n\nNjia za Mchango:\n- Lipa Namba: {$lipaNumber}\n- Benki: {$bankName} - {$bankAccount} ({$accountName})\n\nUkishatuma mchango wako, forward ujumbe wa muamala (SMS) hapa hapa WhatsApp na utapata stakabadhi yako papo hapo. Ahsante sana!";
+                    }
+                } elseif ($campaignType === 'text_only') {
                     $caption = "Habari {$guest->name}! Important update regarding {$event->title}: we look forward to seeing you on {$eventDateStr} at {$event->venue}.";
                 } elseif ($campaignType === 'text_rsvp') {
                     $caption = "Habari {$guest->name}! You're cordially invited to {$event->title} on {$eventDateStr} at {$event->venue}. Please tap below to confirm your attendance:";
@@ -272,7 +352,17 @@ class MessagingController extends Controller
             $cleanPhone = PhoneNormalizer::cleanForApi($guest->phone);
 
             if ($channel === 'whatsapp') {
-                $sendResult = $this->sendMetaWhatsAppMessage($cleanPhone, $bodyToSend, $guest, $campaignType, $activeTemplate, $baseUrl, $includePassLink);
+                $sendResult = $this->sendMetaWhatsAppMessage(
+                    $cleanPhone,
+                    $bodyToSend,
+                    $guest,
+                    $campaignType,
+                    $activeTemplate,
+                    $baseUrl,
+                    $includePassLink,
+                    $request->input('rsvp_button_attending'),
+                    $request->input('rsvp_button_declined')
+                );
             } else {
                 // SMS dispatch (simulated/provider)
                 $sendResult = ['success' => true, 'simulated' => true, 'sent_text' => $bodyToSend];
@@ -306,7 +396,11 @@ class MessagingController extends Controller
             ]);
         }
 
-        $typeLabel = in_array($campaignType, ['text_only', 'text_rsvp']) ? 'text broadcast' : 'invitation pass';
+        $typeLabel = match ($campaignType) {
+            'pledge_contribution' => 'pledge & contribution drive',
+            'text_only', 'text_rsvp' => 'text broadcast',
+            default => 'invitation pass',
+        };
 
         if ($failedCount > 0 && $sentCount > 0) {
             return back()->with('warning', "Sent {$sentCount} messages. Failed {$failedCount}.");
@@ -367,7 +461,7 @@ class MessagingController extends Controller
         $results = [];
         foreach ($channelsToSend as $ch) {
             if ($ch === 'whatsapp') {
-                $singleTemplate = $guest->event->cardTemplate ?: CardTemplate::first();
+                $singleTemplate = $guest->event->cardTemplate;
                 $res = $this->sendMetaWhatsAppMessage($cleanPhone, $bodyToSend, $guest, 'pass_invitation', $singleTemplate, $baseUrl);
             } else {
                 // SMS dispatch (simulated / SMS gateway)
@@ -434,7 +528,9 @@ class MessagingController extends Controller
         string $campaignType = 'pass_invitation',
         ?CardTemplate $template = null,
         ?string $baseUrl = null,
-        bool $includePassLink = false
+        bool $includePassLink = false,
+        ?string $customButtonAttending = null,
+        ?string $customButtonDeclined = null
     ): array {
         $gateway = SystemSetting::get('whatsapp_gateway', []);
         $accessToken = trim($gateway['access_token'] ?? '');
@@ -502,6 +598,17 @@ class MessagingController extends Controller
                 // WhatsApp suppresses the footer field when an image header is present,
                 // so we include the label directly in the message body instead.
                 $bodyWithBranding = $messageBody."\n\n_Kardovo_";
+                $eventConfig = $guest?->event?->rsvp_auto_reply_config ?? [];
+                $buttonAttendingTitle = mb_substr(trim((string) ($customButtonAttending ?: ($eventConfig['button_attending'] ?? 'Will Attend'))), 0, 20);
+                if (empty($buttonAttendingTitle)) {
+                    $buttonAttendingTitle = 'Will Attend';
+                }
+
+                $buttonDeclinedTitle = mb_substr(trim((string) ($customButtonDeclined ?: ($eventConfig['button_declined'] ?? 'Cannot Attend'))), 0, 20);
+                if (empty($buttonDeclinedTitle)) {
+                    $buttonDeclinedTitle = 'Cannot Attend';
+                }
+
                 $interactivePayload = [
                     'type' => 'button',
                     'body' => [
@@ -513,14 +620,14 @@ class MessagingController extends Controller
                                 'type' => 'reply',
                                 'reply' => [
                                     'id' => 'rsvp_yes_'.$token,
-                                    'title' => '✅ Attending',
+                                    'title' => $buttonAttendingTitle,
                                 ],
                             ],
                             [
                                 'type' => 'reply',
                                 'reply' => [
                                     'id' => 'rsvp_no_'.$token,
-                                    'title' => '❌ Decline',
+                                    'title' => $buttonDeclinedTitle,
                                 ],
                             ],
                         ],

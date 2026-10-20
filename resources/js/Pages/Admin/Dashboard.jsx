@@ -56,14 +56,14 @@ export default function AdminDashboard({
                         href={safeRoute('admin.users', '/admin/users')}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95"
                     >
-                        <Users className="w-3.5 h-3.5 text-[#16A34A]" />
+                        <Users className="w-3.5 h-3.5 text-sky-400" />
                         <span>Users</span>
                     </Link>
                     <Link
                         href={safeRoute('admin.gateways', '/admin/gateways')}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95"
                     >
-                        <Server className="w-3.5 h-3.5 text-[#16A34A]" />
+                        <Server className="w-3.5 h-3.5 text-sky-400" />
                         <span>Gateways</span>
                     </Link>
                 </div>
@@ -77,7 +77,7 @@ export default function AdminDashboard({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/60 dark:border-white/[0.06]">
                     <div>
                         <h1 className="text-lg sm:text-xl font-black text-slate-900 dark:text-white font-display tracking-tight flex items-center gap-2">
-                            <Shield className="w-5 h-5 text-[#16A34A]" />
+                            <Shield className="w-5 h-5 text-sky-500" />
                             Platform Operations Center
                         </h1>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
@@ -104,7 +104,7 @@ export default function AdminDashboard({
                                 onClick={() => setViewMode('invitations')}
                                 className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
                                     viewMode === 'invitations'
-                                        ? 'bg-white dark:bg-[#07111D] text-[#16A34A] dark:text-[#16A34A] shadow-xs font-bold'
+                                        ? 'bg-white dark:bg-[#07111D] text-[#154F7C] dark:text-sky-400 shadow-xs font-bold'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                             >
@@ -115,7 +115,7 @@ export default function AdminDashboard({
                                 onClick={() => setViewMode('ticketing')}
                                 className={`px-2 py-0.5 rounded-lg transition cursor-pointer ${
                                     viewMode === 'ticketing'
-                                        ? 'bg-white dark:bg-[#07111D] text-[#16A34A] dark:text-[#16A34A] shadow-xs font-bold'
+                                        ? 'bg-white dark:bg-[#07111D] text-[#154F7C] dark:text-sky-400 shadow-xs font-bold'
                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                             >
@@ -123,8 +123,8 @@ export default function AdminDashboard({
                             </button>
                         </div>
 
-                        <span className="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="hidden lg:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10.5px] font-semibold bg-sky-500/10 text-[#154F7C] dark:text-sky-300 border border-sky-500/25">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
                             Live
                         </span>
                     </div>
@@ -136,11 +136,11 @@ export default function AdminDashboard({
                         
                         {/* ── PILLAR 1: DIGITAL PASSES & INVITATIONS ── */}
                         {(viewMode === 'all' || viewMode === 'invitations') && (
-                            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between hover:border-[#16A34A]/30 transition-all">
+                            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between hover:border-sky-500/40 transition-all">
                                 <div>
                                     <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-white/[0.05]">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-[#16A34A] flex items-center justify-center">
+                                            <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
                                                 <Send className="w-3.5 h-3.5" />
                                             </div>
                                             <div>
@@ -189,11 +189,11 @@ export default function AdminDashboard({
 
                         {/* ── PILLAR 2: COMMERCIAL TICKETING & BOX OFFICE ── */}
                         {(viewMode === 'all' || viewMode === 'ticketing') && (
-                            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between hover:border-[#16A34A]/30 transition-all">
+                            <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/90 dark:border-white/[0.08] shadow-xs flex flex-col justify-between hover:border-sky-500/40 transition-all">
                                 <div>
                                     <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-slate-100 dark:border-white/[0.05]">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 text-[#16A34A] flex items-center justify-center">
+                                            <div className="w-7 h-7 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
                                                 <Tag className="w-3.5 h-3.5" />
                                             </div>
                                             <div>

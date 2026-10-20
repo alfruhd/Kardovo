@@ -11,6 +11,8 @@ export default function Modal({
     maxWidth = '2xl',
     closeable = true,
     onClose = () => {},
+    translucent = false,
+    panelClassName = '',
 }) {
     const close = () => {
         if (closeable) {
@@ -29,6 +31,10 @@ export default function Modal({
         '5xl': 'sm:max-w-5xl',
     }[maxWidth] || 'sm:max-w-2xl';
 
+    const defaultPanelStyle = translucent
+        ? 'bg-white/95 backdrop-blur-2xl border border-slate-100 shadow-[0_24px_50px_-12px_rgba(11,37,69,0.25),0_12px_24px_-6px_rgba(11,37,69,0.15)] text-slate-900'
+        : 'bg-white/95 backdrop-blur-3xl backdrop-saturate-180 text-slate-900 border border-slate-300/80 shadow-[0_25px_70px_rgba(0,0,0,0.12)]';
+
     return (
         <Transition show={show} leave="duration-200">
             <Dialog
@@ -45,7 +51,7 @@ export default function Modal({
                     leaveFrom="opacity-100"
                     leaveTo="opacity-0"
                 >
-                    <div className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs" />
+                    <div className={translucent ? "fixed inset-0 bg-slate-950/60 backdrop-blur-md" : "fixed inset-0 bg-slate-950/75 backdrop-blur-xs"} />
                 </TransitionChild>
 
                 <TransitionChild
@@ -57,7 +63,7 @@ export default function Modal({
                     leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
                     <DialogPanel
-                        className={`my-auto max-h-[92vh] flex flex-col transform overflow-hidden rounded-[28px] bg-white/95 dark:bg-[#0B1524]/95 backdrop-blur-3xl backdrop-saturate-180 text-slate-900 dark:text-white border border-slate-300/80 dark:border-white/[0.08] shadow-[0_25px_70px_rgba(0,0,0,0.12)] dark:shadow-[0_25px_70px_rgba(0,0,0,0.6)] transition-all sm:mx-auto sm:w-full ${maxWidthClass}`}
+                        className={`my-auto max-h-[92vh] flex flex-col transform overflow-hidden rounded-[28px] ${defaultPanelStyle} transition-all sm:mx-auto sm:w-full ${maxWidthClass} ${panelClassName}`}
                     >
                         {children}
                     </DialogPanel>

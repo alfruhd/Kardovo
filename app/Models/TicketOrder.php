@@ -13,6 +13,7 @@ class TicketOrder extends Model
 
     protected $fillable = [
         'order_number',
+        'idempotency_key',
         'event_id',
         'user_id',
         'buyer_name',
@@ -24,6 +25,9 @@ class TicketOrder extends Model
         'organizer_net_amount',
         'total_amount',
         'currency',
+        'discount_code_id',
+        'discount_amount',
+        'sales_channel',
         'payment_method',
         'payment_reference',
         'payment_status',
@@ -31,10 +35,12 @@ class TicketOrder extends Model
         'payout_disbursed_at',
         'paid_at',
         'metadata',
+        'cached_response',
     ];
 
     protected $casts = [
         'subtotal' => 'decimal:2',
+        'discount_amount' => 'decimal:2',
         'platform_fee' => 'decimal:2',
         'platform_fee_percent' => 'decimal:2',
         'organizer_net_amount' => 'decimal:2',
@@ -42,6 +48,7 @@ class TicketOrder extends Model
         'paid_at' => 'datetime',
         'payout_disbursed_at' => 'datetime',
         'metadata' => 'array',
+        'cached_response' => 'array',
     ];
 
     protected $appends = [
@@ -83,9 +90,19 @@ class TicketOrder extends Model
         return $this->hasMany(Ticket::class);
     }
 
+    public function discountCode()
+    {
+        return $this->belongsTo(DiscountCode::class);
+    }
+
+    public function ledgerEntries()
+    {
+        return $this->hasMany(PaymentLedgerEntry::class, 'ticket_order_id')->orderBy('id');
+    }
+
     public function isPaid(): bool
     {
-        return $this->payment_status === 'paid';
+        return strtolower((string) $this->payment_status) === 'paid';
     }
 
     public function getFormattedTotalAttribute(): string

@@ -1,8 +1,11 @@
 *.log
 .DS_Store
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
+!.env.testing
+*.env
+*.env.local
 .phpactor.json
 .phpunit.result.cache
 /.codex
@@ -13,7 +16,8 @@
 /.vscode
 /.zed
 /auth.json
-/node_modules
+node_modules/
+.next/
 /public/build
 /public/generated_passes
 /public/template_assets/custom_tpl_*
@@ -27,3 +31,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+playwright-report/
+test-results/
+*.tsbuildinfo
+test_card_page.png
+local_*.png
+verified_*.png

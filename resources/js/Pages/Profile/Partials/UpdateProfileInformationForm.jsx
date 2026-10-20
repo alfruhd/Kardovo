@@ -176,8 +176,8 @@ export default function UpdateProfileInformation({
         <section className={`space-y-6 ${className}`}>
             <header className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                        <User className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 text-[#154F7C] dark:text-sky-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <User className="w-4 h-4 text-[#154F7C] dark:text-sky-400" />
                     </div>
                     <div>
                         <h2 className="text-base font-black text-slate-900 dark:text-white font-display">
@@ -195,7 +195,7 @@ export default function UpdateProfileInformation({
                 <div className="p-5 rounded-3xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06] space-y-4">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-slate-900 dark:text-white font-display flex items-center gap-1.5">
-                            <Camera className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <Camera className="w-4 h-4 text-[#154F7C] dark:text-sky-400" />
                             <span>Profile Avatar &amp; Photo</span>
                         </span>
                         <span className="text-[10.5px] font-mono text-slate-400">JPG, PNG, WEBP up to 5MB</span>
@@ -219,7 +219,7 @@ export default function UpdateProfileInformation({
 
                                 {/* Hover Overlay */}
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 backdrop-blur-xs">
-                                    <Camera className="w-5 h-5 text-emerald-300" />
+                                    <Camera className="w-5 h-5 text-sky-300" />
                                     <span>Change</span>
                                 </div>
                             </div>
@@ -231,7 +231,7 @@ export default function UpdateProfileInformation({
                                     e.stopPropagation();
                                     fileInputRef.current?.click();
                                 }}
-                                className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-[#16A34A] dark:hover:bg-[#15803D] text-white shadow-md flex items-center justify-center transition active:scale-95 border-2 border-white dark:border-[#0B1524]"
+                                className="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-xl bg-slate-900 hover:bg-slate-800 dark:bg-[#154F7C] dark:hover:bg-[#1A5C91] text-white shadow-md flex items-center justify-center transition active:scale-95 border-2 border-white dark:border-[#0B1524]"
                                 title="Upload new photo"
                             >
                                 <Camera className="w-3.5 h-3.5" />
@@ -291,7 +291,7 @@ export default function UpdateProfileInformation({
                         <div className="flex items-center justify-between">
                             <InputLabel htmlFor="name" value="Full Name *" />
                             {touched.name && !clientErrors.name && data.name.trim().length >= 2 && (
-                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-[#154F7C] dark:text-sky-400">
                                     <Check className="w-3 h-3" />
                                     <span>Valid</span>
                                 </span>
@@ -325,7 +325,7 @@ export default function UpdateProfileInformation({
                         <div className="flex items-center justify-between">
                             <InputLabel htmlFor="email" value="Email Address *" />
                             {touched.email && !clientErrors.email && validateEmail(data.email) && (
-                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-[#154F7C] dark:text-sky-400">
                                     <Check className="w-3 h-3" />
                                     <span>Verified format</span>
                                 </span>
@@ -362,7 +362,7 @@ export default function UpdateProfileInformation({
                         <div className="flex items-center justify-between">
                             <InputLabel htmlFor="phone" value="Phone Number (WhatsApp / Contact)" />
                             {data.phone && data.phone.trim() && validatePhone(data.phone) && (
-                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-emerald-600 dark:text-emerald-400 font-mono">
+                                <span className="inline-flex items-center gap-1 text-[10.5px] font-bold text-[#154F7C] dark:text-sky-400 font-mono">
                                     <Check className="w-3 h-3" />
                                     <span>Verified</span>
                                 </span>
@@ -417,7 +417,7 @@ export default function UpdateProfileInformation({
                     <div className="flex items-center justify-between gap-4">
                         <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                                <ShieldCheck className="w-4 h-4 text-[#154F7C] dark:text-sky-400" />
                                 <h3 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-display">
                                     Two-Factor Authentication (2FA)
                                 </h3>
@@ -439,7 +439,7 @@ export default function UpdateProfileInformation({
                                 onChange={(e) => setData('two_factor_enabled', e.target.checked)}
                                 className="sr-only peer"
                             />
-                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
+                            <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#154F7C] dark:peer-checked:bg-sky-500"></div>
                         </label>
                     </div>
                 </div>
@@ -448,7 +448,7 @@ export default function UpdateProfileInformation({
                 {isAdmin && (
                     <div className="space-y-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.03] border border-slate-200/80 dark:border-white/[0.06]">
                         <div className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-mono flex items-center gap-1.5">
-                            <SlidersHorizontal className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <SlidersHorizontal className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
                             <span>Tenancy Limits</span>
                         </div>
 
@@ -522,7 +522,7 @@ export default function UpdateProfileInformation({
 
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/[0.08]">
                     {recentlySuccessful ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/40 animate-fadeIn">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#154F7C] dark:text-sky-400 bg-sky-500/10 dark:bg-sky-500/15 px-3 py-1 rounded-full border border-sky-500/20 animate-fadeIn">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>Profile updated successfully!</span>
                         </span>
@@ -537,7 +537,7 @@ export default function UpdateProfileInformation({
                         )}
                         <PrimaryButton 
                             disabled={processing || Boolean(clientErrors.name || clientErrors.email || clientErrors.phone || clientErrors.avatar_file)} 
-                            className="bg-[#16A34A] hover:bg-[#15803D] border-[#16A34A] text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="py-2.5 px-5 rounded-xl text-xs gap-1.5 font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Save className="w-3.5 h-3.5 text-white" />
                             <span>{processing ? 'Saving...' : 'Save Profile Changes'}</span>

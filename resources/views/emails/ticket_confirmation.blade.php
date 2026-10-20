@@ -10,7 +10,7 @@
         
         <!-- Header Info -->
         <div style="text-align: center; margin-bottom: 20px;">
-            <div style="font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #16A34A; margin-bottom: 4px;">
+            <div style="font-size: 11px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: #154F7C; margin-bottom: 4px;">
                 KARDOVO PASS DISPATCH
             </div>
             <h1 style="font-size: 22px; font-weight: 800; color: #0F172A; margin: 0;">
@@ -134,7 +134,7 @@
 
         <!-- Action Link Button -->
         <div style="text-align: center; margin-top: 24px;">
-            <a href="{{ $ticket->pass_url }}" style="display: inline-block; background-color: #16A34A; color: #FFFFFF; text-decoration: none; padding: 13px 32px; border-radius: 12px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.4);">
+            <a href="{{ $ticket->pass_url }}" style="display: inline-block; background-color: #154F7C; color: #FFFFFF; text-decoration: none; padding: 13px 32px; border-radius: 12px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(21, 79, 124, 0.4);">
                 Open Live Pass on Phone
             </a>
             <p style="font-size: 12px; color: #64748B; margin-top: 10px;">

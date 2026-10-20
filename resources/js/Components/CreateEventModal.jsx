@@ -146,7 +146,7 @@ export default function CreateEventModal() {
                     <SecondaryButton type="button" onClick={() => setIsOpen(false)}>
                         Cancel
                     </SecondaryButton>
-                    <PrimaryButton type="submit" disabled={processing} className="bg-[#16A34A] hover:bg-[#15803D] text-white border border-[#16A34A]">
+                    <PrimaryButton type="submit" disabled={processing}>
                         {processing ? 'Creating Event...' : 'Create Event Portfolio'}
                     </PrimaryButton>
                 </div>

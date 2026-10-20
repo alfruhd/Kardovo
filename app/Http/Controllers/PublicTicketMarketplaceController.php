@@ -11,6 +11,16 @@ use Inertia\Inertia;
 class PublicTicketMarketplaceController extends Controller
 {
     /**
+     * Display the dedicated "How It Works" guide for event organizers.
+     */
+    public function howItWorks(Request $request)
+    {
+        return Inertia::render('Public/HowItWorks', [
+            'status' => session('status'),
+        ]);
+    }
+
+    /**
      * Display the public ticketing marketplace / discovery portal.
      */
     public function index(Request $request)
@@ -214,7 +224,7 @@ class PublicTicketMarketplaceController extends Controller
             'price' => 80000,
             'capacity' => 50,
             'sold_count' => 12,
-            'color' => '#10b981',
+            'color' => '#154F7C',
             'status' => 'active',
             'sort_order' => 2,
         ]);
@@ -391,7 +401,7 @@ class PublicTicketMarketplaceController extends Controller
             'sold_count' => 14,
             'status' => 'active',
             'sort_order' => 3,
-            'color' => '#10b981',
+            'color' => '#154F7C',
         ]);
     }
 }

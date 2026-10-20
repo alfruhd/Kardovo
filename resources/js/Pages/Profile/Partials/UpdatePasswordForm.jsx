@@ -81,8 +81,8 @@ export default function UpdatePasswordForm({ className = '' }) {
         <section className={`space-y-5 ${className}`}>
             <header className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
-                        <Lock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 text-[#154F7C] dark:text-sky-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <Lock className="w-4 h-4 text-[#154F7C] dark:text-sky-400" />
                     </div>
                     <div>
                         <h2 className="text-base font-black text-slate-900 dark:text-white font-display">
@@ -138,15 +138,15 @@ export default function UpdatePasswordForm({ className = '' }) {
                                 <button
                                     type="button"
                                     onClick={handleGeneratePassword}
-                                    className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-300 hover:text-emerald-800 dark:hover:text-emerald-200 cursor-pointer bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800/40"
+                                    className="inline-flex items-center gap-1 text-[10px] font-bold text-[#154F7C] dark:text-sky-400 hover:text-[#1A5C91] dark:hover:text-sky-300 cursor-pointer bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded-md border border-sky-200 dark:border-sky-800/40"
                                     title="Generate strong 16-character password"
                                 >
-                                    <Sparkles className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" />
+                                    <Sparkles className="w-2.5 h-2.5 text-[#154F7C] dark:text-sky-400" />
                                     <span>Suggest Strong</span>
                                 </button>
                                 {data.password && (
                                     <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
-                                        isStrong ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                                        isStrong ? 'text-[#154F7C] dark:text-sky-400' : 'text-amber-600 dark:text-amber-400'
                                     }`}>
                                         {isStrong ? <Check className="w-3 h-3" /> : null}
                                         <span>{isStrong ? 'Strong Password' : `${pwdAnalysis.score}/4 Requirements`}</span>
@@ -189,7 +189,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                             {data.password_confirmation && (
                                 <span className={`inline-flex items-center gap-1 text-[10.5px] font-bold ${
                                     isMatch 
-                                        ? 'text-emerald-600 dark:text-emerald-400' 
+                                        ? 'text-[#154F7C] dark:text-sky-400' 
                                         : 'text-rose-600 dark:text-rose-400'
                                 }`}>
                                     {isMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
@@ -231,7 +231,7 @@ export default function UpdatePasswordForm({ className = '' }) {
 
                 <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-white/[0.08]">
                     {recentlySuccessful ? (
-                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/40 animate-fadeIn">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#154F7C] dark:text-sky-400 bg-sky-500/10 dark:bg-sky-500/15 px-3 py-1 rounded-full border border-sky-500/20 animate-fadeIn">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>Password updated successfully!</span>
                         </span>
@@ -240,7 +240,7 @@ export default function UpdatePasswordForm({ className = '' }) {
                     <div className="ml-auto">
                         <PrimaryButton 
                             disabled={processing || !data.current_password || !isStrong || !isMatch} 
-                            className="bg-[#16A34A] hover:bg-[#15803D] border-[#16A34A] text-white font-bold py-2.5 px-5 rounded-xl shadow-xs transition active:scale-95 text-xs gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="py-2.5 px-5 rounded-xl text-xs gap-1.5 font-bold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Key className="w-3.5 h-3.5 text-white" />
                             <span>Update Password</span>

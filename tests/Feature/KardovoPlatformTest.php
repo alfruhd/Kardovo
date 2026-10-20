@@ -506,6 +506,9 @@ class KardovoPlatformTest extends TestCase
         $this->actingAs($admin)->get('/admin?tab=gateways')->assertRedirect(route('admin.gateways'));
         $this->actingAs($admin)->get('/admin?tab=events')->assertRedirect(route('events.index'));
         $this->actingAs($admin)->get('/admin?tab=templates')->assertRedirect(route('templates.index'));
+        $this->actingAs($admin)->get(route('events.index'))->assertStatus(200);
+        $this->actingAs($admin)->get(route('templates.index'))->assertStatus(200);
+        $this->actingAs($admin)->get(route('ticketing.index'))->assertStatus(200);
     }
 
     public function test_package_purchase_anti_tampering_and_per_card_quotas(): void

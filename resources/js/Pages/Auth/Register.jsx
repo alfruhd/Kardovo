@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
+import KardovoLogo from '@/Components/KardovoLogo';
 import PasswordStrengthMeter from '@/Components/PasswordStrengthMeter';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { validateEmail, validatePassword, generateStrongPassword } from '@/Utils/validation';
 import { Sparkles, Eye, EyeOff } from 'lucide-react';
 
@@ -13,13 +14,24 @@ export default function Register() {
     const [showPassword, setShowPassword] = useState(false);
     const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
 
+    const pageProps = usePage()?.props || {};
+    const formTimestampToken = pageProps.formTimestampToken || '';
+
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
         email: '',
         phone: '',
         password: '',
         password_confirmation: '',
+        website_url: '',
+        _form_rendered_at: formTimestampToken || (Date.now() - 2000),
     });
+
+    useEffect(() => {
+        if (formTimestampToken && (!data._form_rendered_at || typeof data._form_rendered_at === 'number')) {
+            setData('_form_rendered_at', formTimestampToken);
+        }
+    }, [formTimestampToken]);
 
     const isMatch = Boolean(
         data.password && 
@@ -64,25 +76,41 @@ export default function Register() {
         <GuestLayout>
             <Head title="Create Organiser Account" />
 
-            {/* Header */}
-            <div className="mb-5 text-center">
-                <h1 className="text-xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+            {/* Header with Kardovo Logo */}
+            <div className="mb-5 text-center flex flex-col items-center">
+                <div className="mb-2 flex justify-center">
+                    <KardovoLogo light={false} showText={false} imgClassName="h-9 w-9 sm:h-10 sm:w-10" size="lg" />
+                </div>
+                <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-display tracking-tight">
                     Create Organiser Account
                 </h1>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p className="text-xs text-slate-500 mt-1 font-medium">
                     Manage events, guests, and smart passes
                 </p>
             </div>
 
             <form onSubmit={submit} className="space-y-4">
+                <div className="opacity-0 absolute -left-[9999px] -top-[9999px] h-0 w-0 overflow-hidden pointer-events-none" aria-hidden="true">
+                    <label htmlFor="website_url">Website</label>
+                    <input
+                        id="website_url"
+                        type="text"
+                        name="website_url"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={data.website_url}
+                        onChange={(e) => setData('website_url', e.target.value)}
+                    />
+                </div>
                 {/* Full Name */}
                 <div>
-                    <InputLabel htmlFor="name" value="Full Name *" />
+                    <InputLabel htmlFor="name" value="Full Name *" className="text-slate-700 font-bold text-xs tracking-wider uppercase mb-1" />
                     <TextInput
                         id="name"
                         name="name"
+                        variant="default"
                         value={data.name}
-                        className="mt-1 block w-full text-xs font-mono font-bold"
+                        className="mt-1 block w-full text-xs font-medium py-2.5 rounded-2xl"
                         autoComplete="name"
                         placeholder="e.g. Salim Juma"
                         isFocused={true}
@@ -96,15 +124,16 @@ export default function Register() {
                 {/* Email Address */}
                 <div>
                     <div className="flex items-center justify-between">
-                        <InputLabel htmlFor="email" value="Email Address" />
-                        <span className="text-[10.5px] text-slate-400">Optional if phone provided</span>
+                        <InputLabel htmlFor="email" value="Email Address" className="text-slate-700 font-bold text-xs tracking-wider uppercase mb-1" />
+                        <span className="text-[10.5px] text-slate-400 font-medium">Optional if phone provided</span>
                     </div>
                     <TextInput
                         id="email"
                         type="email"
                         name="email"
+                        variant="default"
                         value={data.email}
-                        className="mt-1 block w-full text-xs font-mono font-bold"
+                        className="mt-1 block w-full text-xs font-medium py-2.5 rounded-2xl"
                         autoComplete="username"
                         placeholder="name@email.com"
                         onChange={(e) => setData('email', e.target.value)}
@@ -117,15 +146,16 @@ export default function Register() {
                 {/* Phone Number */}
                 <div>
                     <div className="flex items-center justify-between">
-                        <InputLabel htmlFor="phone" value="Phone Number" />
-                        <span className="text-[10.5px] text-slate-400">Optional if email provided</span>
+                        <InputLabel htmlFor="phone" value="Phone Number" className="text-slate-700 font-bold text-xs tracking-wider uppercase mb-1" />
+                        <span className="text-[10.5px] text-slate-400 font-medium">Optional if email provided</span>
                     </div>
                     <TextInput
                         id="phone"
                         type="tel"
                         name="phone"
+                        variant="default"
                         value={data.phone}
-                        className="mt-1 block w-full text-xs font-mono font-bold"
+                        className="mt-1 block w-full text-xs font-medium py-2.5 rounded-2xl"
                         autoComplete="tel"
                         placeholder="07XXXXXXXX or +255 7XX XXX XXX"
                         onChange={(e) => setData('phone', e.target.value)}
@@ -138,13 +168,13 @@ export default function Register() {
                 {/* Password */}
                 <div>
                     <div className="flex items-center justify-between">
-                        <InputLabel htmlFor="password" value="Password *" />
+                        <InputLabel htmlFor="password" value="Password *" className="text-slate-700 font-bold text-xs tracking-wider uppercase mb-1" />
                         <button
                             type="button"
                             onClick={handleGeneratePassword}
-                            className="inline-flex items-center gap-1 text-[10.5px] font-bold text-cyan-700 dark:text-cyan-400 hover:underline cursor-pointer"
+                            className="inline-flex items-center gap-1 text-[10.5px] font-bold text-sky-700 hover:text-sky-900 cursor-pointer transition"
                         >
-                            <Sparkles className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                            <Sparkles className="w-3 h-3 text-sky-600" />
                             <span>Suggest strong</span>
                         </button>
                     </div>
@@ -154,8 +184,9 @@ export default function Register() {
                             id="password"
                             type={showPassword ? 'text' : 'password'}
                             name="password"
+                            variant="default"
                             value={data.password}
-                            className="block w-full pr-10 text-xs font-mono"
+                            className="block w-full pr-10 text-xs font-medium py-2.5 rounded-2xl"
                             autoComplete="new-password"
                             onChange={(e) => setData('password', e.target.value)}
                             placeholder="Min. 8 characters"
@@ -165,27 +196,28 @@ export default function Register() {
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer focus:outline-none transition"
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer focus:outline-none transition"
                             title={showPassword ? 'Hide password' : 'Show password'}
                         >
                             {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
                     </div>
 
-                    <PasswordStrengthMeter password={data.password} />
+                    <PasswordStrengthMeter password={data.password} dark={false} />
                     <InputError message={errors.password} className="mt-1.5" />
                 </div>
 
                 {/* Confirm Password */}
                 <div>
-                    <InputLabel htmlFor="password_confirmation" value="Confirm Password *" />
+                    <InputLabel htmlFor="password_confirmation" value="Confirm Password *" className="text-slate-700 font-bold text-xs tracking-wider uppercase mb-1" />
                     <div className="relative mt-1">
                         <TextInput
                             id="password_confirmation"
                             type={showPasswordConfirm ? 'text' : 'password'}
                             name="password_confirmation"
+                            variant="default"
                             value={data.password_confirmation}
-                            className="block w-full pr-10 text-xs font-mono"
+                            className="block w-full pr-10 text-xs font-medium py-2.5 rounded-2xl"
                             autoComplete="new-password"
                             placeholder="••••••••••••"
                             onChange={(e) => setData('password_confirmation', e.target.value)}
@@ -195,7 +227,7 @@ export default function Register() {
                         <button
                             type="button"
                             onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer focus:outline-none transition"
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer focus:outline-none transition"
                             title={showPasswordConfirm ? 'Hide password' : 'Show password'}
                         >
                             {showPasswordConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -206,13 +238,18 @@ export default function Register() {
                             Passwords do not match.
                         </p>
                     )}
+                    {isMatch && (
+                        <p className="mt-1 text-[10.5px] text-emerald-600 font-medium">
+                            Passwords match.
+                        </p>
+                    )}
                     <InputError message={errors.password_confirmation} className="mt-1.5" />
                 </div>
 
                 {/* Submit Button */}
                 <div className="pt-2">
                     <PrimaryButton
-                        className="w-full justify-center py-3 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-black rounded-2xl shadow-md transition active:scale-[0.98] tracking-wide uppercase cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full justify-center py-3.5 bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] text-white text-xs font-black rounded-2xl shadow-lg shadow-[#154F7C]/25 border border-sky-500/20 transition active:scale-[0.98] tracking-wide uppercase cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={processing || !isMatch || !isStrong || !hasIdentifier || !isEmailValid || !isPhoneValid || !isNameValid}
                     >
                         {processing ? 'Creating Account...' : 'Create Account'}
@@ -221,11 +258,11 @@ export default function Register() {
 
                 {/* Already have an account link */}
                 <div className="pt-1 text-center">
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-semibold">
+                    <p className="text-xs text-slate-500 font-medium">
                         Already have an account?{' '}
                         <Link
                             href={route('login')}
-                            className="text-[#16A34A] hover:text-[#15803D] dark:text-emerald-400 dark:hover:text-emerald-300 font-black hover:underline cursor-pointer transition"
+                            className="text-sky-700 hover:text-sky-900 font-bold hover:underline cursor-pointer transition"
                         >
                             Sign in here
                         </Link>
@@ -234,13 +271,13 @@ export default function Register() {
 
                 {/* Terms & Privacy */}
                 <div className="pt-1 text-center">
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
                         By creating an account, you agree to Kardovo’s{' '}
-                        <Link href="/terms" className="font-bold text-slate-700 dark:text-slate-300 hover:underline">
+                        <Link href="/terms" className="font-medium text-slate-600 hover:text-sky-700 underline transition">
                             Terms &amp; Conditions
                         </Link>{' '}
                         and{' '}
-                        <Link href="/privacy" className="font-bold text-slate-700 dark:text-slate-300 hover:underline">
+                        <Link href="/privacy" className="font-medium text-slate-600 hover:text-sky-700 underline transition">
                             Privacy Policy
                         </Link>.
                     </p>

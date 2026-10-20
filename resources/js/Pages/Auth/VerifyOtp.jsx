@@ -151,53 +151,53 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
         <GuestLayout>
             <Head title="Two-Factor Security Verification" />
 
-            <div className="space-y-6" onPaste={handlePaste}>
+            <div className="space-y-4 sm:space-y-5" onPaste={handlePaste}>
                 {/* Header Badge & Title */}
-                <div className="text-center space-y-2">
-                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20 shadow-inner mb-1">
-                        <ShieldCheck className="w-6 h-6 stroke-[2.5]" />
+                <div className="text-center space-y-1.5 sm:space-y-2">
+                    <div className="inline-flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-sky-50 text-sky-700 border border-sky-200 shadow-2xs mb-0.5 sm:mb-1">
+                        <ShieldCheck className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
                     </div>
-                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight">
+                    <h1 className="text-xl sm:text-2xl font-black text-slate-900 font-display tracking-tight">
                         Two-Factor Authentication
                     </h1>
-                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+                    <p className="text-xs sm:text-sm text-slate-500 max-w-xs mx-auto leading-relaxed font-medium">
                         Enter the 6-digit security verification code sent to your registered channels.
                     </p>
                 </div>
 
                 {/* Delivery Target Channels */}
-                <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-slate-50 dark:bg-white/[0.04] border border-slate-200/80 dark:border-white/[0.08] text-xs">
+                <div className="flex flex-col gap-2 p-3 sm:p-3.5 rounded-2xl bg-slate-50/80 border border-slate-200/90 text-xs">
                     {maskedEmail && (
-                        <div className="flex items-center justify-between text-slate-700 dark:text-slate-300">
+                        <div className="flex items-center justify-between text-slate-600">
                             <span className="flex items-center gap-2 font-medium">
-                                <Mail className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                <Mail className="w-3.5 h-3.5 text-sky-600" />
                                 <span>Email Verification:</span>
                             </span>
-                            <span className="font-mono font-bold text-slate-900 dark:text-white">{maskedEmail}</span>
+                            <span className="font-mono font-bold text-slate-900">{maskedEmail}</span>
                         </div>
                     )}
                     {maskedPhone && (
-                        <div className="flex items-center justify-between text-slate-700 dark:text-slate-300 pt-1 border-t border-slate-200/50 dark:border-white/[0.05]">
+                        <div className="flex items-center justify-between text-slate-600 pt-1.5 border-t border-slate-200">
                             <span className="flex items-center gap-2 font-medium">
-                                <Smartphone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <Smartphone className="w-3.5 h-3.5 text-sky-600" />
                                 <span>WhatsApp / SMS:</span>
                             </span>
-                            <span className="font-mono font-bold text-slate-900 dark:text-white">{maskedPhone}</span>
+                            <span className="font-mono font-bold text-slate-900">{maskedPhone}</span>
                         </div>
                     )}
                 </div>
 
                 {/* Dev Mode Code Banner */}
                 {devCode && (
-                    <div className="p-3 rounded-2xl bg-cyan-50 dark:bg-cyan-950/40 border border-cyan-200 dark:border-cyan-800/60 flex items-center justify-between text-xs animate-fadeIn">
+                    <div className="p-2.5 sm:p-3 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-between text-xs animate-fadeIn text-sky-900">
                         <div className="flex items-center gap-2">
-                            <Sparkles className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                            <span className="text-cyan-900 dark:text-cyan-200 font-bold">Dev/Test Code:</span>
+                            <Sparkles className="w-4 h-4 text-sky-600" />
+                            <span className="text-sky-950 font-bold">Dev/Test Code:</span>
                         </div>
                         <button
                             type="button"
                             onClick={() => applyCodeString(devCode)}
-                            className="font-mono font-black text-sm tracking-widest text-cyan-700 dark:text-cyan-300 bg-white dark:bg-cyan-900/60 px-2.5 py-0.5 rounded-lg border border-cyan-300 dark:border-cyan-700 hover:bg-cyan-100 dark:hover:bg-cyan-800 transition cursor-pointer"
+                            className="font-mono font-black text-sm tracking-widest text-sky-800 bg-white px-2.5 py-0.5 rounded-lg border border-sky-300 hover:bg-sky-50 transition cursor-pointer shadow-2xs"
                             title="Click to 1-tap fill this code"
                         >
                             {devCode}
@@ -206,25 +206,25 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
                 )}
 
                 {status && (
-                    <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2 text-xs text-emerald-900 dark:text-emerald-200 font-bold animate-fadeIn">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-2 text-xs text-emerald-800 font-bold animate-fadeIn">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                         <span>{status}</span>
                     </div>
                 )}
 
                 {/* Form: 6-Segmented Boxes */}
-                <form onSubmit={submit} className="space-y-5" onPaste={handlePaste}>
+                <form onSubmit={submit} className="space-y-4 sm:space-y-5" onPaste={handlePaste}>
                     {/* Prominent Error Alert on Top of Input Boxes */}
                     {errors.code && (
-                        <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/70 flex items-start gap-3 text-xs animate-shake shadow-xs">
-                            <div className="w-6 h-6 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-xs animate-shake shadow-xs">
+                            <div className="w-6 h-6 rounded-xl bg-rose-100 text-rose-600 border border-rose-200 flex items-center justify-center flex-shrink-0 mt-0.5">
                                 <AlertTriangle className="w-3.5 h-3.5 stroke-[2.5]" />
                             </div>
                             <div className="space-y-0.5 text-left">
-                                <div className="font-black text-rose-900 dark:text-rose-200 text-xs">
+                                <div className="font-black text-rose-900 text-xs">
                                     Something went wrong.
                                 </div>
-                                <div className="text-rose-700 dark:text-rose-300 font-medium text-[11.5px] leading-relaxed">
+                                <div className="text-rose-700 font-medium text-[11.5px] leading-relaxed">
                                     {errors.code}
                                 </div>
                             </div>
@@ -246,7 +246,7 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
                                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                                     onKeyDown={(e) => handleKeyDown(idx, e)}
                                     onPaste={handlePaste}
-                                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-mono font-black rounded-2xl bg-white dark:bg-[#07111D] text-slate-900 dark:text-white border-2 border-slate-300 dark:border-white/[0.12] focus:border-cyan-500 dark:focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/20 outline-none transition-all shadow-xs"
+                                    className="w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-mono font-black rounded-2xl bg-slate-50 hover:bg-slate-100/80 focus:bg-white text-slate-900 border-2 border-slate-200 focus:border-sky-600 focus:ring-4 focus:ring-sky-500/15 outline-none transition-all shadow-2xs"
                                     required
                                 />
                             ))}
@@ -258,9 +258,9 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
                                 <button
                                     type="button"
                                     onClick={handleClipboardPasteButton}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-white/[0.06] hover:bg-slate-200 dark:hover:bg-white/[0.1] text-slate-600 dark:text-slate-300 text-[11px] font-bold transition active:scale-95 cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 hover:text-slate-900 border border-slate-200 text-[11px] font-bold transition active:scale-95 cursor-pointer shadow-2xs"
                                 >
-                                    <Clipboard className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                                    <Clipboard className="w-3.5 h-3.5 text-sky-600" />
                                     <span>Paste code from clipboard</span>
                                 </button>
                             </div>
@@ -268,16 +268,16 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
                     </div>
 
                     {/* Timer & Resend */}
-                    <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1 pt-1">
+                    <div className="flex items-center justify-between text-xs text-slate-500 px-1 pt-1 font-medium">
                         <span>
-                            Code expires in <strong className="font-mono text-slate-900 dark:text-white">{formatTime(timer)}</strong>
+                            Code expires in <strong className="font-mono text-slate-900 font-bold">{formatTime(timer)}</strong>
                         </span>
 
                         <button
                             type="button"
                             onClick={handleResend}
                             disabled={isResending}
-                            className="inline-flex items-center gap-1.5 font-bold text-cyan-600 dark:text-cyan-400 hover:underline disabled:opacity-50 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 font-bold text-sky-700 hover:text-sky-900 hover:underline disabled:opacity-50 cursor-pointer transition"
                         >
                             <RefreshCw className={`w-3 h-3 ${isResending ? 'animate-spin' : ''}`} />
                             <span>Resend Code</span>
@@ -286,7 +286,7 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
 
                     <PrimaryButton
                         disabled={processing || data.code.length !== 6}
-                        className="w-full justify-center py-3.5 rounded-2xl bg-[#16A34A] hover:bg-[#15803D] border-[#16A34A] text-white font-black text-xs shadow-lg transition active:scale-95 disabled:opacity-50"
+                        className="w-full justify-center py-3.5 rounded-2xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-500/20 text-white font-black text-xs shadow-lg shadow-[#154F7C]/25 transition active:scale-95 disabled:opacity-50 cursor-pointer"
                     >
                         <Lock className="w-3.5 h-3.5 mr-1 text-white" />
                         <span>Verify &amp; Continue</span>
@@ -295,7 +295,7 @@ export default function VerifyOtp({ maskedEmail, maskedPhone, devCode, status })
                     <div className="text-center pt-2">
                         <Link
                             href={route('login')}
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition"
+                            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-sky-700 transition"
                         >
                             <ArrowLeft className="w-3.5 h-3.5" />
                             <span>Back to Standard Login</span>

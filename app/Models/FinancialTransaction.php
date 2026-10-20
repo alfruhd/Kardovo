@@ -8,6 +8,7 @@ class FinancialTransaction extends Model
 {
     protected $fillable = [
         'transaction_number',
+        'idempotency_key',
         'type',
         'category',
         'title',
@@ -40,6 +41,11 @@ class FinancialTransaction extends Model
     public function bill()
     {
         return $this->hasOne(FinancialBill::class, 'financial_transaction_id');
+    }
+
+    public function ledgerEntries()
+    {
+        return $this->hasMany(PaymentLedgerEntry::class, 'financial_transaction_id')->orderBy('id');
     }
 
     /**

@@ -77,23 +77,43 @@ class TwoFactorController extends Controller
             return redirect()->route('login');
         }
 
-        // Apply rate limiter on attempts
-        $throttleKey = '2fa_verify_'.$user->id.'|'.$request->ip();
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
+        // Multi-IP distributed defense: cap attempts per account/token globally across all IPs
+        $accountThrottleKey = '2fa_verify_account_'.$user->id;
+        $ipThrottleKey = '2fa_verify_ip_'.$request->ip();
+
+        if (RateLimiter::tooManyAttempts($accountThrottleKey, 5) || RateLimiter::tooManyAttempts($ipThrottleKey, 10)) {
+            $user->clearTwoFactorCode();
+            RateLimiter::clear($accountThrottleKey);
+            $request->session()->forget(['auth.2fa_user_id', 'auth.2fa_remember', 'auth.2fa_dev_code']);
+
             throw ValidationException::withMessages([
-                'code' => "Too many incorrect verification attempts. Please wait {$seconds} seconds.",
+                'code' => 'Too many failed verification attempts. This verification code has been permanently invalidated for your security. Please log in again to request a new code.',
             ]);
         }
 
         if (! $user->verifyTwoFactorCode($request->code)) {
-            RateLimiter::hit($throttleKey, 300);
+            RateLimiter::hit($accountThrottleKey, 600);
+            RateLimiter::hit($ipThrottleKey, 300);
+
+            if (RateLimiter::attempts($accountThrottleKey) >= 5) {
+                $user->clearTwoFactorCode();
+                RateLimiter::clear($accountThrottleKey);
+                $request->session()->forget(['auth.2fa_user_id', 'auth.2fa_remember', 'auth.2fa_dev_code']);
+
+                throw ValidationException::withMessages([
+                    'code' => 'Too many failed verification attempts. This verification code has been permanently invalidated for your security. Please log in again to request a new code.',
+                ]);
+            }
+
+            $remaining = 5 - RateLimiter::attempts($accountThrottleKey);
+
             throw ValidationException::withMessages([
-                'code' => 'The provided 6-digit security code is invalid or has expired.',
+                'code' => "The provided 6-digit security code is invalid or has expired. ({$remaining} attempts remaining before code invalidation)",
             ]);
         }
 
-        RateLimiter::clear($throttleKey);
+        RateLimiter::clear($accountThrottleKey);
+        RateLimiter::clear($ipThrottleKey);
         $user->clearTwoFactorCode();
 
         $remember = $request->session()->get('auth.2fa_remember', false);
@@ -102,15 +122,14 @@ class TwoFactorController extends Controller
         $request->session()->forget(['auth.2fa_user_id', 'auth.2fa_remember', 'auth.2fa_dev_code', 'url.intended']);
         $request->session()->regenerate();
 
-        if ($user->isAdmin()) {
-            return redirect()->route('admin.dashboard');
-        }
+        $trustedDeviceCookieName = 'kdv_trusted_device_'.$user->id;
+        $expectedDeviceToken = hash_hmac('sha256', $user->id.'|'.$user->email, (string) config('app.key'));
 
-        if ($user->isScanner()) {
-            return redirect()->route('scanner.index');
-        }
+        $redirect = $user->isAdmin()
+            ? redirect()->route('admin.dashboard')
+            : ($user->isScanner() ? redirect()->route('scanner.index') : redirect()->route('dashboard'));
 
-        return redirect()->route('dashboard');
+        return $redirect->withCookie(cookie()->forever($trustedDeviceCookieName, $expectedDeviceToken));
     }
 
     /**
@@ -137,6 +156,7 @@ class TwoFactorController extends Controller
 
         RateLimiter::hit($throttleKey, 60);
 
+        RateLimiter::clear('2fa_verify_account_'.$user->id);
         $code = $user->generateTwoFactorCode();
 
         try {

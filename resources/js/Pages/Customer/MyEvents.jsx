@@ -183,7 +183,7 @@ export default function MyEvents({
                 canCreate ? (
                     <button
                         onClick={() => setCreateModalOpen(true)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 rounded-xl shadow-xs shadow-[#154F7C]/20 transition active:scale-95 cursor-pointer"
                     >
                         <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                         <span>Create Event</span>
@@ -226,7 +226,7 @@ export default function MyEvents({
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <div className="px-3.5 py-1.5 rounded-2xl bg-white/80 dark:bg-[#0B1524]/90 border border-slate-200/90 dark:border-white/[0.08] shadow-xs text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                        <div className="px-3.5 py-1.5 rounded-2xl bg-white/80 dark:bg-[#0B1524]/90 border border-slate-200/90 dark:border-white/[0.08] shadow-xs text-xs font-mono font-bold text-[#154F7C] dark:text-sky-400">
                             <span>{events.length} Active Events</span>
                         </div>
                     </div>
@@ -238,7 +238,7 @@ export default function MyEvents({
                 <div className="space-y-4 md:pt-4 md:border-t border-slate-200/80 dark:border-white/[0.08]">
                     <div className="flex items-center justify-between px-1">
                         <div className="flex items-center gap-2">
-                            <LayoutGrid className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <LayoutGrid className="w-4 h-4 text-[#154F7C] dark:text-sky-400" />
                             <span className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white font-display">
                                 All Events Portfolio Directory
                             </span>
@@ -266,13 +266,13 @@ export default function MyEvents({
                             return (
                                 <div 
                                     key={event.id}
-                                    className="group relative rounded-2xl overflow-hidden backdrop-blur-2xl backdrop-saturate-180 bg-white/70 dark:bg-[#091322]/85 hover:bg-white/90 dark:hover:bg-[#0d1c33]/95 border border-slate-200/80 dark:border-white/[0.08] hover:border-emerald-500/40 shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 p-4 sm:p-5 text-slate-800 dark:text-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
+                                    className="group relative rounded-2xl overflow-hidden backdrop-blur-2xl backdrop-saturate-180 bg-white/70 dark:bg-[#091322]/85 hover:bg-white/90 dark:hover:bg-[#0d1c33]/95 border border-slate-200/80 dark:border-white/[0.08] hover:border-[#154F7C]/40 dark:hover:border-sky-500/40 shadow-[0_8px_30px_rgba(0,0,0,0.03)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)] transition-all duration-300 p-4 sm:p-5 text-slate-800 dark:text-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4"
                                 >
                                     {/* Left: Date + Title + Venue */}
                                     <div className="flex items-center gap-3.5 min-w-0 flex-1">
                                         {/* Date tile */}
-                                        <div className="flex-shrink-0 text-center w-14 sm:w-16 py-2 rounded-xl bg-white/60 dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/[0.08] group-hover:border-emerald-500/30 transition">
-                                            <span className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 block tracking-wider font-mono">
+                                        <div className="flex-shrink-0 text-center w-14 sm:w-16 py-2 rounded-xl bg-white/60 dark:bg-white/[0.05] border border-slate-200/80 dark:border-white/[0.08] group-hover:border-[#154F7C]/30 dark:group-hover:border-sky-400/30 transition">
+                                            <span className="text-[10px] uppercase font-bold text-[#154F7C] dark:text-sky-400 block tracking-wider font-mono">
                                                 {new Date(event.event_date).toLocaleDateString('en-GB', { month: 'short' })}
                                             </span>
                                             <span className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-mono block leading-tight">
@@ -290,7 +290,7 @@ export default function MyEvents({
                                             </span>
                                             <Link
                                                 href={route('events.show', event.id)}
-                                                className="text-base sm:text-lg font-black text-slate-900 dark:text-white hover:text-emerald-600 dark:hover:text-emerald-400 transition block truncate font-display"
+                                                className="text-base sm:text-lg font-black text-slate-900 dark:text-white hover:text-[#154F7C] dark:hover:text-sky-400 transition block truncate font-display"
                                             >
                                                 {event.title}
                                             </Link>
@@ -302,10 +302,10 @@ export default function MyEvents({
                                     </div>
 
                                     {/* Right: Quick Action Buttons */}
-                                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap relative z-10 flex-shrink-0">
+                                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap relative z-10 flex-shrink-0 w-full lg:w-auto justify-between lg:justify-end">
                                         <Link
                                             href={route('events.show', event.id)}
-                                            className="flex-1 sm:flex-none py-2 px-3.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs active:scale-95 transition"
+                                            className="flex-1 sm:flex-none py-2 px-3.5 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs shadow-[#154F7C]/20 active:scale-95 transition"
                                         >
                                             <Layers className="w-3.5 h-3.5 text-white" />
                                             <span>Open Hub</span>
@@ -313,7 +313,7 @@ export default function MyEvents({
 
                                         <Link
                                             href={route('scanner.index', { event_id: event.id })}
-                                            className="p-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 transition active:scale-95"
+                                            className="p-2 rounded-xl bg-sky-500/10 hover:bg-sky-500/20 dark:bg-sky-500/15 dark:hover:bg-sky-500/25 text-[#154F7C] dark:text-sky-300 border border-sky-400/30 dark:border-sky-500/30 transition active:scale-95"
                                             title="Launch Gate Scanner App"
                                         >
                                             <QrCode className="w-4 h-4" />
@@ -323,10 +323,10 @@ export default function MyEvents({
                                             <button
                                                 type="button"
                                                 onClick={() => handleOpenTemplateModal(event)}
-                                                className="p-2 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-300 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/[0.08] transition active:scale-95 cursor-pointer"
+                                                className="p-2 rounded-xl bg-white dark:bg-white/[0.06] hover:bg-sky-50 hover:text-[#154F7C] dark:hover:bg-sky-950/40 dark:hover:text-sky-300 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-white/[0.08] transition active:scale-95 cursor-pointer"
                                                 title="Select / Change Card Template"
                                             >
-                                                <Palette className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                <Palette className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
                                             </button>
 
                                             <button
@@ -361,12 +361,6 @@ export default function MyEvents({
                 <form onSubmit={handleCreateSubmit} className="p-6 sm:p-7 space-y-5">
                     <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/[0.08]">
                         <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/40 text-emerald-800 dark:text-emerald-300 text-[10.5px] font-mono font-extrabold uppercase flex items-center gap-1">
-                                    <Plus className="w-3 h-3" />
-                                    <span>New Event</span>
-                                </span>
-                            </div>
                             <h3 className="text-xl font-black text-slate-900 dark:text-white font-display">
                                 Create New Event
                             </h3>
@@ -374,7 +368,7 @@ export default function MyEvents({
                                 Enter basic event details to start generating personalized passes.
                             </p>
                         </div>
-                        <div className="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                        <div className="w-10 h-10 rounded-2xl bg-sky-500/15 text-[#154F7C] dark:text-sky-400 flex items-center justify-center flex-shrink-0">
                             <Calendar className="w-5 h-5" />
                         </div>
                     </div>
@@ -385,7 +379,7 @@ export default function MyEvents({
                             <TextInput
                                 id="title"
                                 type="text"
-                                className="mt-1 block w-full text-xs font-bold py-2.5 rounded-2xl focus:border-emerald-500 focus:ring-emerald-500"
+                                className="mt-1 block w-full text-xs font-bold py-2.5 rounded-2xl focus:border-[#154F7C] focus:ring-sky-500"
                                 placeholder="e.g. Neema & Baraka — Wedding Reception"
                                 value={data.title}
                                 onChange={(e) => setData('title', e.target.value)}
@@ -399,7 +393,7 @@ export default function MyEvents({
                                 <InputLabel htmlFor="event_type" value="Event Type *" />
                                 <select
                                     id="event_type"
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-[#154F7C] focus:ring-sky-500 shadow-2xs cursor-pointer"
                                     value={data.event_type}
                                     onChange={(e) => setData('event_type', e.target.value)}
                                     required
@@ -419,7 +413,7 @@ export default function MyEvents({
                                     id="event_date"
                                     type="date"
                                     min={todayFormatted}
-                                    className="mt-1 block w-full text-xs font-bold py-2 rounded-2xl focus:border-emerald-500 focus:ring-emerald-500"
+                                    className="mt-1 block w-full text-xs font-bold py-2 rounded-2xl focus:border-[#154F7C] focus:ring-sky-500"
                                     value={data.event_date}
                                     onChange={(e) => setData('event_date', e.target.value)}
                                     required
@@ -433,7 +427,7 @@ export default function MyEvents({
                             <TextInput
                                 id="event_time"
                                 type="text"
-                                className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl focus:border-emerald-500 focus:ring-emerald-500"
+                                className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl focus:border-[#154F7C] focus:ring-sky-500"
                                 placeholder="e.g. 4:00 PM — Reception & Dinner"
                                 value={data.event_time}
                                 onChange={(e) => setData('event_time', e.target.value)}
@@ -446,7 +440,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="venue"
                                     type="text"
-                                    className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl focus:border-emerald-500 focus:ring-emerald-500"
+                                    className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl focus:border-[#154F7C] focus:ring-sky-500"
                                     placeholder="e.g. Kunduchi Beach Gardens"
                                     value={data.venue}
                                     onChange={(e) => setData('venue', e.target.value)}
@@ -460,7 +454,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="city"
                                     type="text"
-                                    className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl focus:border-emerald-500 focus:ring-emerald-500"
+                                    className="mt-1 block w-full text-xs font-semibold py-2.5 rounded-2xl focus:border-[#154F7C] focus:ring-sky-500"
                                     value={data.city}
                                     onChange={(e) => setData('city', e.target.value)}
                                 />
@@ -472,7 +466,7 @@ export default function MyEvents({
                                 <InputLabel htmlFor="create_user_id" value="Assign Event Organiser (Customer Account)" />
                                 <select
                                     id="create_user_id"
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer font-medium"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-[#154F7C] focus:ring-sky-500 shadow-2xs cursor-pointer font-medium"
                                     value={data.user_id}
                                     onChange={(e) => setData('user_id', e.target.value)}
                                 >
@@ -491,7 +485,7 @@ export default function MyEvents({
                         <SecondaryButton onClick={() => setCreateModalOpen(false)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={processing} className="bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs uppercase tracking-wider border border-[#16A34A]">
+                        <PrimaryButton disabled={processing} className="font-bold text-xs uppercase tracking-wider">
                             Create Event
                         </PrimaryButton>
                     </div>
@@ -518,7 +512,7 @@ export default function MyEvents({
                             <TextInput
                                 id="edit_event_title"
                                 type="text"
-                                className="mt-1 block w-full text-sm font-semibold focus:border-emerald-500 focus:ring-emerald-500"
+                                className="mt-1 block w-full text-sm font-semibold focus:border-[#154F7C] focus:ring-sky-500"
                                 value={editForm.data.title}
                                 onChange={(e) => editForm.setData('title', e.target.value)}
                                 required
@@ -531,7 +525,7 @@ export default function MyEvents({
                                 <InputLabel htmlFor="edit_event_type" value="Event Type *" />
                                 <select
                                     id="edit_event_type"
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-[#154F7C] focus:ring-sky-500 shadow-2xs cursor-pointer"
                                     value={editForm.data.event_type}
                                     onChange={(e) => editForm.setData('event_type', e.target.value)}
                                     required
@@ -551,7 +545,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="edit_event_date"
                                     type="date"
-                                    className="mt-1 block w-full text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                    className="mt-1 block w-full text-sm focus:border-[#154F7C] focus:ring-sky-500"
                                     value={editForm.data.event_date}
                                     onChange={(e) => editForm.setData('event_date', e.target.value)}
                                     required
@@ -566,7 +560,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="edit_event_time"
                                     type="text"
-                                    className="mt-1 block w-full text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                    className="mt-1 block w-full text-sm focus:border-[#154F7C] focus:ring-sky-500"
                                     placeholder="e.g. 4:00 PM — Reception & Dinner"
                                     value={editForm.data.event_time}
                                     onChange={(e) => editForm.setData('event_time', e.target.value)}
@@ -577,7 +571,7 @@ export default function MyEvents({
                                 <InputLabel htmlFor="edit_event_status" value="Event Status" />
                                 <select
                                     id="edit_event_status"
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-[#154F7C] focus:ring-sky-500 shadow-2xs cursor-pointer"
                                     value={editForm.data.status}
                                     onChange={(e) => editForm.setData('status', e.target.value)}
                                     >
@@ -595,7 +589,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="edit_venue"
                                     type="text"
-                                    className="mt-1 block w-full text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                    className="mt-1 block w-full text-sm focus:border-[#154F7C] focus:ring-sky-500"
                                     value={editForm.data.venue}
                                     onChange={(e) => editForm.setData('venue', e.target.value)}
                                     required
@@ -608,7 +602,7 @@ export default function MyEvents({
                                 <TextInput
                                     id="edit_city"
                                     type="text"
-                                    className="mt-1 block w-full text-sm focus:border-emerald-500 focus:ring-emerald-500"
+                                    className="mt-1 block w-full text-sm focus:border-[#154F7C] focus:ring-sky-500"
                                     value={editForm.data.city}
                                     onChange={(e) => editForm.setData('city', e.target.value)}
                                 />
@@ -619,11 +613,11 @@ export default function MyEvents({
                             <div>
                                 <InputLabel value="Assigned Invitation Card Template" />
                                 <select
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-[#154F7C] focus:ring-sky-500 shadow-2xs cursor-pointer"
                                     value={editForm.data.card_template_id}
                                     onChange={(e) => editForm.setData('card_template_id', e.target.value)}
                                 >
-                                    <option value="">Default System Pass</option>
+                                    <option value="">No Template Design (Empty)</option>
                                     {templates.map((t) => (
                                         <option key={t.id} value={t.id}>
                                             {t.name} ({t.template_type})
@@ -638,7 +632,7 @@ export default function MyEvents({
                                 <InputLabel htmlFor="edit_user_id" value="Assigned Organiser (Customer Account)" />
                                 <select
                                     id="edit_user_id"
-                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs cursor-pointer font-medium"
+                                    className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-bold py-2.5 px-3 focus:border-[#154F7C] focus:ring-sky-500 shadow-2xs cursor-pointer font-medium"
                                     value={editForm.data.user_id}
                                     onChange={(e) => editForm.setData('user_id', e.target.value)}
                                 >
@@ -657,7 +651,7 @@ export default function MyEvents({
                             <textarea
                                 id="edit_description"
                                 rows={2}
-                                className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-medium p-3 focus:border-emerald-500 focus:ring-emerald-500 shadow-2xs"
+                                className="mt-1 block w-full rounded-2xl border-slate-300 dark:border-white/[0.08] bg-white dark:bg-[#08121E] text-slate-900 dark:text-white text-xs font-medium p-3 focus:border-[#154F7C] focus:ring-sky-500 shadow-2xs"
                                 placeholder="Additional details or notes..."
                                 value={editForm.data.description}
                                 onChange={(e) => editForm.setData('description', e.target.value)}
@@ -669,7 +663,7 @@ export default function MyEvents({
                         <SecondaryButton onClick={() => setEditModalOpen(false)}>
                             Cancel
                         </SecondaryButton>
-                        <PrimaryButton disabled={editForm.processing} className="bg-[#16A34A] hover:bg-[#15803D] text-white font-bold text-xs uppercase tracking-wider border border-[#16A34A]">
+                        <PrimaryButton disabled={editForm.processing} className="font-bold text-xs uppercase tracking-wider">
                             Save Changes
                         </PrimaryButton>
                     </div>
@@ -690,7 +684,7 @@ export default function MyEvents({
                             </p>
                         </div>
 
-                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-sky-500/10 dark:bg-sky-500/20 text-[#154F7C] dark:text-sky-400 flex items-center justify-center flex-shrink-0">
                             <Palette className="w-4 h-4" />
                         </div>
                     </div>
@@ -702,16 +696,16 @@ export default function MyEvents({
                             onClick={() => setSelectedTemplateId('')}
                             className={`px-4 py-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
                                 selectedTemplateId === '' || selectedTemplateId === null || selectedTemplateId === undefined
-                                    ? 'border-[#16A34A] bg-emerald-500/5 dark:bg-emerald-500/10'
+                                    ? 'border-sky-400 bg-sky-500/10 dark:bg-sky-500/15'
                                     : 'border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#08121E] hover:border-slate-300 dark:hover:border-white/[0.15]'
                             }`}
                         >
                             <span className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
-                                Default System Pass
+                                No Template Design (Empty)
                             </span>
                             <div className={`w-4 h-4 rounded-full flex items-center justify-center border transition flex-shrink-0 ${
                                 selectedTemplateId === '' || selectedTemplateId === null || selectedTemplateId === undefined
-                                    ? 'bg-[#16A34A] border-[#16A34A] text-white'
+                                    ? 'bg-[#154F7C] border-[#154F7C] text-white'
                                     : 'border-slate-300 dark:border-slate-600'
                             }`}>
                                 {(selectedTemplateId === '' || selectedTemplateId === null || selectedTemplateId === undefined) && (
@@ -729,7 +723,7 @@ export default function MyEvents({
                                     onClick={() => setSelectedTemplateId(tmpl.id)}
                                     className={`px-4 py-3 rounded-xl border transition cursor-pointer flex items-center justify-between gap-3 ${
                                         isSelected
-                                            ? 'border-[#16A34A] bg-emerald-500/5 dark:bg-emerald-500/10'
+                                            ? 'border-sky-400 bg-sky-500/10 dark:bg-sky-500/15'
                                             : 'border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#08121E] hover:border-slate-300 dark:hover:border-white/[0.15]'
                                     }`}
                                 >
@@ -738,7 +732,7 @@ export default function MyEvents({
                                     </span>
                                     <div className={`w-4 h-4 rounded-full flex items-center justify-center border transition flex-shrink-0 ${
                                         isSelected
-                                            ? 'bg-[#16A34A] border-[#16A34A] text-white'
+                                            ? 'bg-[#154F7C] border-[#154F7C] text-white'
                                             : 'border-slate-300 dark:border-slate-600'
                                     }`}>
                                         {isSelected && (
@@ -757,7 +751,7 @@ export default function MyEvents({
                         </span>
                         <Link
                             href={route('templates.index')}
-                            className="text-emerald-600 dark:text-emerald-400 font-bold hover:underline inline-flex items-center gap-1"
+                            className="text-sky-600 dark:text-sky-400 font-bold hover:underline inline-flex items-center gap-1"
                         >
                             <span>Open Pass Studio</span>
                             <ExternalLink className="w-3 h-3" />
@@ -772,7 +766,7 @@ export default function MyEvents({
                         <PrimaryButton
                             onClick={() => handleApplyTemplate(selectedTemplateId)}
                             disabled={savingTemplate}
-                            className="text-xs font-bold gap-1.5 cursor-pointer bg-[#16A34A] hover:bg-[#15803D] text-white border border-[#16A34A]"
+                            className="text-xs font-bold gap-1.5 cursor-pointer"
                         >
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>{savingTemplate ? 'Saving...' : 'Save'}</span>

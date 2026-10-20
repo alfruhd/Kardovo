@@ -45,15 +45,21 @@ class PasswordResetLinkController extends Controller
 
         $identity = trim((string) $request->input('email'));
 
-        // Apply rate limiter per IP address
-        $throttleKey = 'password_reset_req_'.$request->ip();
-        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
-            $seconds = RateLimiter::availableIn($throttleKey);
+        // Apply rate limiter per IP address and per target identity (prevents distributed SMS/Email bombing)
+        $ipThrottleKey = 'password_reset_req_ip|'.$request->ip();
+        $identityThrottleKey = 'password_reset_req_id|'.strtolower($identity);
+
+        if (RateLimiter::tooManyAttempts($ipThrottleKey, 5) || RateLimiter::tooManyAttempts($identityThrottleKey, 3)) {
+            $seconds = max(
+                RateLimiter::availableIn($ipThrottleKey),
+                RateLimiter::availableIn($identityThrottleKey)
+            );
             throw ValidationException::withMessages([
                 'email' => "Too many password reset requests. Please wait {$seconds} seconds.",
             ]);
         }
-        RateLimiter::hit($throttleKey, 60);
+        RateLimiter::hit($ipThrottleKey, 60);
+        RateLimiter::hit($identityThrottleKey, 120);
 
         // Find user by email or phone
         $user = null;

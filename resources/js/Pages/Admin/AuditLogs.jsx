@@ -28,8 +28,8 @@ export default function AuditLogs({ logs = { data: [] }, filters = {}, auth }) {
             <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                 <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
-                        <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-                            <Shield className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight flex items-center gap-2.5">
+                            <Shield className="w-6 h-6 text-sky-500" />
                             System Audit Logs
                         </h1>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">

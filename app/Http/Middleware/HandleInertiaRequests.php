@@ -46,6 +46,14 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            'isLocalEnv' => app()->environment('local', 'testing'),
+            'formTimestampToken' => function () use ($request) {
+                $now = time();
+                $sessionId = $request->session()->getId();
+                $signature = hash_hmac('sha256', "{$sessionId}|{$now}", (string) config('app.key'));
+
+                return "{$now}.{$signature}";
+            },
         ];
     }
 }

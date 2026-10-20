@@ -26,12 +26,12 @@ import {
     Eye
 } from 'lucide-react';
 
-const CardScaleWrapper = ({ baseWidth, finalRatio, children }) => {
+const CardScaleWrapper = ({ baseWidth, finalRatio, isCustomArt = true, children }) => {
     const containerRef = useRef(null);
     const [scale, setScale] = useState(1);
     
     useEffect(() => {
-        if (!containerRef.current) return;
+        if (!containerRef.current || !isCustomArt) return;
         const updateScale = () => {
             if (containerRef.current) {
                 const w = containerRef.current.clientWidth;
@@ -46,7 +46,15 @@ const CardScaleWrapper = ({ baseWidth, finalRatio, children }) => {
         const ro = new ResizeObserver(updateScale);
         ro.observe(containerRef.current);
         return () => ro.disconnect();
-    }, [baseWidth]);
+    }, [baseWidth, isCustomArt]);
+
+    if (!isCustomArt) {
+        return (
+            <div className="w-full flex justify-center items-start">
+                {children}
+            </div>
+        );
+    }
 
     const effectiveScale = scale > 0 ? scale : 1;
     const renderedHeight = finalRatio > 0 ? (baseWidth / finalRatio) * effectiveScale : 0;
@@ -541,7 +549,7 @@ export default function PersonalisedCard({
 
     return (
         <div className={`flex flex-col items-center ${className}`}>
-            <CardScaleWrapper baseWidth={baseWidth} finalRatio={safeFinalRatio}>
+            <CardScaleWrapper baseWidth={baseWidth} finalRatio={safeFinalRatio} isCustomArt={templateType === 'custom_art'}>
             
             {/* ═══════════════════════════════════════════════════════════════ */}
             {/* 1. CUSTOM ART / PHOTO PASS (Vertical 4K Poster)                 */}

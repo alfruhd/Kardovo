@@ -79,7 +79,7 @@ export default function Gateways({ isSuperAdmin = false, gateways = {} }) {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200/60 dark:border-white/[0.06]">
                     <div>
                         <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white font-display tracking-tight flex items-center gap-2.5">
-                            <Server className="w-6 h-6 text-[#16A34A]" />
+                            <Server className="w-6 h-6 text-sky-500" />
                             Delivery Gateways &amp; APIs
                         </h1>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
@@ -92,7 +92,7 @@ export default function Gateways({ isSuperAdmin = false, gateways = {} }) {
                             <button
                                 type="button"
                                 onClick={() => openConfig('whatsapp')}
-                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] transition shadow-xs active:scale-95 cursor-pointer"
+                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] transition shadow-md shadow-[#154F7C]/25 border border-sky-400/25 active:scale-95 cursor-pointer"
                             >
                                 <Settings className="w-3.5 h-3.5" />
                                 <span>Settings</span>
@@ -105,7 +105,7 @@ export default function Gateways({ isSuperAdmin = false, gateways = {} }) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="p-4 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.06] shadow-xs flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-[#16A34A] flex items-center justify-center">
+                            <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
                                 <Send className="w-4 h-4" />
                             </div>
                             <div>
@@ -117,14 +117,14 @@ export default function Gateways({ isSuperAdmin = false, gateways = {} }) {
                                 </p>
                             </div>
                         </div>
-                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">
                             Active
                         </span>
                     </div>
 
                     <div className="p-4 rounded-2xl bg-white dark:bg-[#07111D] border border-slate-200/80 dark:border-white/[0.06] shadow-xs flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-[#16A34A] flex items-center justify-center">
+                            <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
                                 <Tag className="w-4 h-4" />
                             </div>
                             <div>
@@ -136,7 +136,7 @@ export default function Gateways({ isSuperAdmin = false, gateways = {} }) {
                                 </p>
                             </div>
                         </div>
-                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        <span className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">
                             Active
                         </span>
                     </div>
@@ -149,16 +149,16 @@ export default function Gateways({ isSuperAdmin = false, gateways = {} }) {
                         return (
                             <div 
                                 key={item.id}
-                                className="bg-white dark:bg-[#07111D] rounded-2xl border border-slate-200/80 dark:border-white/[0.06] p-5 shadow-xs flex flex-col justify-between hover:border-[#16A34A]/30 transition-all duration-200"
+                                className="bg-white dark:bg-[#07111D] rounded-2xl border border-slate-200/80 dark:border-white/[0.06] p-5 shadow-xs flex flex-col justify-between hover:border-sky-500/40 transition-all duration-200"
                             >
                                 <div>
                                     {/* Card Header */}
                                     <div className="flex items-center justify-between mb-3.5">
-                                        <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-[#16A34A] flex items-center justify-center">
+                                        <div className="w-9 h-9 rounded-xl bg-sky-500/10 text-[#154F7C] dark:text-sky-400 flex items-center justify-center border border-sky-500/20">
                                             <IconComponent className="w-4 h-4" />
                                         </div>
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-emerald-500/10 text-[#16A34A] border border-emerald-500/20">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider bg-sky-500/10 text-[#154F7C] dark:text-sky-300 border border-sky-500/25">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
                                             ACTIVE
                                         </span>
                                     </div>
@@ -189,7 +189,7 @@ export default function Gateways({ isSuperAdmin = false, gateways = {} }) {
                                     <button
                                         type="button"
                                         onClick={() => openConfig(item.id)}
-                                        className="w-full py-2 px-3 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-white bg-slate-100 hover:bg-[#16A34A] dark:bg-white/[0.04] dark:hover:bg-[#16A34A] transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-98"
+                                        className="w-full py-2 px-3 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 hover:text-white bg-slate-100/80 hover:bg-gradient-to-r hover:from-[#154F7C] hover:to-[#327FB5] dark:bg-white/[0.04] dark:hover:bg-[#154F7C] transition-all cursor-pointer flex items-center justify-center gap-1.5 active:scale-98 border border-slate-200/60 dark:border-white/[0.06] hover:border-sky-400/30"
                                     >
                                         <span>{item.actionText}</span>
                                         <ChevronRight className="w-3.5 h-3.5" />

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\DiscountCode;
 use App\Models\Event;
 use App\Models\Ticket;
 use App\Models\TicketOrder;
 use App\Models\TicketTier;
+use App\Services\PhoneNormalizer;
 use App\Services\QRCodeGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,13 @@ class TicketController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+
+        if ($user && ! $user->isAdmin() && ! $user->isSubAdmin() && ! $user->isScanner()) {
+            if (! $user->canAccessTicketing() || $user->status === 'suspended') {
+                return redirect()->route('dashboard')->with('error', 'Access Restricted: Your account does not have permission to access the Ticketing Portal.');
+            }
+        }
+
         $selectedEventId = $request->input('event_id');
 
         $eventsQuery = Event::accessibleBy($user)
@@ -139,6 +148,10 @@ class TicketController extends Controller
             $selectedEventTickets = $ticketsQuery->paginate(20)->withQueryString();
         }
 
+        $selectedEventDiscountCodes = $selectedEvent ? $selectedEvent->discountCodes()->latest()->get() : collect();
+        $selectedEventWristbandOrders = $selectedEvent ? $selectedEvent->wristbandOrders()->latest()->get() : collect();
+        $selectedEventPosRequests = $selectedEvent ? $selectedEvent->posTerminalRequests()->latest()->get() : collect();
+
         return Inertia::render('Customer/TicketingPortal', [
             'events' => $events,
             'selectedEvent' => $selectedEvent,
@@ -146,6 +159,9 @@ class TicketController extends Controller
             'selectedEventTiers' => $selectedEventTiers,
             'selectedEventOrders' => $selectedEventOrders,
             'selectedEventTickets' => $selectedEventTickets,
+            'selectedEventDiscountCodes' => $selectedEventDiscountCodes,
+            'selectedEventWristbandOrders' => $selectedEventWristbandOrders,
+            'selectedEventPosRequests' => $selectedEventPosRequests,
             'globalStats' => $globalStats,
             'filters' => [
                 'search' => $request->input('search', ''),
@@ -261,7 +277,7 @@ class TicketController extends Controller
                 'max_per_order' => 10,
                 'status' => 'active',
                 'sort_order' => 1,
-                'color' => '#10b981',
+                'color' => '#154F7C',
             ]);
         }
 
@@ -374,7 +390,7 @@ class TicketController extends Controller
             'sales_end_at' => $validated['sales_end_at'] ?? null,
             'status' => 'active',
             'sort_order' => $nextSortOrder,
-            'color' => $validated['color'] ?? '#10b981',
+            'color' => $validated['color'] ?? '#154F7C',
         ]);
 
         // Auto-enable ticketing on the event if adding the first tier
@@ -451,6 +467,9 @@ class TicketController extends Controller
         if ($request->has('show_artwork')) {
             $request->merge(['show_artwork' => $request->boolean('show_artwork')]);
         }
+        if ($request->has('show_event_details')) {
+            $request->merge(['show_event_details' => $request->boolean('show_event_details')]);
+        }
 
         $validated = $request->validate([
             'template_style' => 'nullable|string|max:50',
@@ -467,6 +486,7 @@ class TicketController extends Controller
             'show_confetti' => 'nullable|boolean',
             'show_barcode' => 'nullable|boolean',
             'show_artwork' => 'nullable|boolean',
+            'show_event_details' => 'nullable|boolean',
         ]);
 
         $leftBgImage = $validated['left_bg_image'] ?? ($event->ticket_template_config['left_bg_image'] ?? null);
@@ -495,9 +515,10 @@ class TicketController extends Controller
                 'left_bg_image' => $leftBgImage,
                 'badge_text' => $validated['badge_text'] ?? null,
                 'custom_instructions' => $validated['custom_instructions'] ?? null,
-                'show_confetti' => $request->has('show_confetti') ? $request->boolean('show_confetti') : true,
+                'show_confetti' => $request->boolean('show_confetti', false),
                 'show_barcode' => $request->boolean('show_barcode', true),
                 'show_artwork' => $request->boolean('show_artwork', true),
+                'show_event_details' => $request->boolean('show_event_details', false),
             ],
         ]);
 
@@ -517,6 +538,7 @@ class TicketController extends Controller
             'quantity' => 'required|integer|min:1|max:500',
             'distribution_label' => 'nullable|string|max:150',
             'attendee_prefix' => 'nullable|string|max:100',
+            'redirect_to' => 'nullable|string|in:portal,print_tickets,print_wristbands',
         ]);
 
         $tier = $event->ticketTiers()
@@ -536,7 +558,9 @@ class TicketController extends Controller
             ? trim($validated['attendee_prefix'])
             : ($tier->name.' Pass');
 
-        DB::transaction(function () use ($event, $tier, $qty, $distributionLabel, $prefix, $request) {
+        $existingCount = Ticket::where('ticket_tier_id', $tier->id)->count();
+
+        $createdOrder = DB::transaction(function () use ($event, $tier, $qty, $distributionLabel, $prefix, $existingCount, $request) {
             $totalAmount = (float) $tier->price * $qty;
 
             // Create TicketOrder record
@@ -561,9 +585,10 @@ class TicketController extends Controller
                 ],
             ]);
 
-            // Batch generate tickets
+            // Batch generate tickets with continuous serial numbering
             for ($i = 1; $i <= $qty; $i++) {
-                $attendeeName = "{$prefix} #".str_pad((string) $i, 3, '0', STR_PAD_LEFT);
+                $serialNum = $existingCount + $i;
+                $attendeeName = "{$prefix} #".str_pad((string) $serialNum, 3, '0', STR_PAD_LEFT);
 
                 Ticket::create([
                     'ticket_order_id' => $order->id,
@@ -583,7 +608,31 @@ class TicketController extends Controller
             if ($tier->remaining_count <= 0) {
                 $tier->update(['status' => 'sold_out']);
             }
+
+            return $order;
         });
+
+        $redirectTo = $validated['redirect_to'] ?? null;
+
+        if ($redirectTo === 'print_tickets') {
+            return redirect()
+                ->route('events.tickets.printSheet', [
+                    'event' => $event->id,
+                    'order_id' => $createdOrder->id,
+                    'tier_id' => $tier->id,
+                ])
+                ->with('success', "Generated {$qty} scannable tickets for {$tier->name}. Ready to print!");
+        }
+
+        if ($redirectTo === 'print_wristbands') {
+            return redirect()
+                ->route('events.wristbands.print', [
+                    'event' => $event->id,
+                    'order_id' => $createdOrder->id,
+                    'tier_id' => $tier->id,
+                ])
+                ->with('success', "Generated {$qty} scannable wristbands for {$tier->name}. Ready to print!");
+        }
 
         return back()->with('success', "Successfully generated {$qty} physical tickets for {$tier->name}. You can now print them or export to CSV.");
     }
@@ -620,8 +669,9 @@ class TicketController extends Controller
                 'ticket_number' => $ticket->ticket_number,
                 'unique_code' => $ticket->unique_code,
                 'attendee_name' => $ticket->attendee_name,
+                'ticket_tier_id' => $ticket->ticket_tier_id,
                 'tier_name' => $ticket->ticketTier?->name ?? 'Standard',
-                'tier_color' => $ticket->ticketTier?->color ?? '#10b981',
+                'tier_color' => $ticket->ticketTier?->color ?? '#154F7C',
                 'price_paid' => (float) $ticket->price_paid,
                 'formatted_price' => $ticket->formatted_price,
                 'currency' => $ticket->currency,
@@ -644,7 +694,7 @@ class TicketController extends Controller
                 'ticket_instructions' => $event->ticket_instructions,
                 'ticket_template_config' => $event->ticket_template_config ?? [
                     'template_style' => 'festival',
-                    'accent_color' => '#10b981',
+                    'accent_color' => '#154F7C',
                     'badge_text' => 'OFFICIAL PASS',
                     'show_barcode' => true,
                     'show_artwork' => true,
@@ -730,5 +780,294 @@ class TicketController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Store a new discount code for an event.
+     */
+    public function storeDiscountCode(Request $request, Event $event)
+    {
+        $this->authorizeEvent($request, $event);
+
+        $validated = $request->validate([
+            'code' => 'required|string|max:64',
+            'discount_type' => 'required|in:percentage,fixed',
+            'discount_value' => 'required|numeric|min:0',
+            'max_uses' => 'nullable|integer|min:1',
+            'min_order_amount' => 'nullable|numeric|min:0',
+            'expires_at' => 'nullable|date',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $code = strtoupper(trim($validated['code']));
+
+        $event->discountCodes()->create([
+            'code' => $code,
+            'discount_type' => $validated['discount_type'],
+            'discount_value' => $validated['discount_value'],
+            'max_uses' => $validated['max_uses'] ?? null,
+            'min_order_amount' => $validated['min_order_amount'] ?? null,
+            'expires_at' => $validated['expires_at'] ?? null,
+            'description' => $validated['description'] ?? null,
+            'is_active' => true,
+        ]);
+
+        return redirect()->back()->with('success', 'Discount code created successfully.');
+    }
+
+    /**
+     * Update an existing discount code.
+     */
+    public function updateDiscountCode(Request $request, Event $event, DiscountCode $discountCode)
+    {
+        $this->authorizeEvent($request, $event);
+
+        $validated = $request->validate([
+            'code' => 'required|string|max:64',
+            'discount_type' => 'required|in:percentage,fixed',
+            'discount_value' => 'required|numeric|min:0',
+            'max_uses' => 'nullable|integer|min:1',
+            'min_order_amount' => 'nullable|numeric|min:0',
+            'expires_at' => 'nullable|date',
+            'description' => 'nullable|string|max:255',
+        ]);
+
+        $discountCode->update([
+            'code' => strtoupper(trim($validated['code'])),
+            'discount_type' => $validated['discount_type'],
+            'discount_value' => $validated['discount_value'],
+            'max_uses' => $validated['max_uses'] ?? null,
+            'min_order_amount' => $validated['min_order_amount'] ?? null,
+            'expires_at' => $validated['expires_at'] ?? null,
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'Discount code updated successfully.');
+    }
+
+    /**
+     * Toggle discount code active status.
+     */
+    public function toggleDiscountCode(Request $request, Event $event, DiscountCode $discountCode)
+    {
+        $this->authorizeEvent($request, $event);
+
+        $discountCode->update(['is_active' => ! $discountCode->is_active]);
+
+        return redirect()->back()->with('success', 'Discount code status updated.');
+    }
+
+    /**
+     * Delete a discount code.
+     */
+    public function destroyDiscountCode(Request $request, Event $event, DiscountCode $discountCode)
+    {
+        $this->authorizeEvent($request, $event);
+
+        $discountCode->delete();
+
+        return redirect()->back()->with('success', 'Discount code deleted.');
+    }
+
+    /**
+     * Order custom branded wristbands for gate identification.
+     */
+    public function orderWristbands(Request $request, Event $event)
+    {
+        $this->authorizeEvent($request, $event);
+
+        $validated = $request->validate([
+            'material_type' => 'required|string|max:50',
+            'quantity' => 'required|integer|min:1',
+            'color_scheme' => 'nullable|string|max:100',
+            'custom_text' => 'nullable|string|max:255',
+            'custom_logo_url' => 'nullable|string',
+            'contact_name' => 'required|string|max:255',
+            'contact_phone' => 'required|string|max:50',
+            'contact_email' => 'nullable|email|max:255',
+            'delivery_address' => 'nullable|string',
+            'notes' => 'nullable|string',
+        ]);
+
+        $event->wristbandOrders()->create([
+            'user_id' => $request->user()?->id,
+            'material_type' => $validated['material_type'],
+            'quantity' => $validated['quantity'],
+            'color_scheme' => $validated['color_scheme'] ?? null,
+            'custom_text' => $validated['custom_text'] ?? null,
+            'custom_logo_url' => $validated['custom_logo_url'] ?? null,
+            'contact_name' => $validated['contact_name'],
+            'contact_phone' => $validated['contact_phone'],
+            'contact_email' => $validated['contact_email'] ?? $request->user()?->email,
+            'delivery_address' => $validated['delivery_address'] ?? null,
+            'status' => 'requested',
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'Custom wristband production order submitted successfully.');
+    }
+
+    /**
+     * Render the printable DIY wristband sheet for the event.
+     */
+    public function printWristbands(Request $request, Event $event)
+    {
+        $this->authorizeEvent($request, $event);
+
+        $tierId = $request->input('tier_id', 'all');
+        $orderId = $request->input('order_id');
+        $tiers = $event->ticketTiers()->orderBy('sort_order')->get();
+
+        $query = $event->tickets()
+            ->with(['ticketTier', 'ticketOrder'])
+            ->where('status', '!=', 'cancelled')
+            ->latest();
+
+        if ($tierId && $tierId !== 'all') {
+            $query->where('ticket_tier_id', $tierId);
+        }
+
+        if ($orderId) {
+            $query->where('ticket_order_id', $orderId);
+        }
+
+        $tickets = $query->take(500)->get()->map(function ($ticket) {
+            $ticket->qr_data_uri = QRCodeGenerator::renderToBase64Png($ticket->qr_token, 180);
+
+            return [
+                'id' => $ticket->id,
+                'ticket_number' => $ticket->ticket_number,
+                'unique_code' => $ticket->unique_code,
+                'attendee_name' => $ticket->attendee_name,
+                'ticket_tier_id' => $ticket->ticket_tier_id,
+                'ticket_order_id' => $ticket->ticket_order_id,
+                'tier_name' => $ticket->ticketTier?->name ?? 'Standard',
+                'tier_color' => $ticket->ticketTier?->color ?? '#154F7C',
+                'price_paid' => (float) $ticket->price_paid,
+                'formatted_price' => $ticket->formatted_price,
+                'currency' => $ticket->currency,
+                'status' => $ticket->status,
+                'qr_data_uri' => $ticket->qr_data_uri,
+                'order_ref' => $ticket->ticketOrder?->order_number,
+            ];
+        });
+
+        return Inertia::render('Customer/PrintWristbandSheet', [
+            'event' => [
+                'id' => $event->id,
+                'title' => $event->title,
+                'event_type' => $event->event_type,
+                'event_date' => $event->event_date?->format('D, M j, Y') ?? ($event->event_date ? (string) $event->event_date : ''),
+                'event_time' => $event->event_time,
+                'venue' => $event->venue,
+                'city' => $event->city,
+                'ticket_currency' => $event->ticket_currency ?? 'TZS',
+                'ticket_template_config' => $event->ticket_template_config,
+            ],
+            'tickets' => $tickets,
+            'tiers' => $tiers,
+            'selectedTierId' => $tierId,
+            'selectedOrderId' => $orderId,
+            'wristbandConfig' => $event->ticket_template_config['wristband'] ?? null,
+        ]);
+    }
+
+    /**
+     * Save custom wristband styling, pattern, and design artwork.
+     */
+    public function updateWristbandTemplate(Request $request, Event $event)
+    {
+        $this->authorizeEvent($request, $event);
+
+        if ($request->has('show_serial')) {
+            $request->merge(['show_serial' => $request->boolean('show_serial')]);
+        }
+        if ($request->has('show_arrows')) {
+            $request->merge(['show_arrows' => $request->boolean('show_arrows')]);
+        }
+
+        $validated = $request->validate([
+            'template_style' => 'nullable|string|max:50',
+            'custom_artwork_url' => 'nullable|string',
+            'custom_artwork_file' => 'nullable|file|mimes:jpeg,png,jpg,webp,avif,svg|max:10240',
+            'font_style' => 'nullable|string|max:50',
+            'qr_position' => 'nullable|string|in:left,right,dual',
+            'custom_title' => 'nullable|string|max:120',
+            'custom_subtitle' => 'nullable|string|max:150',
+            'custom_role_label' => 'nullable|string|max:60',
+            'show_serial' => 'nullable|boolean',
+            'show_arrows' => 'nullable|boolean',
+            'bg_mode' => 'nullable|string|in:preset,custom_upload,tier_color',
+            'accent_color' => 'nullable|string|max:30',
+        ]);
+
+        $artworkUrl = $validated['custom_artwork_url'] ?? ($event->ticket_template_config['wristband']['custom_artwork_url'] ?? null);
+
+        if ($request->hasFile('custom_artwork_file')) {
+            $assetsDir = public_path('wristband_designs');
+            if (! file_exists($assetsDir)) {
+                mkdir($assetsDir, 0755, true);
+            }
+            $file = $request->file('custom_artwork_file');
+            $extension = $file->getClientOriginalExtension() ?: 'jpg';
+            $fileName = 'wristband_'.time().'_'.uniqid().'.'.$extension;
+            $file->move($assetsDir, $fileName);
+            $artworkUrl = '/wristband_designs/'.$fileName;
+        }
+
+        $currentConfig = $event->ticket_template_config ?? [];
+        $currentConfig['wristband'] = [
+            'template_style' => $validated['template_style'] ?? 'festival_pop',
+            'bg_mode' => $validated['bg_mode'] ?? 'preset',
+            'custom_artwork_url' => $artworkUrl,
+            'font_style' => $validated['font_style'] ?? 'chunky_festival',
+            'qr_position' => $validated['qr_position'] ?? 'left',
+            'custom_title' => $validated['custom_title'] ?? null,
+            'custom_subtitle' => $validated['custom_subtitle'] ?? null,
+            'custom_role_label' => $validated['custom_role_label'] ?? null,
+            'show_serial' => $request->boolean('show_serial', true),
+            'show_arrows' => $request->boolean('show_arrows', true),
+            'accent_color' => $validated['accent_color'] ?? '#154F7C',
+        ];
+
+        $event->update([
+            'ticket_template_config' => $currentConfig,
+        ]);
+
+        return redirect()->back()->with('success', 'Custom wristband design saved successfully.');
+    }
+
+    /**
+     * Request an offline Point of Sale (POS) Android/4G hardware device for gate sales.
+     */
+    public function requestPosTerminal(Request $request, Event $event)
+    {
+        $this->authorizeEvent($request, $event);
+
+        $validated = $request->validate([
+            'terminals_count' => 'required|integer|min:1',
+            'required_from_date' => 'required|date',
+            'required_to_date' => 'nullable|date|after_or_equal:required_from_date',
+            'venue_location' => 'required|string|max:255',
+            'contact_name' => 'required|string|max:255',
+            'contact_phone' => 'required|string|max:50',
+            'contact_email' => 'nullable|email|max:255',
+            'notes' => 'nullable|string',
+        ]);
+
+        $event->posTerminalRequests()->create([
+            'user_id' => $request->user()?->id,
+            'terminals_count' => $validated['terminals_count'],
+            'required_from_date' => $validated['required_from_date'],
+            'required_to_date' => $validated['required_to_date'] ?? null,
+            'venue_location' => $validated['venue_location'],
+            'contact_name' => $validated['contact_name'],
+            'contact_phone' => PhoneNormalizer::cleanForApi($validated['contact_phone']),
+            'contact_email' => $validated['contact_email'] ?? $request->user()?->email,
+            'status' => 'pending',
+            'notes' => $validated['notes'] ?? null,
+        ]);
+
+        return redirect()->back()->with('success', 'Point of sale (POS) terminal request submitted successfully.');
     }
 }

@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Event;
+use App\Models\FinancialTransaction;
 use App\Models\Guest;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -17,7 +19,7 @@ class PublicGuestMinisiteTest extends TestCase
         $this->seed();
     }
 
-    public function test_demo_pass_renders_with_luxury_kadijanja_microsite_config(): void
+    public function test_demo_pass_renders_with_luxury_sacred_garden_microsite_config(): void
     {
         $response = $this->get(route('guest.demoPass'));
 
@@ -25,15 +27,14 @@ class PublicGuestMinisiteTest extends TestCase
         $response->assertInertia(fn ($page) => $page
             ->component('Public/GuestPass')
             ->has('micrositeConfig')
-            ->where('micrositeConfig.theme_color', '#3a4634')
-            ->where('micrositeConfig.accent_color', '#5C4033')
-            ->where('micrositeConfig.primary_name', 'Baraka')
-            ->where('micrositeConfig.secondary_name', 'Neema')
+            ->where('micrositeConfig.theme_color', '#f9f0e0')
+            ->where('micrositeConfig.accent_color', '#a67d2b')
+            ->where('micrositeConfig.primary_name', 'Zohan')
+            ->where('micrositeConfig.secondary_name', 'Rose')
             ->where('micrositeConfig.show_intro_animation', true)
-            ->where('micrositeConfig.intro_video_url', 'https://www.kadijanja.co.tz/images/rsvp/cover/baja.mp4')
-            ->where('micrositeConfig.intro_poster_url', 'https://www.kadijanja.co.tz/images/rsvp/cover/baja.png')
-            ->where('micrositeConfig.mc_name', 'Mc MishieBomba')
-            ->has('micrositeConfig.wedding_committee', 2)
+            ->where('micrositeConfig.intro_video_url', 'https://res.cloudinary.com/ukb8xb7m/video/upload/v1787037654/1782224012851_1_m6ww6v.mp4')
+            ->where('micrositeConfig.intro_poster_url', 'https://res.cloudinary.com/ukb8xb7m/image/upload/v1787037630/ChatGPT_Image_Jun_23_2026_04_40_29_PM_4_piptqn.png')
+            ->where('micrositeConfig.swans_video_url', 'https://res.cloudinary.com/ukb8xb7m/video/upload/v1787037092/Swans2_1_qwzsod.mov')
             ->has('micrositeConfig.programme')
         );
     }
@@ -52,10 +53,53 @@ class PublicGuestMinisiteTest extends TestCase
         $this->assertEquals('Congratulations Babu & Jasmine! Can not wait to celebrate with you both!', $guest->fresh()->notes);
     }
 
-    public function test_event_organizer_can_customize_all_microsite_sections(): void
+    public function test_organizer_without_executive_package_or_override_cannot_customize_microsite(): void
     {
         $event = Event::with('user')->first();
         $organizer = $event->user;
+
+        // Ensure organizer does not have executive package or admin override
+        $organizer->update([
+            'role' => 'customer',
+            'permissions' => array_merge(User::defaultPermissions(), ['can_customize_microsite' => false]),
+        ]);
+
+        $response = $this->actingAs($organizer)->put(route('events.update', $event->id), [
+            'title' => $event->title,
+            'event_type' => $event->event_type,
+            'event_date' => $event->event_date->format('Y-m-d'),
+            'event_time' => $event->event_time,
+            'venue' => $event->venue,
+            'city' => $event->city,
+            'microsite_config' => [
+                'theme_color' => '#1b263b',
+                'primary_name' => 'David',
+            ],
+        ]);
+
+        $response->assertStatus(302);
+        $this->assertNull($event->fresh()->microsite_config);
+
+        // Guest pass should NOT have microsite enabled
+        $guest = Guest::where('event_id', $event->id)->first();
+        $cardResponse = $this->get(route('guest.card', $guest->qr_token));
+        $cardResponse->assertStatus(200);
+        $cardResponse->assertInertia(fn ($page) => $page
+            ->component('Public/GuestPass')
+            ->where('hasMicrosite', false)
+            ->where('micrositeConfig', null)
+        );
+    }
+
+    public function test_event_organizer_with_executive_package_or_admin_override_can_customize_microsite(): void
+    {
+        $event = Event::with('user')->first();
+        $organizer = $event->user;
+
+        // Grant admin override permission for microsite
+        $organizer->update([
+            'permissions' => array_merge(User::defaultPermissions(), ['can_customize_microsite' => true]),
+        ]);
 
         $customConfig = [
             'theme_color' => '#1b263b',
@@ -98,12 +142,13 @@ class PublicGuestMinisiteTest extends TestCase
         $this->assertEquals('David', $event->fresh()->microsite_config['primary_name']);
         $this->assertEquals('MC Anthony', $event->fresh()->microsite_config['mc_name']);
 
-        // Now verify guest viewing this event's card receives the customized config
+        // Now verify guest viewing this event's card receives the customized config and hasMicrosite is true
         $guest = Guest::where('event_id', $event->id)->first();
         $cardResponse = $this->get(route('guest.card', $guest->qr_token));
         $cardResponse->assertStatus(200);
         $cardResponse->assertInertia(fn ($page) => $page
             ->component('Public/GuestPass')
+            ->where('hasMicrosite', true)
             ->where('micrositeConfig.theme_color', '#1b263b')
             ->where('micrositeConfig.accent_color', '#e0a96d')
             ->where('micrositeConfig.primary_name', 'David')
@@ -112,13 +157,82 @@ class PublicGuestMinisiteTest extends TestCase
         );
     }
 
+    public function test_purchased_executive_package_enables_microsite(): void
+    {
+        $event = Event::with('user')->first();
+        $organizer = $event->user;
+
+        // Ensure no direct admin permission override
+        $organizer->update([
+            'permissions' => array_merge(User::defaultPermissions(), ['can_customize_microsite' => false]),
+        ]);
+
+        // Create completed Executive Package transaction
+        FinancialTransaction::create([
+            'transaction_number' => 'TRX-TEST-EXEC-01',
+            'type' => 'income',
+            'category' => 'package_purchase',
+            'title' => 'Package Purchase: Executive (200 cards @ 2,500 TZS)',
+            'amount' => 500000,
+            'currency' => 'TZS',
+            'payment_method' => 'Airtel',
+            'reference' => 'PKG-4',
+            'user_id' => $organizer->id,
+            'status' => 'completed',
+            'transaction_date' => now(),
+            'notes' => json_encode(['package_id' => 4, 'package_name' => 'Executive']),
+        ]);
+
+        $this->assertTrue($organizer->fresh()->hasPurchasedExecutivePackage());
+        $this->assertTrue($organizer->fresh()->canCustomizeMicrosite());
+        $this->assertTrue($event->fresh()->hasMicrositeEnabled());
+
+        $guest = Guest::where('event_id', $event->id)->first();
+        $cardResponse = $this->get(route('guest.card', $guest->qr_token));
+        $cardResponse->assertStatus(200);
+        $cardResponse->assertInertia(fn ($page) => $page
+            ->component('Public/GuestPass')
+            ->where('hasMicrosite', true)
+            ->has('micrositeConfig')
+        );
+    }
+
+    public function test_event_admin_override_enables_microsite_without_package(): void
+    {
+        $event = Event::with('user')->first();
+        $organizer = $event->user;
+
+        $organizer->update([
+            'permissions' => array_merge(User::defaultPermissions(), ['can_customize_microsite' => false]),
+        ]);
+
+        // Event-specific admin override
+        $event->update([
+            'microsite_config' => ['admin_override' => true],
+        ]);
+
+        $this->assertTrue($event->fresh()->hasMicrositeEnabled());
+
+        $guest = Guest::where('event_id', $event->id)->first();
+        $cardResponse = $this->get(route('guest.card', $guest->qr_token));
+        $cardResponse->assertStatus(200);
+        $cardResponse->assertInertia(fn ($page) => $page
+            ->component('Public/GuestPass')
+            ->where('hasMicrosite', true)
+        );
+    }
+
     public function test_kj_microsite_route_renders_guest_pass(): void
     {
-        $response = $this->get('/kj/A8L0001');
+        $guest = Guest::first();
+        $guest->event->update(['microsite_config' => ['admin_override' => true]]);
+
+        $response = $this->get('/kj/'.$guest->unique_code);
 
         $response->assertStatus(200);
         $response->assertInertia(fn ($page) => $page
             ->component('Public/GuestPass')
+            ->where('hasMicrosite', true)
             ->has('micrositeConfig')
         );
     }

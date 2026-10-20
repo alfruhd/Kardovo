@@ -1,0 +1,14 @@
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const form = document.querySelector("form");
+
+    if (form) {
+      form.addEventListener("submit", function () {
+        const emailInput = form.querySelector("input[name='email']");
+        if (emailInput && emailInput.value) {
+          localStorage.setItem("user_email", emailInput.value);
+        }
+      });
+    }
+  });
+

@@ -31,8 +31,8 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'max:255'],
+            'password' => ['required', 'string', 'max:128'],
         ];
     }
 
@@ -71,8 +71,17 @@ class LoginRequest extends FormRequest
             $user = $query->first();
         }
 
-        if (! $user || ! Hash::check($password, $user->password)) {
-            RateLimiter::hit($this->throttleKey());
+        // Constant-time password verification: prevents timing side-channel user enumeration
+        $dummyHash = '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi';
+        $passwordMatches = $user
+            ? Hash::check($password, $user->password)
+            : Hash::check($password, $dummyHash) && false;
+
+        if (! $user || ! $passwordMatches) {
+            RateLimiter::hit($this->throttleKey(), 60);
+            RateLimiter::hit($this->ipVelocityKey(), 300);
+            RateLimiter::hit($this->accountAttackKey(), 300);
+            RateLimiter::hit(static::globalFailedVelocityKey(), 300);
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
@@ -85,33 +94,87 @@ class LoginRequest extends FormRequest
     }
 
     /**
+     * Check whether the target account is currently experiencing a distributed multi-IP credential stuffing attack.
+     */
+    public function isAccountUnderDistributedAttack(): bool
+    {
+        return RateLimiter::tooManyAttempts($this->accountAttackKey(), 15);
+    }
+
+    /**
+     * Check whether the entire application is under a system-wide distributed botnet attack.
+     * When active, triggers adaptive challenge mode on untrusted devices without locking legitimate users.
+     */
+    public static function isSystemUnderDistributedAttack(): bool
+    {
+        return RateLimiter::attempts(static::globalFailedVelocityKey()) >= 200;
+    }
+
+    /**
      * Ensure the login request is not rate limited.
      *
      * @throws ValidationException
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            return;
+        // Bucket 1: Per-Account + Per-IP (5 failed attempts/min) — never locks out a real user on a different IP
+        if (RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+            event(new Lockout($this));
+
+            $seconds = RateLimiter::availableIn($this->throttleKey());
+
+            throw ValidationException::withMessages([
+                'email' => trans('auth.throttle', [
+                    'seconds' => $seconds,
+                    'minutes' => ceil($seconds / 60),
+                ]),
+            ]);
         }
 
-        event(new Lockout($this));
+        // Bucket 2: Per-IP Global Credential Spraying (15 failed attempts across ANY accounts in 5 mins)
+        if (RateLimiter::tooManyAttempts($this->ipVelocityKey(), 15)) {
+            event(new Lockout($this));
 
-        $seconds = RateLimiter::availableIn($this->throttleKey());
+            $seconds = RateLimiter::availableIn($this->ipVelocityKey());
 
-        throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', [
-                'seconds' => $seconds,
-                'minutes' => ceil($seconds / 60),
-            ]),
-        ]);
+            throw ValidationException::withMessages([
+                'email' => trans('auth.throttle', [
+                    'seconds' => $seconds,
+                    'minutes' => ceil($seconds / 60),
+                ]),
+            ]);
+        }
     }
 
     /**
-     * Get the rate limiting throttle key for the request.
+     * Get the rate limiting throttle key for the request (Account + IP).
      */
     public function throttleKey(): string
     {
         return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
+    }
+
+    /**
+     * Get the per-IP global velocity throttle key (stops multi-account password spraying from one IP).
+     */
+    public function ipVelocityKey(): string
+    {
+        return 'login_ip_velocity|'.$this->ip();
+    }
+
+    /**
+     * Get the per-account distributed attack detector key (tracks failed attempts across all botnet IPs).
+     */
+    public function accountAttackKey(): string
+    {
+        return 'login_account_attack|'.Str::transliterate(Str::lower($this->string('email')));
+    }
+
+    /**
+     * Get the system-wide global failed login velocity key.
+     */
+    public static function globalFailedVelocityKey(): string
+    {
+        return 'login_global_failed_velocity';
     }
 }

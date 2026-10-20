@@ -154,8 +154,28 @@ class User extends Authenticatable
             'can_customize_templates' => true,
             'can_manage_scanners' => true,
             'can_access_ticketing' => true,
+            'can_customize_microsite' => false,
             'can_export_data' => true,
         ];
+    }
+
+    public function hasPurchasedExecutivePackage(): bool
+    {
+        return FinancialTransaction::where('user_id', $this->id)
+            ->where('status', 'completed')
+            ->where(function ($q) {
+                $q->where('reference', 'PKG-4')
+                    ->orWhere('title', 'like', 'Package Purchase: Executive%')
+                    ->orWhere('title', 'like', 'Executive Package%')
+                    ->orWhere('title', 'like', 'Executive Wedding%')
+                    ->orWhere('notes', 'like', '%"package_id":4%')
+                    ->orWhere('notes', 'like', '%"package_name":"Executive"%')
+                    ->orWhere(function ($sub) {
+                        $sub->where('category', 'package_purchase')
+                            ->where('notes', 'like', '%Executive%');
+                    });
+            })
+            ->exists();
     }
 
     public function getEffectivePermissionsAttribute(): array
@@ -165,7 +185,10 @@ class User extends Authenticatable
             $custom = json_decode($custom, true) ?: [];
         }
 
-        return array_merge(self::defaultPermissions(), $custom);
+        $effective = array_merge(self::defaultPermissions(), $custom);
+        $effective['can_customize_microsite'] = $this->canCustomizeMicrosite();
+
+        return $effective;
     }
 
     public function hasPermission(string $permission): bool
@@ -176,6 +199,10 @@ class User extends Authenticatable
 
         if (($this->status ?? 'active') === 'suspended') {
             return false;
+        }
+
+        if ($permission === 'can_customize_microsite') {
+            return $this->canCustomizeMicrosite();
         }
 
         $effective = $this->effective_permissions;
@@ -213,6 +240,25 @@ class User extends Authenticatable
         return $this->hasPermission('can_access_ticketing');
     }
 
+    public function canCustomizeMicrosite(): bool
+    {
+        if ($this->isAdmin() || $this->isSubAdmin()) {
+            return true;
+        }
+
+        $custom = $this->permissions ?? [];
+        if (is_string($custom)) {
+            $custom = json_decode($custom, true) ?: [];
+        }
+
+        // Explicit admin permission override for microsite
+        if (! empty($custom['can_customize_microsite'])) {
+            return true;
+        }
+
+        return $this->hasPurchasedExecutivePackage();
+    }
+
     public function canExportData(): bool
     {
         return $this->hasPermission('can_export_data');
@@ -223,16 +269,28 @@ class User extends Authenticatable
         return ($this->status ?? 'active') === 'active';
     }
 
+    protected ?int $memoizedWhatsAppSentCount = null;
+
+    protected ?int $memoizedSmsSentCount = null;
+
     public function whatsappSentCount(): int
     {
-        return Message::whereHas('event', function ($q) {
+        if ($this->memoizedWhatsAppSentCount !== null) {
+            return $this->memoizedWhatsAppSentCount;
+        }
+
+        return $this->memoizedWhatsAppSentCount = Message::whereHas('event', function ($q) {
             $q->where('user_id', $this->id);
         })->where('channel', 'whatsapp')->count();
     }
 
     public function smsSentCount(): int
     {
-        return Message::whereHas('event', function ($q) {
+        if ($this->memoizedSmsSentCount !== null) {
+            return $this->memoizedSmsSentCount;
+        }
+
+        return $this->memoizedSmsSentCount = Message::whereHas('event', function ($q) {
             $q->where('user_id', $this->id);
         })->where('channel', 'sms')->count();
     }

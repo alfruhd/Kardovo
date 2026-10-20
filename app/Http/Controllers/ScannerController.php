@@ -3,9 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\FinancialTransaction;
 use App\Models\Guest;
 use App\Models\ScanLog;
 use App\Models\Ticket;
+use App\Models\TicketOrder;
+use App\Models\TicketTier;
+use App\Services\PhoneNormalizer;
+use App\Services\QRCodeGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,7 +30,10 @@ class ScannerController extends Controller
         }
 
         // 1. Get events accessible to this user
-        $events = Event::accessibleBy($user)->latest()->get();
+        $events = Event::accessibleBy($user)
+            ->with(['ticketTiers' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')])
+            ->latest()
+            ->get();
 
         $activeEventId = $request->input('event_id');
         $activeEvent = null;
@@ -207,7 +215,7 @@ class ScannerController extends Controller
 
             // 2.5. CHECK TICKETING: If not an invited guest pass, check for a purchased ticket in current event
             if (! $guest) {
-                $ticket = Ticket::with('ticketTier')
+                $ticket = Ticket::with(['ticketTier', 'ticketOrder'])
                     ->where('event_id', $eventId)
                     ->where(function ($q) use ($trimmed, $upper, $lower) {
                         $q->where('qr_token', $trimmed)
@@ -221,6 +229,28 @@ class ScannerController extends Controller
                     ->first();
 
                 if ($ticket) {
+                    // Strictly enforce payment integrity at gate scanner
+                    if (! $ticket->isPaid()) {
+                        $rejectionReason = "Payment Unverified / Unpaid Ticket ({$ticket->ticket_number})";
+                        ScanLog::create([
+                            'event_id' => $eventId,
+                            'guest_id' => null,
+                            'ticket_id' => $ticket->id,
+                            'scanner_id' => $user->id,
+                            'scanner_name' => $user->name,
+                            'gate_label' => $gateLabel,
+                            'scanned_at' => now(),
+                            'status' => 'rejected',
+                            'rejection_reason' => $rejectionReason,
+                            'entries_used_at_scan' => 0,
+                        ]);
+
+                        return response()->json([
+                            'status' => 'rejected',
+                            'reason' => $rejectionReason,
+                        ]);
+                    }
+
                     if ($ticket->is_checked_in) {
                         $rejectionReason = "Already Checked-in ({$ticket->ticket_number})";
                         ScanLog::create([
@@ -490,6 +520,123 @@ class ScannerController extends Controller
                 'event_title' => $guest->event?->title,
                 'scanned_at' => $scanLog->scanned_at->format('h:i:s A - d M Y'),
                 'gate_label' => $gateLabel,
+            ]);
+        });
+    }
+
+    /**
+     * Issue an instant paid ticket at event entrance / POS terminal (Cash, Card POS, Mobile Money).
+     */
+    public function posDoorSale(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'event_id' => 'required|exists:events,id',
+            'tier_id' => 'nullable|exists:ticket_tiers,id',
+            'ticket_tier_id' => 'nullable|exists:ticket_tiers,id',
+            'attendee_name' => 'required|string|max:150',
+            'attendee_phone' => 'nullable|string|max:20',
+            'payment_method' => 'required|string',
+            'auto_check_in' => 'nullable|boolean',
+            'gate_label' => 'nullable|string',
+        ]);
+
+        $tierId = $validated['tier_id'] ?? $validated['ticket_tier_id'] ?? null;
+        if (! $tierId) {
+            return response()->json(['error' => 'The ticket tier is required.'], 422);
+        }
+
+        $event = Event::accessibleBy($user)->where('id', $validated['event_id'])->firstOrFail();
+        $tier = TicketTier::where('id', $tierId)->where('event_id', $event->id)->lockForUpdate()->firstOrFail();
+
+        if (! $tier->is_available || $tier->remaining_count < 1) {
+            return response()->json(['error' => "Ticket tier '{$tier->name}' is sold out."], 422);
+        }
+
+        $cleanPhone = ! empty($validated['attendee_phone']) ? PhoneNormalizer::cleanForApi($validated['attendee_phone']) : null;
+        $gateLabel = $validated['gate_label'] ?? ($user->gate_label ?? 'POS Gate Sales');
+
+        return DB::transaction(function () use ($event, $tier, $validated, $cleanPhone, $user, $gateLabel) {
+            $order = TicketOrder::create([
+                'event_id' => $event->id,
+                'user_id' => $user->id,
+                'buyer_name' => $validated['attendee_name'],
+                'buyer_phone' => $cleanPhone ?? 'POS-DOOR',
+                'subtotal' => $tier->price,
+                'total_amount' => $tier->price,
+                'sales_channel' => 'pos',
+                'currency' => $event->ticket_currency ?? 'TZS',
+                'payment_method' => $validated['payment_method'],
+                'payment_reference' => 'POS-'.date('ymd').'-'.strtoupper(bin2hex(random_bytes(3))),
+                'payment_status' => 'paid',
+                'paid_at' => now(),
+            ]);
+
+            $isAutoCheckedIn = ! empty($validated['auto_check_in']);
+
+            $ticket = Ticket::create([
+                'ticket_order_id' => $order->id,
+                'event_id' => $event->id,
+                'ticket_tier_id' => $tier->id,
+                'attendee_name' => $validated['attendee_name'],
+                'attendee_phone' => $cleanPhone,
+                'price_paid' => $tier->price,
+                'currency' => $order->currency,
+                'status' => $isAutoCheckedIn ? 'checked_in' : 'valid',
+                'checked_in_at' => $isAutoCheckedIn ? now() : null,
+                'checked_in_by' => $isAutoCheckedIn ? $user->id : null,
+                'gate_label' => $gateLabel,
+            ]);
+
+            $tier->increment('sold_count');
+
+            if ($isAutoCheckedIn) {
+                ScanLog::create([
+                    'event_id' => $event->id,
+                    'guest_id' => null,
+                    'ticket_id' => $ticket->id,
+                    'scanner_id' => $user->id,
+                    'scanner_name' => $user->name,
+                    'gate_label' => $gateLabel,
+                    'scanned_at' => now(),
+                    'status' => 'granted',
+                    'rejection_reason' => null,
+                ]);
+            }
+
+            if ((float) $tier->price > 0) {
+                FinancialTransaction::create([
+                    'transaction_number' => FinancialTransaction::generateTransactionNumber(),
+                    'event_id' => $event->id,
+                    'user_id' => $event->user_id,
+                    'type' => 'income',
+                    'category' => 'pass_sales',
+                    'title' => "POS Door Sale #{$ticket->ticket_number} ({$tier->name})",
+                    'amount' => $tier->price,
+                    'currency' => $order->currency,
+                    'payment_method' => $validated['payment_method'],
+                    'reference' => $order->payment_reference,
+                    'status' => 'completed',
+                    'transaction_date' => now(),
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Door ticket #{$ticket->ticket_number} issued successfully!",
+                'ticket' => [
+                    'id' => $ticket->id,
+                    'ticket_number' => $ticket->ticket_number,
+                    'attendee_name' => $ticket->attendee_name,
+                    'tier_name' => $tier->name,
+                    'price' => (float) $ticket->price_paid,
+                    'currency' => $ticket->currency,
+                    'status' => $ticket->status,
+                    'qr_token' => $ticket->qr_token,
+                    'pass_url' => url("/t/{$ticket->ticket_number}"),
+                    'qr_data_uri' => QRCodeGenerator::renderToBase64Png($ticket->qr_token, 200),
+                ],
             ]);
         });
     }

@@ -6,11 +6,12 @@ export default function InputLabel({
     children,
     ...props
 }) {
+    const hasTextColor = className.includes('text-');
     return (
         <label
             {...props}
             className={
-                `block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1 ` +
+                `block text-xs font-black uppercase tracking-wider mb-1 ${hasTextColor ? '' : 'text-slate-900 dark:text-white'} ` +
                 className
             }
         >

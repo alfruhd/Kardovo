@@ -24,6 +24,10 @@ class Guest extends Model
         'rsvp_at',
         'notes',
         'custom_fields',
+        'pledge_amount',
+        'paid_amount',
+        'pledge_status',
+        'pledge_deadline',
     ];
 
     protected $casts = [
@@ -31,6 +35,9 @@ class Guest extends Model
         'entries_used' => 'integer',
         'rsvp_at' => 'datetime',
         'custom_fields' => 'array',
+        'pledge_amount' => 'decimal:2',
+        'paid_amount' => 'decimal:2',
+        'pledge_deadline' => 'date',
     ];
 
     protected $appends = [
@@ -40,6 +47,8 @@ class Guest extends Model
         'whatsapp_status',
         'sms_status',
         'channel_statuses',
+        'pledge_balance',
+        'pledge_progress_percent',
     ];
 
     protected static function booted()
@@ -65,7 +74,11 @@ class Guest extends Model
 
     public static function generateCardNumber(): string
     {
-        return 'KDV-'.str_pad((string) random_int(1000, 999999), 6, '0', STR_PAD_LEFT);
+        do {
+            $number = 'KDV-'.str_pad((string) random_int(1000, 999999), 6, '0', STR_PAD_LEFT);
+        } while (static::where('card_number', $number)->exists());
+
+        return $number;
     }
 
     public static function generateUniqueCode(): string
@@ -119,7 +132,7 @@ class Guest extends Model
             return $this->messages->where('channel', 'whatsapp')->first()?->status;
         }
 
-        return $this->messages()->where('channel', 'whatsapp')->value('status');
+        return null;
     }
 
     public function getSmsStatusAttribute(): ?string
@@ -128,7 +141,7 @@ class Guest extends Model
             return $this->messages->where('channel', 'sms')->first()?->status;
         }
 
-        return $this->messages()->where('channel', 'sms')->value('status');
+        return null;
     }
 
     /**
@@ -142,5 +155,51 @@ class Guest extends Model
             'whatsapp' => $this->whatsapp_status,
             'sms' => $this->sms_status,
         ];
+    }
+
+    public function pledgePayments()
+    {
+        return $this->hasMany(PledgePayment::class)->latest('payment_date')->latest('id');
+    }
+
+    public function getPledgeBalanceAttribute(): float
+    {
+        $pledge = floatval($this->pledge_amount ?? 0);
+        $paid = floatval($this->paid_amount ?? 0);
+
+        return max(0.0, round($pledge - $paid, 2));
+    }
+
+    public function getPledgeProgressPercentAttribute(): int
+    {
+        $pledge = floatval($this->pledge_amount ?? 0);
+        $paid = floatval($this->paid_amount ?? 0);
+
+        if ($pledge > 0) {
+            return (int) min(100, round(($paid / $pledge) * 100));
+        }
+
+        return $paid > 0 ? 100 : 0;
+    }
+
+    public function recalculatePledgePaid(): void
+    {
+        $totalPaid = floatval($this->pledgePayments()->sum('amount'));
+        $this->paid_amount = $totalPaid;
+        $pledge = floatval($this->pledge_amount ?? 0);
+
+        if ($pledge <= 0 && $totalPaid <= 0) {
+            $this->pledge_status = 'none';
+        } elseif ($totalPaid <= 0 && $pledge > 0) {
+            $this->pledge_status = 'pledged';
+        } elseif ($totalPaid > 0 && $totalPaid < $pledge) {
+            $this->pledge_status = 'partial';
+        } elseif ($pledge > 0 && $totalPaid >= $pledge) {
+            $this->pledge_status = $totalPaid > $pledge ? 'overpaid' : 'completed';
+        } elseif ($pledge <= 0 && $totalPaid > 0) {
+            $this->pledge_status = 'completed';
+        }
+
+        $this->saveQuietly();
     }
 }

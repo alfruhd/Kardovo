@@ -33,7 +33,7 @@ export default function EmptyEventState({
                 ) : (
                     <Link
                         href={buttonHref}
-                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] text-white font-bold text-xs sm:text-sm shadow-xs transition active:scale-95 cursor-pointer"
+                        className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 text-white font-bold text-xs sm:text-sm shadow-md shadow-[#154F7C]/25 transition active:scale-95 cursor-pointer"
                     >
                         <LayoutDashboard className="w-4 h-4" />
                         <span>{buttonText}</span>

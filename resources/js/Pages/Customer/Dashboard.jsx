@@ -127,7 +127,7 @@ export default function CustomerDashboard({
                 <button
                     type="button"
                     onClick={() => setCreateModalOpen(true)}
-                    className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803D] border border-[#16A34A] rounded-xl shadow-2xs transition active:scale-95 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 rounded-xl shadow-xs shadow-[#154F7C]/20 transition active:scale-95 cursor-pointer"
                 >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Create</span>
@@ -151,8 +151,8 @@ export default function CustomerDashboard({
 
                     {!isNewUser && (
                         <div className="flex items-center gap-2 flex-wrap text-xs">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border border-emerald-500/20 font-bold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 text-sky-800 dark:text-sky-300 border border-sky-500/20 font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
                                 <span>{overviewStats.invitation_events_count || 0} Invitations</span>
                             </span>
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08] font-bold">
@@ -168,16 +168,16 @@ export default function CustomerDashboard({
                     <div className="space-y-6 animate-fadeIn">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                             {/* Card A: Digital Invitations */}
-                            <div className="rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] p-6 sm:p-8 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition group">
+                            <div className="rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] p-6 sm:p-8 shadow-xs flex flex-col justify-between hover:border-sky-500/40 transition group">
                                 <div className="space-y-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-[#16A34A] dark:text-emerald-400 flex items-center justify-center shadow-2xs">
+                                    <div className="w-12 h-12 rounded-2xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-2xs">
                                         <Sparkles className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">Personal & Private</div>
+                                        <div className="text-[10px] uppercase font-bold tracking-wider text-sky-600 dark:text-sky-400">Personal & Private</div>
                                         <h3 className="text-lg font-black text-slate-900 dark:text-white font-display mt-0.5">Digital Invitations & RSVPs</h3>
                                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                                            Craft bespoke animated invitation cards, upload guest lists, track attendance with real-time RSVPs, and distribute passes via WhatsApp & SMS.
+                                             Craft bespoke animated invitation cards, upload guest lists, track attendance with real-time RSVPs, and distribute passes via WhatsApp & SMS.
                                         </p>
                                     </div>
                                 </div>
@@ -185,7 +185,7 @@ export default function CustomerDashboard({
                                     <button
                                         type="button"
                                         onClick={() => openModalWithTab('invitation')}
-                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 text-white text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs shadow-[#154F7C]/20"
                                     >
                                         <Plus className="w-4 h-4" />
                                         <span>Create Digital Invitation</span>
@@ -194,16 +194,16 @@ export default function CustomerDashboard({
                             </div>
 
                             {/* Card B: Ticketed Occasions */}
-                            <div className="rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] p-6 sm:p-8 shadow-xs flex flex-col justify-between hover:border-emerald-500/40 transition group">
+                            <div className="rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-[#0B1524] p-6 sm:p-8 shadow-xs flex flex-col justify-between hover:border-sky-500/40 transition group">
                                 <div className="space-y-4">
-                                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/15 border border-emerald-500/20 text-[#16A34A] dark:text-emerald-400 flex items-center justify-center shadow-2xs">
+                                    <div className="w-12 h-12 rounded-2xl bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center shadow-2xs">
                                         <Ticket className="w-6 h-6" />
                                     </div>
                                     <div>
-                                        <div className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 dark:text-emerald-400">Public & Commercial</div>
+                                        <div className="text-[10px] uppercase font-bold tracking-wider text-sky-600 dark:text-sky-400">Public & Commercial</div>
                                         <h3 className="text-lg font-black text-slate-900 dark:text-white font-display mt-0.5">Ticketed Occasions & Sales</h3>
                                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                                            Launch ticket sales for concerts, summits, festivals, or sports. Accept Mobile Money (M-Pesa, Airtel, Tigo), issue passes, and verify at the gate.
+                                             Launch ticket sales for concerts, summits, festivals, or sports. Accept Mobile Money (M-Pesa, Airtel, Tigo), issue passes, and verify at the gate.
                                         </p>
                                     </div>
                                 </div>
@@ -211,7 +211,7 @@ export default function CustomerDashboard({
                                     <button
                                         type="button"
                                         onClick={() => openModalWithTab('occasion')}
-                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 text-white text-xs font-bold transition active:scale-95 cursor-pointer shadow-xs shadow-[#154F7C]/20"
                                     >
                                         <Plus className="w-4 h-4" />
                                         <span>Launch Ticketed Occasion</span>
@@ -248,10 +248,10 @@ export default function CustomerDashboard({
                                     sub: `${overviewStats.overall_checkin_rate || 0}% entry`,
                                 },
                             ].map(({ label, value, sub, accent }) => (
-                                <div key={label} className="bg-white dark:bg-[#0B1524] px-5 py-4">
-                                    <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">{label}</div>
-                                    <div className={`text-xl font-black font-mono mt-1 ${accent ? 'text-[#16A34A] dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>{value}</div>
-                                    <div className="text-[10px] text-slate-400 mt-0.5">{sub}</div>
+                                <div key={label} className="bg-white dark:bg-[#0B1524] px-3.5 sm:px-5 py-3 sm:py-4 min-w-0">
+                                    <div className="text-[9.5px] sm:text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 truncate">{label}</div>
+                                    <div className={`text-lg sm:text-xl font-black font-mono mt-0.5 sm:mt-1 truncate ${accent ? 'text-[#154F7C] dark:text-sky-400' : 'text-slate-900 dark:text-white'}`}>{value}</div>
+                                    <div className="text-[9.5px] sm:text-[10px] text-slate-400 mt-0.5 truncate">{sub}</div>
                                 </div>
                             ))}
                         </div>
@@ -276,7 +276,7 @@ export default function CustomerDashboard({
                                                 onClick={() => setActiveFilter(key)}
                                                 className={`shrink-0 px-2.5 sm:px-3 py-1 rounded-lg font-bold transition-all cursor-pointer text-xs ${
                                                     activeFilter === key
-                                                        ? 'bg-[#16A34A] text-white shadow-xs'
+                                                        ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] text-white shadow-xs'
                                                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                                                 }`}
                                             >
@@ -291,7 +291,7 @@ export default function CustomerDashboard({
                                             value={searchQuery}
                                             onChange={(e) => setSearchQuery(e.target.value)}
                                             placeholder="Search…"
-                                            className="text-xs pl-7 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.02] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:border-emerald-500 focus:ring-0 w-full sm:w-36"
+                                            className="text-xs pl-7 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/[0.08] bg-slate-50 dark:bg-white/[0.02] text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:border-sky-500 focus:ring-0 w-full sm:w-36"
                                         />
                                     </div>
                                 </div>
@@ -313,7 +313,7 @@ export default function CustomerDashboard({
                                                 <div key={event.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
                                                     {/* Date */}
                                                     <div className="w-10 text-center flex-shrink-0">
-                                                        <div className="text-[9px] uppercase font-bold text-[#16A34A] dark:text-emerald-400 leading-none">{month}</div>
+                                                        <div className="text-[9px] uppercase font-bold text-[#154F7C] dark:text-sky-400 leading-none">{month}</div>
                                                         <div className="text-base font-black font-mono text-slate-900 dark:text-white leading-tight">{day}</div>
                                                     </div>
 
@@ -324,7 +324,7 @@ export default function CustomerDashboard({
                                                     <div className="min-w-0 flex-1">
                                                         <Link
                                                             href={manageUrl}
-                                                            className="text-sm font-bold text-slate-900 dark:text-white hover:text-[#16A34A] dark:hover:text-emerald-400 transition-colors truncate block"
+                                                            className="text-sm font-bold text-slate-900 dark:text-white hover:text-[#154F7C] dark:hover:text-sky-400 transition-colors truncate block"
                                                         >
                                                             {event.title}
                                                         </Link>
@@ -336,7 +336,7 @@ export default function CustomerDashboard({
                                                     {/* Action */}
                                                     <Link
                                                         href={manageUrl}
-                                                        className="flex-shrink-0 text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-[#16A34A] dark:group-hover:text-emerald-400 transition-colors"
+                                                        className="flex-shrink-0 text-xs font-bold text-slate-500 dark:text-slate-400 group-hover:text-[#154F7C] dark:group-hover:text-sky-400 transition-colors"
                                                     >
                                                         Manage →
                                                     </Link>
@@ -354,10 +354,10 @@ export default function CustomerDashboard({
                                 <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] p-5 space-y-3">
                                     <div className="flex items-center justify-between">
                                         <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">RSVP Snapshot</span>
-                                        <span className="text-xs font-bold text-[#16A34A] dark:text-emerald-400">{overviewStats.overall_attendance_rate || 0}%</span>
+                                        <span className="text-xs font-bold text-[#154F7C] dark:text-sky-400">{overviewStats.overall_attendance_rate || 0}%</span>
                                     </div>
                                     {[
-                                        { label: 'Attending',    value: overviewStats.total_will_attend || 0,     total: overviewStats.total_guests, color: 'bg-[#16A34A]' },
+                                        { label: 'Attending',    value: overviewStats.total_will_attend || 0,     total: overviewStats.total_guests, color: 'bg-gradient-to-r from-[#154F7C] to-[#327FB5]' },
                                         { label: 'Pending',      value: overviewStats.total_pending_rsvp || 0,    total: overviewStats.total_guests, color: 'bg-amber-400' },
                                         { label: 'Declined',     value: overviewStats.total_will_not_attend || 0, total: overviewStats.total_guests, color: 'bg-slate-300 dark:bg-slate-600' },
                                     ].map(({ label, value, total, color }) => (
@@ -380,7 +380,7 @@ export default function CustomerDashboard({
                                 <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] p-5">
                                     <div className="flex items-center justify-between mb-3">
                                         <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">Ticket Revenue</span>
-                                        <Link href={route('ticketing.index')} className="text-[10px] font-bold text-[#16A34A] dark:text-emerald-400 hover:underline">
+                                        <Link href={route('ticketing.index')} className="text-[10px] font-bold text-[#154F7C] dark:text-sky-400 hover:underline">
                                             Portal →
                                         </Link>
                                     </div>
@@ -420,7 +420,7 @@ export default function CustomerDashboard({
                                 onClick={() => setCreateType('invitation')}
                                 className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                                     createType === 'invitation'
-                                        ? 'bg-white dark:bg-white/10 text-[#16A34A] dark:text-emerald-400 shadow-2xs'
+                                        ? 'bg-white dark:bg-white/10 text-[#154F7C] dark:text-sky-400 shadow-2xs font-extrabold'
                                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                                 }`}
                             >
@@ -431,7 +431,7 @@ export default function CustomerDashboard({
                                 onClick={() => setCreateType('occasion')}
                                 className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
                                     createType === 'occasion'
-                                        ? 'bg-white dark:bg-white/10 text-[#16A34A] dark:text-emerald-400 shadow-2xs'
+                                        ? 'bg-white dark:bg-white/10 text-[#154F7C] dark:text-sky-400 shadow-2xs font-extrabold'
                                         : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
                                 }`}
                             >
@@ -463,7 +463,7 @@ export default function CustomerDashboard({
                                         id="inv_type"
                                         value={invitationForm.data.event_type}
                                         onChange={(e) => invitationForm.setData('event_type', e.target.value)}
-                                        className="mt-1 block w-full text-xs rounded-xl border-slate-300 dark:border-white/[0.08] dark:bg-[#0B1524] dark:text-white shadow-xs focus:border-emerald-500 focus:ring-emerald-500"
+                                        className="mt-1 block w-full text-xs rounded-xl border-slate-300 dark:border-white/[0.08] dark:bg-[#0B1524] dark:text-white shadow-xs focus:border-[#154F7C] dark:focus:border-sky-400 focus:ring-sky-500"
                                     >
                                         <option value="Wedding Reception">Wedding Reception</option>
                                         <option value="Send Off Party">Send Off Party</option>
@@ -532,7 +532,7 @@ export default function CustomerDashboard({
                                 <SecondaryButton type="button" onClick={() => setCreateModalOpen(false)}>
                                     Cancel
                                 </SecondaryButton>
-                                <PrimaryButton type="submit" disabled={invitationForm.processing} className="bg-[#16A34A] hover:bg-[#15803D] text-white">
+                                <PrimaryButton type="submit" disabled={invitationForm.processing}>
                                     {invitationForm.processing ? 'Creating...' : 'Create Digital Invitation'}
                                 </PrimaryButton>
                             </div>
@@ -562,7 +562,7 @@ export default function CustomerDashboard({
                                         id="occ_type"
                                         value={occasionForm.data.occasion_type}
                                         onChange={(e) => occasionForm.setData('occasion_type', e.target.value)}
-                                        className="mt-1 block w-full text-xs rounded-xl border-slate-300 dark:border-white/[0.08] dark:bg-[#0B1524] dark:text-white shadow-xs focus:border-emerald-500 focus:ring-emerald-500"
+                                        className="mt-1 block w-full text-xs rounded-xl border-slate-300 dark:border-white/[0.08] dark:bg-[#0B1524] dark:text-white shadow-xs focus:border-sky-500 focus:ring-sky-500"
                                     >
                                         <option value="concert">Concert / Live Music</option>
                                         <option value="event">Festival / Public Event</option>
@@ -652,7 +652,7 @@ export default function CustomerDashboard({
                                 <button
                                     type="submit"
                                     disabled={occasionForm.processing}
-                                    className="px-4 py-2.5 bg-[#16A34A] hover:bg-[#15803D] text-white text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer shadow-xs"
+                                    className="px-4 py-2.5 bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 text-white text-xs font-bold rounded-xl transition active:scale-95 cursor-pointer shadow-xs shadow-[#154F7C]/20"
                                 >
                                     {occasionForm.processing ? 'Launching...' : 'Launch Ticketed Occasion'}
                                 </button>

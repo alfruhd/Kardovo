@@ -18,7 +18,9 @@ import {
     Palette,
     Download,
     KeyRound,
-    AlertTriangle
+    AlertTriangle,
+    Tag,
+    Globe
 } from 'lucide-react';
 
 export default function Edit({ mustVerifyEmail, status }) {
@@ -100,7 +102,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                         onClick={() => handleTabChange('profile')}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition duration-150 cursor-pointer ${
                             activeTab === 'profile'
-                                ? 'bg-[#16A34A] text-white shadow-xs'
+                                ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] border border-sky-400/25 text-white shadow-xs shadow-[#154F7C]/20'
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.06]'
                         }`}
                     >
@@ -113,7 +115,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                         onClick={() => handleTabChange('permissions')}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition duration-150 cursor-pointer ${
                             activeTab === 'permissions'
-                                ? 'bg-[#16A34A] text-white shadow-xs'
+                                ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] border border-sky-400/25 text-white shadow-xs shadow-[#154F7C]/20'
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.06]'
                         }`}
                     >
@@ -126,7 +128,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                         onClick={() => handleTabChange('security')}
                         className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition duration-150 cursor-pointer ${
                             activeTab === 'security'
-                                ? 'bg-[#16A34A] text-white shadow-xs'
+                                ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] border border-sky-400/25 text-white shadow-xs shadow-[#154F7C]/20'
                                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/[0.06]'
                         }`}
                     >
@@ -153,7 +155,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                         {/* Header */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-white/[0.08]">
                             <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/60 dark:border-emerald-800/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
+                                <div className="w-9 h-9 rounded-2xl bg-sky-50 dark:bg-sky-500/10 border border-sky-200/60 dark:border-sky-500/20 text-[#154F7C] dark:text-sky-400 flex items-center justify-center flex-shrink-0 shadow-2xs">
                                     <ShieldCheck className="w-4 h-4" />
                                 </div>
                                 <div>
@@ -181,6 +183,8 @@ export default function Edit({ mustVerifyEmail, status }) {
                                 { key: 'can_send_broadcasts', label: 'Send Broadcasts', icon: MessageSquare },
                                 { key: 'can_customize_templates', label: 'Pass Studio', icon: Palette },
                                 { key: 'can_manage_scanners', label: 'Gate Scanners', icon: Smartphone },
+                                { key: 'can_access_ticketing', label: 'Ticketing Portal', icon: Tag },
+                                { key: 'can_customize_microsite', label: 'Event Microsite', icon: Globe },
                                 { key: 'can_export_data', label: 'Export Data', icon: Download },
                             ].map((act) => {
                                 const isAllowed = user?.role === 'admin' || (user?.status !== 'suspended' && user?.effective_permissions?.[act.key] !== false);
@@ -198,7 +202,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                         <div className="flex items-center gap-2.5 min-w-0">
                                             <div className={`w-7 h-7 rounded-xl flex items-center justify-center flex-shrink-0 ${
                                                 isAllowed 
-                                                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' 
+                                                    ? 'bg-sky-500/10 text-[#154F7C] dark:text-sky-400 border border-sky-500/20' 
                                                     : 'bg-slate-200/60 dark:bg-white/[0.06] text-slate-400'
                                             }`}>
                                                 <IconComponent className="w-3.5 h-3.5" />
@@ -236,7 +240,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                                 <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                                                     Events Limit
                                                 </span>
-                                                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                                                <div className="w-6 h-6 rounded-lg bg-sky-500/10 text-[#154F7C] dark:text-sky-400 border border-sky-500/20 flex items-center justify-center">
                                                     <Building2 className="w-3 h-3" />
                                                 </div>
                                             </div>
@@ -256,7 +260,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                                 <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                                                     WhatsApp Limit
                                                 </span>
-                                                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                                                <div className="w-6 h-6 rounded-lg bg-sky-500/10 text-[#154F7C] dark:text-sky-400 border border-sky-500/20 flex items-center justify-center">
                                                     <MessageSquare className="w-3 h-3" />
                                                 </div>
                                             </div>
@@ -280,7 +284,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                                 <span className="text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
                                                     SMS Limit
                                                 </span>
-                                                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center">
+                                                <div className="w-6 h-6 rounded-lg bg-sky-500/10 text-[#154F7C] dark:text-sky-400 border border-sky-500/20 flex items-center justify-center">
                                                     <Smartphone className="w-3 h-3" />
                                                 </div>
                                             </div>

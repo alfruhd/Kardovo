@@ -34,6 +34,11 @@ class Event extends Model
         'payout_account_name',
         'payout_bank_branch',
         'payout_status',
+        'pledge_target',
+        'pledge_currency',
+        'pledges_enabled',
+        'pledge_deadline',
+        'pledge_settings',
     ];
 
     protected $casts = [
@@ -45,7 +50,35 @@ class Event extends Model
         'is_occasion' => 'boolean',
         'ticket_sales_end_at' => 'datetime',
         'ticket_template_config' => 'array',
+        'pledge_target' => 'decimal:2',
+        'pledges_enabled' => 'boolean',
+        'pledge_deadline' => 'date',
+        'pledge_settings' => 'array',
     ];
+
+    protected $appends = [
+        'has_microsite_enabled',
+    ];
+
+    public function getHasMicrositeEnabledAttribute(): bool
+    {
+        return $this->hasMicrositeEnabled();
+    }
+
+    public function hasMicrositeEnabled(): bool
+    {
+        $config = is_array($this->microsite_config) ? $this->microsite_config : [];
+        if (! empty($config['admin_override'])) {
+            return true;
+        }
+
+        $owner = $this->relationLoaded('user') ? $this->user : $this->user()->first();
+        if ($owner && $owner->canCustomizeMicrosite()) {
+            return true;
+        }
+
+        return false;
+    }
 
     public function user()
     {
@@ -90,6 +123,57 @@ class Event extends Model
     public function assignedSubAdmins()
     {
         return $this->belongsToMany(User::class, 'sub_admin_assignments', 'event_id', 'sub_admin_id');
+    }
+
+    public function pledgePayments()
+    {
+        return $this->hasMany(PledgePayment::class)->latest('payment_date');
+    }
+
+    public function discountCodes()
+    {
+        return $this->hasMany(DiscountCode::class)->latest();
+    }
+
+    public function wristbandOrders()
+    {
+        return $this->hasMany(WristbandOrder::class)->latest();
+    }
+
+    public function posTerminalRequests()
+    {
+        return $this->hasMany(PosTerminalRequest::class)->latest();
+    }
+
+    public function getPledgeStats(): array
+    {
+        $target = (float) ($this->pledge_target ?? 0);
+        $totalPledged = (float) $this->guests()->where('pledge_amount', '>', 0)->sum('pledge_amount');
+        $totalCollected = (float) $this->guests()->where('pledge_amount', '>', 0)->sum('paid_amount');
+        $totalBalance = max(0, $totalPledged - $totalCollected);
+
+        $pledgeCount = $this->guests()->where('pledge_amount', '>', 0)->count();
+        $completedCount = $this->guests()->where('pledge_amount', '>', 0)->where('pledge_status', 'completed')->count();
+        $partialCount = $this->guests()->where('pledge_amount', '>', 0)->where('pledge_status', 'partial')->count();
+        $unpaidCount = $this->guests()->where('pledge_amount', '>', 0)->where('pledge_status', 'pledged')->count();
+
+        $percentOfTarget = $target > 0 ? round(($totalCollected / $target) * 100, 1) : 0;
+
+        return [
+            'target' => $target,
+            'currency' => $this->pledge_currency ?: 'TZS',
+            'enabled' => (bool) ($this->pledges_enabled ?? true),
+            'deadline' => $this->pledge_deadline ? (is_string($this->pledge_deadline) ? $this->pledge_deadline : $this->pledge_deadline->format('Y-m-d')) : null,
+            'settings' => is_array($this->pledge_settings) ? $this->pledge_settings : [],
+            'total_pledged' => $totalPledged,
+            'total_collected' => $totalCollected,
+            'total_balance' => $totalBalance,
+            'percent_of_target' => $percentOfTarget,
+            'pledge_count' => $pledgeCount,
+            'completed_count' => $completedCount,
+            'partial_count' => $partialCount,
+            'unpaid_count' => $unpaidCount,
+        ];
     }
 
     public function scopeAccessibleBy($query, User $user)

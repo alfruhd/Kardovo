@@ -4,8 +4,7 @@ export function useTheme() {
     const [theme, setThemeState] = useState(() => {
         if (typeof window === 'undefined') return 'light';
         const saved = localStorage.getItem('kardovo_theme');
-        if (saved) return saved;
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        return saved === 'dark' ? 'dark' : 'light';
     });
 
     useEffect(() => {

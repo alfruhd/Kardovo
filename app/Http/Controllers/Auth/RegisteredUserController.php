@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -33,14 +34,25 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        $regThrottleKey = 'register_ip|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($regThrottleKey, 5)) {
+            $seconds = RateLimiter::availableIn($regThrottleKey);
+
+            throw ValidationException::withMessages([
+                'email' => "Too many registration attempts from your network. Please wait {$seconds} seconds.",
+            ]);
+        }
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|string|lowercase|email|max:255|unique:'.User::class,
             'phone' => ['nullable', 'string', 'max:30', 'regex:/^\+?[0-9\s\-().]{7,25}$/'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['required', 'string', 'max:128', 'confirmed', Rules\Password::defaults()],
         ], [
             'phone.regex' => 'Please provide a valid phone number (e.g. 07XXXXXXXX or +255 7XX XXX XXX).',
         ]);
+
+        RateLimiter::hit($regThrottleKey, 600);
 
         $email = $request->input('email');
         $rawPhone = $request->input('phone');

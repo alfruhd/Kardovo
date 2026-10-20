@@ -11,6 +11,7 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\MessagingController;
 use App\Http\Controllers\Organizer\PaymentController;
+use App\Http\Controllers\PledgeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGuestController;
 use App\Http\Controllers\PublicTicketController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\TicketCheckoutController;
 use App\Http\Controllers\TicketController;
 use App\Http\Controllers\WhatsAppWebhookController;
 use App\Http\Middleware\EnsureOrganizerHasPaid;
+use App\Http\Middleware\ProtectAgainstBotSubmissions;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -28,18 +30,25 @@ use Inertia\Inertia;
 Route::get('/demo/pass', [PublicGuestController::class, 'showDemoPass'])->name('guest.demoPass');
 Route::get('/kj/{token?}', [PublicGuestController::class, 'showCard'])->middleware('throttle:300,1')->name('guest.kj');
 Route::get('/card/{token}', [PublicGuestController::class, 'showCard'])->middleware('throttle:300,1')->name('guest.card');
-Route::post('/card/{token}/rsvp', [PublicGuestController::class, 'submitRsvp'])->middleware('throttle:60,1')->name('guest.rsvp');
+Route::post('/card/{token}/rsvp', [PublicGuestController::class, 'submitRsvp'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:60,1'])->name('guest.rsvp');
+Route::post('/card/{token}/pledge', [PublicGuestController::class, 'submitPledge'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:60,1'])->name('guest.pledge');
+Route::post('/card/{token}/payment-proof', [PublicGuestController::class, 'submitPaymentProof'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:60,1'])->name('guest.paymentProof');
 
 // Public Ticketing & Live Pass Hub
 Route::get('/tickets', [PublicTicketMarketplaceController::class, 'index'])->name('tickets.marketplace');
+Route::get('/how-it-works', [PublicTicketMarketplaceController::class, 'howItWorks'])->name('tickets.how-it-works');
+Route::get('/tickets/how-it-works', [PublicTicketMarketplaceController::class, 'howItWorks']);
 Route::get('/e/{event}/tickets', [TicketCheckoutController::class, 'showEventTickets'])->name('events.publicTickets');
 Route::get('/t/{ticket_number}', [PublicTicketController::class, 'show'])->name('tickets.publicPass');
 Route::get('/t/{ticket_number}/pdf', [PublicTicketController::class, 'downloadPdf'])->name('tickets.downloadPdf');
-Route::post('/t/{ticket_number}/whatsapp', [PublicTicketController::class, 'sendWhatsApp'])->middleware('throttle:30,1')->name('tickets.sendWhatsApp');
-Route::post('/t/{ticket_number}/sms', [PublicTicketController::class, 'sendSms'])->middleware('throttle:30,1')->name('tickets.sendSms');
-Route::post('/t/{ticket_number}/email', [PublicTicketController::class, 'sendEmail'])->middleware('throttle:30,1')->name('tickets.sendEmail');
-Route::post('/events/{event}/checkout-tickets', [TicketCheckoutController::class, 'checkout'])->middleware('throttle:60,1')->name('tickets.checkout');
+Route::post('/t/{ticket_number}/whatsapp', [PublicTicketController::class, 'sendWhatsApp'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:30,1'])->name('tickets.sendWhatsApp');
+Route::post('/t/{ticket_number}/sms', [PublicTicketController::class, 'sendSms'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:30,1'])->name('tickets.sendSms');
+Route::post('/t/{ticket_number}/email', [PublicTicketController::class, 'sendEmail'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:30,1'])->name('tickets.sendEmail');
+Route::post('/events/{event}/checkout-tickets', [TicketCheckoutController::class, 'checkout'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:60,1'])->name('tickets.checkout');
+Route::post('/events/{event}/validate-discount', [TicketCheckoutController::class, 'validateDiscount'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:60,1'])->name('tickets.validateDiscount');
 Route::get('/tickets/order/{order_number}', [TicketCheckoutController::class, 'orderSuccess'])->name('tickets.orderSuccess');
+Route::get('/tickets/order/{order_number}/status', [TicketCheckoutController::class, 'checkOrderStatus'])->name('tickets.orderStatus');
+Route::post('/tickets/order/{order_number}/verify-payment', [TicketCheckoutController::class, 'verifyPayment'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:30,1'])->name('tickets.verifyPayment');
 
 // Instant Dev Role Switcher (Local & Testing environments only)
 if (app()->environment('local', 'testing')) {
@@ -77,6 +86,13 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/events/{event}/guests-export-pdf', [GuestController::class, 'exportPdf'])->name('guests.exportPdf');
         Route::get('/guests/sample-template', [GuestController::class, 'downloadSampleTemplate'])->name('guests.sampleTemplate');
 
+        // Pledges & Contributions (Michango na Ahadi)
+        Route::match(['put', 'post'], '/events/{event}/pledges/settings', [PledgeController::class, 'updateSettings'])->name('pledges.settings');
+        Route::post('/events/{event}/pledges', [PledgeController::class, 'storePledge'])->name('pledges.store');
+        Route::post('/events/{event}/guests/{guest}/payments', [PledgeController::class, 'recordPayment'])->name('pledges.recordPayment');
+        Route::delete('/events/{event}/pledges/payments/{payment}', [PledgeController::class, 'deletePayment'])->name('pledges.deletePayment');
+        Route::get('/events/{event}/pledges/export-csv', [PledgeController::class, 'exportReport'])->name('pledges.exportCsv');
+
         // Ticketing Portal
         Route::get('/ticketing', [TicketController::class, 'index'])->name('ticketing.index');
         Route::post('/ticketing/occasions', [TicketController::class, 'storeOccasion'])->name('ticketing.occasions.store');
@@ -88,6 +104,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/events/{event}/tickets/batch-generate', [TicketController::class, 'batchGenerate'])->name('events.tickets.batchGenerate');
         Route::get('/events/{event}/tickets/print-sheet', [TicketController::class, 'printSheet'])->name('events.tickets.printSheet');
         Route::get('/events/{event}/tickets/export-csv', [TicketController::class, 'exportCsv'])->name('events.tickets.exportCsv');
+
+        // Discount Codes
+        Route::post('/events/{event}/discount-codes', [TicketController::class, 'storeDiscountCode'])->name('events.discountCodes.store');
+        Route::put('/events/{event}/discount-codes/{discountCode}', [TicketController::class, 'updateDiscountCode'])->name('events.discountCodes.update');
+        Route::patch('/events/{event}/discount-codes/{discountCode}/toggle', [TicketController::class, 'toggleDiscountCode'])->name('events.discountCodes.toggle');
+        Route::delete('/events/{event}/discount-codes/{discountCode}', [TicketController::class, 'destroyDiscountCode'])->name('events.discountCodes.destroy');
+
+        // Wristband Printing & Production Orders
+        Route::post('/events/{event}/wristbands/order', [TicketController::class, 'orderWristbands'])->name('events.wristbands.order');
+        Route::get('/events/{event}/wristbands/print', [TicketController::class, 'printWristbands'])->name('events.wristbands.print');
+        Route::post('/events/{event}/wristbands/template', [TicketController::class, 'updateWristbandTemplate'])->name('events.wristbands.template');
+
+        // Point of Sale (POS) Hardware Terminal Requests
+        Route::post('/events/{event}/pos-request', [TicketController::class, 'requestPosTerminal'])->name('events.posRequest.store');
 
         // Card Templates
         Route::get('/templates', [CardTemplateController::class, 'index'])->name('templates.index');
@@ -107,6 +137,7 @@ Route::middleware(['auth'])->group(function () {
         // Scanner App (Mobile / PWA View)
         Route::get('/scanner', [ScannerController::class, 'index'])->name('scanner.index');
         Route::post('/scanner/validate', [ScannerController::class, 'validateScan'])->middleware('throttle:300,1')->name('scanner.validate');
+        Route::post('/scanner/pos-door-sale', [ScannerController::class, 'posDoorSale'])->middleware('throttle:120,1')->name('scanner.posDoorSale');
     });
 
     // Admin Portal
@@ -158,7 +189,7 @@ Route::middleware(['auth'])->group(function () {
 
 require __DIR__.'/auth.php';
 
-// Legal, Compliance & Terms Policies
+// Legal, Compliance, Privacy & Consumer Protection Policies
 Route::get('/terms', function () {
     return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'terms']);
 })->name('terms');
@@ -167,6 +198,14 @@ Route::get('/privacy', function () {
     return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'privacy']);
 })->name('privacy');
 
+Route::get('/cookies', function () {
+    return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'cookies']);
+})->name('cookies');
+
+Route::get('/refunds', function () {
+    return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'refunds']);
+})->name('refunds');
+
 Route::get('/policies', function () {
     return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'security']);
 })->name('policies');
@@ -174,6 +213,10 @@ Route::get('/policies', function () {
 Route::get('/ticketing-terms', function () {
     return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'ticketing']);
 })->name('ticketing.terms');
+
+Route::get('/compliance', function () {
+    return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'compliance']);
+})->name('compliance');
 
 // WhatsApp Cloud API & Gateway Webhooks
 Route::get('/webhooks/whatsapp', [WhatsAppWebhookController::class, 'verify'])->name('webhooks.whatsapp.verify');

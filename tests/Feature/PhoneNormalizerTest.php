@@ -84,6 +84,7 @@ test('broadcast appends pass link and rsvp footer when include_pass_link is true
     $user = User::where('role', 'customer')->first();
     $user->update(['max_whatsapp_limit' => 100, 'max_sms_limit' => 100]);
     $event = Event::where('user_id', $user->id)->first();
+    $event->update(['microsite_config' => ['admin_override' => true]]);
 
     $guest = Guest::create([
         'event_id' => $event->id,

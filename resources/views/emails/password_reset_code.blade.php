@@ -18,7 +18,7 @@
                             <div style="font-size: 17px; font-weight: 900; letter-spacing: 0.16em; color: #091322; text-transform: uppercase;">
                                 KARDOVO
                             </div>
-                            <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.2em; color: #16A34A; text-transform: uppercase; margin-top: 2px;">
+                            <div style="font-size: 10px; font-weight: 700; letter-spacing: 0.2em; color: #154F7C; text-transform: uppercase; margin-top: 2px;">
                                 SECURITY VERIFICATION
                             </div>
                         </td>

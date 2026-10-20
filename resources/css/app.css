@@ -62,10 +62,11 @@
 
 /* Dedicated Card Printing Isolation */
 @media print {
-    body * {
+    body:has(#kardovo-card-print-frame) * {
         visibility: hidden !important;
     }
-    #kardovo-card-print-frame, #kardovo-card-print-frame * {
+    body:has(#kardovo-card-print-frame) #kardovo-card-print-frame,
+    body:has(#kardovo-card-print-frame) #kardovo-card-print-frame * {
         visibility: visible !important;
     }
 }

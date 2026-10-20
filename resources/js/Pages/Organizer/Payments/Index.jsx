@@ -15,11 +15,11 @@ import ErrorBoundary from '@/Components/ErrorBoundary';
 
 // ─── Mobile Money Providers ──────────────────────────────────────
 const MOBILE_PROVIDERS = [
-    { value: 'Mpesa',    label: 'M-Pesa',       color: '#fff',    textColor: '#1a1a2e',  logo: MpesaLogo    },
-    { value: 'Tigo',     label: 'Mixx by Yas',  color: '#fff',    textColor: '#1a1a2e',  logo: MixxLogo     },
-    { value: 'Airtel',   label: 'Airtel Money',  color: '#fff',    textColor: '#1a1a2e',  logo: AirtelLogo   },
-    { value: 'Halopesa', label: 'HaloPesa',      color: '#fff',    textColor: '#1a1a2e',  logo: HalopesaLogo },
-    { value: 'Azampesa', label: 'AzamPesa',      color: '#fff',    textColor: '#1a1a2e',  logo: AzampesaLogo },
+    { value: 'Mpesa',    label: 'M-Pesa',       logo: MpesaLogo    },
+    { value: 'Tigo',     label: 'Mixx by Yas',  logo: MixxLogo     },
+    { value: 'Airtel',   label: 'Airtel Money',  logo: AirtelLogo   },
+    { value: 'Halopesa', label: 'HaloPesa',      logo: HalopesaLogo },
+    { value: 'Azampesa', label: 'AzamPesa',      logo: AzampesaLogo },
 ];
 
 // ─── Logo Components ─────────────────────────────────────────────
@@ -27,14 +27,14 @@ function MpesaLogo() {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-0.5">
             <span className="text-[#E60000] font-black text-base tracking-tight leading-none">m-pesa</span>
-            <span className="text-slate-500 text-[10px] font-semibold tracking-wider uppercase leading-none">Vodacom</span>
+            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-semibold tracking-wider uppercase leading-none">Vodacom</span>
         </div>
     );
 }
 function MixxLogo() {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-0.5">
-            <span className="text-[#1a237e] font-black text-base italic tracking-tight leading-none">Mixx</span>
+            <span className="text-[#1a237e] dark:text-[#38bdf8] font-black text-base italic tracking-tight leading-none">Mixx</span>
             <span className="text-[#f59e0b] text-[10px] font-black uppercase tracking-widest leading-none">by Yas</span>
         </div>
     );
@@ -51,7 +51,7 @@ function HalopesaLogo() {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-0.5">
             <span className="text-[#F97316] font-black text-base tracking-tight leading-none">halo</span>
-            <span className="text-slate-600 text-[10px] font-bold tracking-widest uppercase leading-none">Pesa</span>
+            <span className="text-slate-600 dark:text-slate-400 text-[10px] font-bold tracking-widest uppercase leading-none">Pesa</span>
         </div>
     );
 }
@@ -59,7 +59,7 @@ function AzampesaLogo() {
     return (
         <div className="flex flex-col items-center justify-center h-full gap-0.5">
             <span className="text-[#16a34a] font-black text-base tracking-tight leading-none">Azam</span>
-            <span className="text-slate-600 text-[10px] font-bold tracking-widest uppercase leading-none">Pesa</span>
+            <span className="text-slate-600 dark:text-slate-400 text-[10px] font-bold tracking-widest uppercase leading-none">Pesa</span>
         </div>
     );
 }
@@ -510,15 +510,15 @@ function PaymentPage({ packages, transactions, has_event }) {
 
                                 {/* Header */}
                                 <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex items-center gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                                        <Tag className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <div className="w-7 h-7 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 flex items-center justify-center flex-shrink-0">
+                                        <Tag className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-black text-slate-900 dark:text-white">Select Package</p>
                                         <p className="text-[11px] text-slate-400">Choose the plan that fits your needs</p>
                                     </div>
                                     {safePackages.length > 0 && (
-                                        <span className="ml-auto text-[11px] font-bold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20">
+                                        <span className="ml-auto text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-500/10 dark:bg-sky-500/15 text-[#154F7C] dark:text-sky-400 border border-sky-500/20">
                                             {safePackages.length} plans
                                         </span>
                                     )}
@@ -546,24 +546,24 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                     onClick={() => handleSelectPkg(pkg)}
                                                     className={`relative flex flex-col rounded-xl border-2 p-5 cursor-pointer transition-all select-none group
                                                         ${selected
-                                                            ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 shadow-md shadow-emerald-500/10'
-                                                            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/30 hover:border-emerald-300 dark:hover:border-emerald-700/50 hover:shadow-sm'
+                                                            ? 'border-[#154F7C] dark:border-sky-500 bg-sky-50/60 dark:bg-sky-950/20 shadow-md shadow-[#154F7C]/10'
+                                                            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/30 hover:border-sky-300 dark:hover:border-sky-700/50 hover:shadow-sm'
                                                         }`}
                                                 >
                                                     {/* Radio circle top-right */}
                                                     <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0
-                                                        ${selected ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 dark:border-slate-600'}`}>
+                                                        ${selected ? 'border-[#154F7C] dark:border-sky-400 bg-[#154F7C] dark:bg-sky-500' : 'border-slate-300 dark:border-slate-600'}`}>
                                                         {selected && <Check className="w-3 h-3 text-white" />}
                                                     </div>
 
                                                     {/* Name */}
-                                                    <h3 className={`text-base font-black leading-tight pr-6 ${selected ? 'text-emerald-800 dark:text-emerald-300' : 'text-slate-900 dark:text-white'}`}>
+                                                    <h3 className={`text-base font-black leading-tight pr-6 ${selected ? 'text-[#154F7C] dark:text-sky-300' : 'text-slate-900 dark:text-white'}`}>
                                                         {pkg.name}
                                                     </h3>
 
                                                     {/* Price */}
                                                     <div className="flex items-baseline gap-1.5 mt-2">
-                                                        <span className={`text-2xl font-black tracking-tight ${selected ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-900 dark:text-white'}`}>
+                                                        <span className={`text-2xl font-black tracking-tight ${selected ? 'text-[#154F7C] dark:text-sky-400' : 'text-slate-900 dark:text-white'}`}>
                                                             {price.toLocaleString()}
                                                         </span>
                                                         <span className="text-xs font-semibold text-slate-400">TZS</span>
@@ -574,8 +574,8 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                         {isPopular && (
                                                             <span className={`self-start text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border
                                                                 ${selected
-                                                                    ? 'bg-emerald-500 text-white border-emerald-500'
-                                                                    : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20'}`}>
+                                                                    ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] text-white border-sky-400/30'
+                                                                    : 'bg-sky-100 text-[#154F7C] dark:bg-sky-500/15 dark:text-sky-400 border-sky-200 dark:border-sky-500/20'}`}>
                                                                 ★ Most Popular
                                                             </span>
                                                         )}
@@ -584,8 +584,8 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                     {/* Footer label */}
                                                     <div className={`mt-4 pt-3 border-t text-center text-xs font-bold transition-all
                                                         ${selected
-                                                            ? 'border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                                                            : 'border-slate-100 dark:border-white/5 text-slate-400 group-hover:text-emerald-500'}`}>
+                                                            ? 'border-sky-200 dark:border-sky-500/20 text-[#154F7C] dark:text-sky-400'
+                                                            : 'border-slate-100 dark:border-white/5 text-slate-400 group-hover:text-[#154F7C] dark:group-hover:text-sky-400'}`}>
                                                         {selected ? '✓ Selected' : 'Click to select'}
                                                     </div>
                                                 </div>
@@ -599,8 +599,8 @@ function PaymentPage({ packages, transactions, has_event }) {
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
 
                                 <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex items-center gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
-                                        <CreditCard className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                    <div className="w-7 h-7 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 flex items-center justify-center flex-shrink-0">
+                                        <CreditCard className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-black text-slate-900 dark:text-white">Payment Provider</p>
@@ -624,7 +624,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                 }}
                                                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
                                                     providerTab === tab.id
-                                                        ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-sm'
+                                                        ? 'bg-white dark:bg-slate-700 text-[#154F7C] dark:text-sky-400 shadow-sm'
                                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
                                                 }`}
                                             >
@@ -636,7 +636,7 @@ function PaymentPage({ packages, transactions, has_event }) {
 
                                     {/* Mobile money tiles */}
                                     {providerTab === 'mobile' && (
-                                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
                                             {MOBILE_PROVIDERS.map(p => {
                                                 const LogoComp = p.logo;
                                                 const selected = data.provider === p.value;
@@ -645,16 +645,15 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                         key={p.value}
                                                         type="button"
                                                         onClick={() => setData('provider', p.value)}
-                                                        className={`relative h-20 rounded-xl border-2 transition-all overflow-hidden
+                                                        className={`relative h-20 rounded-xl border-2 transition-all overflow-hidden flex items-center justify-center
                                                             ${selected
-                                                                ? 'border-emerald-500 ring-2 ring-emerald-500/25 shadow-md'
-                                                                : 'border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 hover:shadow-sm'
+                                                                ? 'border-[#154F7C] dark:border-sky-400 bg-sky-50 dark:bg-sky-500/10 ring-2 ring-[#154F7C]/25 shadow-md'
+                                                                : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-white/20 hover:shadow-sm'
                                                             }`}
-                                                        style={{ background: p.color }}
                                                     >
                                                         <LogoComp />
                                                         {selected && (
-                                                            <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center shadow">
+                                                            <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#154F7C] dark:bg-sky-500 rounded-full flex items-center justify-center shadow">
                                                                 <Check className="w-2.5 h-2.5 text-white" />
                                                             </div>
                                                         )}
@@ -676,16 +675,16 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                         onClick={() => setData('provider', p.value)}
                                                         className={`relative h-20 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all
                                                             ${selected
-                                                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 ring-2 ring-emerald-500/25 shadow-md'
+                                                                ? 'border-[#154F7C] dark:border-sky-400 bg-sky-50 dark:bg-sky-500/10 ring-2 ring-[#154F7C]/25 shadow-md'
                                                                 : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/40 hover:border-slate-300 hover:shadow-sm'
                                                             }`}
                                                     >
-                                                        <p.Icon className={`w-5 h-5 ${selected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}`} />
-                                                        <span className={`text-[11px] font-bold text-center leading-tight px-1 ${selected ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-600 dark:text-slate-300'}`}>
+                                                        <p.Icon className={`w-5 h-5 ${selected ? 'text-[#154F7C] dark:text-sky-400' : 'text-slate-500 dark:text-slate-400'}`} />
+                                                        <span className={`text-[11px] font-bold text-center leading-tight px-1 ${selected ? 'text-[#154F7C] dark:text-sky-300' : 'text-slate-600 dark:text-slate-300'}`}>
                                                             {p.label}
                                                         </span>
                                                         {selected && (
-                                                            <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center shadow">
+                                                            <div className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#154F7C] dark:bg-sky-500 rounded-full flex items-center justify-center shadow">
                                                                 <Check className="w-2.5 h-2.5 text-white" />
                                                             </div>
                                                         )}
@@ -705,14 +704,14 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                     type="tel"
                                                     value={data.mobileNumber}
                                                     onChange={e => setData('mobileNumber', e.target.value)}
-                                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition"
+                                                    className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-[#154F7C] dark:focus:ring-sky-500 focus:border-transparent transition"
                                                     placeholder="07XXXXXXXX"
                                                     required={isMobile}
                                                 />
                                             </div>
                                             {errors.mobileNumber && <p className="text-red-500 text-xs mt-1">{errors.mobileNumber}</p>}
                                             <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5">
-                                                <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                                                <ShieldCheck className="w-3 h-3 text-sky-500" />
                                                 You'll receive a USSD prompt to confirm this payment
                                             </p>
                                         </div>
@@ -732,7 +731,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                     <button
                                         type="submit"
                                         disabled={processing || !selectedPkg}
-                                        className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:scale-[.99] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-600/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                                        className="w-full py-3.5 bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 active:scale-[.99] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-[#154F7C]/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                                     >
                                         {processing ? (
                                             <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing…</>
@@ -754,7 +753,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                         </div>
 
                         {/* ════ RIGHT COLUMN — Summary (sticky) ════════════ */}
-                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto custom-scrollbar">
+                        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm sticky top-20 max-h-[calc(100dvh-6.5rem)] overflow-y-auto custom-scrollbar">
                             <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 sticky top-0 bg-white dark:bg-slate-900 z-10">
                                 <p className="text-sm font-black text-slate-900 dark:text-white">Summary</p>
                                 <p className="text-[11px] text-slate-400 mt-0.5">Your order details</p>
@@ -820,8 +819,8 @@ function PaymentPage({ packages, transactions, has_event }) {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 py-2.5 rounded-lg">
-                                    <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                                <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-700 dark:text-slate-300 bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 py-2.5 rounded-lg">
+                                    <ShieldCheck className="w-3 h-3 text-[#154F7C] dark:text-sky-400" />
                                     Secure Payment Guaranteed
                                 </div>
 
@@ -831,7 +830,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                         <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">What's Included</p>
                                         {parseFeatures(selectedPkgObj.features).map((f, i) => (
                                             <div key={i} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
-                                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400 flex-shrink-0 mt-0.5" />
                                                 {f}
                                             </div>
                                         ))}
@@ -884,15 +883,15 @@ function PaymentPage({ packages, transactions, has_event }) {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-2.5">
-                                                    <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-500/15 flex items-center justify-center flex-shrink-0">
-                                                        <TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                                    <div className="w-7 h-7 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 flex items-center justify-center flex-shrink-0">
+                                                        <TrendingUp className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
                                                     </div>
                                                     <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 max-w-[180px] truncate">{tx.title}</span>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-xs text-slate-500">{tx.payment_method || '—'}</td>
                                             <td className="px-6 py-4 font-mono text-[11px] text-slate-400">{tx.transaction_number}</td>
-                                            <td className="px-6 py-4 text-right font-black text-sm whitespace-nowrap text-emerald-600 dark:text-emerald-400">
+                                            <td className="px-6 py-4 text-right font-black text-sm whitespace-nowrap text-[#154F7C] dark:text-sky-400">
                                                 {Number(tx.amount || 0).toLocaleString()}
                                                 <span className="text-slate-400 text-[10px] ml-1 font-normal">TZS</span>
                                             </td>
@@ -912,7 +911,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                 <button
                                                     type="button"
                                                     onClick={() => setViewReceiptTx(tx)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-500/10 dark:hover:bg-emerald-500/20 rounded-lg transition cursor-pointer"
+                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-bold text-[#154F7C] bg-sky-500/10 hover:bg-sky-500/20 dark:text-sky-400 dark:bg-sky-500/15 dark:hover:bg-sky-500/25 rounded-lg transition cursor-pointer"
                                                 >
                                                     View
                                                 </button>
@@ -955,7 +954,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={handlePrint}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10 transition cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-[#154F7C] hover:bg-sky-50 dark:text-slate-400 dark:hover:text-sky-400 dark:hover:bg-sky-500/10 transition cursor-pointer"
                                         title="Print"
                                     >
                                         <Printer className="w-3.5 h-3.5" />
@@ -963,7 +962,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                     </button>
                                     <button
                                         onClick={handlePrint}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10 transition cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-[#154F7C] hover:bg-sky-50 dark:text-slate-400 dark:hover:text-sky-400 dark:hover:bg-sky-500/10 transition cursor-pointer"
                                         title="Download as PDF"
                                     >
                                         <Download className="w-3.5 h-3.5" />
@@ -971,7 +970,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                     </button>
                                     <button
                                         onClick={handleShare}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 dark:text-slate-400 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10 transition cursor-pointer"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-[#154F7C] hover:bg-sky-50 dark:text-slate-400 dark:hover:text-sky-400 dark:hover:bg-sky-500/10 transition cursor-pointer"
                                         title="Share"
                                     >
                                         <Share2 className="w-3.5 h-3.5" />
@@ -1050,7 +1049,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                     <div className="flex justify-between items-center relative z-10">
                                         <span className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white">Total Paid</span>
                                         <div className="text-right">
-                                            <span className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400">
+                                            <span className="text-lg font-black font-mono text-[#154F7C] dark:text-sky-400">
                                                 {Number(viewReceiptTx.amount).toLocaleString()} <span className="text-[10px] text-slate-500 font-sans">TZS</span>
                                             </span>
                                         </div>

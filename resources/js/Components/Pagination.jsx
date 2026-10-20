@@ -41,7 +41,7 @@ export default function Pagination({
                             dangerouslySetInnerHTML={{ __html: link.label }}
                             className={`px-3 py-1.5 text-xs rounded-xl border transition cursor-pointer ${
                                 link.active
-                                    ? 'bg-[#16A34A] text-white border-[#16A34A] font-bold shadow-2xs'
+                                    ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] text-white border-sky-400/30 font-bold shadow-xs'
                                     : (!link.url
                                         ? 'text-slate-300 dark:text-slate-600 border-slate-200 dark:border-white/[0.08] cursor-not-allowed'
                                         : 'text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/[0.08] hover:bg-slate-50 dark:hover:bg-white/[0.06]')

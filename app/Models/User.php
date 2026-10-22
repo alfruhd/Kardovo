@@ -154,6 +154,7 @@ class User extends Authenticatable
             'can_customize_templates' => true,
             'can_manage_scanners' => true,
             'can_access_ticketing' => true,
+            'can_access_voting' => true,
             'can_customize_microsite' => false,
             'can_export_data' => true,
         ];
@@ -238,6 +239,11 @@ class User extends Authenticatable
     public function canAccessTicketing(): bool
     {
         return $this->hasPermission('can_access_ticketing');
+    }
+
+    public function canAccessVoting(): bool
+    {
+        return $this->hasPermission('can_access_voting');
     }
 
     public function canCustomizeMicrosite(): bool

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FinancialTransaction;
 use App\Models\PaymentLedgerEntry;
 use App\Models\TicketOrder;
+use App\Models\VoteOrder;
 use App\Models\Wallet;
 use App\Services\TicketDeliveryService;
 use Illuminate\Http\Request;
@@ -69,7 +70,12 @@ class AzampayWebhookController extends Controller
                 ->lockForUpdate()
                 ->first();
 
-            if (! $transaction && ! $ticketOrder) {
+            $voteOrder = VoteOrder::where('order_number', $externalId)
+                ->orWhere('payment_reference', $externalId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $transaction && ! $ticketOrder && ! $voteOrder) {
                 Log::error('Azampay Webhook: Transaction not found', ['externalId' => $externalId]);
 
                 return response()->json(['success' => false, 'message' => 'Transaction not found'], 404);
@@ -84,7 +90,8 @@ class AzampayWebhookController extends Controller
                 ], 200);
             }
 
-            if ($transaction && $transaction->status === 'completed' && ($ticketOrder === null || $ticketOrder->isPaid())) {
+            if (($transaction && $transaction->status === 'completed' && ($ticketOrder === null || $ticketOrder->isPaid()))
+                || ($voteOrder && $voteOrder->status === 'completed')) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Already processed',
@@ -96,13 +103,13 @@ class AzampayWebhookController extends Controller
             PaymentLedgerEntry::appendEntry([
                 'ticket_order_id' => $ticketOrder?->id,
                 'financial_transaction_id' => $transaction?->id,
-                'event_id' => $ticketOrder?->event_id ?? $transaction?->event_id,
-                'idempotency_key' => $ticketOrder?->idempotency_key ?? $transaction?->idempotency_key,
+                'event_id' => $ticketOrder?->event_id ?? $transaction?->event_id ?? $voteOrder?->event_id,
+                'idempotency_key' => $ticketOrder?->idempotency_key ?? $transaction?->idempotency_key ?? ('vote:'.$voteOrder?->order_number),
                 'provider_event_id' => $providerEventId,
                 'state' => $targetState,
-                'amount' => $ticketOrder?->total_amount ?? $transaction?->amount ?? 0,
-                'currency' => $ticketOrder?->currency ?? $transaction?->currency ?? 'TZS',
-                'payment_method' => $ticketOrder?->payment_method ?? $transaction?->payment_method ?? 'AzamPay',
+                'amount' => $ticketOrder?->total_amount ?? $transaction?->amount ?? $voteOrder?->amount ?? 0,
+                'currency' => $ticketOrder?->currency ?? $transaction?->currency ?? $voteOrder?->currency ?? 'TZS',
+                'payment_method' => $ticketOrder?->payment_method ?? $transaction?->payment_method ?? $voteOrder?->provider ?? 'AzamPay',
                 'gateway_reference' => $mnoReference ?: $gatewayTxId,
                 'metadata' => [
                     'external_id' => $externalId,
@@ -130,20 +137,41 @@ class AzampayWebhookController extends Controller
                         'notes' => $updatedNotes,
                     ]);
 
-                    // If package_purchase, credit message quotas (1 WhatsApp + 1 SMS per card/guest)
+                    // If package_purchase, credit message quotas (Card packages: 1 WA + 1 SMS per card; Bulk SMS: credit SMS only)
                     if ($transaction->category === 'package_purchase' && $transaction->user) {
-                        $cardsCount = 0;
+                        $isBulkSms = false;
+                        $smsCount = 0;
+                        $whatsappCount = 0;
+
                         if (is_array($meta)) {
-                            $cardsCount = (int) ($meta['cards_count'] ?? $meta['guests_count'] ?? 0);
-                        }
-                        if ($cardsCount <= 0 && preg_match('/\((\d+)\s+cards/i', $transaction->title, $matches)) {
-                            $cardsCount = (int) $matches[1];
-                        } elseif ($cardsCount <= 0 && preg_match('/\((\d+)\s+guests\)/i', $transaction->title, $matches)) {
-                            $cardsCount = (int) $matches[1];
+                            $isBulkSms = ($meta['package_type'] ?? '') === 'bulk_sms' || ! empty($meta['is_bulk_sms']);
+                            if ($isBulkSms) {
+                                $smsCount = (int) ($meta['sms_count'] ?? $meta['sms_messages_included'] ?? 0);
+                            } else {
+                                $cardsCount = (int) ($meta['cards_count'] ?? $meta['guests_count'] ?? 0);
+                                $whatsappCount = (int) ($meta['whatsapp_messages_included'] ?? $cardsCount);
+                                $smsCount = (int) ($meta['sms_messages_included'] ?? $cardsCount);
+                            }
                         }
 
-                        if ($cardsCount > 0) {
-                            $transaction->user->addMessageQuotas($cardsCount, $cardsCount);
+                        // Fallback matching from transaction title if meta not parsed
+                        if (! $isBulkSms && $whatsappCount <= 0 && $smsCount <= 0) {
+                            if (preg_match('/(\d+)\s+Bulk\s+SMS/i', $transaction->title, $matches)) {
+                                $isBulkSms = true;
+                                $smsCount = (int) $matches[1];
+                            } elseif (preg_match('/\((\d+)\s+cards/i', $transaction->title, $matches)) {
+                                $cardsCount = (int) $matches[1];
+                                $whatsappCount = $cardsCount;
+                                $smsCount = $cardsCount;
+                            } elseif (preg_match('/\((\d+)\s+guests\)/i', $transaction->title, $matches)) {
+                                $cardsCount = (int) $matches[1];
+                                $whatsappCount = $cardsCount;
+                                $smsCount = $cardsCount;
+                            }
+                        }
+
+                        if ($whatsappCount > 0 || $smsCount > 0) {
+                            $transaction->user->addMessageQuotas($whatsappCount, $smsCount);
                         }
                     }
 
@@ -177,6 +205,10 @@ class AzampayWebhookController extends Controller
                         }
                     }
                 }
+
+                if ($voteOrder && $voteOrder->status !== 'completed') {
+                    $voteOrder->markAsCompleted($gatewayTxId);
+                }
             } else {
                 if ($transaction && $transaction->status !== 'completed') {
                     $transaction->update([
@@ -188,6 +220,12 @@ class AzampayWebhookController extends Controller
                 if ($ticketOrder && ! $ticketOrder->isPaid()) {
                     $ticketOrder->update([
                         'payment_status' => 'failed',
+                    ]);
+                }
+
+                if ($voteOrder && $voteOrder->status === 'pending') {
+                    $voteOrder->update([
+                        'status' => 'failed',
                     ]);
                 }
             }

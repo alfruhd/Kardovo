@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnforceRequestPayloadSecurity;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Foundation\Application;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->trustProxies(at: '*');
+        $middleware->prepend(EnforceRequestPayloadSecurity::class);
 
         $middleware->web(append: [
             PreventBackHistory::class,

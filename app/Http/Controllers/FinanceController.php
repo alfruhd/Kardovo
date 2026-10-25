@@ -6,6 +6,7 @@ use App\Models\Event;
 use App\Models\FinancialBill;
 use App\Models\FinancialTransaction;
 use App\Models\User;
+use App\Models\VoteOrder;
 use App\Notifications\BillReminderNotification;
 use App\Services\ExchangeRateService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -54,11 +55,28 @@ class FinanceController extends Controller
 
         $incomeByCategory = [
             'package_purchase' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'package_purchase')->where('status', 'completed')->sum('amount'),
-            'pass_sales' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'pass_sales')->where('status', 'completed')->sum('amount'),
+            'pass_sales' => (float) $allPeriodTransactions->where('type', 'income')->whereIn('category', ['pass_sales', 'ticket_sales'])->where('status', 'completed')->sum('amount'),
+            'vote_sales' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'vote_sales')->where('status', 'completed')->sum('amount'),
             'sms_credits' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'sms_credits')->where('status', 'completed')->sum('amount'),
             'design_service' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'design_service')->where('status', 'completed')->sum('amount'),
             'subscription' => (float) $allPeriodTransactions->where('type', 'income')->where('category', 'subscription')->where('status', 'completed')->sum('amount'),
-            'other_income' => (float) $allPeriodTransactions->where('type', 'income')->whereNotIn('category', ['package_purchase', 'pass_sales', 'sms_credits', 'design_service', 'subscription'])->where('status', 'completed')->sum('amount'),
+            'other_income' => (float) $allPeriodTransactions->where('type', 'income')->whereNotIn('category', ['package_purchase', 'pass_sales', 'ticket_sales', 'vote_sales', 'sms_credits', 'design_service', 'subscription'])->where('status', 'completed')->sum('amount'),
+        ];
+
+        // Specific Voting Metrics
+        $totalVoteGross = (float) $incomeByCategory['vote_sales'];
+        $voteOrdersCount = VoteOrder::where('status', 'completed')->count();
+        $totalVoteFees = (float) VoteOrder::where('status', 'completed')->sum('platform_fee');
+        if ($totalVoteFees <= 0 && $totalVoteGross > 0) {
+            $totalVoteFees = round($totalVoteGross * 0.06, 2);
+        }
+        $totalVoteNet = round($totalVoteGross - $totalVoteFees, 2);
+
+        $votingMetrics = [
+            'gross_revenue' => $totalVoteGross,
+            'platform_fees' => $totalVoteFees,
+            'organizer_net' => $totalVoteNet,
+            'completed_orders_count' => $voteOrdersCount,
         ];
 
         $expenseByCategory = [
@@ -280,6 +298,7 @@ class FinanceController extends Controller
             'fx_rate' => $fxData,
             'income_by_category' => $incomeByCategory,
             'expense_by_category' => $expenseByCategory,
+            'voting_metrics' => $votingMetrics,
             'monthly_trend' => $monthlyTrend,
             'yearly_cashflow' => $yearlyCashflow,
             'monthly_cashflow' => $monthlyCashflow,
@@ -744,10 +763,11 @@ class FinanceController extends Controller
         $incomeByCategory = [
             'package_purchase' => (float) $transactions->where('type', 'income')->where('category', 'package_purchase')->where('status', 'completed')->sum('amount'),
             'pass_sales' => (float) $transactions->where('type', 'income')->where('category', 'pass_sales')->where('status', 'completed')->sum('amount'),
+            'vote_sales' => (float) $transactions->where('type', 'income')->where('category', 'vote_sales')->where('status', 'completed')->sum('amount'),
             'sms_credits' => (float) $transactions->where('type', 'income')->where('category', 'sms_credits')->where('status', 'completed')->sum('amount'),
             'design_service' => (float) $transactions->where('type', 'income')->where('category', 'design_service')->where('status', 'completed')->sum('amount'),
             'subscription' => (float) $transactions->where('type', 'income')->where('category', 'subscription')->where('status', 'completed')->sum('amount'),
-            'other_income' => (float) $transactions->where('type', 'income')->whereNotIn('category', ['package_purchase', 'pass_sales', 'sms_credits', 'design_service', 'subscription'])->where('status', 'completed')->sum('amount'),
+            'other_income' => (float) $transactions->where('type', 'income')->whereNotIn('category', ['package_purchase', 'pass_sales', 'vote_sales', 'sms_credits', 'design_service', 'subscription'])->where('status', 'completed')->sum('amount'),
         ];
 
         $expenseByCategory = [

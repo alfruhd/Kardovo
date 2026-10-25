@@ -10,6 +10,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import ConfirmationModal from '@/Components/ConfirmationModal';
 import {
+    ArrowLeft,
     Ticket,
     Tag,
     Plus,
@@ -867,6 +868,19 @@ export default function TicketingPortal({
                 {selectedEvent ? (
                     <>
                         {/* ══════════════════════════════════════════════════════════════
+                            NAVIGATION: Back to All Occasions (Ticketing Landing Page)
+                           ══════════════════════════════════════════════════════════════ */}
+                        <div>
+                            <Link
+                                href={route('ticketing.index')}
+                                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#154F7C] dark:text-slate-400 dark:hover:text-sky-400 transition group cursor-pointer"
+                            >
+                                <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+                                <span>All Occasions</span>
+                            </Link>
+                        </div>
+
+                        {/* ══════════════════════════════════════════════════════════════
                             EVENT HEADER: who, status, and the 3 things you do most
                            ══════════════════════════════════════════════════════════════ */}
                         <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
@@ -920,6 +934,15 @@ export default function TicketingPortal({
                                                 role="listbox"
                                                 className="absolute left-0 top-full mt-2 w-80 max-w-[85vw] bg-white dark:bg-[#0B1524] rounded-xl border border-slate-200 dark:border-white/10 shadow-xl py-1 z-50 overflow-hidden"
                                             >
+                                                <div className="p-1 border-b border-slate-100 dark:border-white/[0.06]">
+                                                    <Link
+                                                        href={route('ticketing.index')}
+                                                        className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-[#154F7C] dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-white/[0.04] rounded-lg transition"
+                                                    >
+                                                        <ArrowLeft className="w-3.5 h-3.5" />
+                                                        <span>All Occasions (Ticketing Landing Page)</span>
+                                                    </Link>
+                                                </div>
                                                 <div className="px-4 py-2 text-xs font-semibold text-slate-500 border-b border-slate-100 dark:border-white/[0.06]">
                                                     Switch event
                                                 </div>

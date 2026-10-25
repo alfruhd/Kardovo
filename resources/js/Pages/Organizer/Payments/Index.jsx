@@ -4,7 +4,8 @@ import KardovoAppLayout from '@/Layouts/KardovoAppLayout';
 import {
     CheckCircle2, ArrowRight, Smartphone, CreditCard,
     Building2, QrCode, Link2, History, TrendingUp,
-    ShieldCheck, Check, Tag, Printer, X, Share2, Download
+    ShieldCheck, Check, Tag, Printer, X, Share2, Download,
+    MessageSquare, Sliders, Zap, Sparkles, Layers, AlertCircle, Info, ChevronRight
 } from 'lucide-react';
 import EmptyEventState from '@/Components/EmptyEventState';
 import Modal from '@/Components/Modal';
@@ -92,12 +93,25 @@ export default function PaymentsIndex(props) {
     return <ErrorBoundary><PaymentPage {...props} /></ErrorBoundary>;
 }
 
-function PaymentPage({ packages, transactions, has_event }) {
+function PaymentPage({ packages, cardPackages, bulkSmsPackages, transactions, has_event, userQuotas }) {
     const safePackages     = Array.isArray(packages)     ? packages     : [];
     const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
-    
-    const [selectedPkg, setSelectedPkg] = useState(null);
+    const eventCardPackages = (Array.isArray(cardPackages) && cardPackages.length > 0)
+        ? cardPackages
+        : safePackages.filter(p => !p.package_type || p.package_type === 'event_card');
+
+    const directBulkSmsPackages = (Array.isArray(bulkSmsPackages) && bulkSmsPackages.length > 0)
+        ? bulkSmsPackages
+        : safePackages.filter(p => p.package_type === 'bulk_sms');
+
+    const [planTab, setPlanTab] = useState('cards'); // 'cards' | 'bulk_sms'
+    const [selectedCardPkg, setSelectedCardPkg] = useState(eventCardPackages[0]?.id || null);
+    const [selectedBulkSmsPkg, setSelectedBulkSmsPkg] = useState(
+        directBulkSmsPackages.find(p => (p.name || '').toLowerCase().includes('standard'))?.id || directBulkSmsPackages[0]?.id || null
+    );
+    const [smsSelectionMode, setSmsSelectionMode] = useState('bundle'); // 'bundle' | 'custom'
+    const [customSmsCount, setCustomSmsCount] = useState(1000);
     const [providerTab, setProviderTab] = useState('mobile');
     const [viewReceiptTx, setViewReceiptTx] = useState(null);
 
@@ -447,19 +461,32 @@ function PaymentPage({ packages, transactions, has_event }) {
  // <-- Added state for modal
 
 
-    const { data, setData, post, processing, errors, reset } = useForm({
-        package_id:   '',
+    const { data, setData, post, processing, errors, reset, transform } = useForm({
+        package_id:   eventCardPackages[0]?.id || '',
         provider:     'Mpesa',
         mobileNumber: '',
         guests_count: 100,
+        is_custom_sms: false,
+        custom_sms_count: 1000,
     });
 
-    const isMobile       = MOBILE_VALUES.includes(data.provider);
-    const selectedPkgObj = safePackages.find(p => p.id === selectedPkg);
-    const allProviders   = [...MOBILE_PROVIDERS, ...OTHER_PROVIDERS];
+    const isMobile         = MOBILE_VALUES.includes(data.provider);
+    const allProviders     = [...MOBILE_PROVIDERS, ...OTHER_PROVIDERS];
 
-    const handleSelectPkg = (pkg) => {
-        setSelectedPkg(pkg.id);
+    const selectedCardPkgObj    = eventCardPackages.find(p => p.id === selectedCardPkg) || safePackages.find(p => p.id === selectedCardPkg);
+    const selectedBulkSmsPkgObj = directBulkSmsPackages.find(p => p.id === selectedBulkSmsPkg) || safePackages.find(p => p.id === selectedBulkSmsPkg);
+
+    const getCustomSmsRate = (count) => {
+        if (count >= 5000) return 30;
+        if (count >= 2500) return 32;
+        if (count >= 1000) return 35;
+        return 40;
+    };
+
+    const customRate = getCustomSmsRate(customSmsCount);
+
+    const handleSelectCardPkg = (pkg) => {
+        setSelectedCardPkg(pkg.id);
         const isExecutive = (pkg.name || '').toLowerCase().includes('executive');
         const minCount = isExecutive ? 200 : 1;
         setData(prev => ({
@@ -469,11 +496,57 @@ function PaymentPage({ packages, transactions, has_event }) {
         }));
     };
 
+    const handleSelectBulkSmsPkg = (pkg) => {
+        setSelectedBulkSmsPkg(pkg.id);
+        setSmsSelectionMode('bundle');
+    };
+
+    const handleCustomSmsChange = (val) => {
+        const parsed = Math.max(100, parseInt(val) || 100);
+        setCustomSmsCount(parsed);
+        setSmsSelectionMode('custom');
+    };
+
+    const canSubmit = planTab === 'cards'
+        ? Boolean(selectedCardPkg && (data.guests_count || 1) >= (selectedCardPkgObj?.name?.toLowerCase().includes('executive') ? 200 : 1))
+        : (smsSelectionMode === 'bundle' ? Boolean(selectedBulkSmsPkg) : customSmsCount >= 100);
+
+    const currentTotalPayable = planTab === 'cards'
+        ? Number((selectedCardPkgObj?.price || 0) * (data.guests_count || 1))
+        : (smsSelectionMode === 'bundle'
+            ? Number(selectedBulkSmsPkgObj?.price || 0)
+            : Number(customSmsCount * customRate));
+
     const submitPurchase = (e) => {
         e.preventDefault();
-        if (!data.package_id) return;
+        if (!canSubmit) return;
+
+        transform((currentData) => {
+            if (planTab === 'cards') {
+                return {
+                    ...currentData,
+                    package_id: selectedCardPkg,
+                    guests_count: currentData.guests_count || 100,
+                    is_custom_sms: false,
+                };
+            } else if (smsSelectionMode === 'bundle') {
+                return {
+                    ...currentData,
+                    package_id: selectedBulkSmsPkg,
+                    is_custom_sms: false,
+                };
+            } else {
+                return {
+                    ...currentData,
+                    package_id: 'custom_sms',
+                    is_custom_sms: true,
+                    custom_sms_count: customSmsCount,
+                };
+            }
+        });
+
         post(route('organizer.pricing.purchase'), {
-            onSuccess: () => { reset(); setSelectedPkg(null); },
+            onSuccess: () => { reset('mobileNumber'); },
         });
     };
 
@@ -481,22 +554,40 @@ function PaymentPage({ packages, transactions, has_event }) {
         <KardovoAppLayout title="Payment">
             <Head title="Payment" />
 
-            {!has_event ? (
-                <div className="max-w-7xl mx-auto py-12 px-4">
-                    <EmptyEventState
-                        title="No Event Selected"
-                        description="Please select an event from the dashboard or create a new one to manage messaging and broadcast passes."
-                        buttonText="Go to Dashboard"
-                        buttonHref={route('dashboard')}
-                    />
-                </div>
-            ) : (
-                <div className="max-w-7xl mx-auto space-y-6">
+            <div className="max-w-7xl mx-auto space-y-6">
 
-                {/* ── Page header ── */}
-                <div>
-                    <h1 className="text-2xl font-black text-slate-900 dark:text-white">Payment</h1>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Select a plan and complete payment to unlock features</p>
+                {/* ── Page header & Tab Switcher ── */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-black text-slate-900 dark:text-white">Payment</h1>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Select a plan and complete payment to unlock features</p>
+                    </div>
+
+                    {/* Segmented Switcher */}
+                    <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-white/10 self-start sm:self-auto">
+                        <button
+                            type="button"
+                            onClick={() => setPlanTab('cards')}
+                            className={`py-2 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                planTab === 'cards'
+                                    ? 'bg-white dark:bg-slate-900 text-[#154F7C] dark:text-sky-400 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                            }`}
+                        >
+                            Event Digital Passes
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setPlanTab('bulk_sms')}
+                            className={`py-2 px-4 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                planTab === 'bulk_sms'
+                                    ? 'bg-white dark:bg-slate-900 text-[#154F7C] dark:text-sky-400 shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white'
+                            }`}
+                        >
+                            Bulk SMS
+                        </button>
+                    </div>
                 </div>
 
                 <form onSubmit={submitPurchase}>
@@ -505,63 +596,147 @@ function PaymentPage({ packages, transactions, has_event }) {
                         {/* ════ LEFT COLUMN ════════════════════════════════ */}
                         <div className="space-y-5">
 
-                            {/* ── Section 1: Packages ── */}
-                            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
-
-                                {/* Header */}
-                                <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex items-center gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 flex items-center justify-center flex-shrink-0">
-                                        <Tag className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-black text-slate-900 dark:text-white">Select Package</p>
-                                        <p className="text-[11px] text-slate-400">Choose the plan that fits your needs</p>
-                                    </div>
-                                    {safePackages.length > 0 && (
-                                        <span className="ml-auto text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-500/10 dark:bg-sky-500/15 text-[#154F7C] dark:text-sky-400 border border-sky-500/20">
-                                            {safePackages.length} plans
-                                        </span>
-                                    )}
-                                </div>
-
-                                {/* Package cards */}
-                                {safePackages.length === 0 ? (
-                                    <div className="p-12 text-center">
-                                        <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3">
-                                            <Tag className="w-5 h-5 text-slate-400" />
+                            {/* ── VIEW A: EVENT DIGITAL PASSES ── */}
+                            {planTab === 'cards' && (
+                                <div className="space-y-4">
+                                    {!has_event && (
+                                        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 flex items-start gap-3">
+                                            <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                            <div className="text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                                                <p className="font-bold">No event created yet</p>
+                                                <p className="text-amber-700 dark:text-amber-300">
+                                                    Digital pass packages include WhatsApp invitations and dynamic QR check-in passes for your event guests.
+                                                    You can <Link href={route('dashboard')} className="underline font-bold hover:text-amber-950 dark:hover:text-white">create an event first</Link>, or switch to the <strong>Bulk Normal SMS</strong> tab above to purchase standalone broadcast SMS without needing an event.
+                                                </p>
+                                            </div>
                                         </div>
-                                        <p className="text-sm font-bold text-slate-600 dark:text-slate-400">No packages available yet</p>
-                                        <p className="text-xs text-slate-400 mt-1">Check back soon for available plans</p>
+                                    )}
+
+                                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                                        <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-7 h-7 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 flex items-center justify-center flex-shrink-0">
+                                                    <Tag className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-black text-slate-900 dark:text-white">Select Digital Pass Plan</p>
+                                                    <p className="text-[11px] text-slate-400">Includes 1 WhatsApp + 1 SMS invitation per card</p>
+                                                </div>
+                                            </div>
+                                            {eventCardPackages.length > 0 && (
+                                                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-sky-500/10 dark:bg-sky-500/15 text-[#154F7C] dark:text-sky-400 border border-sky-500/20">
+                                                    {eventCardPackages.length} plans
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                            {eventCardPackages.map((pkg, idx) => {
+                                                const price     = Number(pkg.price || 0);
+                                                const selected  = selectedCardPkg === pkg.id;
+                                                const isPopular = idx === 1;
+
+                                                return (
+                                                    <div
+                                                        key={pkg.id}
+                                                        onClick={() => handleSelectCardPkg(pkg)}
+                                                        className={`relative flex flex-col rounded-xl border-2 p-5 cursor-pointer transition-all select-none group ${
+                                                            selected
+                                                                ? 'border-[#154F7C] dark:border-sky-500 bg-sky-50/60 dark:bg-sky-950/20 shadow-md shadow-[#154F7C]/10'
+                                                                : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/30 hover:border-sky-300 dark:hover:border-sky-700/50 hover:shadow-sm'
+                                                        }`}
+                                                    >
+                                                        <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                                                            selected ? 'border-[#154F7C] dark:border-sky-400 bg-[#154F7C] dark:bg-sky-500' : 'border-slate-300 dark:border-slate-600'
+                                                        }`}>
+                                                            {selected && <Check className="w-3 h-3 text-white" />}
+                                                        </div>
+
+                                                        <h3 className={`text-base font-black leading-tight pr-6 ${selected ? 'text-[#154F7C] dark:text-sky-300' : 'text-slate-900 dark:text-white'}`}>
+                                                            {pkg.name}
+                                                        </h3>
+
+                                                        <div className="flex items-baseline gap-1.5 mt-2">
+                                                            <span className={`text-2xl font-black tracking-tight ${selected ? 'text-[#154F7C] dark:text-sky-400' : 'text-slate-900 dark:text-white'}`}>
+                                                                {price.toLocaleString()}
+                                                            </span>
+                                                            <span className="text-xs font-semibold text-slate-400">TZS / card</span>
+                                                        </div>
+
+                                                        <div className="mt-2 min-h-[22px] flex items-center flex-1">
+                                                            {isPopular && (
+                                                                <span className={`self-start text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border ${
+                                                                    selected
+                                                                        ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] text-white border-sky-400/30'
+                                                                        : 'bg-sky-100 text-[#154F7C] dark:bg-sky-500/15 dark:text-sky-400 border-sky-200 dark:border-sky-500/20'
+                                                                }`}>
+                                                                    ★ Most Popular
+                                                                </span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className={`mt-4 pt-3 border-t text-center text-xs font-bold transition-all ${
+                                                            selected
+                                                                ? 'border-sky-200 dark:border-sky-500/20 text-[#154F7C] dark:text-sky-400'
+                                                                : 'border-slate-100 dark:border-white/5 text-slate-400 group-hover:text-[#154F7C] dark:group-hover:text-sky-400'
+                                                        }`}>
+                                                            {selected ? '✓ Selected' : 'Click to select'}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                ) : (
+                                </div>
+                            )}
+
+                            {/* ── VIEW B: BULK SMS ── */}
+                            {planTab === 'bulk_sms' && (
+                                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="px-6 py-4 border-b border-slate-100 dark:border-white/5 flex items-center justify-between gap-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-7 h-7 rounded-lg bg-sky-500/10 dark:bg-sky-500/15 flex items-center justify-center flex-shrink-0">
+                                                <Tag className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-black text-slate-900 dark:text-white">Select Package</p>
+                                                <p className="text-[11px] text-slate-400">Choose a bundle or enter a custom amount</p>
+                                            </div>
+                                        </div>
+                                        {userQuotas?.sms_remaining !== null && userQuotas?.sms_remaining !== undefined && (
+                                            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                                                Balance: <strong className="text-slate-800 dark:text-slate-200">{Number(userQuotas.sms_remaining).toLocaleString()} SMS</strong>
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {/* 4 Bundle Cards — matching Event Digital Passes exactly */}
                                     <div className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                        {safePackages.map((pkg, idx) => {
+                                        {directBulkSmsPackages.map((pkg) => {
                                             const price     = Number(pkg.price || 0);
-                                            const selected  = selectedPkg === pkg.id;
-                                            const isPopular = idx === 1;
+                                            const selected  = smsSelectionMode === 'bundle' && selectedBulkSmsPkg === pkg.id;
+                                            const isPopular = (pkg.name || '').toLowerCase().includes('standard');
 
                                             return (
                                                 <div
                                                     key={pkg.id}
-                                                    onClick={() => handleSelectPkg(pkg)}
-                                                    className={`relative flex flex-col rounded-xl border-2 p-5 cursor-pointer transition-all select-none group
-                                                        ${selected
+                                                    onClick={() => handleSelectBulkSmsPkg(pkg)}
+                                                    className={`relative flex flex-col rounded-xl border-2 p-5 cursor-pointer transition-all select-none group ${
+                                                        selected
                                                             ? 'border-[#154F7C] dark:border-sky-500 bg-sky-50/60 dark:bg-sky-950/20 shadow-md shadow-[#154F7C]/10'
                                                             : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/30 hover:border-sky-300 dark:hover:border-sky-700/50 hover:shadow-sm'
-                                                        }`}
+                                                    }`}
                                                 >
-                                                    {/* Radio circle top-right */}
-                                                    <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0
-                                                        ${selected ? 'border-[#154F7C] dark:border-sky-400 bg-[#154F7C] dark:bg-sky-500' : 'border-slate-300 dark:border-slate-600'}`}>
+                                                    <div className={`absolute top-4 right-4 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                                                        selected ? 'border-[#154F7C] dark:border-sky-400 bg-[#154F7C] dark:bg-sky-500' : 'border-slate-300 dark:border-slate-600'
+                                                    }`}>
                                                         {selected && <Check className="w-3 h-3 text-white" />}
                                                     </div>
 
-                                                    {/* Name */}
                                                     <h3 className={`text-base font-black leading-tight pr-6 ${selected ? 'text-[#154F7C] dark:text-sky-300' : 'text-slate-900 dark:text-white'}`}>
-                                                        {pkg.name}
+                                                        {pkg.name.replace(/\s*(SMS)?\s*Pack/i, '').trim() || pkg.name}
                                                     </h3>
 
-                                                    {/* Price */}
                                                     <div className="flex items-baseline gap-1.5 mt-2">
                                                         <span className={`text-2xl font-black tracking-tight ${selected ? 'text-[#154F7C] dark:text-sky-400' : 'text-slate-900 dark:text-white'}`}>
                                                             {price.toLocaleString()}
@@ -569,31 +744,79 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                         <span className="text-xs font-semibold text-slate-400">TZS</span>
                                                     </div>
 
-                                                    {/* Popular badge below price */}
+                                                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1">
+                                                        {Number(pkg.sms_count || 0).toLocaleString()} SMS
+                                                    </p>
+
                                                     <div className="mt-2 min-h-[22px] flex items-center flex-1">
                                                         {isPopular && (
-                                                            <span className={`self-start text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border
-                                                                ${selected
+                                                            <span className={`self-start text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest border ${
+                                                                selected
                                                                     ? 'bg-gradient-to-r from-[#154F7C] to-[#327FB5] text-white border-sky-400/30'
-                                                                    : 'bg-sky-100 text-[#154F7C] dark:bg-sky-500/15 dark:text-sky-400 border-sky-200 dark:border-sky-500/20'}`}>
+                                                                    : 'bg-sky-100 text-[#154F7C] dark:bg-sky-500/15 dark:text-sky-400 border-sky-200 dark:border-sky-500/20'
+                                                            }`}>
                                                                 ★ Most Popular
                                                             </span>
                                                         )}
                                                     </div>
 
-                                                    {/* Footer label */}
-                                                    <div className={`mt-4 pt-3 border-t text-center text-xs font-bold transition-all
-                                                        ${selected
+                                                    <div className={`mt-4 pt-3 border-t text-center text-xs font-bold transition-all ${
+                                                        selected
                                                             ? 'border-sky-200 dark:border-sky-500/20 text-[#154F7C] dark:text-sky-400'
-                                                            : 'border-slate-100 dark:border-white/5 text-slate-400 group-hover:text-[#154F7C] dark:group-hover:text-sky-400'}`}>
+                                                            : 'border-slate-100 dark:border-white/5 text-slate-400 group-hover:text-[#154F7C] dark:group-hover:text-sky-400'
+                                                    }`}>
                                                         {selected ? '✓ Selected' : 'Click to select'}
                                                     </div>
                                                 </div>
                                             );
                                         })}
                                     </div>
-                                )}
-                            </div>
+
+                                    {/* Custom SMS Amount Row */}
+                                    <div className="px-5 pb-5">
+                                        <div
+                                            onClick={() => setSmsSelectionMode('custom')}
+                                            className={`p-4 rounded-xl border-2 transition-all flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 cursor-pointer ${
+                                                smsSelectionMode === 'custom'
+                                                    ? 'border-[#154F7C] dark:border-sky-500 bg-sky-50/60 dark:bg-sky-950/20'
+                                                    : 'border-slate-200 dark:border-white/10 bg-slate-50/50 dark:bg-slate-800/20 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
+                                                    smsSelectionMode === 'custom'
+                                                        ? 'border-[#154F7C] dark:border-sky-400 bg-[#154F7C] dark:bg-sky-500'
+                                                        : 'border-slate-300 dark:border-slate-600'
+                                                }`}>
+                                                    {smsSelectionMode === 'custom' && <Check className="w-3 h-3 text-white" />}
+                                                </div>
+                                                <div>
+                                                    <p className={`text-sm font-bold ${smsSelectionMode === 'custom' ? 'text-[#154F7C] dark:text-sky-300' : 'text-slate-800 dark:text-slate-200'}`}>
+                                                        Custom SMS Amount
+                                                    </p>
+                                                    <p className="text-[11px] text-slate-400">
+                                                        {customRate} TZS per SMS • min. 100 SMS
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-2 self-end sm:self-auto" onClick={e => e.stopPropagation()}>
+                                                <input
+                                                    type="number"
+                                                    min="100"
+                                                    step="50"
+                                                    value={customSmsCount}
+                                                    onFocus={() => setSmsSelectionMode('custom')}
+                                                    onChange={e => handleCustomSmsChange(e.target.value)}
+                                                    className="w-32 h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-right font-bold text-sm text-slate-900 dark:text-white focus:border-[#154F7C] focus:ring-1 focus:ring-[#154F7C] outline-none"
+                                                    placeholder="1000"
+                                                />
+                                                <span className="text-xs font-semibold text-slate-500">SMS</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* ── Section 2: Payment Provider ── */}
                             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
@@ -603,8 +826,8 @@ function PaymentPage({ packages, transactions, has_event }) {
                                         <CreditCard className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-black text-slate-900 dark:text-white">Payment Provider</p>
-                                        <p className="text-[11px] text-slate-400">Select your preferred payment method</p>
+                                        <p className="text-sm font-black text-slate-900 dark:text-white">Payment Method</p>
+                                        <p className="text-[11px] text-slate-400">Select your mobile network or card provider</p>
                                     </div>
                                 </div>
 
@@ -622,7 +845,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                     setProviderTab(tab.id);
                                                     setData('provider', tab.id === 'mobile' ? 'Mpesa' : 'Visa');
                                                 }}
-                                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                                                     providerTab === tab.id
                                                         ? 'bg-white dark:bg-slate-700 text-[#154F7C] dark:text-sky-400 shadow-sm'
                                                         : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
@@ -645,11 +868,11 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                         key={p.value}
                                                         type="button"
                                                         onClick={() => setData('provider', p.value)}
-                                                        className={`relative h-20 rounded-xl border-2 transition-all overflow-hidden flex items-center justify-center
-                                                            ${selected
+                                                        className={`relative h-20 rounded-xl border-2 transition-all overflow-hidden flex items-center justify-center cursor-pointer ${
+                                                            selected
                                                                 ? 'border-[#154F7C] dark:border-sky-400 bg-sky-50 dark:bg-sky-500/10 ring-2 ring-[#154F7C]/25 shadow-md'
                                                                 : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/40 hover:border-slate-300 dark:hover:border-white/20 hover:shadow-sm'
-                                                            }`}
+                                                        }`}
                                                     >
                                                         <LogoComp />
                                                         {selected && (
@@ -673,11 +896,11 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                         key={p.value}
                                                         type="button"
                                                         onClick={() => setData('provider', p.value)}
-                                                        className={`relative h-20 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all
-                                                            ${selected
+                                                        className={`relative h-20 rounded-xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                                                            selected
                                                                 ? 'border-[#154F7C] dark:border-sky-400 bg-sky-50 dark:bg-sky-500/10 ring-2 ring-[#154F7C]/25 shadow-md'
                                                                 : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/40 hover:border-slate-300 hover:shadow-sm'
-                                                            }`}
+                                                        }`}
                                                     >
                                                         <p.Icon className={`w-5 h-5 ${selected ? 'text-[#154F7C] dark:text-sky-400' : 'text-slate-500 dark:text-slate-400'}`} />
                                                         <span className={`text-[11px] font-bold text-center leading-tight px-1 ${selected ? 'text-[#154F7C] dark:text-sky-300' : 'text-slate-600 dark:text-slate-300'}`}>
@@ -697,7 +920,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                                     {/* Phone number */}
                                     {isMobile && (
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Phone Number</label>
+                                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Payment Phone Number</label>
                                             <div className="relative">
                                                 <Smartphone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                                 <input
@@ -705,19 +928,18 @@ function PaymentPage({ packages, transactions, has_event }) {
                                                     value={data.mobileNumber}
                                                     onChange={e => setData('mobileNumber', e.target.value)}
                                                     className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 dark:bg-slate-800 text-slate-900 dark:text-white font-bold focus:ring-2 focus:ring-[#154F7C] dark:focus:ring-sky-500 focus:border-transparent transition"
-                                                    placeholder="07XXXXXXXX"
+                                                    placeholder="07XXXXXXXX or 06XXXXXXXX"
                                                     required={isMobile}
                                                 />
                                             </div>
                                             {errors.mobileNumber && <p className="text-red-500 text-xs mt-1">{errors.mobileNumber}</p>}
                                             <p className="text-[11px] text-slate-400 mt-2 flex items-center gap-1.5">
-                                                <ShieldCheck className="w-3 h-3 text-sky-500" />
-                                                You'll receive a USSD prompt to confirm this payment
+                                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                                You will receive a USSD push prompt on this phone to enter your PIN
                                             </p>
                                         </div>
                                     )}
 
-                                    {/* Card/Other notice */}
                                     {!isMobile && (
                                         <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/20">
                                             <ShieldCheck className="w-4 h-4 text-sky-500 flex-shrink-0 mt-0.5" />
@@ -727,84 +949,133 @@ function PaymentPage({ packages, transactions, has_event }) {
                                         </div>
                                     )}
 
-                                    {/* Submit */}
+                                    {/* Submit Button */}
                                     <button
                                         type="submit"
-                                        disabled={processing || !selectedPkg}
+                                        disabled={processing || !canSubmit}
                                         className="w-full py-3.5 bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] border border-sky-400/25 active:scale-[.99] text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-[#154F7C]/20 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                                     >
                                         {processing ? (
-                                            <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing…</>
+                                            <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing Payment Request…</>
                                         ) : (
-                                            <><ArrowRight className="w-4 h-4" /> Complete Purchase</>
+                                            <><ArrowRight className="w-4 h-4" /> Pay {Number(currentTotalPayable).toLocaleString()} TZS via {allProviders.find(p => p.value === data.provider)?.label || data.provider}</>
                                         )}
                                     </button>
 
-                                    {!selectedPkg && (
-                                        <p className="text-center text-[11px] text-slate-400">← Select a package above to continue</p>
+                                    {!canSubmit && (
+                                        <p className="text-center text-[11px] text-slate-400">
+                                            {planTab === 'cards' ? '← Select a digital card package above to proceed' : '← Select an SMS bundle or enter quantity to proceed'}
+                                        </p>
                                     )}
 
                                     <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-400 dark:text-slate-600 pt-1">
-                                        <ShieldCheck className="w-3 h-3" />
-                                        Secure Payment Guaranteed
+                                        <ShieldCheck className="w-3 h-3 text-emerald-500" />
+                                        Secure AzamPay Gateway • Instant Account Top-up
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* ════ RIGHT COLUMN — Summary (sticky) ════════════ */}
+                        {/* ════ RIGHT COLUMN — Order Summary (sticky) ════════ */}
                         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm sticky top-20 max-h-[calc(100dvh-6.5rem)] overflow-y-auto custom-scrollbar">
-                            <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 sticky top-0 bg-white dark:bg-slate-900 z-10">
-                                <p className="text-sm font-black text-slate-900 dark:text-white">Summary</p>
-                                <p className="text-[11px] text-slate-400 mt-0.5">Your order details</p>
+                            <div className="px-5 py-4 border-b border-slate-100 dark:border-white/5 sticky top-0 bg-white dark:bg-slate-900 z-10 flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-black text-slate-900 dark:text-white">Order Summary</p>
+                                    <p className="text-[11px] text-slate-400 mt-0.5">Verified pricing</p>
+                                </div>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 uppercase">
+                                    {planTab === 'cards' ? 'Pass Plan' : 'SMS Order'}
+                                </span>
                             </div>
 
                             <div className="p-5 space-y-4">
-                                {/* Selected package */}
-                                <div className="flex items-start justify-between gap-3">
-                                    <div>
-                                        <p className="text-xs text-slate-400 mb-0.5">Package</p>
-                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                                            {selectedPkgObj ? selectedPkgObj.name : <span className="text-slate-400 font-normal italic">Not selected</span>}
-                                        </p>
-                                    </div>
-                                    {selectedPkgObj && (
-                                        <div className="text-right flex-shrink-0">
-                                            <p className="text-xs text-slate-400 mb-0.5">Price / Card</p>
-                                            <p className="text-sm font-black text-slate-900 dark:text-white">
-                                                {Number(selectedPkgObj.price || 0).toLocaleString()}
-                                                <span className="text-[10px] text-slate-400 font-normal ml-1">TZS</span>
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
 
-                                {selectedPkgObj && (
+                                {/* Card Passes Summary */}
+                                {planTab === 'cards' && (
                                     <>
-                                        {/* Guests Input */}
-                                        <div className="pt-2">
-                                            <label className="block text-xs text-slate-400 mb-1.5 font-medium">Number of Guests</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                value={data.guests_count}
-                                                onChange={e => setData('guests_count', parseInt(e.target.value) || 1)}
-                                                className="w-full h-11 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-slate-800 dark:text-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none transition-all"
-                                                placeholder="e.g. 100"
-                                            />
-                                            {errors.guests_count && (
-                                                <p className="text-red-500 text-[10px] mt-1 font-medium">{errors.guests_count}</p>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs text-slate-400 mb-0.5">Package</p>
+                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                                    {selectedCardPkgObj ? selectedCardPkgObj.name : <span className="text-slate-400 font-normal italic">Not selected</span>}
+                                                </p>
+                                            </div>
+                                            {selectedCardPkgObj && (
+                                                <div className="text-right flex-shrink-0">
+                                                    <p className="text-xs text-slate-400 mb-0.5">Rate / Card</p>
+                                                    <p className="text-sm font-black text-slate-900 dark:text-white">
+                                                        {Number(selectedCardPkgObj.price || 0).toLocaleString()}
+                                                        <span className="text-[10px] text-slate-400 font-normal ml-1">TZS</span>
+                                                    </p>
+                                                </div>
                                             )}
                                         </div>
 
-                                        <div className="flex items-center justify-between text-xs pt-1">
-                                            <span className="text-slate-400">Payment via</span>
-                                            <span className="font-semibold text-slate-700 dark:text-slate-300">
-                                                {allProviders.find(p => p.value === data.provider)?.label || data.provider}
-                                            </span>
+                                        {selectedCardPkgObj && (
+                                            <div className="pt-2">
+                                                <label className="block text-xs text-slate-400 mb-1.5 font-medium">Number of Guests / Cards</label>
+                                                <input
+                                                    type="number"
+                                                    min={selectedCardPkgObj.name?.toLowerCase().includes('executive') ? 200 : 1}
+                                                    value={data.guests_count}
+                                                    onChange={e => setData('guests_count', parseInt(e.target.value) || 1)}
+                                                    className="w-full h-11 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-xl px-4 text-sm font-bold text-slate-800 dark:text-white focus:border-[#154F7C] focus:ring-1 focus:ring-[#154F7C] outline-none transition-all"
+                                                    placeholder="e.g. 100"
+                                                />
+                                                {errors.guests_count && (
+                                                    <p className="text-red-500 text-[10px] mt-1 font-medium">{errors.guests_count}</p>
+                                                )}
+                                                {selectedCardPkgObj.name?.toLowerCase().includes('executive') && (
+                                                    <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">Executive plan requires minimum 200 cards.</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
+
+                                {/* Bulk SMS Summary */}
+                                {planTab === 'bulk_sms' && (
+                                    <>
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs text-slate-400 mb-0.5">Package</p>
+                                                <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                                    {smsSelectionMode === 'bundle'
+                                                        ? (selectedBulkSmsPkgObj ? (selectedBulkSmsPkgObj.name.replace(/\s*(SMS)?\s*Pack/i, '').trim() || selectedBulkSmsPkgObj.name) : <span className="text-slate-400 font-normal italic">Not selected</span>)
+                                                        : 'Custom SMS'}
+                                                </p>
+                                            </div>
+                                            <div className="text-right flex-shrink-0">
+                                                <p className="text-xs text-slate-400 mb-0.5">Rate / SMS</p>
+                                                <p className="text-sm font-black text-slate-900 dark:text-white">
+                                                    {smsSelectionMode === 'bundle'
+                                                        ? (selectedBulkSmsPkgObj?.rate_per_sms || 35)
+                                                        : customRate}
+                                                    <span className="text-[10px] text-slate-400 font-normal ml-1">TZS</span>
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2">
+                                            <label className="block text-xs text-slate-400 mb-1.5 font-medium">Number of SMS Credits</label>
+                                            <div className="w-full h-11 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-white/10 rounded-xl px-4 flex items-center justify-between text-sm font-bold text-slate-800 dark:text-white">
+                                                <span>
+                                                    {smsSelectionMode === 'bundle'
+                                                        ? Number(selectedBulkSmsPkgObj?.sms_count || 0).toLocaleString()
+                                                        : customSmsCount.toLocaleString()}
+                                                </span>
+                                                <span className="text-xs text-slate-400 font-normal">SMS</span>
+                                            </div>
                                         </div>
                                     </>
                                 )}
+
+                                <div className="flex items-center justify-between text-xs pt-1">
+                                    <span className="text-slate-400">Payment method</span>
+                                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                                        {allProviders.find(p => p.value === data.provider)?.label || data.provider}
+                                    </span>
+                                </div>
 
                                 <div className="border-t border-slate-100 dark:border-white/5" />
 
@@ -813,29 +1084,52 @@ function PaymentPage({ packages, transactions, has_event }) {
                                     <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Payable</p>
                                     <div className="text-right">
                                         <p className="text-2xl font-black text-slate-900 dark:text-white">
-                                            {selectedPkgObj ? Number((selectedPkgObj.price || 0) * (data.guests_count || 1)).toLocaleString() : '0'}
+                                            {Number(currentTotalPayable).toLocaleString()}
                                         </p>
                                         <p className="text-[10px] text-slate-400 font-semibold">TZS</p>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-700 dark:text-slate-300 bg-sky-500/10 dark:bg-sky-500/15 border border-sky-500/20 py-2.5 rounded-lg">
-                                    <ShieldCheck className="w-3 h-3 text-[#154F7C] dark:text-sky-400" />
+                                <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-white/5 py-2.5 rounded-lg">
+                                    <ShieldCheck className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400" />
                                     Secure Payment Guaranteed
                                 </div>
 
-                                {/* What's included */}
-                                {selectedPkgObj && parseFeatures(selectedPkgObj.features).length > 0 && (
-                                    <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
-                                        <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">What's Included</p>
-                                        {parseFeatures(selectedPkgObj.features).map((f, i) => (
-                                            <div key={i} className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                                {/* Features Checklist */}
+                                <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-white/5">
+                                    <p className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-wider">Included in this order</p>
+                                    {planTab === 'cards' ? (
+                                        <>
+                                            <div className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
                                                 <CheckCircle2 className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400 flex-shrink-0 mt-0.5" />
-                                                {f}
+                                                {(data.guests_count || 1).toLocaleString()} WhatsApp invitation messages
                                             </div>
-                                        ))}
-                                    </div>
-                                )}
+                                            <div className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400 flex-shrink-0 mt-0.5" />
+                                                {(data.guests_count || 1).toLocaleString()} SMS alert messages
+                                            </div>
+                                            <div className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400 flex-shrink-0 mt-0.5" />
+                                                Dynamic QR code passes & check-in scanning
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400 flex-shrink-0 mt-0.5" />
+                                                Direct SMS to all Tanzania networks
+                                            </div>
+                                            <div className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400 flex-shrink-0 mt-0.5" />
+                                                Sender ID: KARDOVO
+                                            </div>
+                                            <div className="flex items-start gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                                                <CheckCircle2 className="w-3.5 h-3.5 text-[#154F7C] dark:text-sky-400 flex-shrink-0 mt-0.5" />
+                                                Delivery reports & logs
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
@@ -933,9 +1227,7 @@ function PaymentPage({ packages, transactions, has_event }) {
                         </div>
                     )}
                 </div>
-
-                </div>
-            )}
+            </div>
         
                                                 
                 <Modal show={!!viewReceiptTx} onClose={() => setViewReceiptTx(null)} maxWidth="md">

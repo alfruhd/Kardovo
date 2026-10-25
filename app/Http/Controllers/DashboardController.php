@@ -6,6 +6,7 @@ use App\Models\CardTemplate;
 use App\Models\Event;
 use App\Models\Guest;
 use App\Models\ScanLog;
+use App\Models\VotingCandidate;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -79,8 +80,9 @@ class DashboardController extends Controller
                 return $event;
             });
 
-        $invitationEvents = $events->where('is_occasion', false);
+        $invitationEvents = $events->filter(fn ($e) => ! $e->is_occasion && ! $e->voting_enabled);
         $occasionEvents = $events->where('is_occasion', true);
+        $votingEvents = $events->where('voting_enabled', true);
 
         $totalGuests = (int) $invitationEvents->sum('total_guests');
         $totalWillAttend = (int) $invitationEvents->sum('will_attend_count');
@@ -93,11 +95,22 @@ class DashboardController extends Controller
         $totalAttendees = $totalGuests + $totalTicketsSold;
         $totalCombinedCheckins = $totalInvitationCheckins + $totalTicketCheckins;
 
+        // Voting aggregations across all campaigns owned by the organizer
+        $votingCandidateStats = VotingCandidate::whereHas('event', function ($q) use ($user) {
+            $q->where('user_id', $user->id);
+        })->selectRaw('COALESCE(SUM(total_votes), 0) as total_votes, COALESCE(SUM(revenue_collected), 0) as total_revenue')->first();
+
+        $totalVotesCast = (int) ($votingCandidateStats->total_votes ?? 0);
+        $totalVoteGrossRevenue = (float) ($votingCandidateStats->total_revenue ?? 0);
+        $totalVotePlatformFee = round($totalVoteGrossRevenue * 0.06, 2);
+        $totalVoteNetRevenue = round($totalVoteGrossRevenue - $totalVotePlatformFee, 2);
+
         $overviewStats = [
             'total_events' => $events->count(),
-            'active_events' => $events->where('status', 'active')->count(),
+            'active_events' => $events->whereIn('status', ['active', 'published'])->count(),
             'invitation_events_count' => $invitationEvents->count(),
             'occasion_events_count' => $occasionEvents->count(),
+            'voting_competitions_count' => $votingEvents->count(),
 
             // Invitation metrics
             'total_guests' => $totalGuests,
@@ -113,6 +126,12 @@ class DashboardController extends Controller
             'total_ticket_revenue' => $totalTicketRevenue,
             'total_ticket_checkins' => $totalTicketCheckins,
             'ticket_checkin_rate' => $totalTicketsSold > 0 ? round(($totalTicketCheckins / $totalTicketsSold) * 100) : 0,
+
+            // Voting metrics
+            'total_votes_cast' => $totalVotesCast,
+            'total_vote_revenue' => $totalVoteGrossRevenue,
+            'total_vote_net_revenue' => $totalVoteNetRevenue,
+            'total_vote_platform_fee' => $totalVotePlatformFee,
 
             // Global Telemetry
             'total_attendees' => $totalAttendees,

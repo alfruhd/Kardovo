@@ -44,7 +44,8 @@ import {
     CheckCheck,
     ArrowRight,
     Tag,
-    Globe
+    Globe,
+    Trophy
 } from 'lucide-react';
 
 export default function UsersPage({
@@ -120,6 +121,7 @@ export default function UsersPage({
         can_customize_templates: true,
         can_manage_scanners: true,
         can_access_ticketing: true,
+        can_access_voting: true,
         can_customize_microsite: false,
         can_export_data: true,
     };
@@ -298,6 +300,7 @@ export default function UsersPage({
                 can_customize_templates: perms.can_customize_templates !== false,
                 can_manage_scanners: perms.can_manage_scanners !== false,
                 can_access_ticketing: perms.can_access_ticketing !== false,
+                can_access_voting: perms.can_access_voting !== false,
                 can_customize_microsite: perms.can_customize_microsite === true,
                 can_export_data: perms.can_export_data !== false,
             },
@@ -544,21 +547,7 @@ export default function UsersPage({
     };
 
     return (
-        <KardovoAppLayout
-            title="User Governance & Fleet"
-            headerActions={
-                <div className="flex items-center gap-2">
-                    <Link
-                        href={route('admin.dashboard')}
-                        className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-bold text-slate-100 hover:text-white bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] rounded-xl shadow-2xs transition active:scale-95"
-                    >
-                        <Shield className="w-3.5 h-3.5 text-sky-400" />
-                        <span className="hidden sm:inline">Operations Center</span>
-                        <span className="sm:hidden">Ops</span>
-                    </Link>
-                </div>
-            }
-        >
+        <KardovoAppLayout title="User Governance & Fleet">
             <Head title="User Governance - Kardovo Admin" />
 
             <div className="max-w-7xl mx-auto space-y-5 sm:space-y-6">
@@ -796,6 +785,7 @@ export default function UsersPage({
                                                                     { key: 'can_customize_templates', label: '4K Card Design Studio', icon: Palette },
                                                                     { key: 'can_manage_scanners', label: 'Gate Scanner Staff Fleet', icon: Smartphone },
                                                                     { key: 'can_access_ticketing', label: 'Ticketing Portal', icon: Tag },
+                                                                    { key: 'can_access_voting', label: 'Voting Portal', icon: Trophy },
                                                                     { key: 'can_customize_microsite', label: 'Event Microsite (Executive / Override)', icon: Globe },
                                                                     { key: 'can_export_data', label: 'Audit & Data Export', icon: Download },
                                                                 ].map((p) => {
@@ -1409,6 +1399,7 @@ export default function UsersPage({
                                             can_customize_templates: false,
                                             can_manage_scanners: true,
                                             can_access_ticketing: true,
+                                            can_access_voting: true,
                                             can_customize_microsite: false,
                                             can_export_data: true,
                                         })}
@@ -1425,6 +1416,7 @@ export default function UsersPage({
                                             can_customize_templates: false,
                                             can_manage_scanners: false,
                                             can_access_ticketing: false,
+                                            can_access_voting: false,
                                             can_customize_microsite: false,
                                             can_export_data: false,
                                         })}
@@ -1443,6 +1435,7 @@ export default function UsersPage({
                                     { key: 'can_customize_templates', label: 'Pass Studio', icon: Palette },
                                     { key: 'can_manage_scanners', label: 'Gate Scanners', icon: Smartphone },
                                     { key: 'can_access_ticketing', label: 'Ticketing Portal', icon: Tag },
+                                    { key: 'can_access_voting', label: 'Voting Portal', icon: Trophy },
                                     { key: 'can_customize_microsite', label: 'Event Microsite (Executive)', icon: Globe },
                                     { key: 'can_export_data', label: 'Export Data', icon: Download },
                                 ].map((cap) => {
@@ -1772,6 +1765,7 @@ export default function UsersPage({
                                             can_customize_templates: false,
                                             can_manage_scanners: true,
                                             can_access_ticketing: true,
+                                            can_access_voting: true,
                                             can_customize_microsite: false,
                                             can_export_data: true,
                                         })}
@@ -1788,6 +1782,7 @@ export default function UsersPage({
                                             can_customize_templates: false,
                                             can_manage_scanners: false,
                                             can_access_ticketing: false,
+                                            can_access_voting: false,
                                             can_customize_microsite: false,
                                             can_export_data: false,
                                         })}
@@ -1806,6 +1801,7 @@ export default function UsersPage({
                                     { key: 'can_customize_templates', label: 'Pass Studio', icon: Palette },
                                     { key: 'can_manage_scanners', label: 'Gate Scanners', icon: Smartphone },
                                     { key: 'can_access_ticketing', label: 'Ticketing Portal', icon: Tag },
+                                    { key: 'can_access_voting', label: 'Voting Portal', icon: Trophy },
                                     { key: 'can_customize_microsite', label: 'Event Microsite (Executive)', icon: Globe },
                                     { key: 'can_export_data', label: 'Export Data', icon: Download },
                                 ].map((cap) => {

@@ -103,8 +103,9 @@ export default function CustomerDashboard({
         return events.filter((ev) => {
             const matchesTab = 
                 activeFilter === 'all' || 
-                (activeFilter === 'invitations' && !ev.is_occasion) || 
-                (activeFilter === 'occasions' && ev.is_occasion);
+                (activeFilter === 'invitations' && !ev.is_occasion && !ev.voting_enabled) || 
+                (activeFilter === 'occasions' && ev.is_occasion) ||
+                (activeFilter === 'competitions' && Boolean(ev.voting_enabled));
 
             const matchesSearch = !searchQuery.trim() || 
                 ev.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -145,20 +146,26 @@ export default function CustomerDashboard({
                             {greeting}, {firstName}
                         </h1>
                         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                            Overview of your digital invitations and ticketed occasions.
+                            Overview of your digital invitations, ticketed occasions, and voting campaigns.
                         </p>
                     </div>
 
                     {!isNewUser && (
                         <div className="flex items-center gap-2 flex-wrap text-xs">
-                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/10 text-sky-800 dark:text-sky-300 border border-sky-500/20 font-bold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08] font-bold">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                                 <span>{overviewStats.invitation_events_count || 0} Invitations</span>
                             </span>
                             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08] font-bold">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                                 <span>{overviewStats.occasion_events_count || 0} Occasions</span>
                             </span>
+                            {(overviewStats.voting_competitions_count > 0 || user?.can_access_voting !== false) && (
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-white/[0.05] text-slate-700 dark:text-slate-300 border border-slate-200/70 dark:border-white/[0.08] font-bold">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                    <span>{overviewStats.voting_competitions_count || 0} Competitions</span>
+                                </span>
+                            )}
                         </div>
                     )}
                 </div>
@@ -229,7 +236,7 @@ export default function CustomerDashboard({
                                 {
                                     label: 'Events',
                                     value: overviewStats.total_events || 0,
-                                    sub: `${overviewStats.invitation_events_count || 0} inv · ${overviewStats.occasion_events_count || 0} occ`,
+                                    sub: `${overviewStats.invitation_events_count || 0} inv · ${overviewStats.occasion_events_count || 0} occ${overviewStats.voting_competitions_count ? ` · ${overviewStats.voting_competitions_count} vote` : ''}`,
                                 },
                                 {
                                     label: 'Attending',
@@ -269,6 +276,7 @@ export default function CustomerDashboard({
                                             { key: 'all', label: `All (${events.length})` },
                                             { key: 'invitations', label: `Invitations (${overviewStats.invitation_events_count || 0})` },
                                             { key: 'occasions', label: `Occasions (${overviewStats.occasion_events_count || 0})` },
+                                            { key: 'competitions', label: `Voting (${overviewStats.voting_competitions_count || 0})` },
                                         ].map(({ key, label }) => (
                                             <button
                                                 key={key}
@@ -305,9 +313,12 @@ export default function CustomerDashboard({
                                             const dateObj = event.event_date ? new Date(event.event_date) : null;
                                             const day   = dateObj ? dateObj.toLocaleDateString('en-GB', { day: 'numeric' }) : '--';
                                             const month = dateObj ? dateObj.toLocaleDateString('en-GB', { month: 'short' }) : '---';
-                                            const manageUrl = event.is_occasion
-                                                ? route('ticketing.index', { event_id: event.id })
-                                                : route('events.show', event.id);
+                                            const isVotingOnly = event.voting_enabled && !event.is_occasion;
+                                            const manageUrl = isVotingOnly || (event.voting_enabled && activeFilter === 'competitions')
+                                                ? route('voting.portal.show', event.id)
+                                                : (event.is_occasion
+                                                    ? route('ticketing.index', { event_id: event.id })
+                                                    : route('events.show', event.id));
 
                                             return (
                                                 <div key={event.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 dark:hover:bg-white/[0.02] transition-colors group">
@@ -329,7 +340,11 @@ export default function CustomerDashboard({
                                                             {event.title}
                                                         </Link>
                                                         <span className="text-[10px] text-slate-400 uppercase tracking-wide font-semibold">
-                                                            {event.is_occasion ? 'Occasion' : 'Invitation'}
+                                                            {event.voting_enabled && !event.is_occasion
+                                                                ? 'Voting Competition'
+                                                                : (event.voting_enabled && event.is_occasion
+                                                                    ? 'Occasion · Voting'
+                                                                    : (event.is_occasion ? 'Occasion' : 'Invitation'))}
                                                         </span>
                                                     </div>
 
@@ -392,6 +407,23 @@ export default function CustomerDashboard({
                                     </div>
                                 </div>
 
+                                {/* Voting Revenue */}
+                                <div className="bg-white dark:bg-[#0B1524] rounded-2xl border border-slate-200/80 dark:border-white/[0.08] p-5">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 dark:text-slate-400">Voting Revenue</span>
+                                        <Link href={route('voting.portal.index')} className="text-[10px] font-bold text-[#154F7C] dark:text-sky-400 hover:underline">
+                                            Portal →
+                                        </Link>
+                                    </div>
+                                    <div className="text-2xl font-black font-mono text-slate-900 dark:text-white">
+                                        TZS {Number(overviewStats.total_vote_revenue || 0).toLocaleString()}
+                                    </div>
+                                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+                                        <span>{Number(overviewStats.total_votes_cast || 0).toLocaleString()} votes cast</span>
+                                        <span>{overviewStats.voting_competitions_count || 0} competitions</span>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
@@ -414,7 +446,7 @@ export default function CustomerDashboard({
                         </div>
                         
                         {/* Selector Tabs (Kardovo Theme) */}
-                        <div className="flex items-center p-1 bg-slate-100 dark:bg-white/[0.06] rounded-xl text-xs font-bold self-start sm:self-auto">
+                        <div className="flex items-center p-1 bg-slate-100 dark:bg-white/[0.06] rounded-xl text-xs font-bold self-start sm:self-auto gap-1">
                             <button
                                 type="button"
                                 onClick={() => setCreateType('invitation')}
@@ -437,6 +469,13 @@ export default function CustomerDashboard({
                             >
                                 Ticketed Occasion
                             </button>
+                            <Link
+                                href={route('voting.portal.index')}
+                                className="px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer inline-flex items-center gap-1 font-semibold"
+                            >
+                                <span>Voting Portal</span>
+                                <span className="text-[10px]">↗</span>
+                            </Link>
                         </div>
                     </div>
 

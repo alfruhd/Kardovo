@@ -56,7 +56,9 @@ import {
 const CATEGORY_MAP = {
     // Inflow / Revenue Categories
     package_purchase: { label: 'Platform Packages', badgeClass: 'bg-sky-500/10 dark:bg-sky-500/15 text-[#154F7C] dark:text-sky-300 border-sky-500/20' },
-    pass_sales: { label: 'Pass Quota Sales', badgeClass: 'bg-blue-100/90 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-300/80 dark:border-blue-500/25' },
+    pass_sales: { label: 'Ticket & Pass Sales', badgeClass: 'bg-blue-100/90 dark:bg-blue-500/15 text-blue-800 dark:text-blue-300 border-blue-300/80 dark:border-blue-500/25' },
+    vote_sales: { label: 'Voting Revenue', badgeClass: 'bg-purple-100/90 dark:bg-purple-500/15 text-purple-800 dark:text-purple-300 border-purple-300/80 dark:border-purple-500/25' },
+    ticket_sales: { label: 'Commercial Ticket Sales', badgeClass: 'bg-indigo-100/90 dark:bg-indigo-500/15 text-indigo-800 dark:text-indigo-300 border-indigo-300/80 dark:border-indigo-500/25' },
     sms_credits: { label: 'SMS Top-up Credits', badgeClass: 'bg-teal-100/90 dark:bg-teal-500/15 text-teal-800 dark:text-teal-300 border-teal-300/80 dark:border-teal-500/25' },
     design_service: { label: 'Custom 4K Artwork', badgeClass: 'bg-amber-100/90 dark:bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-300/80 dark:border-amber-500/25' },
     subscription: { label: 'Enterprise Subscription', badgeClass: 'bg-indigo-100/90 dark:bg-indigo-500/15 text-indigo-800 dark:text-indigo-300 border-indigo-300/80 dark:border-indigo-500/25' },
@@ -480,10 +482,11 @@ export default function Finance({
     // Revenue streams array for breakdown
     const revenueStreamsList = useMemo(() => [
         { key: 'package_purchase', label: 'Platform Packages (AzamPay)', amount: income_by_category?.package_purchase || 0, color: '#154F7C' },
-        { key: 'pass_sales', label: 'Pass Quota Packages', amount: income_by_category?.pass_sales || 0, color: '#3b82f6' },
+        { key: 'pass_sales', label: 'Ticket & Pass Sales', amount: income_by_category?.pass_sales || 0, color: '#3b82f6' },
+        { key: 'vote_sales', label: 'Voting Revenue (6% Fee)', amount: income_by_category?.vote_sales || 0, color: '#8b5cf6' },
         { key: 'sms_credits', label: 'Bulk SMS Top-up Credits', amount: income_by_category?.sms_credits || 0, color: '#06b6d4' },
         { key: 'design_service', label: 'Custom 4K Artwork & Branding', amount: income_by_category?.design_service || 0, color: '#f59e0b' },
-        { key: 'subscription', label: 'Enterprise Subscriptions', amount: income_by_category?.subscription || 0, color: '#8b5cf6' },
+        { key: 'subscription', label: 'Enterprise Subscriptions', amount: income_by_category?.subscription || 0, color: '#ec4899' },
         { key: 'other_income', label: 'Direct Wire & Other Income', amount: income_by_category?.other_income || 0, color: '#64748b' },
     ], [income_by_category]);
 
@@ -1175,6 +1178,8 @@ export default function Finance({
                                 >
                                     <option value="all">All Categories</option>
                                     <optgroup label="Inflows / Revenue">
+                                        <option value="vote_sales">Awards &amp; Voting Revenue (6% Fee)</option>
+                                        <option value="ticket_sales">Commercial Ticket Sales</option>
                                         <option value="package_purchase">Platform Packages (AzamPay)</option>
                                         <option value="pass_sales">Pass Quota Sales</option>
                                         <option value="sms_credits">SMS Top-up Credits</option>
@@ -2012,8 +2017,10 @@ export default function Finance({
                                 className="w-full mt-1 text-xs rounded-xl bg-slate-100 dark:bg-[#0B1524] border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-white"
                                 required
                             >
+                                <option value="vote_sales">Awards &amp; Voting Revenue (Manual / Cash)</option>
+                                <option value="ticket_sales">Commercial Ticket Sales (Manual / Box Office)</option>
                                 <option value="package_purchase">Platform Packages (AzamPay)</option>
-                                <option value="pass_sales">Pass Quota Sales</option>
+                                <option value="pass_sales">Ticket &amp; Pass Quota Sales</option>
                                 <option value="sms_credits">Bulk SMS Top-up Credits</option>
                                 <option value="design_service">Custom 4K Artwork</option>
                                 <option value="subscription">Enterprise Subscription</option>
@@ -2041,13 +2048,43 @@ export default function Finance({
                             type="text"
                             value={txForm.data.title}
                             onChange={(e) => txForm.setData('title', e.target.value)}
-                            placeholder="e.g. VIP Pass Quota for Serena Gala"
+                            placeholder="e.g. Box Office VIP Tickets — Nandy Festival"
                             className="w-full mt-1"
                             required
                         />
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <InputLabel value="Associated Event (Optional)" />
+                            <select
+                                value={txForm.data.event_id}
+                                onChange={(e) => txForm.setData('event_id', e.target.value)}
+                                className="w-full mt-1 text-xs rounded-xl bg-slate-100 dark:bg-[#0B1524] border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                            >
+                                <option value="">— No Specific Event —</option>
+                                {events.map((evt) => (
+                                    <option key={evt.id} value={evt.id}>{evt.title}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <InputLabel value="Organizer / Client (Optional)" />
+                            <select
+                                value={txForm.data.user_id}
+                                onChange={(e) => txForm.setData('user_id', e.target.value)}
+                                className="w-full mt-1 text-xs rounded-xl bg-slate-100 dark:bg-[#0B1524] border-slate-200/80 dark:border-white/[0.08] text-slate-900 dark:text-white"
+                            >
+                                <option value="">— Platform Direct / Walk-in —</option>
+                                {organizers.map((org) => (
+                                    <option key={org.id} value={org.id}>{org.name} {org.company ? `(${org.company})` : ''}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                             <InputLabel value="Payment Method *" />
                             <select
@@ -2061,7 +2098,7 @@ export default function Finance({
                                 <option value="Airtel Money">Airtel Money</option>
                                 <option value="Bank Wire">Bank Wire Transfer</option>
                                 <option value="Stripe/Card">Credit Card</option>
-                                <option value="Cash">Cash</option>
+                                <option value="Cash">Cash (Box Office)</option>
                             </select>
                         </div>
 
@@ -2073,6 +2110,17 @@ export default function Finance({
                                 onChange={(e) => txForm.setData('reference', e.target.value)}
                                 placeholder="e.g. MPESA-TX-9921"
                                 className="w-full mt-1 font-mono text-xs"
+                            />
+                        </div>
+
+                        <div>
+                            <InputLabel value="Transaction Date *" />
+                            <TextInput
+                                type="date"
+                                value={txForm.data.transaction_date}
+                                onChange={(e) => txForm.setData('transaction_date', e.target.value)}
+                                className="w-full mt-1 text-xs"
+                                required
                             />
                         </div>
                     </div>

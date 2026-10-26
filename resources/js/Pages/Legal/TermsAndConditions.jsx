@@ -12,6 +12,7 @@ import {
     Cookie,
     Building2,
     CheckCircle2,
+    Trophy,
 } from "lucide-react";
 
 const sections = [
@@ -30,15 +31,20 @@ const sections = [
                 heading: "User Roles & Permissions",
                 body: null,
                 list: [
-                    "Organizers: Authorized to manage registered events, upload guest lists with verifiable prior consent, configure digital passes, create ticket tiers, track real-time sales, and transmit digital invitations.",
+                    "Organizers: Authorized to manage registered events, upload guest lists with verifiable prior consent, configure digital passes, create ticket tiers, launch award categories and contestants, track real-time sales/votes, and transmit digital invitations.",
                     "Ticket Buyers: Browse public events, purchase authorized tickets with mobile money or cards without mandatory registration, receive digital ticket passes, and present dynamic QR codes at venue gates.",
+                    "Voters & Contest Participants: Browse public voting competitions, purchase verified votes via authorized mobile money or cards, cast free daily allowances where enabled by organizers, and view real-time tallies.",
                     "Gate Operators: Authorized solely to scan and validate guest passes and ticket passes at venue entrances using our cryptographic scanner.",
-                    "All Users: Obligated to safeguard account credentials and notify Kardovo immediately of any unauthorized access.",
+                    "All Users: Obligated to safeguard account credentials, adhere to fair use policies, and notify Kardovo immediately of any unauthorized access or security breaches.",
                 ],
             },
             {
                 heading: "Passes & Tickets are Cryptographically Non-Transferable",
                 body: "Each digital pass or event ticket is bound to one unique cryptographic token. Unauthorized reselling, duplication, tampering, or reproduction is strictly prohibited and triggers an immediate Red Duplicate Rejection alert at gate scanners, with potential forfeiture of entry and statutory reporting.",
+            },
+            {
+                heading: "Awards, Contests & Voting Integrity",
+                body: "Votes cast on Kardovo are processed in real time and recorded immutably upon telecommunications gateway payment confirmation. Automated scripts, emulators, bot manipulation, proxy flooding, and fraudulent payment reversals are strictly prohibited. Kardovo reserves the right to audit vote velocity, invalidate bad-faith votes, and deduct fraudulent votes from official leaderboards.",
             },
             {
                 heading: "Service Availability & Maintenance",
@@ -78,6 +84,7 @@ const sections = [
                 list: [
                     "Organizers: Full name, business email, organization name, phone number, and billing history.",
                     "Ticket Buyers: Full name and phone number/email address solely for digital ticket delivery via SMS/WhatsApp and payment transaction matching.",
+                    "Voters: Mobile money phone number (used for USSD payment push prompts and payment receipting), candidate selection, and vote audit timestamps.",
                     "Event Guests (RSVP): Name, phone number (used exclusively for pass delivery and logistics), RSVP status, guest count, and voluntary form responses.",
                     "Gate Verification Logs: Cryptographic check-in timestamp, scan outcome (Granted / Duplicate Rejected), and gate operator ID.",
                     "Technical Audit Logs: Anonymized IP addresses and essential session cookies for fraud prevention and CSRF protection (retained up to 90 days).",
@@ -88,6 +95,7 @@ const sections = [
                 body: null,
                 list: [
                     "To generate and deliver personalized digital passes and event tickets.",
+                    "To verify mobile money vote purchases and tabulate tamper-proof contest results.",
                     "To execute instant cryptographic gate verification and prevent ticket fraud.",
                     "To fulfill financial reporting obligations in compliance with statutory revenue authorities (TRA).",
                     "To ensure platform security and defend against cyberattacks.",
@@ -165,6 +173,10 @@ const sections = [
             {
                 heading: "Attendee Event Ticket Purchases",
                 body: "Event tickets purchased through public checkout are non-refundable and non-exchangeable for change of mind or personal scheduling conflicts, as ticket allocations are reserved in real-time.",
+            },
+            {
+                heading: "Awards & Pageant Vote Purchases (Irrevocable & Non-Refundable)",
+                body: "All votes cast through Kardovo (paid via mobile money or bank cards) are digital consumer services fulfilled and tabulated immediately upon payment network confirmation. Votes cast are non-reversible and strictly non-refundable under all circumstances, including but not limited to nominee withdrawal, disqualification, jury veto, contest postponement, or voter remorse.",
             },
             {
                 heading: "Event Postponement or Cancellation",
@@ -293,6 +305,46 @@ const sections = [
             {
                 heading: "Open-Source Software Licensing",
                 body: "Kardovo is built using high-integrity, commercially permissive open-source software libraries. Core dependencies include Laravel (MIT License), React (MIT License), Tailwind CSS (MIT License), and Inertia.js (MIT License). Web fonts (Figtree, Montserrat, Alex Brush) are distributed under the SIL Open Font License (OFL 1.1). No viral copyleft (GPL) dependencies are bundled in proprietary client modules.",
+            },
+        ],
+    },
+    {
+        id: "voting",
+        badge: "§9",
+        icon: Trophy,
+        title: "Awards, Pageants & Voting Policy",
+        color: "text-amber-500",
+        content: [
+            {
+                heading: "Scope of Voting Services",
+                body: "Kardovo provides secure, real-time digital voting infrastructure for awards, beauty pageants, talent searches, corporate recognitions, and community contests across Tanzania and East Africa.",
+            },
+            {
+                heading: "Vote Purchases & Payment Finality",
+                body: "All votes cast through Kardovo (whether paid via M-Pesa, TigoPesa, Airtel Money, HaloPesa, AzamPesa, or bank cards, or free allocations where enabled by the organizer) are digital consumer transactions fulfilled immediately upon payment confirmation. Once a vote transaction is confirmed and registered in the database, it is final, irreversible, and strictly non-refundable under any circumstances, including nominee withdrawal, disqualification, or dispute.",
+            },
+            {
+                heading: "Zero-Tolerance Anti-Fraud & Bot Prevention Policy",
+                body: "To guarantee fair, genuine, and transparent competition outcomes, Kardovo enforces strict anti-manipulation protocols:",
+                list: [
+                    "Prohibition of Automated Scripting: The use of headless browsers, robotic macros, emulator scripts, botnets, or automated HTTP tooling to manipulate voting is strictly forbidden.",
+                    "Audit Trail & Anomaly Detection: Kardovo actively analyzes real-time voting velocity, payment network telemetry, device fingerprints, and IP clustering. Suspicious voting spikes are quarantined for cryptographic manual audit.",
+                    "Invalidation of Fraudulent Votes: Any votes obtained through stolen financial credentials, illicit mobile money reversals, or system exploit attempts will be immediately nullified and subtracted from official category totals.",
+                    "Statutory & Civil Reporting: Kardovo reserves the right to report bad-faith bot actors and cyber-fraud syndicates to relevant statutory authorities under the Cybercrimes Act of Tanzania.",
+                ],
+            },
+            {
+                heading: "Organizer Responsibilities & Nominee Integrity",
+                body: null,
+                list: [
+                    "Accurate Category & Nominee Details: Organizers are solely responsible for setting clear category criteria, maintaining fair eligibility rosters, and ensuring all nominee imagery and profiles are used with lawful authorization.",
+                    "Prize Fulfillment & Award Ceremonies: Kardovo acts strictly as an independent technology service and payment gateway conduit. Prize disbursements, trophy awards, and gala event organization are the exclusive contractual obligations of the event organizer.",
+                    "Public Tallies & Jury Adjudication: If a competition incorporates a hybrid scoring format (e.g. 60% public vote, 40% judges' panel), the organizer is obligated to clearly publish such scoring methodology in the contest rules before public voting commences.",
+                ],
+            },
+            {
+                heading: "Nominee Rights & Inquiries",
+                body: "Nominees who wish to update their profile information, report impersonation, or request withdrawal from a competition should submit a written request to both the event organizer and compliance@kardovo.com. In the event of a nominee withdrawal, previously cast votes remain non-refundable to voters.",
             },
         ],
     },

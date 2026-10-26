@@ -20,7 +20,8 @@ import {
     KeyRound,
     AlertTriangle,
     Tag,
-    Globe
+    Globe,
+    Trophy
 } from 'lucide-react';
 
 export default function Edit({ mustVerifyEmail, status }) {
@@ -184,6 +185,7 @@ export default function Edit({ mustVerifyEmail, status }) {
                                 { key: 'can_customize_templates', label: 'Pass Studio', icon: Palette },
                                 { key: 'can_manage_scanners', label: 'Gate Scanners', icon: Smartphone },
                                 { key: 'can_access_ticketing', label: 'Ticketing Portal', icon: Tag },
+                                { key: 'can_access_voting', label: 'Voting Portal', icon: Trophy },
                                 { key: 'can_customize_microsite', label: 'Event Microsite', icon: Globe },
                                 { key: 'can_export_data', label: 'Export Data', icon: Download },
                             ].map((act) => {

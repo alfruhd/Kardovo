@@ -27,7 +27,8 @@ import {
     Activity,
     Server,
     ShieldCheck,
-    Tag
+    Tag,
+    Trophy
 } from 'lucide-react';
 import KardovoLogo from '@/Components/KardovoLogo';
 import { useTheme } from '@/Hooks/useTheme';
@@ -152,7 +153,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 ],
             },
             {
-                title: 'Operations',
+                title: 'Digital Invitations',
                 items: [
                     {
                         name: 'Events',
@@ -161,22 +162,10 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         active: pageUrl === '/events' || (pageUrl.startsWith('/events') && !pageUrl.startsWith('/ticketing')),
                     },
                     {
-                        name: 'Ticketing Portal',
-                        href: safeRoute('ticketing.index', '/ticketing'),
-                        icon: Tag,
-                        active: pageUrl.startsWith('/ticketing'),
-                    },
-                    {
                         name: 'Templates',
                         href: safeRoute('templates.index', '/templates'),
                         icon: Palette,
                         active: pageUrl === '/templates' || pageUrl.startsWith('/templates'),
-                    },
-                    {
-                        name: 'Gate Scanner',
-                        href: safeRoute('scanner.index', '/scanner'),
-                        icon: QrCode,
-                        active: pageUrl.startsWith('/scanner'),
                     },
                     {
                         name: 'Messaging Hub',
@@ -185,16 +174,39 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         active: pageUrl.startsWith('/messaging'),
                     },
                     {
+                        name: 'Gate Scanner',
+                        href: safeRoute('scanner.index', '/scanner'),
+                        icon: QrCode,
+                        active: pageUrl.startsWith('/scanner'),
+                    },
+                ],
+            },
+            {
+                title: 'Additional Services',
+                items: [
+                    {
+                        name: 'Ticketing Portal',
+                        href: safeRoute('ticketing.index', '/ticketing'),
+                        icon: Tag,
+                        active: pageUrl.startsWith('/ticketing'),
+                    },
+                    {
+                        name: 'Voting Portal',
+                        href: safeRoute('voting.portal.index', '/voting-portal'),
+                        icon: Trophy,
+                        active: pageUrl.startsWith('/voting-portal'),
+                    },
+                ],
+            },
+            {
+                title: 'Schedule & Finance',
+                items: [
+                    {
                         name: 'Calendar',
                         href: safeRoute('calendar.index', '/calendar'),
                         icon: Calendar,
                         active: pageUrl === '/calendar' || pageUrl.startsWith('/calendar'),
                     },
-                ],
-            },
-            {
-                title: 'Finance & Settings',
-                items: [
                     {
                         name: 'Financial Analysis',
                         href: safeRoute('admin.finance', '/admin/finance'),
@@ -236,19 +248,13 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 ],
             },
             {
-                title: 'Operations',
+                title: 'Digital Invitations',
                 items: [
                     {
                         name: 'Events',
                         href: safeRoute('events.index', '/events'),
                         icon: Ticket,
                         active: pageUrl === '/events' || (pageUrl.startsWith('/events') && !pageUrl.startsWith('/ticketing')),
-                    },
-                    {
-                        name: 'Ticketing Portal',
-                        href: safeRoute('ticketing.index', '/ticketing'),
-                        icon: Tag,
-                        active: pageUrl.startsWith('/ticketing'),
                     },
                     {
                         name: 'Templates',
@@ -268,17 +274,34 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         icon: MessageSquare,
                         active: pageUrl.startsWith('/messaging'),
                     },
+                ],
+            },
+            {
+                title: 'Additional Services',
+                items: [
+                    {
+                        name: 'Ticketing Portal',
+                        href: safeRoute('ticketing.index', '/ticketing'),
+                        icon: Tag,
+                        active: pageUrl.startsWith('/ticketing'),
+                    },
+                    {
+                        name: 'Voting Portal',
+                        href: safeRoute('voting.portal.index', '/voting-portal'),
+                        icon: Trophy,
+                        active: pageUrl.startsWith('/voting-portal'),
+                    },
+                ],
+            },
+            {
+                title: 'Schedule & Account',
+                items: [
                     {
                         name: 'Calendar',
                         href: safeRoute('calendar.index', '/calendar'),
                         icon: Calendar,
                         active: pageUrl === '/calendar' || pageUrl.startsWith('/calendar'),
                     },
-                ],
-            },
-            {
-                title: 'Settings',
-                items: [
                     {
                         name: 'Account Profile',
                         href: safeRoute('profile.edit', '/profile'),
@@ -316,7 +339,7 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
     } else {
         navCategories = [
             {
-                title: 'Events & Planning',
+                title: 'Digital Invitations',
                 items: [
                     {
                         name: 'Dashboard',
@@ -331,23 +354,11 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                         active: pageUrl === '/events' || (pageUrl.startsWith('/events') && !pageUrl.startsWith('/ticketing')),
                     },
                     {
-                        name: 'Ticketing Portal',
-                        href: safeRoute('ticketing.index', '/ticketing'),
-                        icon: Tag,
-                        active: pageUrl.startsWith('/ticketing'),
-                        show: !isSuspended && perms.can_access_ticketing !== false,
+                        name: 'Packages & Payments',
+                        href: safeRoute('organizer.wallet.index', '/organizer/pricing'),
+                        icon: Wallet,
+                        active: pageUrl.startsWith('/organizer/pricing'),
                     },
-                    {
-                        name: 'Calendar',
-                        href: safeRoute('calendar.index', '/calendar'),
-                        icon: Calendar,
-                        active: pageUrl === '/calendar' || pageUrl.startsWith('/calendar'),
-                    },
-                ].filter((item) => item.show !== false),
-            },
-            {
-                title: 'Studio & Access',
-                items: [
                     {
                         name: 'Card Templates',
                         href: safeRoute('templates.index', '/templates'),
@@ -372,13 +383,32 @@ export default function KardovoAppLayout({ children, title, headerActions }) {
                 ].filter((item) => item.show !== false),
             },
             {
-                title: 'Billing & Account',
+                title: 'Additional Services',
                 items: [
                     {
-                        name: 'Payments',
-                        href: safeRoute('organizer.wallet.index', '/organizer/pricing'),
-                        icon: Wallet,
-                        active: pageUrl.startsWith('/organizer/pricing'),
+                        name: 'Ticketing Portal',
+                        href: safeRoute('ticketing.index', '/ticketing'),
+                        icon: Tag,
+                        active: pageUrl.startsWith('/ticketing'),
+                        show: !isSuspended && perms.can_access_ticketing !== false,
+                    },
+                    {
+                        name: 'Voting Portal',
+                        href: safeRoute('voting.portal.index', '/voting-portal'),
+                        icon: Trophy,
+                        active: pageUrl.startsWith('/voting-portal'),
+                        show: !isSuspended && perms.can_access_voting !== false,
+                    },
+                ].filter((item) => item.show !== false),
+            },
+            {
+                title: 'Schedule & Account',
+                items: [
+                    {
+                        name: 'Calendar',
+                        href: safeRoute('calendar.index', '/calendar'),
+                        icon: Calendar,
+                        active: pageUrl === '/calendar' || pageUrl.startsWith('/calendar'),
                     },
                     {
                         name: 'Account Profile',

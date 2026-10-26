@@ -33,7 +33,7 @@ export default function GuestCardView({ guest, event, template }) {
                     interactive={true}
                 />
 
-                {canCustomizeMicrosite && (
+                {(event?.microsite_config?.admin_override === true || event?.is_executive_package === true) && (
                     <div className="w-full max-w-[480px] p-4 bg-white rounded-card border border-slate-200 text-xs flex items-center justify-between shadow-sm">
                         <span className="text-slate-500 font-medium">Public Microsite & RSVP URL:</span>
                         <a

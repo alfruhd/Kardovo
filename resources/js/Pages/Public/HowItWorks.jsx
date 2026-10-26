@@ -1077,8 +1077,7 @@ export default function HowItWorks() {
                             className="px-2.5 sm:px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shrink-0 text-slate-700 hover:text-slate-900 hover:bg-slate-100"
                         >
                             <Ticket className="w-4 h-4 text-sky-600" />
-                            <span className="hidden sm:inline">{lang === 'sw' ? 'Soko la Tiketi' : 'Ticket Marketplace'}</span>
-                            <span className="sm:hidden">{lang === 'sw' ? 'Tiketi' : 'Tickets'}</span>
+                            <span>{lang === 'sw' ? 'Tiketi' : 'Tickets'}</span>
                         </Link>
                     </div>
 

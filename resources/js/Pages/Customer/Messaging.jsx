@@ -1913,18 +1913,37 @@ export default function Messaging({
 
                                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
                                     {/* Header Toolbar */}
-                                    <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                                        <div>
-                                            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                                                Delivery History {selectedEvent?.title ? `— ${selectedEvent.title}` : ''}
-                                            </h3>
-                                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                                Showing WhatsApp and SMS messages sent for this event.
-                                            </p>
+                                    <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 space-y-3.5">
+                                        {/* Top Row: Title & Action Controls */}
+                                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                            <div>
+                                                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                                                    Delivery History {selectedEvent?.title ? `— ${selectedEvent.title}` : ''}
+                                                </h3>
+                                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                                    Showing WhatsApp and SMS messages sent for this event.
+                                                </p>
+                                            </div>
+
+                                            {/* Action Control: Clear Event Logs */}
+                                            {canDeleteLogs && (
+                                                <div className="self-start sm:self-auto shrink-0">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleClearAllLogs}
+                                                        disabled={eventMessages.length === 0}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs whitespace-nowrap"
+                                                        title="Clear delivery logs for this event"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                        <span>Clear Event Logs</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
 
-                                        {/* Search & Filter Controls */}
-                                        <div className="flex flex-wrap items-center gap-2">
+                                        {/* Bottom Row: Search & Filter Controls */}
+                                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800/60 flex flex-wrap items-center gap-2">
                                             <div className="relative flex-1 sm:flex-initial">
                                                 <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                                                 <input
@@ -1932,8 +1951,17 @@ export default function Messaging({
                                                     value={logSearch}
                                                     onChange={(e) => setLogSearch(e.target.value)}
                                                     placeholder="Search guest or phone..."
-                                                    className="w-full sm:w-52 pl-8 pr-3 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:border-[#154F7C] outline-none"
+                                                    className="w-full sm:w-56 pl-8 pr-7 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:border-[#154F7C] outline-none"
                                                 />
+                                                {logSearch && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setLogSearch('')}
+                                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 cursor-pointer"
+                                                    >
+                                                        <X className="w-3 h-3" />
+                                                    </button>
+                                                )}
                                             </div>
 
                                             {/* Channel Filter */}
@@ -1968,16 +1996,19 @@ export default function Messaging({
                                                 <option value="pending">Pending</option>
                                             </select>
 
-                                            {canDeleteLogs && (
+                                            {/* Reset Filters Button */}
+                                            {(logSearch || logChannelFilter !== 'all' || logStatusFilter !== 'all') && (
                                                 <button
                                                     type="button"
-                                                    onClick={handleClearAllLogs}
-                                                    disabled={eventMessages.length === 0}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200 dark:border-rose-800/60 transition active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer shadow-2xs"
-                                                    title="Clear delivery logs for this event"
+                                                    onClick={() => {
+                                                        setLogSearch('');
+                                                        setLogChannelFilter('all');
+                                                        setLogStatusFilter('all');
+                                                    }}
+                                                    className="h-8 px-2 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white flex items-center gap-1 transition cursor-pointer"
                                                 >
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                    <span>Clear Event Logs</span>
+                                                    <X className="w-3 h-3" />
+                                                    <span>Reset</span>
                                                 </button>
                                             )}
                                         </div>

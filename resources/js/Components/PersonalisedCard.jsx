@@ -1534,22 +1534,22 @@ export default function PersonalisedCard({
 
             {/* Interactive Action Bar */}
             {interactive && (
-                <div className={`mt-4 flex items-center justify-center gap-3 w-full ${isLandscape ? 'max-w-[580px] sm:max-w-[620px]' : (isSquare ? 'max-w-[440px]' : 'max-w-[410px]')}`}>
+                <div className={`mt-3 flex items-center justify-center gap-2 w-full ${isLandscape ? 'max-w-[580px] sm:max-w-[620px]' : (isSquare ? 'max-w-[440px]' : 'max-w-[410px]')}`}>
                     <button 
                         type="button" 
                         onClick={handleDownloadCanvas} 
                         disabled={isExporting}
-                        className="flex-1 py-2.5 px-4 rounded-2xl bg-kardovo-navy hover:bg-slate-900 dark:bg-cyan-600 dark:hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="flex-1 py-2 px-3.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-white/10 font-medium text-xs flex items-center justify-center gap-1.5 shadow-2xs transition active:scale-98 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                         {isExporting ? (
                             <>
-                                <Loader2 className="w-4 h-4 animate-spin text-cyan-300" />
-                                <span>Generating 4K Pass...</span>
+                                <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" />
+                                <span>Generating Pass...</span>
                             </>
                         ) : (
                             <>
-                                <Download className="w-4 h-4 text-cyan-400" />
-                                <span>Download Pass (PNG)</span>
+                                <Download className="w-3.5 h-3.5 text-slate-400" />
+                                <span>Save Pass (PNG)</span>
                             </>
                         )}
                     </button>
@@ -1557,11 +1557,11 @@ export default function PersonalisedCard({
                         type="button" 
                         onClick={handlePrint} 
                         disabled={isExporting}
-                        className="py-2.5 px-4 rounded-2xl bg-white dark:bg-[#0B1524] border border-slate-300 dark:border-white/15 hover:bg-slate-50 dark:hover:bg-white/[0.08] text-slate-700 dark:text-slate-200 font-bold text-xs flex items-center justify-center gap-2 shadow-sm hover:shadow transition active:scale-95 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed" 
+                        className="py-2 px-3.5 rounded-xl bg-white hover:bg-slate-50 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-white/10 font-medium text-xs flex items-center justify-center gap-1.5 shadow-2xs transition active:scale-98 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed" 
                         title="Print Pass"
                     >
-                        <Printer className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                        <span>Print Pass</span>
+                        <Printer className="w-3.5 h-3.5 text-slate-400" />
+                        <span>Print</span>
                     </button>
                 </div>
             )}

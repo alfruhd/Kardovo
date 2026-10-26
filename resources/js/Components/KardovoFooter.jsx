@@ -60,8 +60,8 @@ export default function KardovoFooter({ lang = 'sw', onSectionClick = null }) {
                         </button>
                         <p className="text-sm text-slate-300 leading-relaxed max-w-sm">
                             {lang === 'sw' 
-                                ? 'Jukwaa kamili la kununua na kuuza tiketi za matukio, kutuma mialiko ya kidigitali na kurahisisha uingiaji wa wageni mlangoni.'
-                                : 'The all-in-one platform to buy and sell event tickets, send digital invitations, and manage seamless door access.'}
+                                ? 'Jukwaa kamili la kununua na kuuza tiketi za matukio, kupiga na kusimamia kura za tuzo na mashindano, kutuma mialiko ya kidigitali na kurahisisha uingiaji mlangoni.'
+                                : 'The all-in-one platform to buy and sell event tickets, run awards & pageant voting, send digital invitations, and manage seamless door access.'}
                         </p>
                         <div className="flex items-center gap-2 pt-1 text-xs text-sky-200/90 font-medium">
                             <CheckCircle2 className="w-4 h-4 text-emerald-300 shrink-0" />
@@ -85,6 +85,14 @@ export default function KardovoFooter({ lang = 'sw', onSectionClick = null }) {
                                     className="hover:text-white transition-colors cursor-pointer"
                                 >
                                     {lang === 'sw' ? 'Kununua & Kuuza Tiketi (Buy & Sell Tickets)' : 'Buy & Sell Event Tickets'}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link 
+                                    href={route('voting.index')} 
+                                    className="hover:text-white transition-colors cursor-pointer"
+                                >
+                                    {lang === 'sw' ? 'Kura & Tuzo za Mashindano (Awards & Voting)' : 'Awards & Pageant Voting'}
                                 </Link>
                             </li>
                             <li>
@@ -141,6 +149,14 @@ export default function KardovoFooter({ lang = 'sw', onSectionClick = null }) {
                             {lang === 'sw' ? 'Viungo Muhimu' : 'Quick Links'}
                         </h4>
                         <ul className="space-y-2.5 text-sm text-slate-300 font-medium">
+                            <li>
+                                <Link 
+                                    href={route('voting.index')} 
+                                    className="hover:text-white transition-colors cursor-pointer"
+                                >
+                                    {lang === 'sw' ? 'Kura' : 'Voting'}
+                                </Link>
+                            </li>
                             <li>
                                 <a 
                                     href="/#how-it-works" 

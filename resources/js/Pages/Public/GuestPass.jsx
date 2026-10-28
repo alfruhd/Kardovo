@@ -19,6 +19,31 @@ import {
     Copy
 } from 'lucide-react';
 
+// Color calculation helpers for dynamic wax complementary styling
+function hexToRgb(hex) {
+    let clean = (hex || '#5a0f1b').replace('#', '').trim();
+    if (clean.length === 3) clean = clean.split('').map(c => c + c).join('');
+    const num = parseInt(clean, 16);
+    if (isNaN(num)) return { r: 90, g: 15, b: 27 };
+    return {
+        r: (num >> 16) & 255,
+        g: (num >> 8) & 255,
+        b: num & 255,
+    };
+}
+
+function adjustColorBrightness(rgb, percent) {
+    const factor = percent / 100;
+    const adjust = (val) => {
+        if (factor > 0) {
+            return Math.min(255, Math.round(val + (255 - val) * factor));
+        } else {
+            return Math.max(0, Math.round(val * (1 + factor)));
+        }
+    };
+    return `rgb(${adjust(rgb.r)}, ${adjust(rgb.g)}, ${adjust(rgb.b)})`;
+}
+
 export default function GuestPass({ guest, event, template, isDemo = false, micrositeConfig = null, hasMicrosite = false, recentPayments = [] }) {
     const cfg = micrositeConfig || {};
 
@@ -28,13 +53,34 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
     const eventDateFormatted = cfg.event_date_formatted || '27.09.26';
     const eventTagline = cfg.event_tagline || 'Wedding Day';
 
+    // Dynamic Wax Color System
+    const waxColor = (cfg.gate_seal_color || cfg.wax_seal_color || '#5a0f1b').trim();
+    const waxRgb = hexToRgb(waxColor);
+    const waxRgbStr = `${waxRgb.r}, ${waxRgb.g}, ${waxRgb.b}`;
+    const waxLight = adjustColorBrightness(waxRgb, 28);
+    const waxDark = adjustColorBrightness(waxRgb, -28);
+    const lum = (0.299 * waxRgb.r + 0.587 * waxRgb.g + 0.114 * waxRgb.b) / 255;
+    const waxText = lum > 0.65 ? adjustColorBrightness(waxRgb, -38) : waxColor;
+
     const [htmlContent, setHtmlContent] = useState('');
     const [showTicketModal, setShowTicketModal] = useState(false);
+    const [isRsvpPopupOpen, setIsRsvpPopupOpen] = useState(false);
     const [qrCodeUrl, setQrCodeUrl] = useState('');
     const [rsvpStatus, setRsvpStatus] = useState(guest?.rsvp_status || 'pending');
     const [rsvpMessage, setRsvpMessage] = useState(guest?.notes || '');
     const [submittingRsvp, setSubmittingRsvp] = useState(false);
     const [rsvpSuccess, setRsvpSuccess] = useState(null);
+
+    // Listen for RSVP modal open/close events from the microsite iframe
+    useEffect(() => {
+        const handleMessage = (e) => {
+            if (e.data && e.data.type === 'TILDA_RSVP_POPUP_STATE') {
+                setIsRsvpPopupOpen(Boolean(e.data.isOpen));
+            }
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
     // Pledges & Contributions state
     const [pledgeAmount, setPledgeAmount] = useState(guest?.pledge_amount || '');
@@ -443,49 +489,7 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
                     return 'custom';
                 };
 
-                // RSVP Wax Seal color/image customization (REC 2487446223)
-                let rsvpSealUrl = null;
-                if (cfg.wax_seal_image_url && !cfg.wax_seal_image_url.includes('wax_seal_1.png')) {
-                    rsvpSealUrl = cfg.wax_seal_image_url;
-                } else if (cfg.gate_seal_image_url && cfg.gate_seal_image_url.trim()) {
-                    rsvpSealUrl = cfg.gate_seal_image_url.trim();
-                } else if (cfg.gate_seal_color) {
-                    const sealType = resolveWaxSealColor(cfg.gate_seal_color);
-                    if (sealType === 'emerald') {
-                        rsvpSealUrl = '/images/sacred_garden/wax_seal_rsvp_emerald.png';
-                    } else if (sealType === 'navy') {
-                        rsvpSealUrl = '/images/sacred_garden/wax_seal_rsvp_navy.png';
-                    } else if (sealType === 'gold') {
-                        rsvpSealUrl = '/images/sacred_garden/wax_seal_rsvp_gold.png';
-                    } else if (sealType === 'black') {
-                        rsvpSealUrl = '/images/sacred_garden/wax_seal_rsvp_black.png';
-                    } else if (sealType === 'blush') {
-                        rsvpSealUrl = '/images/sacred_garden/wax_seal_rsvp_blush.png';
-                    } else if (sealType === 'burgundy') {
-                        rsvpSealUrl = '/images/sacred_garden/wax_seal_1.png';
-                    }
-                }
-
-                if (rsvpSealUrl) {
-                    processed = replaceInRecord(
-                        processed,
-                        '2487446223',
-                        /https:\/\/static\.tildacdn\.net\/tild6638-6565-4665-a361-653962303137\/wax_seal_1\.png/g,
-                        rsvpSealUrl
-                    );
-                    processed = replaceInRecord(
-                        processed,
-                        '2487446223',
-                        /https:\/\/thb\.tildacdn\.net\/tild6638-6565-4665-a361-653962303137\/-\/resize\/20x\/wax_seal_1\.png/g,
-                        rsvpSealUrl
-                    );
-                    processed = replaceInRecord(
-                        processed,
-                        '2487446223',
-                        /\/images\/sacred_garden\/wax_seal_1\.png/g,
-                        rsvpSealUrl
-                    );
-                }
+                // Note: Attendance RSVP Wax Seal & Envelope Wax Seal are symmetrically unified in section 12b below
 
                 // RSVP Popup Form Customizations (REC 2487446233)
                 if (cfg.rsvp_submit_label && cfg.rsvp_submit_label !== 'Submit') {
@@ -617,15 +621,21 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
                     );
                 }
 
-                // 12b. Gate Envelope Wax Seal Customization (Native Replica: Color, Initials, Crest)
-                const hasCustomSealImage = Boolean(cfg.gate_seal_image_url && cfg.gate_seal_image_url.trim());
+                // 12b. Wax Seals Customization (Symmetrically unified for Envelope Gate Seal & Attendance RSVP Seal)
+                const hasCustomSealImage = Boolean(
+                    cfg.gate_seal_image_url &&
+                    cfg.gate_seal_image_url.trim() &&
+                    !cfg.gate_seal_image_url.includes('wax_seal_') &&
+                    !cfg.gate_seal_image_url.includes('seal_')
+                );
+
                 if (hasCustomSealImage) {
                     processed = processed.replace(
                         /(<div id="weiSealCore" class="wei-seal-core">)[\s\S]*?(<\/div>)/i,
-                        `$1<img src="${cfg.gate_seal_image_url}" alt="Custom Wax Crest" class="wei-seal-img" />$2`
+                        `$1<img src="${cfg.gate_seal_image_url.trim()}" alt="Custom Wax Crest" class="wei-seal-img" />$2`
                     );
                 } else {
-                    // 1. Custom Monogram Initials
+                    // Custom Monogram Initials on Envelope Seal
                     const defaultInitials = (cfg.primary_name && cfg.secondary_name) 
                         ? `${cfg.primary_name.trim()[0] || 'R'}&${cfg.secondary_name.trim()[0] || 'Z'}`
                         : 'R&Z';
@@ -641,61 +651,186 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
                         /(class="wei-seal-initials")/gi,
                         `$1 style="font-size: ${fontSize}; left: ${leftOffset};"`
                     );
-
-                    // 2. Custom Seal Color Mapping (Photorealistic pre-rendered authentic wax seals)
-                    const sealColor = (cfg.gate_seal_color || '#5a0f1b').toLowerCase().trim();
-                    let chosenSealImg = '/images/sacred_garden/wax_seal_authentic_blank.png';
-                    let extraSvgFilter = '';
-
-                    const gateSealType = resolveWaxSealColor(sealColor);
-                    if (gateSealType === 'emerald') {
-                        chosenSealImg = '/images/sacred_garden/seal_emerald_authentic.png';
-                    } else if (gateSealType === 'navy') {
-                        chosenSealImg = '/images/sacred_garden/seal_navy_authentic.png';
-                    } else if (gateSealType === 'gold') {
-                        chosenSealImg = '/images/sacred_garden/seal_gold_authentic.png';
-                    } else if (gateSealType === 'black') {
-                        chosenSealImg = '/images/sacred_garden/seal_black_authentic.png';
-                    } else if (gateSealType === 'blush') {
-                        chosenSealImg = '/images/sacred_garden/seal_blush_authentic.png';
-                    } else if (gateSealType === 'custom') {
-                        // Arbitrary hex color: apply procedural SVG tint
-                        const cleanHex = sealColor.replace('#', '');
-                        const r = (parseInt(cleanHex.substring(0, 2), 16) || 90) / 255.0;
-                        const g = (parseInt(cleanHex.substring(2, 4), 16) || 15) / 255.0;
-                        const b = (parseInt(cleanHex.substring(4, 6), 16) || 27) / 255.0;
-                        const mr = (r / 0.32).toFixed(3);
-                        const mg = (g / 0.32).toFixed(3);
-                        const mb = (b / 0.32).toFixed(3);
-                        extraSvgFilter = `
-                        <svg style="position:absolute; width:0; height:0;" aria-hidden="true">
-                          <filter id="dynWaxSealTint" color-interpolation-filters="sRGB">
-                            <feColorMatrix type="matrix" values="
-                              ${(mr * 0.82).toFixed(3)} ${(mr * 0.09).toFixed(3)} ${(mr * 0.09).toFixed(3)} 0 ${(r * 0.03).toFixed(3)}
-                              ${(mg * 0.82).toFixed(3)} ${(mg * 0.09).toFixed(3)} ${(mg * 0.09).toFixed(3)} 0 ${(g * 0.03).toFixed(3)}
-                              ${(mb * 0.82).toFixed(3)} ${(mb * 0.09).toFixed(3)} ${(mb * 0.09).toFixed(3)} 0 ${(b * 0.03).toFixed(3)}
-                              0 0 0 1 0" />
-                          </filter>
-                        </svg>`;
-                    }
-
-                    if (chosenSealImg !== '/images/sacred_garden/wax_seal_authentic_blank.png') {
-                        processed = processed.replace(
-                            /(<img id="weiSealImg"\s+src=")[^"]*(")/gi,
-                            `$1${chosenSealImg}$2`
-                        );
-                    } else if (extraSvgFilter) {
-                        processed = processed.replace('</body>', `${extraSvgFilter}</body>`);
-                        processed = processed.replace(
-                            /(<img id="weiSealImg"[^>]*class="[^"]*")/gi,
-                            `$1 style="filter: url(#dynWaxSealTint);"`
-                        );
-                        processed = processed.replace(
-                            /(<img id="weiRsvpSealImg"[^>]*class="[^"]*")/gi,
-                            `$1 style="filter: url(#dynWaxSealTint);"`
-                        );
-                    }
                 }
+
+                // Symmetrical Color & Asset Resolution
+                const sealColor = (cfg.gate_seal_color || '#5a0f1b').toLowerCase().trim();
+                const sealType = resolveWaxSealColor(sealColor);
+
+                let chosenEnvelopeSealImg = '/images/sacred_garden/wax_seal_authentic_blank.png';
+                let chosenRsvpSealImg = '/images/sacred_garden/wax_seal_1.png';
+                let extraSvgFilter = '';
+                let applyDynamicTint = false;
+
+                if (sealType === 'emerald') {
+                    chosenEnvelopeSealImg = '/images/sacred_garden/seal_emerald_authentic.png';
+                    chosenRsvpSealImg = '/images/sacred_garden/wax_seal_rsvp_emerald.png';
+                } else if (sealType === 'navy') {
+                    chosenEnvelopeSealImg = '/images/sacred_garden/seal_navy_authentic.png';
+                    chosenRsvpSealImg = '/images/sacred_garden/wax_seal_rsvp_navy.png';
+                } else if (sealType === 'gold') {
+                    chosenEnvelopeSealImg = '/images/sacred_garden/seal_gold_authentic.png';
+                    chosenRsvpSealImg = '/images/sacred_garden/wax_seal_rsvp_gold.png';
+                } else if (sealType === 'black') {
+                    chosenEnvelopeSealImg = '/images/sacred_garden/seal_black_authentic.png';
+                    chosenRsvpSealImg = '/images/sacred_garden/wax_seal_rsvp_black.png';
+                } else if (sealType === 'blush') {
+                    chosenEnvelopeSealImg = '/images/sacred_garden/seal_blush_authentic.png';
+                    chosenRsvpSealImg = '/images/sacred_garden/wax_seal_rsvp_blush.png';
+                } else if (sealType === 'burgundy') {
+                    chosenEnvelopeSealImg = '/images/sacred_garden/wax_seal_authentic_blank.png';
+                    chosenRsvpSealImg = '/images/sacred_garden/wax_seal_1.png';
+                } else {
+                    // Custom Hex Color: apply SVG color tint filter symmetrically to both seals
+                    applyDynamicTint = true;
+                    chosenEnvelopeSealImg = '/images/sacred_garden/wax_seal_authentic_blank.png';
+                    chosenRsvpSealImg = '/images/sacred_garden/wax_seal_1.png';
+
+                    const cleanHex = sealColor.replace('#', '');
+                    const r = (parseInt(cleanHex.substring(0, 2), 16) || 90) / 255.0;
+                    const g = (parseInt(cleanHex.substring(2, 4), 16) || 15) / 255.0;
+                    const b = (parseInt(cleanHex.substring(4, 6), 16) || 27) / 255.0;
+                    const mr = (r / 0.32).toFixed(3);
+                    const mg = (g / 0.32).toFixed(3);
+                    const mb = (b / 0.32).toFixed(3);
+                    extraSvgFilter = `
+                    <svg style="position:absolute; width:0; height:0;" aria-hidden="true">
+                      <filter id="dynWaxSealTint" color-interpolation-filters="sRGB">
+                        <feColorMatrix type="matrix" values="
+                          ${(mr * 0.82).toFixed(3)} ${(mr * 0.09).toFixed(3)} ${(mr * 0.09).toFixed(3)} 0 ${(r * 0.03).toFixed(3)}
+                          ${(mg * 0.82).toFixed(3)} ${(mg * 0.09).toFixed(3)} ${(mg * 0.09).toFixed(3)} 0 ${(g * 0.03).toFixed(3)}
+                          ${(mb * 0.82).toFixed(3)} ${(mb * 0.09).toFixed(3)} ${(mb * 0.09).toFixed(3)} 0 ${(b * 0.03).toFixed(3)}
+                          0 0 0 1 0" />
+                      </filter>
+                    </svg>`;
+                }
+
+                // Check for individual custom uploaded assets
+                const hasCustomUploadedRsvpSeal = Boolean(
+                    cfg.wax_seal_image_url &&
+                    !cfg.wax_seal_image_url.includes('wax_seal_1.png') &&
+                    !cfg.wax_seal_image_url.includes('wax_seal_rsvp_')
+                );
+                if (hasCustomUploadedRsvpSeal) {
+                    chosenRsvpSealImg = cfg.wax_seal_image_url.trim();
+                    applyDynamicTint = false;
+                }
+
+                // 1. Update Envelope Wax Seal image
+                if (!hasCustomSealImage) {
+                    processed = processed.replace(
+                        /(<img id="weiSealImg"[^>]*?src=['"])[^'"]*(['"])/gi,
+                        `$1${chosenEnvelopeSealImg}$2`
+                    );
+                }
+
+                // 2. Update Attendance RSVP Wax Seal (REC 2487446223)
+                processed = replaceInRecord(
+                    processed,
+                    '2487446223',
+                    /\/images\/sacred_garden\/wax_seal_[^'"]*\.png/g,
+                    chosenRsvpSealImg
+                );
+                processed = replaceInRecord(
+                    processed,
+                    '2487446223',
+                    /https?:\/\/[^'"]*wax_seal_[^'"]*\.png/g,
+                    chosenRsvpSealImg
+                );
+                processed = processed.replace(
+                    /(<img id="weiRsvpSealImg"[^>]*?src=['"])[^'"]*(['"])/gi,
+                    `$1${chosenRsvpSealImg}$2`
+                );
+                processed = processed.replace(
+                    /(<img id="weiRsvpSealImg"[^>]*?data-original=['"])[^'"]*(['"])/gi,
+                    `$1${chosenRsvpSealImg}$2`
+                );
+
+                // 3. Apply Symmetrical Dynamic Tint Filter when arbitrary custom color is used
+                if (applyDynamicTint && extraSvgFilter) {
+                    processed = processed.replace('</body>', `${extraSvgFilter}</body>`);
+
+                    const tintCss = `
+                    <style id="kardovo-wax-seal-tint">
+                      #weiSealImg, #weiRsvpSealImg, img[id="weiSealImg"], img[id="weiRsvpSealImg"] {
+                        filter: url(#dynWaxSealTint) !important;
+                        -webkit-filter: url(#dynWaxSealTint) !important;
+                      }
+                    </style>
+                    `;
+                    processed = processed.replace('</head>', `${tintCss}</head>`);
+
+                    processed = processed.replace(
+                        /(<img id="weiSealImg"[^>]*?)(\s*\/?>)/gi,
+                        '$1 style="filter: url(#dynWaxSealTint); -webkit-filter: url(#dynWaxSealTint);"$2'
+                    );
+                    processed = processed.replace(
+                        /(<img id="weiRsvpSealImg"[^>]*?)(\s*\/?>)/gi,
+                        '$1 style="filter: url(#dynWaxSealTint); -webkit-filter: url(#dynWaxSealTint);"$2'
+                    );
+                }
+
+                // 12d. Dynamic Wax Complementary Theme Styling (Audio button, RSVP modal title, radio, checkbox, submit button)
+                const waxDynamicStyle = `
+                <style id="kardovo-wax-theme-vars">
+                  :root {
+                    --kdv-wax-primary: ${waxColor} !important;
+                    --kdv-wax-text: ${waxText} !important;
+                    --kdv-wax-light: ${waxLight} !important;
+                    --kdv-wax-dark: ${waxDark} !important;
+                    --kdv-wax-rgb: ${waxRgbStr} !important;
+                    --kdv-wax-tint: rgba(${waxRgbStr}, 0.08) !important;
+                    --kdv-wax-glow: rgba(${waxRgbStr}, 0.38) !important;
+                  }
+                  #weiAudioBtn {
+                    background: ${waxColor} !important;
+                  }
+                  #rec2487446233 .t-popup__block-close-button:hover {
+                    background: ${waxColor} !important;
+                    border-color: ${waxColor} !important;
+                    box-shadow: 0 6px 20px rgba(${waxRgbStr}, 0.4) !important;
+                  }
+                  #rec2487446233 .t702__title {
+                    color: ${waxText} !important;
+                  }
+                  #rec2487446233 .t-radio__control .t-radio__indicator::after {
+                    background: ${waxColor} !important;
+                  }
+                  #rec2487446233 .t-radio__control:has(input:checked),
+                  #rec2487446233 .t-radio__control.wei-radio-selected {
+                    border-color: ${waxColor} !important;
+                    background: linear-gradient(135deg, rgba(${waxRgbStr}, 0.07) 0%, rgba(166, 125, 43, 0.1) 100%) !important;
+                    box-shadow: 0 4px 16px rgba(${waxRgbStr}, 0.16), inset 0 0 0 1px rgba(${waxRgbStr}, 0.22) !important;
+                  }
+                  #rec2487446233 .t-radio__control:has(input:checked) .t-radio__indicator,
+                  #rec2487446233 .t-radio__control.wei-radio-selected .t-radio__indicator {
+                    border-color: ${waxColor} !important;
+                  }
+                  #rec2487446233 .t-radio__control:has(input:checked) span,
+                  #rec2487446233 .t-radio__control.wei-radio-selected span {
+                    color: ${waxText} !important;
+                  }
+                  #rec2487446233 .t-input-group_cb input[type="checkbox"] {
+                    accent-color: ${waxColor} !important;
+                  }
+                  #rec2487446233 .t-input-group_cb a {
+                    color: ${waxText} !important;
+                  }
+                  #rec2487446233 .t-btnflex.t-btnflex_type_submit {
+                    background: linear-gradient(135deg, ${waxLight} 0%, ${waxColor} 50%, ${waxDark} 100%) !important;
+                    box-shadow: 0 10px 24px rgba(${waxRgbStr}, 0.38), 0 2px 8px rgba(166, 125, 43, 0.35) !important;
+                  }
+                  #rec2487446233 .t-btnflex.t-btnflex_type_submit:hover {
+                    transform: translateY(-2px) !important;
+                    background: linear-gradient(135deg, ${adjustColorBrightness(waxRgb, 35)} 0%, ${waxColor} 50%, ${adjustColorBrightness(waxRgb, -35)} 100%) !important;
+                    box-shadow: 0 14px 32px rgba(${waxRgbStr}, 0.48), 0 4px 12px rgba(166, 125, 43, 0.45) !important;
+                  }
+                  #rec2487446233 .js-successbox {
+                    color: ${waxText} !important;
+                  }
+                </style>
+                `;
+                processed = processed.replace('</head>', `${waxDynamicStyle}</head>`);
 
                 // 13. Dynamic Theme & Accent Color Overrides
                 if ((cfg.theme_color && cfg.theme_color !== '#f9f0e0') || (cfg.accent_color && cfg.accent_color !== '#a67d2b')) {
@@ -712,9 +847,6 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
                             .tn-elem[data-elem-id="1782316019612"] .tn-atom {
                                 color: ${cfg.accent_color} !important;
                             }
-                            #weiAudioBtn, #rec2487446233 .t-btnflex.t-btnflex_type_submit {
-                                background-color: ${cfg.accent_color} !important;
-                            }
                         ` : ''}
                     </style>
                     `;
@@ -730,46 +862,23 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
 
     if (!hasMicrosite) {
         return (
-            <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center px-4 py-8 sm:py-12 selection:bg-amber-500 selection:text-white relative overflow-x-hidden">
+            <div className="min-h-screen bg-[#FBFBFC] text-slate-800 flex flex-col items-center px-4 py-6 sm:py-10 selection:bg-slate-900 selection:text-white relative overflow-x-hidden">
                 <Head title={`${guest?.name || 'Guest Pass'} — ${event?.title || 'Event Invitation'}`} />
 
-                {/* Subtle ambient luxury glow in background */}
-                <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-                    <div className="absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[350px] bg-gradient-to-b from-sky-600/15 via-amber-500/10 to-transparent blur-3xl rounded-full" />
-                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-gradient-to-t from-sky-900/10 to-transparent blur-3xl rounded-full" />
-                </div>
-
-                <div className="relative z-10 w-full max-w-md flex flex-col items-center space-y-6">
-                    {/* Header Brand */}
-                    <header className="w-full flex items-center justify-between pb-4 border-b border-white/[0.08]">
-                        <div className="flex items-center gap-2.5">
-                            <KardovoLogo className="w-8 h-8 text-white" />
-                            <div>
-                                <span className="text-xs font-black tracking-widest uppercase text-white/90">Kardovo Pass</span>
-                                <div className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-                                    <ShieldCheck className="w-3 h-3" />
-                                    <span>Verified Invitation</span>
-                                </div>
-                            </div>
+                <div className="relative z-10 w-full max-w-[410px] flex flex-col items-center space-y-4">
+                    {/* Minimalist Top Brand Bar */}
+                    <header className="w-full flex items-center justify-between pb-1">
+                        <div className="flex items-center gap-2">
+                            <KardovoLogo showText={false} imgClassName="w-5 h-5 opacity-80" />
+                            <span className="text-[11px] font-bold tracking-widest uppercase text-slate-500">Kardovo Pass</span>
                         </div>
-                        <div className="text-right">
-                            <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-500/15 text-sky-300 border border-sky-400/20">
-                                {guest?.category || guest?.allowance_label || 'Digital Pass'}
-                            </span>
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium bg-slate-100/80 px-2.5 py-0.5 rounded-full border border-slate-200/50">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Verified Pass</span>
                         </div>
                     </header>
 
-                    {/* Event Title Banner */}
-                    <div className="w-full text-center space-y-1">
-                        <h1 className="text-xl sm:text-2xl font-black text-white font-display tracking-tight">
-                            {event?.title || 'Event Invitation'}
-                        </h1>
-                        <p className="text-xs text-slate-400">
-                            Digital Pass for <span className="text-white font-bold">{guest?.name || 'Valued Guest'}</span>
-                        </p>
-                    </div>
-
-                    {/* Interactive 3D Card Presentation */}
+                    {/* Interactive Pass Card Presentation (The Hero) */}
                     <div className="w-full flex justify-center">
                         <PersonalisedCard
                             guest={guest}
@@ -779,149 +888,148 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
                         />
                     </div>
 
-                    {/* 1-Tap RSVP & Attendance Card */}
-                    <div className="w-full p-5 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md shadow-2xl space-y-4">
-                        <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                    {/* Optional Seating Assignment Pill */}
+                    {(guest?.table_number || guest?.seat_number) && (
+                        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white text-slate-700 text-xs font-medium border border-slate-200/80 shadow-2xs">
+                            <Ticket className="w-3.5 h-3.5 text-slate-400" />
+                            <span>Table {guest.table_number || 'General'}{guest?.seat_number ? `, Seat ${guest.seat_number}` : ''}</span>
+                        </div>
+                    )}
+
+                    {/* Minimalist RSVP & Attendance Card */}
+                    <div className="w-full bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3.5">
+                        <div className="flex items-center justify-between">
                             <div>
-                                <h2 className="text-xs font-bold text-white uppercase tracking-wider">Confirm Attendance</h2>
-                                <p className="text-[11px] text-slate-400">Let the hosts know if you will attend</p>
+                                <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Attendance</h2>
+                                <p className="text-[11px] text-slate-400">Please confirm your presence</p>
                             </div>
                             {rsvpStatus === 'attending' && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
-                                    <Check className="w-3 h-3" /> Attending
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2.5 py-0.5 rounded-full">
+                                    <Check className="w-3 h-3 stroke-[2.5]" /> Attending
                                 </span>
                             )}
                             {rsvpStatus === 'declined' && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-400 bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 rounded-full">
-                                    <X className="w-3 h-3" /> Cannot Attend
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-rose-700 bg-rose-50 border border-rose-200/80 px-2.5 py-0.5 rounded-full">
+                                    <X className="w-3 h-3 stroke-[2.5]" /> Cannot Attend
                                 </span>
                             )}
                             {rsvpStatus !== 'attending' && rsvpStatus !== 'declined' && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 rounded-full">
-                                    Pending RSVP
+                                <span className="text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">
+                                    Pending response
                                 </span>
                             )}
                         </div>
 
                         {rsvpSuccess && (
-                            <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-fade-in">
-                                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                            <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/70 text-emerald-800 text-xs flex items-center gap-2 animate-fade-in font-medium">
+                                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
                                 <span>{rsvpSuccess}</span>
                             </div>
                         )}
 
-                        {/* Quick 1-Tap RSVP Buttons */}
-                        <div className="grid grid-cols-2 gap-3">
+                        {/* Minimalist 2-Button Choice */}
+                        <div className="grid grid-cols-2 gap-2.5">
                             <button
                                 type="button"
                                 disabled={submittingRsvp}
                                 onClick={() => handleRsvp('attending')}
-                                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-black tracking-wide transition cursor-pointer shadow-lg active:scale-98 ${
+                                className={`py-2.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-98 ${
                                     rsvpStatus === 'attending'
-                                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white ring-2 ring-emerald-400/50 shadow-emerald-900/30'
-                                        : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/40 hover:shadow-emerald-900/30'
+                                        ? 'bg-slate-900 text-white shadow-xs'
+                                        : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200/80'
                                 }`}
                             >
-                                <Check className="w-4 h-4 stroke-[2.5]" />
+                                <Check className="w-3.5 h-3.5" />
                                 <span>Will Attend</span>
                             </button>
                             <button
                                 type="button"
                                 disabled={submittingRsvp}
                                 onClick={() => handleRsvp('declined')}
-                                className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs font-black tracking-wide transition cursor-pointer active:scale-98 ${
+                                className={`py-2.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 active:scale-98 ${
                                     rsvpStatus === 'declined'
-                                        ? 'bg-rose-600 text-white ring-2 ring-rose-400/50'
-                                        : 'bg-white/[0.06] hover:bg-white/[0.1] text-slate-300 hover:text-white border border-white/[0.1]'
+                                        ? 'bg-slate-900 text-white shadow-xs'
+                                        : 'bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80'
                                 }`}
                             >
-                                <X className="w-4 h-4 stroke-[2.5]" />
+                                <X className="w-3.5 h-3.5" />
                                 <span>Cannot Attend</span>
                             </button>
                         </div>
 
                         {/* Optional Message */}
-                        <div className="pt-1">
-                            <label htmlFor="guest_rsvp_msg" className="block text-[11px] font-medium text-slate-400 mb-1.5">
-                                Send a note or well-wishes to the hosts:
-                            </label>
-                            <div className="flex gap-2">
+                        <div className="pt-0.5">
+                            <div className="relative">
                                 <input
                                     id="guest_rsvp_msg"
                                     type="text"
                                     value={rsvpMessage}
                                     onChange={(e) => setRsvpMessage(e.target.value)}
-                                    placeholder="e.g. Congratulations! Looking forward to it!"
-                                    className="flex-1 bg-white/[0.05] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-sky-400"
+                                    placeholder="Add a note for the hosts (optional)..."
+                                    className="w-full bg-slate-50 hover:bg-white focus:bg-white border border-slate-200/80 focus:border-slate-900 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden transition pr-16"
                                 />
                                 {rsvpMessage.trim() && (
                                     <button
                                         type="button"
                                         disabled={submittingRsvp}
                                         onClick={() => handleRsvp(rsvpStatus === 'declined' ? 'declined' : 'attending')}
-                                        className="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-slate-900 text-white text-[11px] font-semibold transition hover:bg-slate-800 cursor-pointer"
                                     >
-                                        <Send className="w-3.5 h-3.5" />
-                                        <span>Save</span>
+                                        Save
                                     </button>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    {/* Contributions & Pledges Card */}
-                    {(event?.pledges_enabled !== false || guest?.pledge_amount > 0) && (
-                        <div className="w-full p-5 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md shadow-2xl space-y-4">
+                    {/* Minimalist Contributions & Pledges (only if explicitly enabled) */}
+                    {(event?.pledges_enabled === true && guest?.pledge_amount > 0) && (
+                        <div className="w-full bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3.5">
                             {/* Section Header */}
-                            <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                            <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0">
-                                        <Coins className="w-4 h-4" />
+                                    <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+                                        <Coins className="w-3.5 h-3.5" />
                                     </div>
                                     <div>
-                                        <h2 className="text-xs font-bold text-white uppercase tracking-wider">Contributions & Pledges</h2>
-                                        <p className="text-[11px] text-slate-400">Support the hosts with your blessing & gift</p>
+                                        <h2 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Contributions &amp; Pledges</h2>
+                                        <p className="text-[11px] text-slate-400">Gift &amp; blessing for the hosts</p>
                                     </div>
                                 </div>
                                 {guest?.pledge_status === 'completed' && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
                                         <CheckCircle2 className="w-3 h-3" /> Completed
                                     </span>
                                 )}
                                 {guest?.pledge_status === 'partial' && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-400 bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 rounded-full">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-full">
                                         Partial ({Math.round(guest?.pledge_progress_percent || 0)}%)
                                     </span>
                                 )}
                                 {guest?.pledge_status === 'pending' && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-400 bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 rounded-full">
-                                        Pending Payment
-                                    </span>
-                                )}
-                                {(!guest?.pledge_status || guest?.pledge_status === 'unpledged') && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-400 bg-white/[0.06] border border-white/[0.1] px-2 py-0.5 rounded-full">
-                                        No Pledge Yet
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                                        Pending
                                     </span>
                                 )}
                             </div>
 
                             {/* Metrics Grid */}
                             <div className="grid grid-cols-3 gap-2">
-                                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
-                                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pledged</span>
-                                    <span className="text-xs font-bold text-white block mt-0.5">
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                                    <span className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider">Pledged</span>
+                                    <span className="text-xs font-bold text-slate-900 block mt-0.5">
                                         {guest?.pledge_amount > 0 ? `${event?.pledge_currency || 'TZS'} ${Number(guest.pledge_amount).toLocaleString()}` : '—'}
                                     </span>
                                 </div>
-                                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
-                                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Paid</span>
-                                    <span className="text-xs font-bold text-emerald-400 block mt-0.5">
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                                    <span className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider">Paid</span>
+                                    <span className="text-xs font-bold text-emerald-700 block mt-0.5">
                                         {event?.pledge_currency || 'TZS'} {Number(guest?.paid_amount || 0).toLocaleString()}
                                     </span>
                                 </div>
-                                <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
-                                    <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Balance</span>
-                                    <span className="text-xs font-bold text-sky-300 block mt-0.5">
+                                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-center">
+                                    <span className="block text-[10px] font-medium text-slate-400 uppercase tracking-wider">Balance</span>
+                                    <span className="text-xs font-bold text-slate-900 block mt-0.5">
                                         {event?.pledge_currency || 'TZS'} {Number(guest?.pledge_balance || 0).toLocaleString()}
                                     </span>
                                 </div>
@@ -929,373 +1037,228 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
 
                             {/* Progress Bar */}
                             {guest?.pledge_amount > 0 && (
-                                <div className="space-y-1.5">
-                                    <div className="flex justify-between text-[10px] text-slate-400 font-medium">
-                                        <span>Progress</span>
-                                        <span className="text-white font-bold">{Math.round(guest?.pledge_progress_percent || 0)}%</span>
-                                    </div>
-                                    <div className="w-full h-2 rounded-full bg-white/[0.08] overflow-hidden">
-                                        <div
-                                            className="h-full bg-gradient-to-r from-sky-500 to-emerald-400 rounded-full transition-all duration-500"
-                                            style={{ width: `${Math.min(100, Math.max(0, guest?.pledge_progress_percent || 0))}%` }}
-                                        />
-                                    </div>
+                                <div className="w-full h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                    <div
+                                        className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                                        style={{ width: `${Math.min(100, Math.max(0, guest?.pledge_progress_percent || 0))}%` }}
+                                    />
                                 </div>
                             )}
 
                             {/* Feedback alerts */}
                             {pledgeFeedback && (
-                                <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-                                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
+                                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
                                     <span>{pledgeFeedback}</span>
                                 </div>
                             )}
                             {paymentFeedback && (
-                                <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
-                                    <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+                                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2 font-medium">
+                                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
                                     <span>{paymentFeedback}</span>
                                 </div>
                             )}
 
-                            {/* Interactive Tabs: Pay / Send Contribution vs Commit Pledge */}
-                            <div className="flex rounded-xl bg-white/[0.03] p-1 border border-white/[0.06] gap-1">
+                            {/* Tabs */}
+                            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200/50 gap-1">
                                 <button
                                     type="button"
                                     onClick={() => setActivePledgeTab('pay')}
-                                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition text-center cursor-pointer ${
+                                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition text-center cursor-pointer ${
                                         activePledgeTab === 'pay'
-                                            ? 'bg-sky-500/20 text-sky-300 border border-sky-400/30 shadow-xs'
-                                            : 'text-slate-400 hover:text-white'
+                                            ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                                            : 'text-slate-500 hover:text-slate-900'
                                     }`}
                                 >
-                                    Send Contribution / Pay
+                                    Payment Channels
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setActivePledgeTab('pledge')}
-                                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-bold transition text-center cursor-pointer ${
+                                    className={`flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition text-center cursor-pointer ${
                                         activePledgeTab === 'pledge'
-                                            ? 'bg-sky-500/20 text-sky-300 border border-sky-400/30 shadow-xs'
-                                            : 'text-slate-400 hover:text-white'
+                                            ? 'bg-white text-slate-900 shadow-2xs font-bold'
+                                            : 'text-slate-500 hover:text-slate-900'
                                     }`}
                                 >
                                     {guest?.pledge_amount > 0 ? 'Edit Pledge' : 'Make a Pledge'}
                                 </button>
                             </div>
 
-                            {/* Tab 1: Pay / Send Contribution & Submit Proof */}
+                            {/* Tab 1: Pay */}
                             {activePledgeTab === 'pay' && (
-                                <div className="space-y-3.5 pt-1 text-xs">
-                                    {/* Organizer Payment Info Cards */}
-                                    <div className="space-y-2">
-                                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                                            Official Payment Channels
-                                        </span>
-
-                                        {/* Lipa Namba */}
-                                        {event?.pledge_settings?.lipa_namba && (
-                                            <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
-                                                        Lipa
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-[10px] text-slate-400 font-medium">Lipa Namba / Till</div>
-                                                        <div className="font-mono text-xs font-bold text-white tracking-wide">
-                                                            {event.pledge_settings.lipa_namba}
-                                                        </div>
-                                                        {event.pledge_settings.account_name && (
-                                                            <div className="text-[10px] text-slate-400">
-                                                                {event.pledge_settings.account_name}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => copyToClipboard(event.pledge_settings.lipa_namba, 'lipa')}
-                                                    className="px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-slate-300 hover:text-white text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
-                                                >
-                                                    {copiedField === 'lipa' ? (
-                                                        <>
-                                                            <Check className="w-3 h-3 text-emerald-400" />
-                                                            <span className="text-emerald-400">Copied</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Copy className="w-3 h-3" />
-                                                            <span>Copy</span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {/* Bank Details */}
-                                        {event?.pledge_settings?.bank_account && (
-                                            <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.04] border border-white/[0.08]">
-                                                <div className="flex items-center gap-2.5">
-                                                    <div className="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center font-bold text-xs shrink-0">
-                                                        Bank
-                                                    </div>
-                                                    <div>
-                                                        <div className="text-[10px] text-slate-400 font-medium">
-                                                            {event.pledge_settings.bank_name || 'Bank Transfer'}
-                                                        </div>
-                                                        <div className="font-mono text-xs font-bold text-white tracking-wide">
-                                                            {event.pledge_settings.bank_account}
-                                                        </div>
-                                                        {event.pledge_settings.account_name && (
-                                                            <div className="text-[10px] text-slate-400">
-                                                                {event.pledge_settings.account_name}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => copyToClipboard(event.pledge_settings.bank_account, 'bank')}
-                                                    className="px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-slate-300 hover:text-white text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
-                                                >
-                                                    {copiedField === 'bank' ? (
-                                                        <>
-                                                            <Check className="w-3 h-3 text-emerald-400" />
-                                                            <span className="text-emerald-400">Copied</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Copy className="w-3 h-3" />
-                                                            <span>Copy</span>
-                                                        </>
-                                                    )}
-                                                </button>
-                                            </div>
-                                        )}
-
-                                        {event?.pledge_settings?.instructions && (
-                                            <p className="text-[11px] text-slate-400 italic px-1">
-                                                {event.pledge_settings.instructions}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Submit Payment Proof Form */}
-                                    <form onSubmit={handlePaymentSubmit} className="pt-2 border-t border-white/[0.06] space-y-3">
-                                        <span className="text-[11px] font-bold text-white uppercase tracking-wider block">
-                                            Record Payment / Mobile Money Proof
-                                        </span>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div className="space-y-3 pt-1 text-xs">
+                                    {event?.pledge_settings?.lipa_namba && (
+                                        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/60">
                                             <div>
-                                                <label className="block text-[10px] font-medium text-slate-400 mb-1">
-                                                    Amount Paid ({event?.pledge_currency || 'TZS'})
-                                                </label>
-                                                <input
-                                                    type="number"
-                                                    min="100"
-                                                    required
-                                                    value={paymentAmount}
-                                                    onChange={(e) => setPaymentAmount(e.target.value)}
-                                                    placeholder="e.g. 50000"
-                                                    className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-sky-400"
-                                                />
+                                                <div className="text-[10px] text-slate-400 font-medium">Lipa Namba / Till</div>
+                                                <div className="font-mono text-xs font-bold text-slate-900 tracking-wider">
+                                                    {event.pledge_settings.lipa_namba}
+                                                </div>
+                                                {event.pledge_settings.account_name && (
+                                                    <div className="text-[10px] text-slate-500">{event.pledge_settings.account_name}</div>
+                                                )}
                                             </div>
-
-                                            <div>
-                                                <label className="block text-[10px] font-medium text-slate-400 mb-1">
-                                                    Reference Code / Muamala
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={paymentRef}
-                                                    onChange={(e) => setPaymentRef(e.target.value)}
-                                                    placeholder="e.g. 9G28XK911L"
-                                                    className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 uppercase font-mono focus:outline-hidden focus:border-sky-400"
-                                                />
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(event.pledge_settings.lipa_namba, 'lipa')}
+                                                className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-medium transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                            >
+                                                {copiedField === 'lipa' ? (
+                                                    <>
+                                                        <Check className="w-3 h-3 text-emerald-600" />
+                                                        <span className="text-emerald-700">Copied</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="w-3 h-3 text-slate-400" />
+                                                        <span>Copy</span>
+                                                    </>
+                                                )}
+                                            </button>
                                         </div>
+                                    )}
 
-                                        <div className="flex items-center gap-2">
+                                    {event?.pledge_settings?.bank_account && (
+                                        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200/60">
+                                            <div>
+                                                <div className="text-[10px] text-slate-400 font-medium">{event.pledge_settings.bank_name || 'Bank Account'}</div>
+                                                <div className="font-mono text-xs font-bold text-slate-900 tracking-wider">
+                                                    {event.pledge_settings.bank_account}
+                                                </div>
+                                                {event.pledge_settings.account_name && (
+                                                    <div className="text-[10px] text-slate-500">{event.pledge_settings.account_name}</div>
+                                                )}
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(event.pledge_settings.bank_account, 'bank')}
+                                                className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-[11px] font-medium transition flex items-center gap-1 cursor-pointer shadow-2xs"
+                                            >
+                                                {copiedField === 'bank' ? (
+                                                    <>
+                                                        <Check className="w-3 h-3 text-emerald-600" />
+                                                        <span className="text-emerald-700">Copied</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="w-3 h-3 text-slate-400" />
+                                                        <span>Copy</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Record payment proof */}
+                                    <form onSubmit={handlePaymentSubmit} className="pt-2 border-t border-slate-100 space-y-2.5">
+                                        <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                                            Record Payment Proof
+                                        </span>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input
+                                                type="number"
+                                                min="100"
+                                                required
+                                                value={paymentAmount}
+                                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                                placeholder={`Amount (${event?.pledge_currency || 'TZS'})`}
+                                                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:bg-white focus:border-slate-900 transition"
+                                            />
+                                            <input
+                                                type="text"
+                                                required
+                                                value={paymentRef}
+                                                onChange={(e) => setPaymentRef(e.target.value)}
+                                                placeholder="Ref code / SMS"
+                                                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 uppercase font-mono focus:outline-hidden focus:bg-white focus:border-slate-900 transition"
+                                            />
+                                        </div>
+                                        <div className="flex gap-2">
                                             <select
                                                 value={paymentMethod}
                                                 onChange={(e) => setPaymentMethod(e.target.value)}
                                                 aria-label="Payment Method"
-                                                className="bg-white/[0.05] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white focus:outline-hidden focus:border-sky-400"
+                                                className="bg-slate-50 border border-slate-200/80 rounded-xl px-2.5 py-2 text-xs text-slate-700 focus:outline-hidden"
                                             >
-                                                <option value="lipa_namba" className="bg-slate-900 text-white">Lipa Namba</option>
-                                                <option value="mobile_money" className="bg-slate-900 text-white">Mobile Money</option>
-                                                <option value="bank" className="bg-slate-900 text-white">Bank Transfer</option>
-                                                <option value="cash" className="bg-slate-900 text-white">Cash</option>
+                                                <option value="lipa_namba">Lipa Namba</option>
+                                                <option value="mobile_money">Mobile Money</option>
+                                                <option value="bank">Bank</option>
+                                                <option value="cash">Cash</option>
                                             </select>
-
                                             <button
                                                 type="submit"
                                                 disabled={submittingPayment || !paymentAmount || !paymentRef.trim()}
-                                                className="flex-1 py-2 px-3 rounded-xl bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-500 hover:to-teal-500 disabled:opacity-50 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-lg active:scale-98"
+                                                className="flex-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98"
                                             >
                                                 <Check className="w-3.5 h-3.5" />
-                                                <span>{submittingPayment ? 'Submitting...' : 'Confirm Payment'}</span>
+                                                <span>{submittingPayment ? 'Submitting...' : 'Confirm'}</span>
                                             </button>
                                         </div>
                                     </form>
                                 </div>
                             )}
 
-                            {/* Tab 2: Commit / Update Pledge */}
+                            {/* Tab 2: Pledge */}
                             {activePledgeTab === 'pledge' && (
-                                <form onSubmit={handlePledgeSubmit} className="space-y-3.5 pt-1 text-xs">
-                                    <div>
-                                        <label className="block text-[11px] font-medium text-slate-400 mb-2">
-                                            Quick Suggested Amounts ({event?.pledge_currency || 'TZS'}):
-                                        </label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {[20000, 50000, 100000, 200000, 500000].map((amt) => (
-                                                <button
-                                                    key={amt}
-                                                    type="button"
-                                                    onClick={() => setPledgeAmount(amt)}
-                                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer border ${
-                                                        Number(pledgeAmount) === amt
-                                                            ? 'bg-sky-500/20 border-sky-400 text-white'
-                                                            : 'bg-white/[0.04] border-white/[0.08] text-slate-300 hover:text-white hover:bg-white/[0.08]'
-                                                    }`}
-                                                >
-                                                    {amt >= 1000000 ? `${amt / 1000000}M` : `${amt / 1000}K`}
-                                                </button>
-                                            ))}
-                                        </div>
+                                <form onSubmit={handlePledgeSubmit} className="space-y-3 pt-1 text-xs">
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {[20000, 50000, 100000, 200000, 500000].map((amt) => (
+                                            <button
+                                                key={amt}
+                                                type="button"
+                                                onClick={() => setPledgeAmount(amt)}
+                                                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition cursor-pointer border ${
+                                                    Number(pledgeAmount) === amt
+                                                        ? 'bg-slate-900 border-slate-900 text-white'
+                                                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                                }`}
+                                            >
+                                                {amt >= 1000000 ? `${amt / 1000000}M` : `${amt / 1000}K`}
+                                            </button>
+                                        ))}
                                     </div>
-
-                                    <div>
-                                        <label className="block text-[11px] font-medium text-slate-400 mb-1">
-                                            Pledge Amount ({event?.pledge_currency || 'TZS'})
-                                        </label>
-                                        <input
-                                            type="number"
-                                            min="500"
-                                            required
-                                            value={pledgeAmount}
-                                            onChange={(e) => setPledgeAmount(e.target.value)}
-                                            placeholder="e.g. 100000"
-                                            className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-sky-400"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-[11px] font-medium text-slate-400 mb-1">
-                                            Optional Note / Message
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={pledgeNotes}
-                                            onChange={(e) => setPledgeNotes(e.target.value)}
-                                            placeholder="e.g. Will contribute before month end"
-                                            className="w-full bg-white/[0.05] border border-white/[0.1] rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-hidden focus:border-sky-400"
-                                        />
-                                    </div>
-
+                                    <input
+                                        type="number"
+                                        min="500"
+                                        required
+                                        value={pledgeAmount}
+                                        onChange={(e) => setPledgeAmount(e.target.value)}
+                                        placeholder={`Pledge Amount (${event?.pledge_currency || 'TZS'})`}
+                                        className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:bg-white focus:border-slate-900 transition"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={pledgeNotes}
+                                        onChange={(e) => setPledgeNotes(e.target.value)}
+                                        placeholder="Optional note..."
+                                        className="w-full bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-hidden focus:bg-white focus:border-slate-900 transition"
+                                    />
                                     <button
                                         type="submit"
                                         disabled={submittingPledge || !pledgeAmount || Number(pledgeAmount) <= 0}
-                                        className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 disabled:opacity-50 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-lg active:scale-98"
+                                        className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-98"
                                     >
                                         <Check className="w-3.5 h-3.5" />
-                                        <span>{submittingPledge ? 'Saving...' : 'Save Pledge Commitment'}</span>
+                                        <span>{submittingPledge ? 'Saving...' : 'Save Commitment'}</span>
                                     </button>
                                 </form>
-                            )}
-
-                            {/* Recent Verified Payments History */}
-                            {recentPayments && recentPayments.length > 0 && (
-                                <div className="pt-2 border-t border-white/[0.06] space-y-2">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                                        Recorded Contributions
-                                    </span>
-                                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                                        {recentPayments.map((p) => (
-                                            <div key={p.id} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/[0.04] text-[11px]">
-                                                <div className="flex items-center gap-2">
-                                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                                                    <div>
-                                                        <span className="font-mono text-white font-bold">{p.reference || p.reference_number || 'Payment'}</span>
-                                                        <span className="text-[10px] text-slate-500 block">
-                                                            {p.payment_date ? new Date(p.payment_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : (p.created_at ? new Date(p.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Verified')}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <span className="font-bold text-emerald-400">
-                                                    {event?.pledge_currency || 'TZS'} {Number(p.amount).toLocaleString()}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
                             )}
                         </div>
                     )}
 
-                    {/* Event Details Card */}
-                    <div className="w-full p-5 rounded-2xl bg-white/[0.04] border border-white/[0.08] backdrop-blur-md shadow-lg space-y-3.5 text-xs">
-                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pb-2 border-b border-white/[0.06]">
-                            Event Details
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex items-start gap-3">
-                                <div className="w-7 h-7 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center shrink-0 mt-0.5">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                </div>
-                                <div>
-                                    <span className="text-[11px] text-slate-400 block">Date & Time</span>
-                                    <span className="font-bold text-white text-xs">
-                                        {event?.event_date ? new Date(event.event_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Upcoming Date'}
-                                    </span>
-                                    {event?.event_time && <span className="text-slate-400 block text-[11px]">{event.event_time}</span>}
-                                </div>
-                            </div>
-
-                            <div className="flex items-start gap-3">
-                                <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
-                                    <MapPin className="w-3.5 h-3.5" />
-                                </div>
-                                <div>
-                                    <span className="text-[11px] text-slate-400 block">Venue & Location</span>
-                                    <span className="font-bold text-white text-xs">{event?.venue || 'Venue to be announced'}</span>
-                                    {event?.city && <span className="text-slate-400 block text-[11px]">{event.city}</span>}
-                                </div>
-                            </div>
-
-                            {(guest?.table_number || guest?.seat_number) && (
-                                <div className="flex items-start gap-3">
-                                    <div className="w-7 h-7 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
-                                        <Ticket className="w-3.5 h-3.5" />
-                                    </div>
-                                    <div>
-                                        <span className="text-[11px] text-slate-400 block">Seating Assignment</span>
-                                        <span className="font-bold text-white text-xs">
-                                            Table {guest.table_number || 'General'}{guest?.seat_number ? `, Seat ${guest.seat_number}` : ''}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                    {/* Quiet helper line */}
+                    <div className="w-full text-center text-slate-400 text-[11px] pt-1">
+                        <p>Present the QR code at the entrance for verification</p>
+                        <p className="font-mono text-[10px] text-slate-400 mt-0.5">Pass #{guest?.card_number || guest?.unique_code || 'KDV-PASS'}</p>
                     </div>
 
-                    {/* Entrance Check-in Notice */}
-                    <div className="w-full p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] text-center text-slate-400 text-[11px] space-y-1">
-                        <p>Present the QR code on your card at the reception scanner for entrance verification.</p>
-                        <p className="font-mono text-slate-500 text-[10px]">Pass ID: {guest?.card_number || guest?.unique_code || 'KDV-PASS'}</p>
-                    </div>
-
-                    {/* Footer */}
-                    <footer className="w-full pt-6 border-t border-white/[0.08] text-center space-y-2">
-                        <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400">
-                            <KardovoLogo className="w-4 h-4 opacity-75" />
-                            <span>Kardovo Pass & RSVP System</span>
+                    {/* Quiet Minimalist Footer */}
+                    <footer className="w-full pt-4 pb-8 text-center text-slate-400 text-[11px]">
+                        <div className="flex items-center justify-center gap-1.5 font-medium">
+                            <KardovoLogo showText={false} imgClassName="w-3.5 h-3.5 opacity-60" />
+                            <span>Kardovo Pass</span>
                         </div>
-                        <p className="text-[10px] text-slate-500">
-                            Official digital pass powered by Kardovo. All rights reserved.
-                        </p>
                     </footer>
                 </div>
             </div>
@@ -1334,79 +1297,120 @@ export default function GuestPass({ guest, event, template, isDemo = false, micr
             <button
                 type="button"
                 onClick={() => setShowTicketModal(true)}
-                className="fixed top-4 right-4 z-[2147483640] flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#fffaf8]/90 hover:bg-[#fffaf8] text-[#a67d2b] hover:text-[#7f5d1e] shadow-lg border border-[#a67d2b]/30 backdrop-blur-xs transition cursor-pointer text-xs font-semibold tracking-wider uppercase font-['Cinzel',serif]"
+                className={`fixed top-4 right-4 sm:top-5 sm:right-6 z-[2147483640] flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-full bg-[#fffdfa]/95 hover:bg-[#fffdfa] text-[#8c6721] shadow-md hover:shadow-lg border border-[#a67d2b]/35 backdrop-blur-sm transition-all duration-300 cursor-pointer text-xs font-semibold tracking-wider uppercase font-['Cinzel',serif] ${
+                    isRsvpPopupOpen ? 'opacity-0 pointer-events-none -translate-y-2' : 'opacity-100 translate-y-0'
+                }`}
+                onMouseEnter={(e) => { e.currentTarget.style.color = waxText; }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = ''; }}
                 title="View Guest Entry Pass"
             >
-                <Ticket className="w-3.5 h-3.5" />
+                <Ticket className="w-3.5 h-3.5 text-[#a67d2b]" />
                 <span className="hidden sm:inline">Guest Entry Pass</span>
+                <span className="sm:hidden">Pass</span>
             </button>
 
             {/* ── DIGITAL PASS MODAL ── */}
             {showTicketModal && (
                 <div
-                    className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-fade-in"
+                    className="fixed inset-0 z-[2147483647] flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-fade-in"
                     onClick={() => setShowTicketModal(false)}
                 >
                     <div
-                        className="relative w-full max-w-sm rounded-2xl p-6 shadow-2xl text-center bg-[#fffaf8] border border-[#a67d2b]/30"
+                        className="relative w-full max-w-sm rounded-2xl p-6 sm:p-7 shadow-2xl text-center bg-[#fffdfa] border border-[#a67d2b]/40 overflow-hidden"
                         onClick={(e) => e.stopPropagation()}
                     >
+                        {/* Luxury Brass Medallion Close Button */}
                         <button
                             type="button"
                             onClick={() => setShowTicketModal(false)}
-                            className="absolute top-4 right-4 p-2 text-slate-500 hover:text-black rounded-full"
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.backgroundColor = waxColor;
+                                e.currentTarget.style.borderColor = waxColor;
+                                e.currentTarget.style.color = '#fffdfa';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.backgroundColor = '';
+                                e.currentTarget.style.borderColor = '';
+                                e.currentTarget.style.color = '';
+                            }}
+                            className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-[#f4ede0]/80 text-[#8c6721] border border-[#a67d2b]/35 flex items-center justify-center transition-all duration-200 cursor-pointer shadow-xs hover:rotate-90 hover:scale-105"
+                            title="Close guest pass"
+                            aria-label="Close guest pass"
                         >
                             <X className="w-4 h-4" />
                         </button>
 
-                        <p className="font-['Cinzel',serif] text-xs uppercase tracking-widest text-[#a67d2b] mb-1 font-semibold">
-                            Guest Entry Pass
-                        </p>
-                        <h4 className="font-serif text-2xl text-[#4f4f4f] mb-4">
-                            {guest?.name || 'Valued Guest'}
-                        </h4>
+                        {/* Botanical Crest */}
+                        <div className="flex justify-center mb-1.5">
+                            <svg className="w-8 h-4 text-[#a67d2b]" viewBox="0 0 48 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M24 18C24 18 20 12 14 12C8 12 4 15 2 17C3.5 13.5 8 8 15 8C20 8 23 13 24 15C25 13 28 8 33 8C40 8 44.5 13.5 46 17C44 15 40 12 34 12C28 12 24 18 24 18Z" fill="currentColor" fillOpacity="0.85" />
+                                <circle cx="24" cy="5" r="2" fill="currentColor" />
+                                <circle cx="18" cy="7" r="1.5" fill="currentColor" fillOpacity="0.7" />
+                                <circle cx="30" cy="7" r="1.5" fill="currentColor" fillOpacity="0.7" />
+                            </svg>
+                        </div>
 
-                        <div className="p-3 bg-white rounded-xl inline-block border border-[#a67d2b]/30 shadow-inner mb-4">
+                        <p className="font-['Cinzel',serif] text-[10px] uppercase tracking-[0.25em] text-[#a67d2b] font-semibold">
+                            {coupleTitle || event?.title || 'Wedding Celebration'}
+                        </p>
+                        <p className="text-[11px] text-[#8c7355] font-serif italic mt-0.5">
+                            {eventDateFormatted ? `${eventDateFormatted} • ` : ''}{event?.location || cfg?.venue_location || cfg?.church_venue || 'Wedding Reception'}
+                        </p>
+
+                        {/* Honored Guest Section */}
+                        <div className="my-3.5 py-2.5 border-y border-[#a67d2b]/20">
+                            <span className="block text-[9px] font-bold uppercase tracking-[0.2em] text-[#a67d2b]/80 font-['Cinzel',serif]">
+                                Honored Guest
+                            </span>
+                            <h3 className="font-serif text-2xl font-bold text-[#3d271d] mt-0.5 tracking-wide">
+                                {guest?.name || 'Valued Guest'}
+                            </h3>
+                        </div>
+
+                        {/* Admittance & Seating Badge */}
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3.5">
+                            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#a67d2b]/15 text-[#8c6721] border border-[#a67d2b]/25">
+                                <Ticket className="w-3 h-3 text-[#a67d2b]" />
+                                {guest?.max_entries && Number(guest.max_entries) > 1
+                                    ? `Admit ${guest.max_entries} Guests`
+                                    : (guest?.category || guest?.allowance_label || 'Admit 1 Guest')}
+                            </span>
+                            {(guest?.table_number || guest?.seat_number) && (
+                                <span
+                                    style={{
+                                        backgroundColor: `rgba(${waxRgbStr}, 0.1)`,
+                                        color: waxText,
+                                        borderColor: `rgba(${waxRgbStr}, 0.25)`
+                                    }}
+                                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border"
+                                >
+                                    Table {guest.table_number || 'General'}{guest?.seat_number ? `, Seat ${guest.seat_number}` : ''}
+                                </span>
+                            )}
+                        </div>
+
+                        {/* QR Code */}
+                        <div className="p-3 bg-white rounded-xl inline-block border-2 border-[#a67d2b]/30 shadow-sm mb-3">
                             {qrCodeUrl ? (
-                                <img src={qrCodeUrl} alt="QR Code" className="w-44 h-44 object-contain mx-auto" />
+                                <img src={qrCodeUrl} alt="QR Code" className="w-40 h-40 sm:w-44 sm:h-44 object-contain mx-auto" />
                             ) : (
-                                <div className="w-44 h-44 bg-slate-100 animate-pulse" />
+                                <div className="w-40 h-40 sm:w-44 sm:h-44 bg-slate-100 animate-pulse rounded-lg" />
                             )}
                         </div>
 
                         <div className="space-y-1">
-                            <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-[#a67d2b]/15 text-[#a67d2b]">
-                                {guest?.category || guest?.allowance_label || 'Standard Entry'}
-                            </span>
-                            <p className="text-xs text-[#846f61] font-mono mt-1">
-                                {guest?.card_number || 'KDV-2026-PASS'}
+                            <p style={{ color: waxText }} className="text-[11px] font-mono font-bold tracking-wider">
+                                PASS #{guest?.card_number || guest?.unique_code || 'KDV-PASS'}
                             </p>
-                            {guest?.table_number && (
-                                <p className="text-xs text-[#6c513f] font-semibold mt-1">
-                                    Table {guest.table_number}{guest?.seat_number ? `, Seat ${guest.seat_number}` : ''}
-                                </p>
-                            )}
-                            <p className="text-[11px] text-[#846f61] italic mt-2">
-                                Present this QR code at the reception check-in.
+                            <p className="text-[11px] text-[#846f61] italic">
+                                Present this digital pass at the entrance for verification.
                             </p>
                         </div>
 
-                        {guest?.pledge_amount > 0 && (
-                            <div className="mt-3 p-2.5 rounded-xl bg-[#a67d2b]/10 border border-[#a67d2b]/20 text-left text-xs">
-                                <div className="flex items-center justify-between text-[#846f61] font-semibold text-[11px] mb-1">
-                                    <span>Contribution Status:</span>
-                                    <span className="text-[#a67d2b] uppercase font-bold">{guest?.pledge_status || 'Pledged'}</span>
-                                </div>
-                                <div className="flex justify-between text-xs">
-                                    <span className="text-[#6c513f]">Paid: <strong>{event?.pledge_currency || 'TZS'} {Number(guest?.paid_amount || 0).toLocaleString()}</strong></span>
-                                    <span className="text-[#6c513f]">Balance: <strong>{event?.pledge_currency || 'TZS'} {Number(guest?.pledge_balance || 0).toLocaleString()}</strong></span>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="pt-6 mt-4 border-t border-[#a67d2b]/20 flex items-center justify-center gap-2 text-[10px] uppercase font-['Cinzel',serif] tracking-widest text-[#6c513f]/70">
-                            <KardovoLogo showText={false} className="w-4 h-4 opacity-75" />
-                            <span>Kardovo Invitations</span>
+                        {/* Footer */}
+                        <div className="pt-4 mt-3 border-t border-[#a67d2b]/20 flex items-center justify-center gap-1.5 text-[9px] uppercase font-['Cinzel',serif] tracking-widest text-[#8c7355]">
+                            <KardovoLogo showText={false} imgClassName="w-3.5 h-3.5 opacity-70" />
+                            <span>Kardovo Invitations • Verified Pass</span>
                         </div>
                     </div>
                 </div>

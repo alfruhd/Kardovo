@@ -237,8 +237,8 @@ const translations = {
         "sw": "Anza Sasa"
     },
     "Kadi za Kidigitali na Usimamizi Kisasa": {
-        "en": "Digital Invitations & Official Ticketing Platform",
-        "sw": "Kadi za Kidigitali & Mfumo Rasmi wa Tiketi Tanzania"
+        "en": "Digital Invitations, Ticketing & Voting Platform",
+        "sw": "Kadi za Kidigitali, Tiketi & Upigaji Kura Tanzania"
     },
     "Tuma Mialiko Yako Kidigitali": {
         "en": "Send Your Invitations Digitally",
@@ -859,74 +859,15 @@ export default function Welcome({ auth }) {
     }, []);
     const [activeSection, setActiveSection] = React.useState('');
 
-    // ── TOP NAVBAR TRANSPARENT ON TOP SECTION, SOLID NAVY ON TICKETING & BELOW ──
+    // ── TOP NAVBAR TRANSPARENT ON TOP SECTION, SOLID NAVY ON INVITATIONS & BELOW ──
     const [isScrolled, setIsScrolled] = useState(false);
-    const ticketCategories = [
-        {
-            key: 'events',
-            img: '/images/categories/events.jpg',
-            icon: Ticket,
-            labelEn: 'Concerts & Festivals',
-            labelSw: 'Matamasha ya Muziki',
-            tagEn: 'Live Shows',
-            tagSw: 'Muziki Moja kwa Moja',
-        },
-        {
-            key: 'nightlife',
-            img: '/images/categories/nightlife.jpg',
-            icon: PartyPopper,
-            labelEn: 'Nightlife & DJ Parties',
-            labelSw: 'Maisha ya Usiku & Vilabu',
-            tagEn: 'Clubs & Lounges',
-            tagSw: 'Vilabu & Burudani',
-        },
-        {
-            key: 'sports',
-            img: '/images/categories/sports.jpg',
-            position: 'center 20%',
-            icon: Trophy,
-            labelEn: 'Sports & Marathons',
-            labelSw: 'Michezo & Marathoni',
-            tagEn: 'Matches & Races',
-            tagSw: 'Mechi & Mashindano',
-        },
-        {
-            key: 'hotels',
-            img: '/images/categories/hotels.jpg',
-            icon: Building2,
-            labelEn: 'Resorts & Stays',
-            labelSw: 'Hoteli & Malazi',
-            tagEn: 'Beach & Safari Lodges',
-            tagSw: 'Loji & Fukwe za Kifahari',
-        },
-        {
-            key: 'fashion',
-            img: '/images/categories/fashion.jpg',
-            position: 'center 28%',
-            icon: Crown,
-            labelEn: 'Fashion & Runway Shows',
-            labelSw: 'Mitindo & Maonyesho',
-            tagEn: 'Runway & Galas',
-            tagSw: 'Mitindo & Gala',
-        },
-        {
-            key: 'corporate',
-            img: '/images/categories/corporate.jpg',
-            position: 'center 40%',
-            icon: Briefcase,
-            labelEn: 'Corporate Events & Summits',
-            labelSw: 'Matukio ya Kibiashara & Kongamano',
-            tagEn: 'Summits & Galas',
-            tagSw: 'Mikutano & Gala za Kampuni',
-        },
-    ];
 
     useEffect(() => {
         const handleScroll = () => {
-            const ticketingEl = document.getElementById('ticketing-services');
-            if (ticketingEl) {
+            const invitationsEl = document.getElementById('invitations');
+            if (invitationsEl) {
                 const navHeight = 80; // h-20 navbar
-                const rect = ticketingEl.getBoundingClientRect();
+                const rect = invitationsEl.getBoundingClientRect();
                 setIsScrolled(rect.top <= navHeight);
             } else {
                 setIsScrolled(window.scrollY > 400);
@@ -972,7 +913,7 @@ export default function Welcome({ auth }) {
     }, []);
 
     React.useEffect(() => {
-        const sections = ['ticketing-services', 'invitations', 'how-it-works', 'payment', 'faq', 'contact'];
+        const sections = ['invitations', 'how-it-works', 'payment', 'faq', 'contact'];
         let ticking = false;
         const handleScroll = () => {
             if (!ticking) {
@@ -1269,31 +1210,29 @@ export default function Welcome({ auth }) {
                     <div className="flex items-center gap-4 sm:gap-6 lg:gap-8 ml-auto">
                         {/* Navigation Links (Minimalist, clean horizontal arrangement with zero text wrapping) */}
                         <nav className={`hidden lg:flex items-center gap-1 xl:gap-2 text-sm font-medium transition-colors duration-300 ${isScrolled ? 'text-slate-600' : 'text-white/85'}`}>
-                            {/* 1. Event Tickets */}
-                            <a 
-                                href="#ticketing-services" 
-                                onClick={(e) => scrollToSection(e, 'ticketing-services')}
+                            {/* 1. Tickets */}
+                            <Link 
+                                href={route('tickets.marketplace')} 
                                 className={`whitespace-nowrap px-3 py-1.5 rounded-lg transition cursor-pointer ${
                                     isScrolled
-                                        ? (activeSection === 'ticketing-services' ? 'bg-sky-50 text-[#154F7C] font-semibold shadow-2xs' : 'hover:bg-slate-100 hover:text-slate-900')
-                                        : (activeSection === 'ticketing-services' ? 'bg-white/15 text-white font-semibold backdrop-blur-xs' : 'hover:bg-white/10 hover:text-white')
+                                        ? 'hover:bg-slate-100 hover:text-slate-900'
+                                        : 'hover:bg-white/10 hover:text-white'
                                 }`}
                             >
-                                {lang === 'sw' ? 'Tiketi za Matukio' : 'Event Tickets'}
-                            </a>
+                                {lang === 'sw' ? 'Tiketi' : 'Tickets'}
+                            </Link>
 
-                            {/* 2. Invitations & RSVP */}
-                            <a 
-                                href="#invitations" 
-                                onClick={(e) => scrollToSection(e, 'invitations')}
+                            {/* 3. Awards & Voting */}
+                            <Link
+                                href={route('voting.index')}
                                 className={`whitespace-nowrap px-3 py-1.5 rounded-lg transition cursor-pointer ${
                                     isScrolled
-                                        ? (activeSection === 'invitations' ? 'bg-sky-50 text-[#154F7C] font-semibold shadow-2xs' : 'hover:bg-slate-100 hover:text-slate-900')
-                                        : (activeSection === 'invitations' ? 'bg-white/15 text-white font-semibold backdrop-blur-xs' : 'hover:bg-white/10 hover:text-white')
+                                        ? 'hover:bg-slate-100 hover:text-slate-900'
+                                        : 'hover:bg-white/10 hover:text-white'
                                 }`}
                             >
-                                {t('Mialiko & RSVP')}
-                            </a>
+                                {lang === 'sw' ? 'Kura' : 'Voting'}
+                            </Link>
 
                             {/* 3. How It Works, Pricing, FAQ */}
                             {[
@@ -1452,18 +1391,18 @@ export default function Welcome({ auth }) {
                                 <h1 className="animate-hero-headline text-[1.85rem] xs:text-4xl sm:text-5xl md:text-6xl lg:text-[4.25rem] font-black font-display tracking-tight text-white leading-[1.12] sm:leading-[1.08] mb-3 sm:mb-5 max-w-2xl mx-auto lg:mx-0">
                                     {lang === 'sw' ? (
                                         <>
-                                            <span>Mialiko ya Kidigitali</span>
+                                            <span>Mialiko ya Kidigitali,</span>
                                             <br />
                                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-300">
-                                                & Tiketi za Matukio
+                                                Tiketi & Upigaji Kura
                                             </span>
                                         </>
                                     ) : (
                                         <>
-                                            <span>Digital Invitations</span>
+                                            <span>Digital Invitations,</span>
                                             <br />
                                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-sky-300">
-                                                & Event Ticketing
+                                                Ticketing & Voting
                                             </span>
                                         </>
                                     )}
@@ -1472,8 +1411,8 @@ export default function Welcome({ auth }) {
                                 {/* Subtitle copy */}
                                 <p className="text-xs xs:text-sm sm:text-base md:text-lg text-slate-300/90 font-medium leading-relaxed max-w-xl mx-auto lg:mx-0 mb-5 sm:mb-8">
                                     {lang === 'sw' 
-                                        ? 'Mfumo thabiti wa kununua na kuuza tiketi za matukio mtandaoni, kutuma mialiko ya kidigitali yenye majibu (RSVP), na kurahisisha uingiaji wa wageni mlangoni.'
-                                        : 'A modern, unified platform to buy and sell event tickets online, send elegant digital invitations with real-time RSVPs, and streamline door access.'
+                                        ? 'Mfumo wa kisasa wa kutuma mialiko ya kidigitali yenye majibu ya papo hapo (RSVP) na udhibiti wa wageni mlangoni, pamoja na huduma za tiketi za matukio na upigaji kura mtandaoni.'
+                                        : 'A modern, unified platform to send elegant digital invitations with real-time RSVPs and seamless door access, complete with online event ticketing and live award voting.'
                                     }
                                 </p>
 
@@ -1570,84 +1509,13 @@ export default function Welcome({ auth }) {
 
                             {/* Floating Next-Section Arrow */}
                             <a
-                                href="#ticketing-services"
-                                onClick={(e) => scrollToSection(e, 'ticketing-services')}
+                                href="#invitations"
+                                onClick={(e) => scrollToSection(e, 'invitations')}
                                 title="Scroll down"
                                 className="hidden sm:flex w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-gradient-to-r from-[#154F7C] to-[#327FB5] hover:from-[#1A5C91] hover:to-[#3D8EC7] active:scale-95 text-white items-center justify-center shrink-0 shadow-lg shadow-[#154F7C]/30 border border-sky-400/30 transition-all cursor-pointer"
                             >
                                 <ArrowRight className="w-4 h-4 rotate-90" />
                             </a>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Ticketing Services Section — 6 Large Aesthetic Category Grid Boxes */}
-                <section id="ticketing-services" className="min-h-[calc(100vh-5rem)] flex flex-col justify-center py-7 sm:py-8 lg:py-9 bg-[#F0F2F5] relative scroll-mt-20 overflow-hidden">
-                    {/* Ambient glows for aesthetic depth */}
-                    <div className="absolute top-1/3 left-1/4 -translate-y-1/2 w-[32rem] h-[32rem] bg-emerald-400/10 rounded-full blur-3xl pointer-events-none" />
-                    <div className="absolute bottom-1/3 right-1/4 w-[32rem] h-[32rem] bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full relative z-10 flex flex-col">
-                        {/* Section Header - Single Row Title and Short Subtitle */}
-                        <div className="text-center max-w-4xl mx-auto mb-6 sm:mb-8 scroll-animate">
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.65rem] font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-blue-500 to-indigo-500 mb-1.5 font-display pb-0.5 tracking-tight sm:whitespace-nowrap">
-                                {lang === 'sw' ? 'Kuuza & Kununua Tiketi Mtandaoni' : 'Sell & Buy Event Tickets Online'}
-                            </h2>
-                            <p className="text-xs sm:text-sm md:text-base text-slate-500 font-medium sm:whitespace-nowrap">
-                                {lang === 'sw' 
-                                    ? 'Tiketi za kidigitali zenye malipo ya haraka ya simu kote Tanzania.'
-                                    : 'Instant digital tickets with seamless mobile money checkout across Tanzania.'
-                                }
-                            </p>
-                        </div>
-
-                        {/* 6 Aesthetic Category Grid Boxes — Perfectly proportioned with breathing room */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 lg:gap-7 max-w-6xl mx-auto w-full">
-                            {ticketCategories.map((item, idx) => {
-                                const CatIcon = item.icon || Ticket;
-                                const isInternalCategory = ['events', 'hotels', 'nightlife', 'sports', 'fashion', 'corporate'].includes(item.key);
-                                const targetUrl = isInternalCategory 
-                                    ? route('tickets.marketplace', { category: item.key }) 
-                                    : route('tickets.marketplace', { search: item.key });
-
-                                return (
-                                    <Link
-                                        key={item.key}
-                                        href={targetUrl}
-                                        style={{ animationDelay: `${(idx % 3) * 120 + Math.floor(idx / 3) * 180}ms` }}
-                                        className="group relative h-40 sm:h-48 md:h-52 lg:h-56 rounded-2xl sm:rounded-3xl overflow-hidden shadow-md shadow-slate-900/10 border border-slate-200/50 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl hover:border-emerald-500/40 block focus:outline-none scroll-animate ticket-category-card"
-                                    >
-                                        {/* Background Photo with Smooth Hover Scale */}
-                                        <img
-                                            src={item.img}
-                                            alt={lang === 'sw' ? item.labelSw : item.labelEn}
-                                            loading="lazy"
-                                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                                            style={{ objectPosition: item.position || 'center' }}
-                                        />
-
-                                        {/* Cinematic Contrast Overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-[#07111E]/95 via-[#07111E]/40 to-black/10 transition-opacity duration-300 group-hover:from-[#07111E]/90 group-hover:via-[#07111E]/30" />
-
-                                        {/* Bottom Information & Interactive Arrow Button */}
-                                        <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5 z-10 flex items-end justify-between gap-3">
-                                            <div className="space-y-0.5">
-                                                <h3 className="text-lg sm:text-xl font-black text-white font-display tracking-tight leading-snug drop-shadow-md group-hover:text-emerald-300 transition-colors">
-                                                    {lang === 'sw' ? item.labelSw : item.labelEn}
-                                                </h3>
-                                                <p className="text-[11px] sm:text-xs text-slate-300 font-medium line-clamp-1 opacity-90">
-                                                    {lang === 'sw' ? 'Gundua na kata tiketi sasa' : 'Explore & book passes'}
-                                                </p>
-                                            </div>
-
-                                            {/* Action Icon Button */}
-                                            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shrink-0 transition-all duration-300 group-hover:bg-[#154F7C] group-hover:border-sky-400 group-hover:scale-110 shadow-md">
-                                                <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 transition-transform duration-300 group-hover:translate-x-0.5" />
-                                            </div>
-                                        </div>
-                                    </Link>
-                                );
-                            })}
                         </div>
                     </div>
                 </section>

@@ -37,3 +37,12 @@ test-results/
 test_card_page.png
 local_*.png
 verified_*.png
+
+# Test & Playwright artifacts
+playwright-report/
+test-results/
+*.tsbuildinfo
+test_card_page.png
+local_*.png
+verified_*.png
+storage/*.png

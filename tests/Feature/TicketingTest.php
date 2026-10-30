@@ -46,6 +46,37 @@ class TicketingTest extends TestCase
         );
     }
 
+    public function test_organizer_can_access_ticketing_landing_page(): void
+    {
+        $organizer = User::where('role', 'customer')->first();
+        $event = Event::first();
+        $event->update(['user_id' => $organizer->id, 'is_occasion' => true, 'ticketing_enabled' => true]);
+
+        $order = TicketOrder::factory()->create([
+            'event_id' => $event->id,
+            'buyer_name' => 'Alice Buyer',
+            'payment_status' => 'paid',
+            'total_amount' => 50000,
+        ]);
+
+        $tier = TicketTier::factory()->create(['event_id' => $event->id, 'name' => 'Regular Pass']);
+        Ticket::factory()->create([
+            'ticket_order_id' => $order->id,
+            'event_id' => $event->id,
+            'ticket_tier_id' => $tier->id,
+        ]);
+
+        $response = $this->actingAs($organizer)->get(route('ticketing.index'));
+
+        $response->assertStatus(200);
+        $response->assertInertia(fn ($page) => $page
+            ->component('Organizer/Ticketing/Index')
+            ->has('occasions')
+            ->has('globalStats')
+            ->has('recentTicketOrders')
+        );
+    }
+
     public function test_public_how_it_works_page_renders_successfully(): void
     {
         $response = $this->get(route('tickets.how-it-works'));

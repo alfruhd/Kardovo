@@ -29,7 +29,6 @@ import {
     Mail,
     Phone,
     MessageCircle,
-    HelpCircle,
 } from 'lucide-react';
 import { useTicketingLanguage } from '@/Utils/ticketingTranslations';
 
@@ -75,6 +74,8 @@ export default function TicketMarketplace({
     const [priceFilter, setPriceFilter] = useState('all'); // 'all' | 'free' | 'paid' | 'low_high' | 'high_low'
     const [dateFilter, setDateFilter] = useState('all'); // 'all' | 'this_week' | 'this_month' | 'upcoming'
     const [openFilterDropdown, setOpenFilterDropdown] = useState(null); // 'category' | 'price' | 'date' | null
+    const [selectedLocation, setSelectedLocation] = useState('Tanzania');
+    const [locationDropdownOpen, setLocationDropdownOpen] = useState(false);
 
     // ── AUTH & CONTACT POPUP MODAL STATE (TRANSLUCENT) ──
     const [showLoginModal, setShowLoginModal] = useState(false);
@@ -246,57 +247,35 @@ export default function TicketMarketplace({
     };
 
     return (
-        <div className="min-h-screen bg-[#F0F5FA] text-slate-800 flex flex-col font-sans selection:bg-[#154F7C] selection:text-white relative">
+        <div className="min-h-screen bg-white dark:bg-[#07111E] text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-[#154F7C] selection:text-white relative">
             <Head title={`${t('hero_title')} — Kardovo Tickets`}>
                 <meta name="description" content="Discover and book tickets for concerts, nightlife, hotels, and marathons across Tanzania. Instant digital passes and multi-channel delivery powered by Kardovo." />
             </Head>
 
             {/* ══════════════════════════════════════════════════════════════
-                1. TOP NAVBAR (Translucent glass throughout, zero blue tint)
+                1. TOP NAVBAR (Clean, Frosted Sticky Navigation)
                ══════════════════════════════════════════════════════════════ */}
             <header 
-                className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-300 ${
-                    isScrolled 
-                        ? "bg-white/80 dark:bg-[#07111E]/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 shadow-xs" 
-                        : "bg-white/[0.1] backdrop-blur-xl border-b border-white/25 shadow-lg"
-                }`}
+                className="sticky top-0 z-50 w-full bg-white/90 dark:bg-[#07111E]/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/10 shadow-xs"
             >
-                <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-6 transition-colors duration-300 ${isScrolled ? 'text-slate-800 dark:text-slate-100' : 'text-white'}`}>
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-6 text-slate-800 dark:text-slate-100">
                     {/* Brand Logo & Home Navigation */}
                     <div className="flex items-center gap-4 sm:gap-6 shrink-0">
                         <Link href="/" className="cursor-pointer focus:outline-none flex items-center shrink-0">
                             <KardovoLogo 
-                                light={!isScrolled} 
+                                light={false} 
                                 showText={true} 
-                                textClassName={`${isScrolled ? 'text-slate-900 dark:text-white' : 'text-white'} text-base sm:text-lg font-black tracking-widest transition-colors duration-300`} 
+                                textClassName="text-slate-900 dark:text-white text-base sm:text-lg font-black tracking-widest transition-colors duration-300" 
                                 imgClassName="h-8 w-8 sm:h-9 sm:w-9" 
                             />
                         </Link>
 
                         <Link
                             href="/"
-                            className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shrink-0 ${
-                                isScrolled
-                                    ? 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
-                                    : 'text-white hover:bg-white/15'
-                            }`}
+                            className="px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shrink-0 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
                         >
-                            <HomeIcon className={`w-4 h-4 ${isScrolled ? 'text-sky-600 dark:text-sky-400' : 'text-sky-300'}`} />
+                            <HomeIcon className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                             <span>{t('Home')}</span>
-                        </Link>
-
-                        <Link
-                            href={route('tickets.how-it-works')}
-                            className={`px-2.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 shrink-0 ${
-                                isScrolled
-                                    ? 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10'
-                                    : 'text-white hover:bg-white/15'
-                            }`}
-                            title={lang === 'sw' ? 'Mwongozo wa Waandaaji' : 'How Kardovo Ticketing Works for Organizers'}
-                        >
-                            <HelpCircle className={`w-4 h-4 ${isScrolled ? 'text-sky-600 dark:text-sky-400' : 'text-sky-300'}`} />
-                            <span className="hidden sm:inline">{lang === 'sw' ? 'Jinsi Inavyofanya Kazi' : 'How It Works'}</span>
-                            <span className="sm:hidden">{lang === 'sw' ? 'Mwongozo' : 'Guide'}</span>
                         </Link>
                     </div>
 
@@ -306,11 +285,7 @@ export default function TicketMarketplace({
                         <button 
                             type="button"
                             onClick={() => setShowContactModal(true)}
-                            className={`px-3 py-2 rounded-xl transition font-semibold inline-flex items-center cursor-pointer whitespace-nowrap ${
-                                isScrolled 
-                                    ? 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10' 
-                                    : 'text-white hover:text-white/80 hover:bg-white/15'
-                            }`}
+                            className="px-3 py-2 rounded-xl transition font-semibold inline-flex items-center cursor-pointer whitespace-nowrap text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-white/10"
                         >
                             <span>{t('Contact Us')}</span>
                         </button>
@@ -319,14 +294,10 @@ export default function TicketMarketplace({
                         <button 
                             type="button"
                             onClick={toggleLang} 
-                            className={`flex items-center gap-1.5 px-2.5 py-2 transition-colors font-semibold cursor-pointer ${
-                                isScrolled 
-                                    ? 'text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white' 
-                                    : 'text-white/90 hover:text-white'
-                            }`}
+                            className="flex items-center gap-1.5 px-2.5 py-2 transition-colors font-semibold cursor-pointer text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white"
                             title={lang === 'en' ? 'Badili lugha kuwa Kiswahili' : 'Switch language to English'}
                         >
-                            <Globe className={`w-4 h-4 ${isScrolled ? 'text-sky-600 dark:text-sky-400' : 'text-sky-300'}`} />
+                            <Globe className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                             <span>{lang === 'en' ? 'SWA' : 'ENG'}</span>
                         </button>
 
@@ -342,11 +313,7 @@ export default function TicketMarketplace({
                                 <button
                                     type="button"
                                     onClick={() => openAuthModal('login')}
-                                    className={`px-4 py-2 sm:py-2.5 rounded-xl font-bold transition text-xs sm:text-sm cursor-pointer active:scale-95 ${
-                                        isScrolled
-                                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200/80 shadow-2xs'
-                                            : 'bg-white/[0.1] hover:bg-white/[0.18] text-white backdrop-blur-md border border-white/25'
-                                    }`}
+                                    className="px-4 py-2 sm:py-2.5 rounded-xl font-bold transition text-xs sm:text-sm cursor-pointer active:scale-95 bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-white/10 dark:hover:bg-white/20 dark:text-white border border-slate-200/80 dark:border-white/10 shadow-2xs"
                                 >
                                     {t('Sign in')}
                                 </button>
@@ -365,188 +332,178 @@ export default function TicketMarketplace({
             </header>
 
             {/* ══════════════════════════════════════════════════════════════
-                2. UNIFIED SEAMLESS SHOWCASE (Headline on Top + Carousel Below)
+                2. SHOWCASE (Discover Header + Static Featured 5-Card Row)
+                   Matches https://tix.africa/discover with 5 cards & exact proportions
                ══════════════════════════════════════════════════════════════ */}
-            <section className="relative text-white overflow-hidden h-[100dvh] pt-20 pb-4 select-none flex flex-col justify-center gap-4 sm:gap-6">
-                {/* Permanent Grand Landscape Background (Fixed & Completely Independent from category tabs) */}
-                <div 
-                    className="absolute inset-0 bg-cover z-0"
-                    style={{
-                        backgroundImage: `url('${categoryBanners.all}')`,
-                        backgroundPosition: categoryBgPositions.all || 'center 40%',
-                    }}
-                />
-                
-                {/* Subtle Cinematic Vignette & Deep Glass Gradient connecting the entire top atmosphere */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#07111E]/80 via-[#07111E]/45 to-[#07111E]/95 pointer-events-none" />
-                <div className="absolute inset-0 bg-[#0B2545]/20 pointer-events-none" />
+            <section className="relative bg-white dark:bg-[#07111E] text-slate-900 dark:text-white pt-8 sm:pt-10 pb-4 sm:pb-6">
+                <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+                    {/* 2.1 Discover Location Header: "Find an event in:" + 📍 Tanzania ▾ */}
+                    <div className="mb-6 sm:mb-8">
+                        <p className="text-[15px] font-normal text-[#71717A] dark:text-neutral-400 mb-1.5">
+                            {lang === 'sw' ? 'Tafuta tukio ndani ya:' : 'Find an event in:'}
+                        </p>
+                        <div className="relative inline-block">
+                            <button
+                                type="button"
+                                onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
+                                className="inline-flex items-center gap-2 text-xl sm:text-[23px] font-extrabold text-slate-900 dark:text-white cursor-pointer select-none group focus:outline-none"
+                            >
+                                {/* Location Pin in signature Kardovo Blue */}
+                                <svg className="w-5 h-5 text-[#154F7C] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0" />
+                                    <circle cx="12" cy="10" r="3" fill="#154F7C" />
+                                </svg>
+                                <span className="tracking-tight">{selectedLocation}</span>
+                                <ChevronDown className={`w-4 h-4 text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition-transform duration-200 stroke-[2.2] ml-0.5 ${locationDropdownOpen ? 'rotate-180' : ''}`} />
+                            </button>
 
-                {/* 2.1 Bold & Larger Atmospheric Headline (Permanent, Independent from category tabs) */}
-                <div className="max-w-5xl mx-auto w-full text-center relative z-10 px-4 sm:px-6 lg:px-8 shrink-0">
+                            {locationDropdownOpen && (
+                                <div className="absolute left-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-white/10 shadow-xl py-1.5 z-40 animate-in fade-in slide-in-from-top-1 duration-150">
+                                    {['Tanzania', 'Dar es Salaam', 'Zanzibar', 'Arusha', 'Mwanza', 'Dodoma'].map((loc) => (
+                                        <button
+                                            key={loc}
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedLocation(loc);
+                                                setLocationDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-4 py-2 text-xs font-semibold flex items-center justify-between hover:bg-slate-50 dark:hover:bg-white/5 transition cursor-pointer ${
+                                                selectedLocation === loc ? 'text-[#154F7C] dark:text-sky-400 font-bold bg-sky-50/70 dark:bg-sky-950/40' : 'text-slate-700 dark:text-slate-200'
+                                            }`}
+                                        >
+                                            <span>{loc}</span>
+                                            {selectedLocation === loc && <span className="w-1.5 h-1.5 rounded-full bg-[#154F7C] dark:bg-sky-400" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* 2.2 Static 5-Card Row matching tix.africa/discover layout (Larger & More Prominent) */}
                     {(() => {
-                        const titleData = categoryBannerTitles.all[lang === 'sw' ? 'sw' : 'en'];
+                        const carouselSource = (featuredOccasions && featuredOccasions.length > 0)
+                            ? featuredOccasions
+                            : (occasions && occasions.length > 0 ? occasions : []);
+
+                        const defaultItems = [
+                            {
+                                id: 1,
+                                title: "Diamond Platnumz — Wasafi Festival Finale",
+                                event_date: "Fri, Oct 30th, 9PM",
+                                cover_photo: "/images/categories/events.jpg",
+                            },
+                            {
+                                id: 2,
+                                title: "Kilimanjaro Marathon & Bush Retreat",
+                                event_date: "Sun, Oct 25th, 8AM",
+                                cover_photo: "/images/categories/sports.jpg",
+                            },
+                            {
+                                id: 3,
+                                title: "Serengeti Balloon Safari (Luxury Edition)",
+                                event_date: "Wed, Oct 7th, 6AM",
+                                cover_photo: "/images/categories/fashion.jpg",
+                            },
+                            {
+                                id: 4,
+                                title: "Nandy Festival Live in Dar",
+                                event_date: "Fri, Oct 2nd, 8PM",
+                                cover_photo: "/images/categories/nightlife.jpg",
+                            },
+                            {
+                                id: 5,
+                                title: "Dar es Salaam International Jazz Festival",
+                                event_date: "Sat, Nov 14th, 7PM",
+                                cover_photo: "/images/corporate.jpg",
+                            }
+                        ];
+
+                        // Always ensure STRICTLY 5 items are displayed in the showcase row
+                        let baseItems = [...(carouselSource || [])];
+                        if (baseItems.length < 5) {
+                            const existingTitles = new Set(baseItems.map(item => (item.title || '').toLowerCase()));
+                            for (const d of defaultItems) {
+                                if (!existingTitles.has((d.title || '').toLowerCase())) {
+                                    baseItems.push(d);
+                                    if (baseItems.length >= 5) break;
+                                }
+                            }
+                        }
+                        baseItems = baseItems.slice(0, 5);
+
                         return (
-                            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black font-display tracking-tight text-white max-w-4xl mx-auto leading-tight drop-shadow-[0_4px_24px_rgba(0,0,0,0.95)] transition-all duration-300">
-                                {titleData.prefix}
-                                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300">
-                                    {titleData.highlight}
-                                </span>
-                                {titleData.suffix}
-                            </h1>
+                            <div className="flex overflow-x-auto no-scrollbar scroll-smooth snap-x snap-mandatory pb-4 -mx-4 px-4 sm:-mx-6 sm:px-6 md:mx-0 md:px-0 md:grid md:grid-cols-5 md:overflow-visible md:snap-none md:pb-0 gap-4 sm:gap-5 lg:gap-6 items-stretch">
+                                {baseItems.map((item, idx) => {
+                                    const fallbackCover = '/images/categories/events.jpg';
+                                    const cover = item.cover_photo || fallbackCover;
+                                    const itemUrl = item.id ? route('events.publicTickets', item.id) : '#';
+
+                                    return (
+                                        <Link
+                                            key={`static-card-${item.id || 'card'}-${idx}`}
+                                            href={itemUrl}
+                                            className="w-[240px] sm:w-[260px] shrink-0 snap-start md:w-auto md:shrink bg-black text-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 flex flex-col group h-full"
+                                        >
+                                            {/* Poster Image (Larger & Taller with smooth fade into black footer) */}
+                                            <div className="relative aspect-[1/1.32] w-full overflow-hidden bg-neutral-900 shrink-0">
+                                                <img
+                                                    src={cover}
+                                                    alt={item.title}
+                                                    onError={(e) => {
+                                                        e.currentTarget.onerror = null;
+                                                        e.currentTarget.src = '/images/categories/events.jpg';
+                                                    }}
+                                                    className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                                                />
+                                                <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none" />
+                                            </div>
+
+                                            {/* Solid Black Footer matching tix.africa (Spacious, bold typography) */}
+                                            <div className="p-4 sm:p-5 bg-black flex-1 flex flex-col items-center justify-between text-center min-h-[145px] sm:min-h-[155px]">
+                                                <span className="text-[11px] sm:text-xs tracking-[0.09em] font-bold text-[#A1A1AA] uppercase mb-1.5 block">
+                                                    {lang === 'sw' ? 'TUKIO LILILOANGINZIWA' : 'HIGHLIGHTED EVENT'}
+                                                </span>
+                                                <h3 className="text-sm sm:text-[15px] md:text-base font-black text-white text-center leading-[1.3] line-clamp-3 my-auto font-sans tracking-tight">
+                                                    {item.title}
+                                                </h3>
+                                                <p className="text-xs sm:text-[13px] font-medium text-[#A1A1AA] text-center mt-2">
+                                                    {item.event_date || (lang === 'sw' ? 'Tarehe itatangazwa' : 'Date TBA')}
+                                                </p>
+                                            </div>
+                                        </Link>
+                                    );
+                                })}
+                            </div>
                         );
                     })()}
-                </div>
 
-                {/* 2.2 Continuous Carousel Section (Positioned Below Headline) */}
-                {(() => {
-                    const carouselSource = (featuredOccasions && featuredOccasions.length > 0)
-                        ? featuredOccasions
-                        : (occasions && occasions.length > 0 ? occasions.slice(0, 5) : []);
-
-                    const carouselItems = carouselSource.length > 0 ? carouselSource.slice(0, 5) : [
-                        {
-                            id: 1,
-                            title: "The Noisy Book Club - October Meeting",
-                            subtitle: "(Mainland Chapter)",
-                            event_date: "Sat, Oct 24th, 2PM",
-                            badge: "HIGHLIGHTED EVENT",
-                            cover_photo: "/images/categories/fashion.jpg",
-                        },
-                        {
-                            id: 2,
-                            title: "Lagos Trivia Night",
-                            subtitle: "Naija Edition",
-                            event_date: "Sun, Oct 25th, 5PM",
-                            badge: "HIGHLIGHTED EVENT",
-                            cover_photo: "/images/categories/nightlife.jpg",
-                        },
-                        {
-                            id: 3,
-                            title: "Phlenjo DIRTY, SEXY RAVE",
-                            subtitle: "Halloween Special",
-                            event_date: "Fri, Oct 30th, 9PM",
-                            badge: "HIGHLIGHTED EVENT",
-                            cover_photo: "/images/categories/events.jpg",
-                        },
-                        {
-                            id: 4,
-                            title: "The Noisy Book Club - October Meeting",
-                            subtitle: "(Island Chapter)",
-                            event_date: "Sat, Oct 31st, 2PM",
-                            badge: "HIGHLIGHTED EVENT",
-                            cover_photo: "/images/corporate.jpg",
-                        },
-                        {
-                            id: 5,
-                            title: "Anendlessocean In Dar (LIAM Tour)",
-                            subtitle: "Live in Concert",
-                            event_date: "Sat, Nov 21st, 5PM",
-                            badge: "HIGHLIGHTED EVENT",
-                            cover_photo: "/images/categories/sports.jpg",
-                        }
-                    ];
-
-                    return (
-                        <div className="w-full relative z-10 overflow-hidden group/marquee py-3">
-                            <style>{`
-                                @keyframes marqueeContinuous {
-                                    from { transform: translateX(0); }
-                                    to { transform: translateX(-100%); }
-                                }
-                                .marquee-track-seamless {
-                                    display: flex;
-                                    flex-shrink: 0;
-                                    align-items: center;
-                                    gap: 1.25rem;
-                                    padding-right: 1.25rem;
-                                    padding-top: 0.5rem;
-                                    padding-bottom: 0.5rem;
-                                    animation: marqueeContinuous 38s linear infinite;
-                                    will-change: transform;
-                                }
-                                .group\\/marquee:hover .marquee-track-seamless {
-                                    animation-play-state: paused;
-                                }
-                            `}</style>
-
-                            {/* Dual Identical Track Continuous Marquee (100% Glitch-free mathematical loop) */}
-                            <div className="flex w-max select-none py-1">
-                                {[0, 1].map((copyIdx) => (
-                                    <div
-                                        key={`marquee-track-${copyIdx}`}
-                                        className="marquee-track-seamless"
-                                        aria-hidden={copyIdx === 1 ? 'true' : undefined}
-                                    >
-                                        {carouselItems.map((item, idx) => {
-                                            const fallbackCover = '/images/categories/events.jpg';
-                                            const cover = item.cover_photo || fallbackCover;
-                                            const itemUrl = item.id ? route('events.publicTickets', item.id) : '#';
-
-                                            return (
-                                                <Link
-                                                    key={`${copyIdx}-${item.id || 'item'}-${idx}`}
-                                                    href={itemUrl}
-                                                    tabIndex={copyIdx === 1 ? -1 : 0}
-                                                    className="shrink-0 w-[185px] sm:w-[210px] md:w-[230px] aspect-[9/16] max-h-[48vh] rounded-2xl sm:rounded-3xl overflow-hidden relative group block shadow-[0_16px_40px_rgba(0,0,0,0.65)] border border-white/20 hover:border-white/35 transition-all duration-300 focus:outline-none focus:ring-0 outline-none backdrop-blur-xs"
-                                                >
-                                                    {/* Full-bleed Vertical Poster Image */}
-                                                    <img
-                                                        src={cover}
-                                                        alt={item.title}
-                                                        className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-                                                        loading="lazy"
-                                                    />
-
-                                                    {/* Film Grain & Dramatic Vignette Gradient */}
-                                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent group-hover:via-black/40 transition-colors duration-300" />
-
-                                                    {/* Bottom Card Content: Full Readable Title & Date */}
-                                                    <div className="absolute bottom-0 left-0 right-0 p-3.5 sm:p-4 z-10 flex flex-col justify-end text-center">
-                                                        <h3 className="text-xs sm:text-sm md:text-base font-black text-white font-display tracking-tight leading-snug drop-shadow-md mb-1">
-                                                            {item.title}
-                                                        </h3>
-                                                        <p className="text-[10px] sm:text-[11px] font-semibold text-slate-300/90 font-mono drop-shadow-sm">
-                                                            {item.event_date || (lang === 'sw' ? 'Tarehe itatangazwa' : 'Date TBA')}
-                                                        </p>
-                                                    </div>
-                                                </Link>
-                                            );
-                                        })}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })()}
-
-                {/* Bottom Center Scroll Down Indicator */}
-                <div className="absolute bottom-5 sm:bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
-                    <button
-                        type="button"
-                        onClick={scrollToOccasions}
-                        aria-label="Scroll down to events"
-                        className="group flex flex-col items-center gap-1 text-white/70 hover:text-white transition-all cursor-pointer focus:outline-none"
-                    >
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/20 hover:border-sky-400/60 shadow-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110 active:scale-95 group-hover:shadow-[0_0_20px_rgba(56,189,248,0.35)]">
-                            <ChevronDown className="w-5 h-5 text-white stroke-[2.25]" />
-                        </div>
-                    </button>
+                    {/* Scroll Down Arrow Indicator */}
+                    <div className="flex justify-center pt-6 pb-2">
+                        <button
+                            type="button"
+                            onClick={scrollToOccasions}
+                            className="group flex items-center justify-center w-10 h-10 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/15 shadow-xs hover:shadow-md hover:border-[#154F7C] dark:hover:border-sky-400 text-slate-500 hover:text-[#154F7C] dark:text-slate-400 dark:hover:text-sky-400 transition-all cursor-pointer active:scale-90 focus:outline-none"
+                            aria-label="Scroll down to tickets"
+                            title="Scroll down"
+                        >
+                            <ChevronDown className="w-5 h-5 animate-bounce stroke-[2.2] text-[#154F7C] dark:text-sky-400" />
+                        </button>
+                    </div>
                 </div>
             </section>
 
             {/* ══════════════════════════════════════════════════════════════
-                3. MAIN OCCASIONS SECTION (Styled with Login/Register Theme)
+                3. MAIN OCCASIONS SECTION (Seamless Pure White Flow)
                ══════════════════════════════════════════════════════════════ */}
-            <div className="relative bg-gradient-to-b from-[#F0F5FA] via-[#F4F8FC] to-[#FFFFFF] overflow-hidden">
-                {/* Ambient soft oceanic atmospheric glows matching the Login/Register wave palette */}
-                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gradient-to-br from-sky-200/35 to-blue-300/15 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/3" />
-                <div className="absolute top-1/2 left-0 w-[450px] h-[450px] bg-gradient-to-tr from-sky-100/50 to-blue-200/20 rounded-full blur-3xl pointer-events-none -translate-x-1/4" />
-
-                <main id="occasions-section" className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-16 sm:pb-24 scroll-mt-20">
-                    {/* 1. TOP FILTER BAR: [All Events ▾] [Price ▾] [Date ▾] */}
-                    <div className="flex items-center gap-3 mb-6 sm:mb-8 relative z-30">
-                        {/* Category Dropdown Pill: [All Events ▾] */}
-                        <div className="relative">
+            <div className="relative bg-white dark:bg-[#07111E]">
+                <main id="occasions-section" className="relative z-10 flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 pb-16 sm:pb-24 scroll-mt-20">
+                    {/* 1. TOP FILTER BAR: [All Events ▾] [Price ▾] [Date ▾] + Search Bar */}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 sm:mb-8 relative z-30">
+                        {/* Filter Pills */}
+                        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                            {/* Category Dropdown Pill: [All Events ▾] */}
+                            <div className="relative">
                             <button
                                 type="button"
                                 onClick={() => setOpenFilterDropdown(openFilterDropdown === 'category' ? null : 'category')}
@@ -689,16 +646,29 @@ export default function TicketMarketplace({
                             )}
                         </div>
 
-                        {searchTerm && (
-                            <button
-                                type="button"
-                                onClick={clearSearch}
-                                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition cursor-pointer shrink-0 ml-auto border border-slate-200/80 shadow-2xs"
-                            >
-                                <X className="w-3.5 h-3.5" />
-                                <span>{t('Clear')}</span>
-                            </button>
-                        )}
+                        </div>
+
+                        {/* Search Bar Input */}
+                        <form onSubmit={handleSearchSubmit} className="relative w-full md:w-80 shrink-0">
+                            <Search className="w-4 h-4 absolute left-3.5 top-3 text-slate-400" />
+                            <input
+                                type="text"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                placeholder={lang === 'sw' ? 'Tafuta matukio au tiketi...' : 'Search events or tickets...'}
+                                className="w-full pl-10 pr-9 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10 rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#154F7C] transition-all text-slate-800 dark:text-slate-100"
+                            />
+                            {searchTerm && (
+                                <button
+                                    type="button"
+                                    onClick={clearSearch}
+                                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                                    aria-label="Clear search"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </form>
                     </div>
 
                     {/* 2. SECTION TITLE: "Popular Events" + "See all" */}
@@ -772,14 +742,14 @@ export default function TicketMarketplace({
                                         <Link
                                             key={occasion.id}
                                             href={itemUrl}
-                                            className="group bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-100/90 p-5 sm:p-6 shadow-[0_16px_36px_-10px_rgba(11,37,69,0.10),0_4px_14px_-4px_rgba(11,37,69,0.05),0_0_1px_rgba(11,37,69,0.15)] hover:shadow-[0_24px_50px_-12px_rgba(11,37,69,0.20),0_10px_24px_-6px_rgba(11,37,69,0.10)] hover:border-sky-300/80 transition-all duration-300 flex items-stretch justify-between gap-4 sm:gap-6 cursor-pointer hover:-translate-y-0.5"
+                                            className="group bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-100/90 hover:border-slate-200/90 p-5 sm:p-6 shadow-[0_16px_36px_-10px_rgba(11,37,69,0.10),0_4px_14px_-4px_rgba(11,37,69,0.05),0_0_1px_rgba(11,37,69,0.15)] hover:shadow-[0_24px_50px_-12px_rgba(11,37,69,0.16),0_10px_24px_-6px_rgba(11,37,69,0.08)] transition-all duration-300 flex items-stretch justify-between gap-4 sm:gap-6 cursor-pointer hover:-translate-y-0.5"
                                         >
                                             {/* Left Side: Title, Date, Venue, Starting Price */}
                                             <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                                                 {/* Top group: Title + Date + Location */}
                                                 <div className="space-y-3">
                                                     {/* Event Title */}
-                                                    <h3 className="text-base sm:text-[17px] font-black text-slate-900 font-display tracking-tight leading-snug line-clamp-2 group-hover:text-[#154F7C] transition-colors">
+                                                    <h3 className="text-base sm:text-[17px] font-black text-slate-900 font-display tracking-tight leading-snug line-clamp-2 transition-colors">
                                                         {occasion.title}
                                                     </h3>
 
@@ -826,6 +796,10 @@ export default function TicketMarketplace({
                                                 <img
                                                     src={cover}
                                                     alt={occasion.title}
+                                                    onError={(e) => {
+                                                        e.currentTarget.onerror = null;
+                                                        e.currentTarget.src = '/images/categories/events.jpg';
+                                                    }}
                                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                                                     loading="lazy"
                                                 />

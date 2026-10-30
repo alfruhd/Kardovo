@@ -11,11 +11,14 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\MessagingController;
 use App\Http\Controllers\Organizer\PaymentController;
+use App\Http\Controllers\Organizer\VotingController;
+use App\Http\Controllers\Organizer\VotingPortalController;
 use App\Http\Controllers\PledgeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicGuestController;
 use App\Http\Controllers\PublicTicketController;
 use App\Http\Controllers\PublicTicketMarketplaceController;
+use App\Http\Controllers\PublicVotingController;
 use App\Http\Controllers\ScannerController;
 use App\Http\Controllers\TicketCheckoutController;
 use App\Http\Controllers\TicketController;
@@ -49,6 +52,15 @@ Route::post('/events/{event}/validate-discount', [TicketCheckoutController::clas
 Route::get('/tickets/order/{order_number}', [TicketCheckoutController::class, 'orderSuccess'])->name('tickets.orderSuccess');
 Route::get('/tickets/order/{order_number}/status', [TicketCheckoutController::class, 'checkOrderStatus'])->name('tickets.orderStatus');
 Route::post('/tickets/order/{order_number}/verify-payment', [TicketCheckoutController::class, 'verifyPayment'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:30,1'])->name('tickets.verifyPayment');
+
+// Public Voting & Contests Hub
+Route::get('/voting', [PublicVotingController::class, 'index'])->name('voting.index');
+Route::get('/voting/how-it-works', [PublicVotingController::class, 'howItWorks'])->name('voting.how-it-works');
+Route::get('/voting/{event}', [PublicVotingController::class, 'showEventVoting'])->name('voting.show');
+Route::get('/e/{event}/voting', [PublicVotingController::class, 'showEventVoting'])->name('events.publicVoting');
+Route::get('/vote-for-me/{event}/{candidate}', [PublicVotingController::class, 'showCandidateDirect'])->name('voting.candidateDirect');
+Route::post('/events/{event}/checkout-vote', [PublicVotingController::class, 'checkoutVote'])->middleware([ProtectAgainstBotSubmissions::class, 'throttle:60,1'])->name('voting.checkout');
+Route::get('/voting/order/{order_number}/status', [PublicVotingController::class, 'checkVoteStatus'])->name('voting.orderStatus');
 
 // Instant Dev Role Switcher (Local & Testing environments only)
 if (app()->environment('local', 'testing')) {
@@ -118,6 +130,24 @@ Route::middleware(['auth'])->group(function () {
 
         // Point of Sale (POS) Hardware Terminal Requests
         Route::post('/events/{event}/pos-request', [TicketController::class, 'requestPosTerminal'])->name('events.posRequest.store');
+
+        // Independent Voting Portal for Organizers
+        Route::get('/voting-portal', [VotingPortalController::class, 'index'])->name('voting.portal.index');
+        Route::post('/voting-portal', [VotingPortalController::class, 'store'])->name('voting.portal.store');
+        Route::get('/voting-portal/{event}', [VotingPortalController::class, 'show'])->name('voting.portal.show');
+        Route::put('/voting-portal/{event}', [VotingPortalController::class, 'update'])->name('voting.portal.update');
+        Route::delete('/voting-portal/{event}', [VotingPortalController::class, 'destroy'])->name('voting.portal.destroy');
+
+        // Event Voting & Contests Management
+        Route::match(['put', 'post'], '/events/{event}/voting-settings', [VotingController::class, 'updateSettings'])->name('events.votingSettings');
+        Route::post('/events/{event}/voting-categories', [VotingController::class, 'storeCategory'])->name('events.votingCategories.store');
+        Route::put('/events/{event}/voting-categories/{category}', [VotingController::class, 'updateCategory'])->name('events.votingCategories.update');
+        Route::delete('/events/{event}/voting-categories/{category}', [VotingController::class, 'destroyCategory'])->name('events.votingCategories.destroy');
+        Route::post('/events/{event}/voting-categories/{category}/candidates', [VotingController::class, 'storeCandidate'])->name('events.votingCandidates.store');
+        Route::put('/events/{event}/voting-candidates/{candidate}', [VotingController::class, 'updateCandidate'])->name('events.votingCandidates.update');
+        Route::delete('/events/{event}/voting-candidates/{candidate}', [VotingController::class, 'destroyCandidate'])->name('events.votingCandidates.destroy');
+        Route::post('/events/{event}/voting/manual-vote', [VotingController::class, 'storeManualVote'])->name('events.voting.manualVote');
+        Route::get('/events/{event}/voting/export-csv', [VotingController::class, 'exportVotesCsv'])->name('events.voting.exportCsv');
 
         // Card Templates
         Route::get('/templates', [CardTemplateController::class, 'index'])->name('templates.index');
@@ -213,6 +243,14 @@ Route::get('/policies', function () {
 Route::get('/ticketing-terms', function () {
     return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'ticketing']);
 })->name('ticketing.terms');
+
+Route::get('/voting-terms', function () {
+    return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'voting']);
+})->name('voting.terms');
+
+Route::get('/voting-policy', function () {
+    return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'voting']);
+})->name('voting.policy');
 
 Route::get('/compliance', function () {
     return Inertia::render('Legal/TermsAndConditions', ['initialTab' => 'compliance']);

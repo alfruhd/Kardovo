@@ -498,7 +498,13 @@ class KardovoPlatformTest extends TestCase
         // 3. Gateways page loads with Inertia component Admin/Gateways
         $gatewaysResponse = $this->actingAs($admin)->get(route('admin.gateways'));
         $gatewaysResponse->assertStatus(200);
-        $gatewaysResponse->assertInertia(fn ($page) => $page->component('Admin/Gateways'));
+        $gatewaysResponse->assertInertia(fn ($page) => $page
+            ->component('Admin/Gateways')
+            ->has('gateways.whatsapp')
+            ->has('gateways.sms')
+            ->has('gateways.azampay')
+            ->where('gateways.sms.sender_id', 'KARDOVO')
+        );
 
         // 4. Legacy tab redirects
         $this->actingAs($admin)->get('/admin?tab=users')->assertRedirect(route('admin.users'));

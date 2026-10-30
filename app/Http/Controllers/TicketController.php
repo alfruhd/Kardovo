@@ -64,14 +64,51 @@ class TicketController extends Controller
         ];
 
         $selectedEventId = $request->input('event_id');
-        $selectedEvent = null;
 
-        if ($selectedEventId) {
-            $selectedEvent = $events->firstWhere('id', (int) $selectedEventId);
+        if (! $selectedEventId) {
+            $recentOrdersQuery = TicketOrder::query()
+                ->with(['event:id,title', 'tickets.ticketTier:id,name', 'user:id,name,phone,email'])
+                ->whereIn('event_id', $allEventIds)
+                ->latest('id')
+                ->limit(100);
+
+            $recentTicketOrders = $recentOrdersQuery->get()->map(function ($order) {
+                $firstTier = $order->tickets->first()?->ticketTier;
+                $tierNames = $order->tickets->pluck('ticketTier.name')->filter()->unique()->join(', ');
+
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'created_at' => $order->created_at ? $order->created_at->format('d M Y, H:i') : '',
+                    'event_id' => $order->event_id,
+                    'event_title' => $order->event?->title ?? 'N/A',
+                    'customer_name' => $order->buyer_name ?: ($order->user?->name ?? 'Guest Buyer'),
+                    'customer_phone' => $order->buyer_phone ?: ($order->user?->phone ?? '—'),
+                    'customer_email' => $order->buyer_email ?: ($order->user?->email ?? '—'),
+                    'tier_name' => $tierNames ?: ($firstTier?->name ?? 'Standard Admission'),
+                    'quantity' => $order->tickets->count() ?: 1,
+                    'total_amount' => (float) $order->total_amount,
+                    'platform_fee' => (float) $order->platform_fee,
+                    'organizer_net_amount' => (float) $order->organizer_net_amount,
+                    'payment_method' => $order->payment_method ?? 'mobile_money',
+                    'payment_status' => $order->payment_status ?? 'pending',
+                ];
+            });
+
+            $globalStats['total_occasions'] = $events->count();
+
+            return Inertia::render('Organizer/Ticketing/Index', [
+                'occasions' => $events,
+                'globalStats' => $globalStats,
+                'recentTicketOrders' => $recentTicketOrders,
+                'isAdmin' => $user->isAdmin() || $user->isSubAdmin(),
+            ]);
         }
 
+        $selectedEvent = $events->firstWhere('id', (int) $selectedEventId);
+
         if (! $selectedEvent) {
-            $selectedEvent = $events->firstWhere('ticketing_enabled', true) ?: $events->first();
+            return redirect()->route('ticketing.index')->with('error', 'Occasion not found or access restricted.');
         }
 
         $selectedEventStats = null;
